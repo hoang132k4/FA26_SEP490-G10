@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="flashcard(card)" class="flashcard-container my-4 col-md-8 mx-auto">
+        <div class="flashcard-inner">
+            <!-- Front Face: Kanji & Furigana -->
+            <div class="flashcard-front">
+                <span class="badge mb-3 px-3 py-1 rounded-pill" style="background-color: var(--sakura-soft); color: var(--sakura-dark-accent); position: absolute; top: 20px; right: 20px;" th:text="${card.level != null ? card.level : 'N3'}">N3</span>
+                <span class="badge bg-light text-muted position-absolute top-0 start-0 m-3 px-2 py-1 small">Từ vựng</span>
+                
+                <h1 class="display-3 fw-bold mb-2" style="font-family: 'Noto Sans JP', sans-serif; color: var(--text-primary)" th:text="${card.frontText != null ? card.frontText : '桜'}">桜</h1>
+                <p class="fs-4 text-muted mb-0" th:text="${card.reading != null ? card.reading : 'さくら (sakura)'}">さくら (sakura)</p>
+                
+                <div class="position-absolute bottom-0 mb-3 text-muted small d-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-repeat text-sakura-accent" style="color: var(--sakura-accent)"></i> Bấm vào thẻ để lật mặt sau
+                </div>
+            </div>
+
+            <!-- Back Face: Meaning + Example + Audio -->
+            <div class="flashcard-back text-center">
+                <span class="badge bg-white text-dark mb-3 px-3 py-1 rounded-pill position-absolute top-0 end-0 m-3 small">Nghĩa & Ví dụ</span>
+                
+                <h2 class="fw-bold mb-3 text-white" th:text="${card.backText != null ? card.backText : 'Hoa anh đào'}">Hoa anh đào</h2>
+                
+                <div class="bg-white bg-opacity-15 p-3 rounded-3 text-start w-100 my-2">
+                    <p class="mb-1 fw-semibold fs-5 text-white" style="font-family: 'Noto Sans JP', sans-serif;" th:text="${card.exampleJp != null ? card.exampleJp : '春に桜の花が咲きます。'}">春に桜の花が咲きます。</p>
+                    <p class="mb-0 text-white-50 small" th:text="${card.exampleVi != null ? card.exampleVi : 'Vào mùa xuân, hoa anh đào nở rộ.'}">Vào mùa xuân, hoa anh đào nở rộ.</p>
+                </div>
+
+                <div class="d-flex justify-content-center gap-2 mt-2">
+                    <button class="btn btn-sm btn-light rounded-pill px-3 py-1 text-dark" onclick="event.stopPropagation();">
+                        <i class="bi bi-volume-up-fill me-1"></i> Phát âm
+                    </button>
+                </div>
+
+                <div class="position-absolute bottom-0 mb-3 text-white-50 small">
+                    <i class="bi bi-arrow-repeat me-1"></i> Bấm để lật lại
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

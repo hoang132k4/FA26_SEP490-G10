@@ -1,0 +1,15 @@
+﻿<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Lá»™ trÃ¬nh há»c táº­p - JLPP',
+    activeMenu='learning-path',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">Lá»™ trÃ¬nh há»c táº­p cÃ¡ nhÃ¢n hÃ³a</h3>
+            <a th:href="@{/learning-path/recalibrate}" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-sliders"></i> Hiá»‡u chá»‰nh lá»‹ch há»c
+            </a>
+        </div>
+        <p class="text-secondary">Theo dÃµi tiáº¿n Ä‘á»™ bÃ i há»c vÃ  má»‘c thi má»¥c tiÃªu.</p>
+    </div>
+</div>

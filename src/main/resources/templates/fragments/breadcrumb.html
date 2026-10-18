@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <nav th:fragment="breadcrumb(items)" aria-label="breadcrumb" class="my-3">
+        <ol class="breadcrumb bg-light p-2 rounded border">
+            <li class="breadcrumb-item"><a th:href="@{/}"><i class="bi bi-house"></i> Home</a></li>
+            <li th:each="item, iter : ${items}" 
+                class="breadcrumb-item" 
+                th:classappend="${iter.last} ? 'active' : ''"
+                th:aria-current="${iter.last} ? 'page' : null">
+                <a th:if="${!iter.last && item.url != null}" th:href="${item.url}" th:text="${item.title}"></a>
+                <span th:if="${iter.last || item.url == null}" th:text="${item.title}"></span>
+            </li>
+        </ol>
+    </nav>
+</body>
+</html>

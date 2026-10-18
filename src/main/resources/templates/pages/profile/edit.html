@@ -1,0 +1,18 @@
+﻿<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Chá»‰nh sá»­a há»“ sÆ¡ - JLPP',
+    activeMenu='profile',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="card p-4 jlpp-card col-md-8">
+            <h4 class="fw-bold mb-3">Chá»‰nh sá»­a thÃ´ng tin</h4>
+            <form th:action="@{/profile/edit}" method="post">
+                <div class="mb-3">
+                    <label class="form-label">Há» vÃ  tÃªn</label>
+                    <input type="text" name="fullName" class="form-control" th:value="">
+                </div>
+                <button type="submit" class="btn btn-primary">LÆ°u</button>
+            </form>
+        </div>
+    </div>
+</div>

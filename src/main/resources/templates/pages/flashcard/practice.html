@@ -1,0 +1,48 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Luyện tập Flashcard - Kotoba',
+    activeMenu='flashcards',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <span class="text-uppercase fw-bold small text-muted">Luyện trí nhớ dài hạn</span>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Thẻ Từ Vựng & Hán Tự (Spaced Repetition)</h3>
+            </div>
+            <div class="text-end">
+                <span class="small text-muted">Tiến độ hôm nay:</span>
+                <span class="fw-bold fs-5 ms-1" style="color: var(--steel-blue)">12 / 20 từ</span>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress progress-kotoba mb-4">
+            <div class="progress-bar" role="progressbar" style="width: 60%"></div>
+        </div>
+
+        <!-- 3D Flashcard Component -->
+        <div th:replace="~{fragments/components/flashcard-flip :: flashcard(
+            card=${ {
+                level: 'N4',
+                frontText: '桜',
+                reading: 'さくら (sakura)',
+                backText: 'Hoa anh đào',
+                exampleJp: '日本の春は桜の花がとても美しいです。',
+                exampleVi: 'Mùa xuân ở Nhật Bản, hoa anh đào nở rất đẹp.'
+            } }
+        )}"></div>
+
+        <!-- Rating Buttons for Spaced Repetition -->
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            <button class="btn btn-outline-danger rounded-pill px-4 py-2">
+                <i class="bi bi-x-circle me-1"></i> Chưa nhớ (Ôn lại ngay)
+            </button>
+            <button class="btn btn-outline-warning rounded-pill px-4 py-2">
+                <i class="bi bi-question-circle me-1"></i> Tạm nhớ (Nhắc lại sau 1 ngày)
+            </button>
+            <button class="btn btn-steel rounded-pill px-5 py-2">
+                <i class="bi bi-check-circle me-1"></i> Đã thuộc (Nhắc lại sau 3 ngày)
+            </button>
+        </div>
+    </div>
+</div>

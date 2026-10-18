@@ -1,0 +1,48 @@
+<div th:replace="~{layouts/auth-layout :: html(
+    pageTitle='Đăng nhập - JEPS',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold mb-1" style="color: var(--text-primary)">Đăng nhập tài khoản</h4>
+            <p class="small text-muted">Chào mừng bạn quay lại học tập cùng JEPS</p>
+        </div>
+
+        <form th:action="@{/auth/login}" method="post">
+            <div class="mb-3">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)">Email hoặc Tên đăng nhập</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                    <input type="text" name="username" class="form-control border-start-0" required placeholder="learner@jeps.edu.vn">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label small fw-semibold mb-0" style="color: var(--text-primary)">Mật khẩu</label>
+                    <a th:href="@{/auth/forgot-password}" class="small text-decoration-none" style="color: var(--sakura-accent)">Quên mật khẩu?</a>
+                </div>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                    <input type="password" name="password" class="form-control border-start-0" required placeholder="••••••••">
+                </div>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="rememberMe">
+                <label class="form-check-label small text-muted" for="rememberMe">Ghi nhớ đăng nhập</label>
+            </div>
+
+            <button type="submit" class="btn btn-sakura w-100 py-2">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
+            </button>
+
+            <div class="text-center mt-4 small text-muted">
+                Chưa có tài khoản? 
+                <a th:href="@{/auth/register}" class="fw-semibold text-decoration-none" style="color: var(--sakura-accent)">
+                    Đăng ký miễn phí
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

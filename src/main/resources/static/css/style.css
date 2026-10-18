@@ -1,0 +1,450 @@
+/* ==========================================================================
+   Kotoba (ことばの学習) - Japanese Learning & Exam Platform
+   Theme: Japanese Modern Navy & Warm Zen Academic
+   ========================================================================== */
+
+:root {
+  /* Exact Color Palette from Specification */
+  --navy-dark: #173B57;      /* Xanh navy đậm — Sidebar */
+  --navy-hover: #244F70;     /* Xanh navy sáng — Hover / Active */
+  --steel-blue: #315C78;     /* Xanh thép — Nút chính CTA */
+  --medium-blue: #3B6F91;    /* Xanh trung bình — Link, tiến độ */
+  --pastel-blue: #B9D1E1;    /* Xanh pastel — Icon, nền phụ */
+
+  /* Canvas & Surfaces */
+  --bg-page: #F6F4EE;        /* Nền kem dịu mắt, ấm áp chuẩn Nhật */
+  --surface-card: #FFFFFF;   /* Nền thẻ tinh khôi */
+  --text-main: #1C2E3D;      /* Chữ chính xám đen dịu mắt */
+  --text-muted: #64748B;     /* Chữ phụ, ghi chú */
+  --border-subtle: #E8E4DA;  /* Đường viền mỏng thanh thoát */
+  --border-light: #F0EDE6;
+
+  /* Accent & Status Colors */
+  --accent-red: #D94B3F;     /* Màu mặt trời đỏ & hoa anh đào điểm xuyết */
+  --status-success: #2ECC71;
+  --status-warning: #F39C12;
+  --status-error: #E74C3C;
+
+  /* Shadows & Radius */
+  --card-shadow: 0 4px 16px rgba(23, 59, 87, 0.05);
+  --card-shadow-hover: 0 8px 24px rgba(23, 59, 87, 0.09);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+}
+
+/* Base Setup */
+body {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-main);
+  background-color: var(--bg-page);
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  color: var(--text-main);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+/* --------------------------------------------------------------------------
+   Kotoba Deep Navy Sidebar (#173B57)
+   -------------------------------------------------------------------------- */
+.kotoba-sidebar {
+  background-color: var(--navy-dark);
+  color: #FFFFFF;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kotoba-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px 24px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 20px;
+  text-decoration: none;
+}
+
+.kotoba-logo-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E06D53 0%, #173B57 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.kotoba-logo-circle img, .kotoba-logo-circle svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kotoba-brand-text h4 {
+  color: #FFFFFF;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.kotoba-brand-text span {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-family: 'Noto Sans JP', sans-serif;
+  letter-spacing: 1px;
+}
+
+.kotoba-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 2;
+}
+
+.kotoba-nav .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  font-size: 0.93rem;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.kotoba-nav .nav-link i {
+  font-size: 1.15rem;
+  color: var(--pastel-blue);
+  transition: all 0.2s ease;
+}
+
+.kotoba-nav .nav-link:hover {
+  background-color: var(--navy-hover);
+  color: #FFFFFF;
+}
+
+.kotoba-nav .nav-link.active {
+  background-color: var(--navy-hover);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.kotoba-nav .nav-link.active i {
+  color: #FFFFFF;
+}
+
+/* Sidebar Bottom Fuji Watermark Art */
+.sidebar-fuji-art {
+  margin-top: auto;
+  padding-top: 30px;
+  opacity: 0.25;
+  pointer-events: none;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-fuji-quote {
+  font-family: 'Noto Sans JP', serif;
+  font-size: 0.78rem;
+  color: #FFFFFF;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 4px;
+  position: absolute;
+  top: 10px;
+  right: 15px;
+}
+
+/* --------------------------------------------------------------------------
+   Top Bar Search & User Avatar
+   -------------------------------------------------------------------------- */
+.kotoba-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 28px;
+  background-color: transparent;
+}
+
+.kotoba-search-pill {
+  background-color: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 9px 20px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(23, 59, 87, 0.03);
+  transition: all 0.2s ease;
+}
+
+.kotoba-search-pill:focus-within {
+  border-color: var(--steel-blue);
+  box-shadow: 0 4px 14px rgba(49, 92, 120, 0.12);
+}
+
+.kotoba-search-pill input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.kotoba-search-pill input::placeholder {
+  color: #94A3B8;
+}
+
+/* --------------------------------------------------------------------------
+   Cards & Containers (Clean Ivory/White Style)
+   -------------------------------------------------------------------------- */
+.kotoba-card {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--card-shadow);
+  transition: all 0.25s ease;
+}
+
+.kotoba-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  border-color: #D8D2C4;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons (Xanh Thép #315C78 & Variants)
+   -------------------------------------------------------------------------- */
+.btn-steel {
+  background-color: var(--steel-blue);
+  border-color: var(--steel-blue);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 9px 22px;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px rgba(49, 92, 120, 0.25);
+}
+
+.btn-steel:hover, .btn-steel:focus {
+  background-color: var(--navy-dark);
+  border-color: var(--navy-dark);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(23, 59, 87, 0.3);
+}
+
+.btn-steel-outline {
+  background-color: transparent;
+  border: 1.5px solid var(--steel-blue);
+  color: var(--steel-blue);
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 8px 20px;
+  transition: all 0.2s ease;
+}
+
+.btn-steel-outline:hover {
+  background-color: #EBF2F7;
+  color: var(--navy-dark);
+  border-color: var(--navy-dark);
+}
+
+/* --------------------------------------------------------------------------
+   Progress Bars (#3B6F91)
+   -------------------------------------------------------------------------- */
+.progress-kotoba {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background-color: #E2E8F0;
+  overflow: hidden;
+}
+
+.progress-kotoba .progress-bar {
+  background-color: var(--medium-blue);
+  border-radius: var(--radius-pill);
+}
+
+/* --------------------------------------------------------------------------
+   Metric Stat Cards
+   -------------------------------------------------------------------------- */
+.stat-card {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.stat-icon-flame {
+  background-color: #FFEDEA;
+  color: #E25C47;
+}
+
+.stat-icon-book {
+  background-color: #EBF4FA;
+  color: var(--steel-blue);
+}
+
+.stat-icon-chart {
+  background-color: #EAF7EE;
+  color: #27AE60;
+}
+
+/* --------------------------------------------------------------------------
+   Level Selector Pills (N5, N4, N3, N2, N1)
+   -------------------------------------------------------------------------- */
+.level-pill-group {
+  display: flex;
+  gap: 8px;
+}
+
+.level-pill {
+  border: 1px solid var(--border-subtle);
+  background-color: #FFFFFF;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.level-pill:hover {
+  background-color: #F1F5F9;
+  color: var(--text-main);
+}
+
+.level-pill.active {
+  background-color: var(--steel-blue);
+  color: #FFFFFF;
+  border-color: var(--steel-blue);
+}
+
+/* --------------------------------------------------------------------------
+   Daily Quote & Wisdom Card
+   -------------------------------------------------------------------------- */
+.quote-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+.quote-sakura-branch {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  width: 75px;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Question Option Item in Exam / Quiz
+   -------------------------------------------------------------------------- */
+.option-item {
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.option-item:hover {
+  background-color: #F4F8FA;
+  border-color: var(--pastel-blue);
+}
+
+.option-item.selected {
+  background-color: #EBF3F8;
+  border-color: var(--steel-blue);
+  font-weight: 600;
+  color: var(--navy-dark);
+}
+
+/* --------------------------------------------------------------------------
+   Flashcard 3D
+   -------------------------------------------------------------------------- */
+.flashcard-container {
+  perspective: 1000px;
+  min-height: 280px;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+.flashcard-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front, .flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: var(--card-shadow);
+}
+
+.flashcard-front {
+  background: #FFFFFF;
+  border: 2px solid var(--border-subtle);
+}
+
+.flashcard-back {
+  background: linear-gradient(135deg, var(--navy-dark) 0%, var(--steel-blue) 100%);
+  color: #FFFFFF;
+  transform: rotateY(180deg);
+  border: 2px solid var(--navy-dark);
+}

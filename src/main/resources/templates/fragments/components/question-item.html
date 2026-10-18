@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="questionItem(q, index, showSolution)" class="card p-4 mb-4 jeps-card question-box" th:id="'question-' + ${q.id}">
+        <!-- Question Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
+            <h6 class="fw-bold mb-0" style="color: var(--sakura-accent)">
+                <span th:text="'Câu hỏi ' + ${index}">Câu 1</span>
+                <span th:if="${q.points != null}" class="badge bg-light text-muted ms-2" th:text="${q.points} + ' điểm'"></span>
+            </h6>
+            <span class="badge px-3 py-1 rounded-pill" style="background-color: var(--sakura-soft); color: var(--sakura-dark-accent);" th:text="${q.category}">Từ vựng (Goi)</span>
+        </div>
+
+        <!-- Question Content -->
+        <div class="question-content fs-5 mb-4 text-dark" style="line-height: 1.7;" th:utext="${q.content}">
+            昨日、田中さんと映画を____。
+        </div>
+
+        <!-- Audio Player if listening question -->
+        <div th:if="${q.audioUrl != null}" class="mb-4 p-2 bg-light rounded-3 border">
+            <audio controls class="w-100">
+                <source th:src="${q.audioUrl}" type="audio/mpeg">
+                Trình duyệt không hỗ trợ audio.
+            </audio>
+        </div>
+
+        <!-- Options List -->
+        <div class="options-container">
+            <div th:each="opt : ${q.options}" 
+                 class="option-item d-flex align-items-center"
+                 th:classappend="${showSolution && opt.correct} ? 'border-success bg-success-subtle' : ''">
+                <div class="form-check w-100 m-0">
+                    <input class="form-check-input me-2" type="radio" 
+                           th:name="'answer_' + ${q.id}" 
+                           th:value="${opt.id}" 
+                           th:id="'opt_' + ${opt.id}"
+                           th:checked="${q.userAnswerId != null && q.userAnswerId == opt.id}"
+                           th:disabled="${showSolution}">
+                    <label class="form-check-label w-100 cursor-pointer" th:for="'opt_' + ${opt.id}">
+                        <span class="fw-bold me-2" style="color: var(--sakura-accent)" th:text="${opt.label}">A.</span>
+                        <span class="text-dark" th:text="${opt.text}">見ました</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solution & Explanation Box -->
+        <div th:if="${showSolution}" class="mt-4 p-3 rounded-3" style="background-color: #E8F8F5; border-left: 4px solid var(--status-success);">
+            <div class="fw-bold text-success mb-1">
+                <i class="bi bi-check-circle-fill me-1"></i> Giải thích chi tiết:
+            </div>
+            <p class="mb-0 text-secondary small" th:text="${q.explanation}">Hành động đã xảy ra trong quá khứ (昨日 - hôm qua) nên chia về thể quá khứ 見ました.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+﻿<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='LÃ m bÃ i kiá»ƒm tra Ä‘áº§u vÃ o - JLPP',
+    activeMenu='learning-path',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div th:replace="~{fragments/components/exam-timer :: timer(durationMinutes=30)}"></div>
+        <h3 class="fw-bold mb-4">BÃ i thi kiá»ƒm tra Ä‘áº§u vÃ o (Placement Test)</h3>
+        <!-- Render question list -->
+    </div>
+</div>

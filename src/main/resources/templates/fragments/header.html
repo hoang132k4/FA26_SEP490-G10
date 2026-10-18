@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <nav th:fragment="header(role)" class="navbar navbar-expand-lg px-4 border-bottom" style="background-color: #FFFFFF; border-color: var(--border-subtle) !important;">
+        <div class="container-fluid">
+            <!-- Brand Logo -->
+            <a th:href="@{/}" class="d-flex align-items-center gap-2 text-decoration-none">
+                <div class="kotoba-logo-circle" style="width: 36px; height: 36px;">
+                    <svg viewBox="0 0 100 100" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="50" fill="#E06D53" />
+                        <circle cx="50" cy="42" r="22" fill="#FFFFFF" opacity="0.3" />
+                        <path d="M 20 85 L 43 32 L 57 32 L 80 85 Z" fill="#173B57" />
+                        <path d="M 43 32 L 57 32 L 62 48 L 56 44 L 50 50 L 44 44 L 38 48 Z" fill="#FFFFFF" />
+                    </svg>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0" style="color: var(--navy-dark); line-height: 1;">JEPS</h5>
+                    <span class="text-muted" style="font-size: 0.68rem; font-family: 'Noto Sans JP';">Japanese Exam Prep</span>
+                </div>
+            </a>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="topNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <li class="nav-item">
+                        <a class="nav-link px-3 fw-medium" th:href="@{/}">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 fw-medium" th:href="@{/courses}">Khóa học</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 fw-medium" th:href="@{/mock-exam}">Thi thử JLPT</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 fw-medium" th:href="@{/about}">Giới thiệu</a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    <!-- If Not Authenticated -->
+                    <div th:if="${role == null || role == 'GUEST'}" class="d-flex gap-2">
+                        <a th:href="@{/auth/login}" class="btn btn-steel-outline btn-sm">Đăng nhập</a>
+                        <a th:href="@{/auth/register}" class="btn btn-steel btn-sm">Bắt đầu học</a>
+                    </div>
+
+                    <!-- If Authenticated -->
+                    <div th:if="${role != null && role != 'GUEST'}" class="dropdown">
+                        <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle fs-5" style="color: var(--navy-dark)"></i>
+                            <span th:text="${userName != null ? userName : 'Nguyễn Văn A'}">Nguyễn Văn A</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
+                            <li><a class="dropdown-item py-2" th:href="@{/learning/dashboard}"><i class="bi bi-speedometer2 me-2"></i> Tổng quan học tập</a></li>
+                            <li><a class="dropdown-item py-2" th:href="@{/profile}"><i class="bi bi-person me-2"></i> Hồ sơ cá nhân</a></li>
+                            <li><a class="dropdown-item py-2" th:href="@{/order/history}"><i class="bi bi-receipt me-2"></i> Đơn hàng</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2 text-danger" th:href="@{/auth/logout}"><i class="bi bi-box-arrow-right me-2"></i> Đăng xuất</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</body>
+</html>

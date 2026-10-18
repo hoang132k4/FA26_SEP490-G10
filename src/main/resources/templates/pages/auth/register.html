@@ -1,0 +1,26 @@
+﻿<div th:replace="~{layouts/auth-layout :: html(
+    pageTitle='ÄÄƒng kÃ½ tÃ i khoáº£n - JLPP',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <h4 class="fw-bold text-center mb-4">ÄÄƒng kÃ½ thÃ nh viÃªn</h4>
+        <form th:action="@{/auth/register}" method="post">
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Há» vÃ  tÃªn</label>
+                <input type="text" name="fullName" class="form-control" required placeholder="Nguyá»…n VÄƒn A">
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Email</label>
+                <input type="email" name="email" class="form-control" required placeholder="name@example.com">
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Máº­t kháº©u</label>
+                <input type="password" name="password" class="form-control" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">Táº¡o tÃ i khoáº£n</button>
+            <div class="text-center mt-3 small">
+                ÄÃ£ cÃ³ tÃ i khoáº£n? <a th:href="@{/auth/login}">ÄÄƒng nháº­p</a>
+            </div>
+        </form>
+    </div>
+</div>

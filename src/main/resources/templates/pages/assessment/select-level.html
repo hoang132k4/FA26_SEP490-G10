@@ -1,0 +1,17 @@
+﻿<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Chá»n cáº¥p Ä‘á»™ má»¥c tiÃªu - JLPP',
+    activeMenu='learning-path',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <h3 class="fw-bold mb-3">Chá»n cáº¥p Ä‘á»™ JLPT báº¡n muá»‘n chinh phá»¥c</h3>
+        <div class="row">
+            <div class="col-md-2" th:each="lvl : ">
+                <div class="card p-3 text-center jlpp-card mb-3 cursor-pointer">
+                    <h2 class="fw-bold text-primary" th:text="'N' + ">N5</h2>
+                    <a th:href="@{/assessment/declare(level='N' + )}" class="btn btn-sm btn-outline-primary mt-2">Chá»n</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

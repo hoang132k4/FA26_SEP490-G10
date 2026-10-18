@@ -1,0 +1,333 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Tổng quan học tập - JEPS',
+    activeMenu='learner-dashboard',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Main Dashboard Grid -->
+        <div class="row g-4">
+            <!-- Left Main Area (8 Columns) -->
+            <div class="col-lg-8">
+                <!-- 1. Hero Greeting Banner with Mount Fuji & Sun -->
+                <div class="card p-4 kotoba-card mb-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%);">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <h1 class="fw-bold mb-1" style="font-family: 'Noto Sans JP', sans-serif; font-size: 2.2rem; color: var(--navy-dark);">
+                                おかえりなさい！
+                            </h1>
+                            <h4 class="fw-bold mb-2" style="color: var(--text-main);">Chào mừng bạn quay lại</h4>
+                            <p class="text-muted small mb-0">Tiếp tục hành trình chinh phục tiếng Nhật của bạn 🌸</p>
+                        </div>
+                        <div class="col-md-5 text-end d-none d-md-block">
+                            <!-- Artistic Mount Fuji with Red Sun Illustration -->
+                            <svg viewBox="0 0 320 180" width="240" height="135" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Red Sun -->
+                                <circle cx="215" cy="70" r="42" fill="#D94B3F" />
+                                <!-- Soft Clouds -->
+                                <path d="M 40 60 Q 65 50 90 60 T 130 60" stroke="#CBD5E1" stroke-width="2" fill="none" opacity="0.6" />
+                                <path d="M 180 40 Q 200 30 220 40 T 250 40" stroke="#CBD5E1" stroke-width="2" fill="none" opacity="0.5" />
+                                <!-- Mount Fuji -->
+                                <path d="M 70 170 L 175 60 L 200 60 L 300 170 Z" fill="#62829D" />
+                                <!-- Snow Cap -->
+                                <path d="M 175 60 L 200 60 L 215 95 L 200 88 L 188 98 L 176 88 L 160 95 Z" fill="#FFFFFF" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Metric Stat Cards Row (3 Cards) -->
+                <div class="row g-3 mb-4">
+                    <!-- Stat 1: Learning Streak -->
+                    <div class="col-md-4">
+                        <div class="card kotoba-card stat-card h-100">
+                            <div class="stat-icon-wrapper stat-icon-flame">
+                                <i class="bi bi-fire"></i>
+                            </div>
+                            <div>
+                                <span class="text-muted small d-block">Chuỗi học tập</span>
+                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">7 <span class="fs-6 fw-normal text-muted">ngày</span></h3>
+                                <a href="#" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
+                                    Cố lên! Bạn đang đi rất tốt! &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stat 2: Words Learned -->
+                    <div class="col-md-4">
+                        <div class="card kotoba-card stat-card h-100">
+                            <div class="stat-icon-wrapper stat-icon-book">
+                                <i class="bi bi-book"></i>
+                            </div>
+                            <div>
+                                <span class="text-muted small d-block">Từ vựng đã học</span>
+                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">248 <span class="fs-6 fw-normal text-muted">từ</span></h3>
+                                <a href="#" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
+                                    Mục tiêu hôm nay: 10 từ &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stat 3: Progress N4 -->
+                    <div class="col-md-4">
+                        <div class="card kotoba-card stat-card h-100">
+                            <div class="stat-icon-wrapper stat-icon-chart">
+                                <i class="bi bi-bar-chart-fill"></i>
+                            </div>
+                            <div class="w-100">
+                                <span class="text-muted small d-block">Tiến độ JLPT N4</span>
+                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">68%</h3>
+                                <div class="progress progress-kotoba mb-1" style="height: 6px;">
+                                    <div class="progress-bar" style="width: 68%; background-color: var(--medium-blue);"></div>
+                                </div>
+                                <a href="#" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
+                                    Còn 32% để đạt mục tiêu! &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Continue Learning & Daily Goals Row -->
+                <div class="row g-3 mb-4">
+                    <!-- Continue Learning Card -->
+                    <div class="col-md-6">
+                        <div class="card p-3 kotoba-card h-100">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-play-circle-fill text-muted"></i>
+                                <span class="fw-bold small text-muted text-uppercase">Tiếp tục học</span>
+                            </div>
+
+                            <div class="p-3 rounded-3 border d-flex gap-3 align-items-center" style="background-color: #FBFBF9;">
+                                <!-- Torii Gate Art Thumbnail -->
+                                <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-2 text-white" style="width: 85px; height: 85px; background: linear-gradient(135deg, #B9D1E1 0%, #62829D 100%);">
+                                    <i class="bi bi-building fs-3 text-white"></i>
+                                    <span class="small" style="font-size: 0.7rem; font-family: 'Noto Sans JP';">ことば</span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="badge mb-1 px-2 py-0.5 small" style="background-color: var(--navy-dark); color: white;">N4</span>
+                                    <h6 class="fw-bold mb-1 text-dark">Từ vựng N4 &bull; Bài 12</h6>
+                                    <p class="small text-muted mb-2">Chủ đề: 生活 (Cuộc sống hàng ngày)</p>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="progress progress-kotoba w-75" style="height: 5px;">
+                                            <div class="progress-bar" style="width: 60%; background-color: var(--steel-blue);"></div>
+                                        </div>
+                                        <span class="small text-muted" style="font-size: 0.75rem;">6/10</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <a th:href="@{/courses}" class="btn btn-steel w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                                <span>Học tiếp</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Daily Goals Checklist Card -->
+                    <div class="col-md-6">
+                        <div class="card p-3 kotoba-card h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-bullseye text-muted"></i>
+                                    <span class="fw-bold small text-muted text-uppercase">Mục tiêu hôm nay</span>
+                                </div>
+                                <i class="bi bi-calendar-event text-muted small"></i>
+                            </div>
+
+                            <div class="d-flex flex-column gap-2">
+                                <!-- Goal 1: Vocab (Done) -->
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded-2" style="background-color: #F8FAF9;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-check-circle-fill" style="color: var(--steel-blue);"></i>
+                                        <div>
+                                            <div class="fw-semibold small text-dark">10 từ vựng</div>
+                                            <div class="text-muted" style="font-size: 0.72rem;">Đã học 6/10</div>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </div>
+
+                                <!-- Goal 2: Listening (Done) -->
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded-2" style="background-color: #F8FAF9;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-check-circle-fill" style="color: var(--steel-blue);"></i>
+                                        <div>
+                                            <div class="fw-semibold small text-dark">1 bài nghe</div>
+                                            <div class="text-muted" style="font-size: 0.72rem;">Đã hoàn thành</div>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </div>
+
+                                <!-- Goal 3: Reading (Pending) -->
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded-2" style="background-color: #FFFFFF; border: 1px dashed #CBD5E1;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-circle text-muted"></i>
+                                        <div>
+                                            <div class="fw-semibold small text-dark">1 bài đọc</div>
+                                            <div class="text-muted" style="font-size: 0.72rem;">Chưa bắt đầu</div>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Explore Lessons (Khám phá bài học) -->
+                <div class="card p-4 kotoba-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-grid text-muted"></i>
+                            <h5 class="fw-bold mb-0 text-dark">Khám phá bài học</h5>
+                        </div>
+                        <a th:href="@{/courses}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue);">
+                            Xem tất cả &rarr;
+                        </a>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Lesson 1: Vocabulary -->
+                        <div class="col-md-4">
+                            <div class="card p-3 h-100 rounded-3 border" style="background-color: #FDFDFD;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark); font-family: 'Noto Sans JP';">
+                                        あ
+                                    </div>
+                                    <h6 class="fw-bold mb-0 text-dark">Từ vựng</h6>
+                                </div>
+                                <p class="text-muted small mb-3" style="font-size: 0.8rem; line-height: 1.4;">
+                                    Học từ mới theo chủ đề, có hình ảnh và ví dụ minh họa.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <span class="badge" style="background-color: var(--steel-blue); color: white;">N4</span>
+                                    <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>10 phút</span>
+                                    <i class="bi bi-arrow-right text-muted small"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lesson 2: Listening -->
+                        <div class="col-md-4">
+                            <div class="card p-3 h-100 rounded-3 border" style="background-color: #FDFDFD;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark);">
+                                        <i class="bi bi-headphones"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0 text-dark">Luyện nghe</h6>
+                                </div>
+                                <p class="text-muted small mb-3" style="font-size: 0.8rem; line-height: 1.4;">
+                                    Nghe và trả lời câu hỏi, cải thiện khả năng nghe hiểu.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <span class="badge" style="background-color: var(--steel-blue); color: white;">N4</span>
+                                    <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>10 phút</span>
+                                    <i class="bi bi-arrow-right text-muted small"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lesson 3: Reading -->
+                        <div class="col-md-4">
+                            <div class="card p-3 h-100 rounded-3 border" style="background-color: #FDFDFD;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark);">
+                                        <i class="bi bi-book"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0 text-dark">Luyện đọc</h6>
+                                </div>
+                                <p class="text-muted small mb-3" style="font-size: 0.8rem; line-height: 1.4;">
+                                    Đọc hiểu các đoạn văn ngắn với nhiều chủ đề khác nhau.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <span class="badge" style="background-color: var(--steel-blue); color: white;">N4</span>
+                                    <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>10 phút</span>
+                                    <i class="bi bi-arrow-right text-muted small"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar Widgets (4 Columns) -->
+            <div class="col-lg-4">
+                <!-- 1. JLPT Practice Level Selector Widget -->
+                <div class="card p-4 kotoba-card mb-4">
+                    <h5 class="fw-bold mb-1 text-dark">Luyện JLPT</h5>
+                    <p class="text-muted small mb-3">Chọn cấp độ bạn đang học</p>
+
+                    <!-- Level Pills: N5, N4, N3, N2, N1 -->
+                    <div class="level-pill-group mb-3">
+                        <a href="#" class="level-pill">N5</a>
+                        <a href="#" class="level-pill active">N4</a>
+                        <a href="#" class="level-pill">N3</a>
+                        <a href="#" class="level-pill">N2</a>
+                        <a href="#" class="level-pill">N1</a>
+                    </div>
+
+                    <!-- Selected Target Box -->
+                    <div class="p-3 rounded-3 d-flex align-items-center gap-3 mb-2" style="background-color: #F4F8FA; border: 1px solid var(--pastel-blue);">
+                        <div class="rounded-2 p-2 bg-white text-center shadow-sm" style="width: 44px; height: 44px;">
+                            <i class="bi bi-trophy-fill" style="color: var(--steel-blue);"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">JLPT N4</div>
+                            <div class="text-muted small" style="font-size: 0.78rem;">Còn 68% để hoàn thành</div>
+                        </div>
+                    </div>
+
+                    <div class="text-start mt-2">
+                        <a th:href="@{/exams}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue);">
+                            Xem chi tiết &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 2. Daily Wisdom / Proverbs Widget (継続は力なり) -->
+                <div class="quote-card mb-4">
+                    <h5 class="fw-bold mb-1" style="font-family: 'Noto Sans JP'; color: var(--navy-dark);">「継続は力なり」</h5>
+                    <p class="text-muted small mb-0">Kiên trì là sức mạnh.</p>
+                    <hr class="my-3 opacity-25">
+                    
+                    <!-- Sakura Branch Accent Icon -->
+                    <svg class="quote-sakura-branch" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 10 90 Q 50 60 90 20" stroke="#8C6239" stroke-width="2.5" fill="none" />
+                        <!-- Cherry Blossoms -->
+                        <circle cx="80" cy="30" r="8" fill="#FFB7C5" />
+                        <circle cx="80" cy="30" r="3" fill="#D94B3F" />
+                        <circle cx="55" cy="55" r="7" fill="#FFB7C5" />
+                        <circle cx="55" cy="55" r="2.5" fill="#D94B3F" />
+                        <circle cx="35" cy="75" r="6" fill="#FFD1DC" />
+                    </svg>
+                </div>
+
+                <!-- 3. Daily Inspiring Quote (今日の努力が、明日の自分をつくる。) -->
+                <div class="quote-card">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-lightbulb" style="color: var(--steel-blue);"></i>
+                        <span class="fw-bold small text-dark">Câu nói hay hôm nay</span>
+                    </div>
+
+                    <p class="fw-semibold mb-2" style="font-family: 'Noto Sans JP'; color: var(--navy-dark); line-height: 1.6;">
+                        「今日の努力が、<br>明日の自分をつくる。」
+                    </p>
+                    <p class="text-muted small mb-3" style="line-height: 1.5;">
+                        Nỗ lực hôm nay sẽ tạo nên bạn của ngày mai.
+                    </p>
+
+                    <!-- Small Sakura Accent -->
+                    <div class="text-end">
+                        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="8" fill="#FFB7C5" opacity="0.8" />
+                            <circle cx="12" cy="12" r="3" fill="#D94B3F" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

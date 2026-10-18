@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="kotoba-sidebar">
+        <!-- Brand Header -->
+        <a th:href="@{/}" class="kotoba-brand">
+            <div class="kotoba-logo-circle">
+                <svg viewBox="0 0 100 100" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="50" fill="#E06D53" />
+                    <circle cx="50" cy="42" r="22" fill="#FFFFFF" opacity="0.3" />
+                    <path d="M 20 85 L 43 32 L 57 32 L 80 85 Z" fill="#173B57" />
+                    <path d="M 43 32 L 57 32 L 62 48 L 56 44 L 50 50 L 44 44 L 38 48 Z" fill="#FFFFFF" />
+                </svg>
+            </div>
+            <div class="kotoba-brand-text">
+                <h4>JEPS</h4>
+                <span>Quản trị &bull; Giáo vụ</span>
+            </div>
+        </a>
+
+        <!-- Admin Nav -->
+        <ul class="kotoba-nav">
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'admin-dashboard'} ? 'active' : ''" th:href="@{/admin/dashboard}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Admin Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-dashboard'} ? 'active' : ''" th:href="@{/manager/dashboard}">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span>Manager Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'users'} ? 'active' : ''" th:href="@{/admin/users}">
+                    <i class="bi bi-people"></i>
+                    <span>Quản lý người dùng</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'courses'} ? 'active' : ''" th:href="@{/admin/courses}">
+                    <i class="bi bi-journal-bookmark"></i>
+                    <span>Quản lý khóa học</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'lessons'} ? 'active' : ''" th:href="@{/admin/lessons}">
+                    <i class="bi bi-book"></i>
+                    <span>Quản lý bài học</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'questions'} ? 'active' : ''" th:href="@{/admin/questions}">
+                    <i class="bi bi-patch-question"></i>
+                    <span>Ngân hàng câu hỏi</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'quizzes'} ? 'active' : ''" th:href="@{/admin/quizzes}">
+                    <i class="bi bi-ui-checks"></i>
+                    <span>Quản lý Quiz & AI</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'exams'} ? 'active' : ''" th:href="@{/admin/exams}">
+                    <i class="bi bi-award"></i>
+                    <span>Quản lý đề thi & AI</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'flashcards'} ? 'active' : ''" th:href="@{/admin/flashcards}">
+                    <i class="bi bi-card-text"></i>
+                    <span>Quản lý Flashcard</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'reports'} ? 'active' : ''" th:href="@{/admin/reports}">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Báo cáo thống kê</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'logs'} ? 'active' : ''" th:href="@{/admin/logs}">
+                    <i class="bi bi-terminal"></i>
+                    <span>Nhật ký hệ thống</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

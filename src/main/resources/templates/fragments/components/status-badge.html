@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <span th:fragment="badge(status)" 
+          class="badge px-2 py-1 fw-semibold"
+          th:classappend="${status == 'ACTIVE' || status == 'PASSED' || status == 'COMPLETED' || status == 'PAID' ? 'bg-success' : 
+                          (status == 'PENDING' || status == 'PROCESSING' ? 'bg-warning text-dark' : 
+                          (status == 'INACTIVE' || status == 'FAILED' || status == 'CANCELLED' ? 'bg-danger' : 'bg-secondary'))}"
+          th:text="${status}">
+        ACTIVE
+    </span>
+</body>
+</html>

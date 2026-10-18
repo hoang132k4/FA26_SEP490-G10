@@ -1,0 +1,14 @@
+﻿<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Bá»™ tháº» Flashcard - JLPP',
+    activeMenu='flashcards',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">Danh sÃ¡ch Flashcard</h3>
+            <a th:href="@{/flashcards/practice}" class="btn btn-primary">
+                <i class="bi bi-play-fill"></i> Luyá»‡n táº­p ngay
+            </a>
+        </div>
+    </div>
+</div>

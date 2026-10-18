@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <nav th:fragment="pagination(page, baseUrl)" th:if="${page != null && page.totalPages > 1}" class="d-flex justify-content-center mt-4">
+        <ul class="pagination shadow-sm">
+            <!-- First & Prev -->
+            <li class="page-item" th:classappend="${page.first} ? 'disabled' : ''">
+                <a class="page-link" th:href="@{${baseUrl}(page=0)}">&laquo;&laquo;</a>
+            </li>
+            <li class="page-item" th:classappend="${page.first} ? 'disabled' : ''">
+                <a class="page-link" th:href="@{${baseUrl}(page=${page.number - 1})}">&laquo;</a>
+            </li>
+
+            <!-- Page numbers -->
+            <li th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" 
+                th:if="${i >= page.number - 2 and i <= page.number + 2}"
+                class="page-item" 
+                th:classappend="${i == page.number} ? 'active' : ''">
+                <a class="page-link" th:href="@{${baseUrl}(page=${i})}" th:text="${i + 1}">1</a>
+            </li>
+
+            <!-- Next & Last -->
+            <li class="page-item" th:classappend="${page.last} ? 'disabled' : ''">
+                <a class="page-link" th:href="@{${baseUrl}(page=${page.number + 1})}">&raquo;</a>
+            </li>
+            <li class="page-item" th:classappend="${page.last} ? 'disabled' : ''">
+                <a class="page-link" th:href="@{${baseUrl}(page=${page.totalPages - 1})}">&raquo;&raquo;</a>
+            </li>
+        </ul>
+    </nav>
+</body>
+</html>

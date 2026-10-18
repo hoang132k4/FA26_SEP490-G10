@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="confirmModal(id, title, message, actionUrl, btnText)" class="modal fade" th:id="${id}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" th:text="${title}">Xác nhận</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0 text-secondary" th:text="${message}">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <form th:if="${actionUrl != null}" th:action="${actionUrl}" method="post">
+                        <button type="submit" class="btn btn-danger" th:text="${btnText != null ? btnText : 'Xác nhận'}">Xác nhận</button>
+                    </form>
+                    <button th:if="${actionUrl == null}" type="button" class="btn btn-primary" id="modalConfirmBtn" th:text="${btnText != null ? btnText : 'Đồng ý'}">Đồng ý</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="timer(durationMinutes)" class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <span class="badge bg-white text-muted border px-3 py-2 rounded-pill shadow-sm">
+                <i class="bi bi-shield-check text-success me-1"></i> Chế độ thi tập trung (Focus Mode)
+            </span>
+        </div>
+        <div class="timer-sakura" id="examTimer">
+            <i class="bi bi-stopwatch fs-5"></i>
+            <span>Thời gian còn lại:</span>
+            <span class="fs-5 fw-bold" id="timerDisplay" th:data-duration="${durationMinutes * 60}">--:--</span>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const timerEl = document.getElementById('timerDisplay');
+                if (!timerEl) return;
+                let timeLeft = parseInt(timerEl.getAttribute('data-duration')) || 3600;
+                
+                const updateCountdown = () => {
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        alert('Hết giờ làm bài! Hệ thống đang tự động nộp bài.');
+                        const form = document.getElementById('examForm');
+                        if (form) form.submit();
+                    }
+                    timeLeft--;
+                };
+                updateCountdown();
+                const interval = setInterval(updateCountdown, 1000);
+            });
+        </script>
+    </div>
+</body>
+</html>

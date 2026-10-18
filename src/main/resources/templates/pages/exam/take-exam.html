@@ -1,0 +1,85 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Phòng thi JLPT Focus Mode - Kotoba',
+    activeMenu='exams',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent" class="exam-container">
+        <!-- Focus Mode Timer -->
+        <div th:replace="~{fragments/components/exam-timer :: timer(durationMinutes=50)}"></div>
+
+        <!-- Exam Header -->
+        <div class="card p-4 kotoba-card mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge mb-2 px-3 py-1 rounded-pill" style="background-color: var(--navy-dark); color: white;">JLPT N4 Mock Exam</span>
+                    <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">Đề thi thử Tiếng Nhật N4 - Kiến thức ngôn ngữ (Từ vựng - Ngữ pháp)</h3>
+                    <p class="text-muted small mb-0">Thời gian làm bài: 50 phút &bull; Tổng số câu: 35 câu &bull; Điểm tối đa: 60 điểm</p>
+                </div>
+            </div>
+        </div>
+
+        <form id="examForm" th:action="@{/exams/submit}" method="post">
+            <!-- Sample Question 1: Vocabulary -->
+            <div th:replace="~{fragments/components/question-item :: questionItem(
+                q=${ {
+                    id: 101,
+                    points: 2,
+                    category: 'Từ vựng (Goi)',
+                    content: '日本へ行ったら、ぜひ京都のきれいな<ruby>桜<rt>さくら</rt></ruby>を____。',
+                    options: [
+                        { id: 1, label: '1.', text: '見たいです', correct: true },
+                        { id: 2, label: '2.', text: '見られます', correct: false },
+                        { id: 3, label: '3.', text: '見せます', correct: false },
+                        { id: 4, label: '4.', text: '見えます', correct: false }
+                    ],
+                    userAnswerId: null
+                } },
+                index=1,
+                showSolution=false
+            )}"></div>
+
+            <!-- Sample Question 2: Grammar -->
+            <div th:replace="~{fragments/components/question-item :: questionItem(
+                q=${ {
+                    id: 102,
+                    points: 2,
+                    category: 'Ngữ pháp (Bunpou)',
+                    content: '毎日一生懸命勉強した____、JLPT試験に合格できました。',
+                    options: [
+                        { id: 5, label: '1.', text: 'おかげで', correct: true },
+                        { id: 6, label: '2.', text: 'せいで', correct: false },
+                        { id: 7, label: '3.', text: 'ために', correct: false },
+                        { id: 8, label: '4.', text: 'ように', correct: false }
+                    ],
+                    userAnswerId: null
+                } },
+                index=2,
+                showSolution=false
+            )}"></div>
+
+            <!-- Action Buttons: Focus Mode -->
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top border-light">
+                <button type="button" class="btn btn-light border rounded-pill px-4" disabled>
+                    <i class="bi bi-arrow-left me-1"></i> Câu trước
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-steel-outline rounded-pill px-4">
+                        Câu tiếp theo <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                    <button type="button" class="btn btn-steel rounded-pill px-5 shadow-sm" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                        <i class="bi bi-check2-circle me-1"></i> Nộp bài thi
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Submit Confirm Modal -->
+        <div th:replace="~{fragments/components/modal-confirm :: confirmModal(
+            id='confirmSubmitModal',
+            title='Xác nhận nộp bài thi',
+            message='Bạn đã hoàn thành các câu hỏi trong đề thi chưa? Hệ thống sẽ tiến hành chấm điểm và lưu vào lịch sử.',
+            actionUrl=null,
+            btnText='Nộp bài ngay'
+        )}"></div>
+    </div>
+</div>

@@ -1,0 +1,16 @@
+﻿<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Hiá»‡u chá»‰nh lá»‹ch há»c - JLPP',
+    activeMenu='learning-path',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <h3 class="fw-bold mb-3">Cáº­p nháº­t thá»i gian & CÆ°á»ng Ä‘á»™ há»c táº­p</h3>
+        <form th:action="@{/learning-path/recalibrate}" method="post" class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Sá»‘ giá» cÃ³ thá»ƒ há»c má»—i tuáº§n</label>
+                <input type="number" name="weeklyHours" class="form-control" value="10">
+            </div>
+            <button type="submit" class="btn btn-primary">TÃ­nh toÃ¡n láº¡i lá»™ trÃ¬nh</button>
+        </form>
+    </div>
+</div>
