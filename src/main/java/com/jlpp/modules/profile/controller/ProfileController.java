@@ -2,8 +2,9 @@ package com.jlpp.modules.profile.controller;
 
 import com.jlpp.modules.auth.dto.ChangePasswordRequest;
 import com.jlpp.modules.auth.service.ChangePasswordService;
-import com.jlpp.modules.user.entity.User;
-import com.jlpp.modules.user.repository.UserRepository;
+import com.jlpp.modules.profile.dto.EditProfileRequest;
+import com.jlpp.modules.profile.dto.ProfileResponse;
+import com.jlpp.modules.profile.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,31 +25,75 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class ProfileController {
 
+    private final ProfileService profileService;
     private final ChangePasswordService changePasswordService;
-    private final UserRepository userRepository;
 
     @GetMapping
     public String viewProfile(Model model, Principal principal) {
-        if (principal != null) {
-            userRepository.findByEmailIgnoreCase(principal.getName())
-                    .or(() -> userRepository.findByUsername(principal.getName()))
-                    .ifPresent(user -> model.addAttribute("user", user));
+        if (principal == null) {
+            return "redirect:/auth/login";
         }
+        ProfileResponse profile = profileService.getProfile(principal.getName());
+        model.addAttribute("profile", profile);
         return "pages/profile/view";
     }
 
     @GetMapping("/edit")
-    public String editProfile(Model model, Principal principal) {
-        if (principal != null) {
-            userRepository.findByEmailIgnoreCase(principal.getName())
-                    .or(() -> userRepository.findByUsername(principal.getName()))
-                    .ifPresent(user -> model.addAttribute("user", user));
+    public String editProfilePage(Model model, Principal principal) {
+        if (principal == null) {
+            return "redirect:/auth/login";
+        }
+        ProfileResponse profile = profileService.getProfile(principal.getName());
+        model.addAttribute("profile", profile);
+        if (!model.containsAttribute("editProfileRequest")) {
+            EditProfileRequest editForm = profileService.getEditProfileForm(principal.getName());
+            model.addAttribute("editProfileRequest", editForm);
         }
         return "pages/profile/edit";
     }
 
+    @PostMapping("/edit")
+    public String handleEditProfile(
+            @Valid @ModelAttribute("editProfileRequest") EditProfileRequest request,
+            BindingResult bindingResult,
+            Model model,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+
+        if (principal == null) {
+            return "redirect:/auth/login";
+        }
+
+        if (bindingResult.hasErrors()) {
+            ProfileResponse profile = profileService.getProfile(principal.getName());
+            model.addAttribute("profile", profile);
+            return "pages/profile/edit";
+        }
+
+        try {
+            profileService.updateProfile(principal.getName(), request);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ cá nhân thành công!");
+            return "redirect:/profile";
+        } catch (IllegalArgumentException ex) {
+            log.warn("Profile update validation error for user {}: {}", principal.getName(), ex.getMessage());
+            model.addAttribute("errorMessage", ex.getMessage());
+            ProfileResponse profile = profileService.getProfile(principal.getName());
+            model.addAttribute("profile", profile);
+            return "pages/profile/edit";
+        } catch (Exception ex) {
+            log.error("Unexpected error during profile update for user {}", principal.getName(), ex);
+            model.addAttribute("errorMessage", "Đã xảy ra lỗi khi cập nhật hồ sơ. Vui lòng thử lại sau.");
+            ProfileResponse profile = profileService.getProfile(principal.getName());
+            model.addAttribute("profile", profile);
+            return "pages/profile/edit";
+        }
+    }
+
     @GetMapping("/change-password")
     public String changePasswordPage(Model model, Principal principal) {
+        if (principal == null) {
+            return "redirect:/auth/login";
+        }
         if (!model.containsAttribute("changePasswordRequest")) {
             model.addAttribute("changePasswordRequest", new ChangePasswordRequest());
         }

@@ -34,4 +34,13 @@ public class User extends BaseEntity {
     @Column(name = "status", length = 20)
     @Builder.Default
     private String status = "ACTIVE";
+
+    @Column(name = "phone_number", length = 20)
+    private String phone;
+
+    @Column(name = "current_jlpt_level", length = 20)
+    private String currentJlptLevel;
+
+    @Column(name = "target_jlpt_level", length = 20)
+    private String targetJlptLevel;
 }

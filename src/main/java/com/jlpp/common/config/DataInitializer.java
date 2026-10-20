@@ -21,13 +21,13 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        seedUserIfNotExists("learner@jeps.edu.vn", "learner", "Nguyễn Văn Học Viên", "Password123@", RoleEnum.LEARNER, "ACTIVE");
-        seedUserIfNotExists("manager@jeps.edu.vn", "manager", "Trần Văn Quản Lý", "Password123@", RoleEnum.MANAGER, "ACTIVE");
-        seedUserIfNotExists("admin@jeps.edu.vn", "admin", "Lê Văn Quản Trị", "Password123@", RoleEnum.ADMIN, "ACTIVE");
-        seedUserIfNotExists("disabled@jeps.edu.vn", "disabled_user", "Tài Khoản Vô Hiệu", "Password123@", RoleEnum.LEARNER, "DISABLED");
+        seedUserIfNotExists("learner@jeps.edu.vn", "learner", "Nguyễn Văn Học Viên", "Password123@", RoleEnum.LEARNER, "ACTIVE", "0987654321", "N4", "N2");
+        seedUserIfNotExists("manager@jeps.edu.vn", "manager", "Trần Văn Quản Lý", "Password123@", RoleEnum.MANAGER, "ACTIVE", "0912345678", null, null);
+        seedUserIfNotExists("admin@jeps.edu.vn", "admin", "Lê Văn Quản Trị", "Password123@", RoleEnum.ADMIN, "ACTIVE", "0901234567", null, null);
+        seedUserIfNotExists("disabled@jeps.edu.vn", "disabled_user", "Tài Khoản Vô Hiệu", "Password123@", RoleEnum.LEARNER, "DISABLED", null, null, null);
     }
 
-    private void seedUserIfNotExists(String email, String username, String fullName, String rawPassword, RoleEnum role, String status) {
+    private void seedUserIfNotExists(String email, String username, String fullName, String rawPassword, RoleEnum role, String status, String phone, String currentJlpt, String targetJlpt) {
         if (userRepository.findByEmailIgnoreCase(email).isEmpty() && userRepository.findByUsername(username).isEmpty()) {
             User user = User.builder()
                     .email(email)
@@ -36,6 +36,9 @@ public class DataInitializer implements CommandLineRunner {
                     .password(passwordEncoder.encode(rawPassword))
                     .role(role)
                     .status(status)
+                    .phone(phone)
+                    .currentJlptLevel(currentJlpt)
+                    .targetJlptLevel(targetJlpt)
                     .build();
             userRepository.save(user);
             log.info("Initialized default account: {} ({}) with role {}", email, username, role);
