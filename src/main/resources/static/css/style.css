@@ -21,6 +21,8 @@
 
   /* Accent & Status Colors */
   --accent-red: #D94B3F;     /* Màu mặt trời đỏ & hoa anh đào điểm xuyết */
+  --sakura-accent: #E06D53;  /* Sắc cam hồng anh đào Nhật Bản */
+  --sakura-light: #FFEDEA;
   --status-success: #2ECC71;
   --status-warning: #F39C12;
   --status-error: #E74C3C;
@@ -448,3 +450,57 @@ h1, h2, h3, h4, h5, h6 {
   transform: rotateY(180deg);
   border: 2px solid var(--navy-dark);
 }
+
+/* --------------------------------------------------------------------------
+   Course Module & Sakura Buttons
+   -------------------------------------------------------------------------- */
+.btn-sakura {
+  background: linear-gradient(135deg, var(--sakura-accent) 0%, #D94B3F 100%);
+  border: none;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 8px 20px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(217, 75, 63, 0.25);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-sakura:hover, .btn-sakura:focus {
+  background: linear-gradient(135deg, #D94B3F 0%, #C83E32 100%);
+  color: #FFFFFF !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 18px rgba(217, 75, 63, 0.35);
+}
+
+.hover-primary {
+  transition: color 0.2s ease;
+}
+
+.hover-primary:hover {
+  color: var(--steel-blue) !important;
+}
+
+.pagination-kotoba .page-link {
+  color: var(--navy-dark);
+  border-radius: 8px;
+  margin: 0 3px;
+  border: 1px solid var(--border-subtle);
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+}
+
+.pagination-kotoba .page-item.active .page-link {
+  background-color: var(--navy-dark);
+  border-color: var(--navy-dark);
+  color: #FFFFFF;
+}
+
+.pagination-kotoba .page-link:hover {
+  background-color: #EDF3F7;
+  color: var(--navy-dark);
+}
+

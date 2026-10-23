@@ -1,0 +1,95 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Khóa học của tôi - JEPS',
+    activeMenu='my-courses',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <span class="badge text-bg-light border small text-muted mb-1">Góc học tập cá nhân</span>
+                <h3 class="fw-bold mb-1" style="color: var(--navy-dark);">Khóa học của tôi</h3>
+                <p class="text-muted small mb-0">Theo dõi tiến độ và tiếp tục học tập các khóa học bạn đã đăng ký</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <a th:href="@{/learning/courses}" class="btn btn-steel btn-sm px-3">
+                    <i class="bi bi-plus-circle me-1"></i> Đăng ký thêm khóa học
+                </a>
+            </div>
+        </div>
+
+        <!-- Enrolled Courses List -->
+        <div class="row" th:if="${registrations != null && !registrations.isEmpty()}">
+            <div class="col-md-6 col-lg-4 mb-4" th:each="reg : ${registrations}">
+                <div class="card h-100 kotoba-card overflow-hidden d-flex flex-column shadow-sm">
+                    <!-- Thumbnail & Level Badge -->
+                    <div class="position-relative">
+                        <img th:src="${reg.course.thumbnailUrl != null ? reg.course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                             class="card-img-top" 
+                             th:alt="${reg.course.title}" 
+                             style="height: 180px; object-fit: cover;">
+                        <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill shadow-sm" 
+                              style="background-color: var(--navy-dark); color: white; font-weight: 700;"
+                              th:text="${reg.course.level}">N5</span>
+                        
+                        <span class="position-absolute top-0 end-0 m-3 badge px-3 py-1 rounded-pill bg-success shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Đang học
+                        </span>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body d-flex flex-column p-4 flex-grow-1">
+                        <h5 class="card-title fw-bold text-dark mb-2" style="line-height: 1.4;">
+                            <a th:href="@{/learning/courses/{id}(id=${reg.course.id})}" class="text-decoration-none text-dark hover-primary" 
+                               th:text="${reg.course.title}">
+                                Khóa học
+                            </a>
+                        </h5>
+
+                        <div class="small text-muted mb-3">
+                            <span>Đăng ký: <span th:text="${#temporals.format(reg.registeredAt, 'dd/MM/yyyy')}">23/10/2026</span></span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Tiến độ hoàn thành:</span>
+                                <strong class="text-dark" th:text="${reg.progressPercent + '%'}">0%</strong>
+                            </div>
+                            <div class="progress progress-kotoba" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" th:style="'width: ' + ${reg.progressPercent} + '%;'"></div>
+                            </div>
+                        </div>
+
+                        <!-- Action Footer -->
+                        <div class="d-flex gap-2 mt-auto pt-3 border-top border-light">
+                            <a th:href="@{/learning/materials}" class="btn btn-sakura btn-sm flex-grow-1 py-2 fw-semibold">
+                                <i class="bi bi-play-circle-fill me-1"></i> Tiếp tục học
+                            </a>
+                            <a th:href="@{/learning/courses/{id}(id=${reg.course.id})}" class="btn btn-outline-secondary btn-sm px-3" title="Chi tiết giáo trình">
+                                <i class="bi bi-info-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="text-center py-5" th:if="${registrations == null || registrations.isEmpty()}">
+            <div class="d-inline-flex p-4 rounded-circle bg-light mb-3 text-muted">
+                <i class="bi bi-collection-play fs-1"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-1">Bạn chưa đăng ký khóa học nào</h4>
+            <p class="text-muted small mb-4">Hãy bắt đầu hành trình học tập bằng cách khám phá các khóa học phù hợp với trình độ của bạn.</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a th:href="@{/learning/courses/recommended}" class="btn btn-sakura px-4 py-2">
+                    <i class="bi bi-stars me-1"></i> Xem khóa học đề xuất
+                </a>
+                <a th:href="@{/learning/courses}" class="btn btn-steel-outline px-4 py-2">
+                    <i class="bi bi-grid me-1"></i> Xem danh sách tất cả khóa học
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
