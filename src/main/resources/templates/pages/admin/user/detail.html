@@ -1,0 +1,109 @@
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Chi tiết người dùng - JEPS',
+    activeMenu='users',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a th:href="@{/admin/dashboard}" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Chi tiết người dùng</li>
+            </ol>
+        </nav>
+
+        <section class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div>
+                <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Quản lý người dùng</span>
+                <h1 class="h3 fw-bold mt-1 mb-1">Chi tiết người dùng</h1>
+                <p class="text-muted mb-0">
+                    Mã người dùng:
+                    <span class="fw-semibold" th:text="${userId}">ID</span>
+                </p>
+            </div>
+            <a th:href="@{/admin/dashboard}" class="btn btn-steel-outline">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại Dashboard
+            </a>
+        </section>
+
+        <div th:if="${user == null}" class="alert alert-info d-flex align-items-start gap-2" role="status">
+            <i class="bi bi-info-circle-fill mt-1"></i>
+            <div>
+                <strong>Chưa có dữ liệu người dùng để hiển thị.</strong>
+                <div class="small">Giao diện chi tiết đã sẵn sàng; cần kết nối nguồn dữ liệu người dùng để tải hồ sơ theo mã này.</div>
+            </div>
+        </div>
+
+        <section class="row g-4">
+            <div class="col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex flex-column align-items-center text-center">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                             style="width: 88px; height: 88px; background-color: #EBF2F7; color: var(--steel-blue);">
+                            <i class="bi bi-person fs-1"></i>
+                        </div>
+                        <h2 class="h5 fw-bold mb-1"
+                            th:text="${user != null and user.fullName != null ? user.fullName : 'Chưa có dữ liệu'}">Chưa có dữ liệu</h2>
+                        <p class="text-muted mb-3" th:text="${user != null and user.email != null ? user.email : 'Chưa có email'}">Chưa có email</p>
+                        <span class="badge rounded-pill px-3 py-2"
+                              th:classappend="${user != null and user.status != null and user.status == 'ACTIVE'} ? 'text-bg-success' : 'text-bg-secondary'"
+                              th:text="${user != null and user.status != null ? user.status : 'Chưa có trạng thái'}">Chưa có trạng thái</span>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small text-muted">Mã người dùng</span>
+                        <span class="small fw-semibold" th:text="${userId}">ID</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">Vai trò</span>
+                        <span class="badge rounded-pill" style="background-color: #EBF2F7; color: var(--navy-dark);"
+                              th:text="${user != null and user.role != null ? user.role : 'Chưa có dữ liệu'}">Chưa có dữ liệu</span>
+                    </div>
+                </article>
+            </div>
+
+            <div class="col-xl-8">
+                <article class="card kotoba-card p-4 mb-4">
+                    <h2 class="h5 fw-bold mb-1">Thông tin cá nhân</h2>
+                    <p class="small text-muted mb-4">Thông tin hồ sơ được lưu cho tài khoản này</p>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <span class="small text-muted d-block mb-1"><i class="bi bi-person me-2"></i>Họ và tên</span>
+                            <span class="fw-semibold" th:text="${user != null and user.fullName != null ? user.fullName : 'Chưa có dữ liệu'}">Chưa có dữ liệu</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="small text-muted d-block mb-1"><i class="bi bi-envelope me-2"></i>Email</span>
+                            <span class="fw-semibold" th:text="${user != null and user.email != null ? user.email : 'Chưa có dữ liệu'}">Chưa có dữ liệu</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="small text-muted d-block mb-1"><i class="bi bi-telephone me-2"></i>Số điện thoại</span>
+                            <span class="fw-semibold" th:text="${user != null and user.phone != null ? user.phone : 'Chưa có dữ liệu'}">Chưa có dữ liệu</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="small text-muted d-block mb-1"><i class="bi bi-shield-check me-2"></i>Vai trò tài khoản</span>
+                            <span class="fw-semibold" th:text="${user != null and user.role != null ? user.role : 'Chưa có dữ liệu'}">Chưa có dữ liệu</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="card kotoba-card p-4">
+                    <h2 class="h5 fw-bold mb-1">Thông tin tài khoản</h2>
+                    <p class="small text-muted mb-4">Trạng thái và thời gian của tài khoản</p>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <span class="small text-muted d-block mb-1"><i class="bi bi-toggle-on me-2"></i>Trạng thái</span>
+                            <span class="fw-semibold" th:text="${user != null and user.status != null ? user.status : 'Chưa có dữ liệu'}">Chưa có dữ liệu</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="small text-muted d-block mb-1"><i class="bi bi-calendar-plus me-2"></i>Ngày tạo</span>
+                            <span class="fw-semibold" th:text="${user != null and user.createdAt != null ? user.createdAt : 'Chưa có dữ liệu'}">Chưa có dữ liệu</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </div>
+</div>
