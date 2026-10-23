@@ -31,7 +31,6 @@ public class Course extends BaseEntity {
     @Column(name = "short_description", length = 500)
     private String shortDescription;
 
-    @Lob
     @Column(name = "full_description", columnDefinition = "TEXT")
     private String fullDescription;
 
@@ -56,7 +55,6 @@ public class Course extends BaseEntity {
     @Column(name = "covered_skills", length = 255)
     private String coveredSkills; // Chữ Hán, Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu
 
-    @Lob
     @Column(name = "objectives", columnDefinition = "TEXT")
     private String objectives;
 

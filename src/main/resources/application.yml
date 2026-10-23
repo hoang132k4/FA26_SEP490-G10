@@ -13,26 +13,29 @@ spring:
     mode: HTML
     encoding: UTF-8
 
-  # Database configuration (Default to H2 for instant startup)
+  # Supabase PostgreSQL Database configuration
   datasource:
-    url: jdbc:h2:mem:jlppdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require&prepareThreshold=0}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.eztcijnvnmcievogjufk}
+    password: ${SPRING_DATASOURCE_PASSWORD:Cme85Dpt1b2HwrBQ}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 30000
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
 
 # Logging
 logging:
