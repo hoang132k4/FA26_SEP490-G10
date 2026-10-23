@@ -1,0 +1,144 @@
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Cập nhật người dùng - JEPS',
+    activeMenu='users',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a th:href="@{/admin/dashboard}" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/admin/users}" class="text-decoration-none">Quản lý người dùng</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/admin/users/{userId}(userId=${userId})}" class="text-decoration-none">Chi tiết người dùng</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Cập nhật</li>
+            </ol>
+        </nav>
+
+        <section class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div>
+                <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Quản lý người dùng</span>
+                <h1 class="h3 fw-bold mt-1 mb-1">Cập nhật người dùng</h1>
+                <p class="text-muted mb-0">
+                    Chỉnh sửa hồ sơ tài khoản mã
+                    <span class="fw-semibold" th:text="${userId}">ID</span>
+                </p>
+            </div>
+            <a th:href="@{/admin/users/{userId}(userId=${userId})}" class="btn btn-steel-outline">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại chi tiết
+            </a>
+        </section>
+
+        <div class="alert alert-info d-flex align-items-start gap-2 mb-4" role="status">
+            <i class="bi bi-info-circle-fill mt-1"></i>
+            <div>
+                <strong>Giao diện cập nhật đang ở chế độ frontend.</strong>
+                <div class="small">Dữ liệu chưa được kết nối với backend. Lưu thay đổi hiện chưa ghi vào database.</div>
+            </div>
+        </div>
+
+        <form id="editUserForm" novalidate>
+            <section class="card kotoba-card p-4 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span class="stat-icon-wrapper stat-icon-book"><i class="bi bi-person-vcard"></i></span>
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">Thông tin cá nhân</h2>
+                        <p class="small text-muted mb-0">Cập nhật thông tin liên hệ của người dùng</p>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="fullName" class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                        <input id="fullName" name="fullName" type="text" class="form-control"
+                               th:value="${user != null ? user.fullName : ''}"
+                               placeholder="Nhập họ và tên" autocomplete="name" maxlength="120" required>
+                        <div class="invalid-feedback">Vui lòng nhập họ và tên.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                        <input id="email" name="email" type="email" class="form-control"
+                               th:value="${user != null ? user.email : ''}"
+                               placeholder="name@example.com" autocomplete="email" maxlength="254" required>
+                        <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label fw-semibold">Số điện thoại</label>
+                        <input id="phone" name="phone" type="tel" class="form-control"
+                               th:value="${user != null ? user.phone : ''}"
+                               placeholder="Nhập số điện thoại" autocomplete="tel" maxlength="30">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="userId" class="form-label fw-semibold">Mã người dùng</label>
+                        <input id="userId" type="text" class="form-control bg-light"
+                               th:value="${userId}" readonly>
+                        <div class="form-text">Mã người dùng không thể chỉnh sửa.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card kotoba-card p-4 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span class="stat-icon-wrapper stat-icon-chart"><i class="bi bi-shield-lock"></i></span>
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">Quyền và trạng thái</h2>
+                        <p class="small text-muted mb-0">Thiết lập vai trò và trạng thái hoạt động của tài khoản</p>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="role" class="form-label fw-semibold">Vai trò <span class="text-danger">*</span></label>
+                        <select id="role" name="role" class="form-select" required>
+                            <option value="">Chọn vai trò</option>
+                            <option value="ADMIN" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'ADMIN'}">Admin</option>
+                            <option value="MANAGER" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'MANAGER'}">Manager</option>
+                            <option value="LEARNER" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'LEARNER'}">Học viên</option>
+                            <option value="GUEST" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'GUEST'}">Khách</option>
+                        </select>
+                        <div class="invalid-feedback">Vui lòng chọn vai trò.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="status" class="form-label fw-semibold">Trạng thái <span class="text-danger">*</span></label>
+                        <select id="status" name="status" class="form-select" required>
+                            <option value="">Chọn trạng thái</option>
+                            <option value="ACTIVE" th:selected="${user != null and user.status != null and #strings.toString(user.status) == 'ACTIVE'}">Đang hoạt động</option>
+                            <option value="INACTIVE" th:selected="${user != null and user.status != null and #strings.toString(user.status) == 'INACTIVE'}">Ngừng hoạt động</option>
+                        </select>
+                        <div class="invalid-feedback">Vui lòng chọn trạng thái.</div>
+                    </div>
+                </div>
+            </section>
+
+            <div id="saveNotice" class="alert alert-warning d-none" role="status">
+                Giao diện đã kiểm tra thông tin, nhưng chưa thể lưu vì backend cập nhật người dùng chưa được kết nối.
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-end gap-2">
+                <a th:href="@{/admin/users/{userId}(userId=${userId})}" class="btn btn-steel-outline">Hủy</a>
+                <button type="submit" class="btn btn-steel">
+                    <i class="bi bi-check2-circle me-1"></i>Lưu thay đổi
+                </button>
+            </div>
+        </form>
+
+        <script>
+            (() => {
+                const form = document.getElementById('editUserForm');
+                const saveNotice = document.getElementById('saveNotice');
+
+                form.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    saveNotice.classList.add('d-none');
+
+                    if (!form.checkValidity()) {
+                        form.classList.add('was-validated');
+                        form.querySelector(':invalid').focus();
+                        return;
+                    }
+
+                    saveNotice.classList.remove('d-none');
+                    saveNotice.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            })();
+        </script>
+    </div>
+</div>

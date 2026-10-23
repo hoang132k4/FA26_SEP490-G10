@@ -20,9 +20,14 @@
                     <span class="fw-semibold" th:text="${userId}">ID</span>
                 </p>
             </div>
-            <a th:href="@{/admin/dashboard}" class="btn btn-steel-outline">
-                <i class="bi bi-arrow-left me-1"></i>Quay lại Dashboard
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                <a th:href="@{/admin/users/{userId}/edit(userId=${userId})}" class="btn btn-steel">
+                    <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa người dùng
+                </a>
+                <a th:href="@{/admin/users}" class="btn btn-steel-outline">
+                    <i class="bi bi-arrow-left me-1"></i>Danh sách người dùng
+                </a>
+            </div>
         </section>
 
         <div th:if="${user == null}" class="alert alert-info d-flex align-items-start gap-2" role="status">

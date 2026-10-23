@@ -22,4 +22,10 @@ public class AdminUserController {
         model.addAttribute("userId", userId);
         return "pages/admin/user/detail";
     }
+
+    @GetMapping("/admin/users/{userId}/edit")
+    public String editUser(@PathVariable Long userId, Model model) {
+        model.addAttribute("userId", userId);
+        return "pages/admin/user/edit";
+    }
 }
