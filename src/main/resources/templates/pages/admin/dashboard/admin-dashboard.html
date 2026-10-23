@@ -1,35 +1,66 @@
-﻿<div th:replace="~{layouts/admin-layout :: html(
-    pageTitle='Admin Dashboard - JLPP',
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Admin Dashboard - JEPS',
     activeMenu='admin-dashboard',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-4">Admin Dashboard</h3>
-        <div class="row">
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">Tá»•ng ngÆ°á»i dÃ¹ng</span>
-                    <h2 class="fw-bold text-primary">1,240</h2>
+        <section class="mb-4">
+            <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Khu vực quản trị</span>
+            <h1 class="h3 fw-bold mt-1 mb-2">Admin Dashboard</h1>
+            <p class="text-muted mb-0">Tổng quan các chức năng quản trị hệ thống Japanese Exam Preparation System.</p>
+        </section>
+
+        <section class="row g-3 mb-4" aria-label="Thông tin tổng quan">
+            <div class="col-md-6 col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="stat-icon-wrapper stat-icon-book"><i class="bi bi-people"></i></span>
+                        <div>
+                            <h2 class="h6 fw-bold mb-1">Người dùng</h2>
+                            <span class="small text-muted">Tổng số tài khoản</span>
+                        </div>
+                    </div>
+                    <p class="h4 fw-bold mb-0" style="color: var(--navy-dark);"
+                       th:text="${totalUsers != null ? totalUsers : 'Chưa có dữ liệu'}">Chưa có dữ liệu</p>
+                </article>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="stat-icon-wrapper" style="background-color: #F1EDFA; color: #7862A8;"><i class="bi bi-person-lines-fill"></i></span>
+                        <div>
+                            <h2 class="h6 fw-bold mb-1">Danh sách người dùng</h2>
+                            <span class="small text-muted">Xem chi tiết và cập nhật tài khoản</span>
+                        </div>
+                    </div>
+                    <span class="badge rounded-pill align-self-start" style="background-color: #F1EDFA; color: #7862A8;">Chức năng tiếp theo</span>
+                </article>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="stat-icon-wrapper stat-icon-flame"><i class="bi bi-journal-text"></i></span>
+                        <div>
+                            <h2 class="h6 fw-bold mb-1">Nhật ký hệ thống</h2>
+                            <span class="small text-muted">Theo dõi hoạt động quản trị</span>
+                        </div>
+                    </div>
+                    <span class="badge rounded-pill align-self-start" style="background-color: #FFF3E0; color: #9A5B00;">Chức năng tiếp theo</span>
+                </article>
+            </div>
+        </section>
+
+        <section class="card kotoba-card p-4" aria-labelledby="dashboard-scope-title">
+            <div class="d-flex align-items-start gap-3">
+                <span class="stat-icon-wrapper stat-icon-chart flex-shrink-0"><i class="bi bi-info-circle"></i></span>
+                <div>
+                    <h2 id="dashboard-scope-title" class="h5 fw-bold mb-2">Phạm vi dashboard</h2>
+                    <p class="text-muted mb-0">
+                        Đây là màn hình tổng quan dành cho Admin. Số liệu người dùng sẽ hiển thị khi được kết nối với dữ liệu thực.
+                        Danh sách người dùng (bao gồm xem chi tiết và cập nhật) cùng nhật ký hệ thống sẽ được triển khai ở các màn hình riêng.
+                    </p>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">Doanh thu thÃ¡ng</span>
-                    <h2 class="fw-bold text-success">45,000,000 Ä‘</h2>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">Sá»‘ Ä‘á» thi</span>
-                    <h2 class="fw-bold text-info">86</h2>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">CÃ¢u há»i trong kho</span>
-                    <h2 class="fw-bold text-warning">5,420</h2>
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
 </div>
