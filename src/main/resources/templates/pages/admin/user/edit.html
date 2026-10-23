@@ -27,15 +27,16 @@
             </a>
         </section>
 
-        <div class="alert alert-info d-flex align-items-start gap-2 mb-4" role="status">
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="status">
             <i class="bi bi-info-circle-fill mt-1"></i>
             <div>
-                <strong>Giao diện cập nhật đang ở chế độ frontend.</strong>
-                <div class="small">Dữ liệu chưa được kết nối với backend. Lưu thay đổi hiện chưa ghi vào database.</div>
+                <strong>Chế độ dữ liệu demo.</strong>
+                <div class="small">Có thể lưu thay đổi trong phiên chạy hiện tại. Thay đổi sẽ mất khi tắt ứng dụng cho đến khi kết nối database.</div>
             </div>
         </div>
 
-        <form id="editUserForm" novalidate>
+        <form id="editUserForm" method="post" th:action="@{/admin/users/{userId}/edit(userId=${userId})}"
+              th:object="${userForm}" novalidate>
             <section class="card kotoba-card p-4 mb-4">
                 <div class="d-flex align-items-center gap-3 mb-4">
                     <span class="stat-icon-wrapper stat-icon-book"><i class="bi bi-person-vcard"></i></span>
@@ -48,23 +49,23 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label for="fullName" class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
-                        <input id="fullName" name="fullName" type="text" class="form-control"
-                               th:value="${user != null ? user.fullName : ''}"
+                        <input id="fullName" th:field="*{fullName}" type="text" class="form-control"
                                placeholder="Nhập họ và tên" autocomplete="name" maxlength="120" required>
                         <div class="invalid-feedback">Vui lòng nhập họ và tên.</div>
+                        <div class="small text-danger" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
                     </div>
                     <div class="col-md-6">
                         <label for="email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
-                        <input id="email" name="email" type="email" class="form-control"
-                               th:value="${user != null ? user.email : ''}"
+                        <input id="email" th:field="*{email}" type="email" class="form-control"
                                placeholder="name@example.com" autocomplete="email" maxlength="254" required>
                         <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+                        <div class="small text-danger" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                     </div>
                     <div class="col-md-6">
                         <label for="phone" class="form-label fw-semibold">Số điện thoại</label>
-                        <input id="phone" name="phone" type="tel" class="form-control"
-                               th:value="${user != null ? user.phone : ''}"
+                        <input id="phone" th:field="*{phone}" type="tel" class="form-control"
                                placeholder="Nhập số điện thoại" autocomplete="tel" maxlength="30">
+                        <div class="small text-danger" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
                     </div>
                     <div class="col-md-6">
                         <label for="userId" class="form-label fw-semibold">Mã người dùng</label>
@@ -87,30 +88,28 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label for="role" class="form-label fw-semibold">Vai trò <span class="text-danger">*</span></label>
-                        <select id="role" name="role" class="form-select" required>
+                        <select id="role" th:field="*{role}" class="form-select" required>
                             <option value="">Chọn vai trò</option>
-                            <option value="ADMIN" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'ADMIN'}">Admin</option>
-                            <option value="MANAGER" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'MANAGER'}">Manager</option>
-                            <option value="LEARNER" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'LEARNER'}">Học viên</option>
-                            <option value="GUEST" th:selected="${user != null and user.role != null and #strings.toString(user.role) == 'GUEST'}">Khách</option>
+                            <option value="ADMIN">Admin</option>
+                            <option value="MANAGER">Manager</option>
+                            <option value="LEARNER">Học viên</option>
+                            <option value="GUEST">Khách</option>
                         </select>
                         <div class="invalid-feedback">Vui lòng chọn vai trò.</div>
+                        <div class="small text-danger" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
                     </div>
                     <div class="col-md-6">
                         <label for="status" class="form-label fw-semibold">Trạng thái <span class="text-danger">*</span></label>
-                        <select id="status" name="status" class="form-select" required>
+                        <select id="status" th:field="*{status}" class="form-select" required>
                             <option value="">Chọn trạng thái</option>
-                            <option value="ACTIVE" th:selected="${user != null and user.status != null and #strings.toString(user.status) == 'ACTIVE'}">Đang hoạt động</option>
-                            <option value="INACTIVE" th:selected="${user != null and user.status != null and #strings.toString(user.status) == 'INACTIVE'}">Ngừng hoạt động</option>
+                            <option value="ACTIVE">Đang hoạt động</option>
+                            <option value="INACTIVE">Ngừng hoạt động</option>
                         </select>
                         <div class="invalid-feedback">Vui lòng chọn trạng thái.</div>
+                        <div class="small text-danger" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></div>
                     </div>
                 </div>
             </section>
-
-            <div id="saveNotice" class="alert alert-warning d-none" role="status">
-                Giao diện đã kiểm tra thông tin, nhưng chưa thể lưu vì backend cập nhật người dùng chưa được kết nối.
-            </div>
 
             <div class="d-flex flex-wrap justify-content-end gap-2">
                 <a th:href="@{/admin/users/{userId}(userId=${userId})}" class="btn btn-steel-outline">Hủy</a>
@@ -123,20 +122,13 @@
         <script>
             (() => {
                 const form = document.getElementById('editUserForm');
-                const saveNotice = document.getElementById('saveNotice');
-
                 form.addEventListener('submit', (event) => {
-                    event.preventDefault();
-                    saveNotice.classList.add('d-none');
-
                     if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
                         form.classList.add('was-validated');
                         form.querySelector(':invalid').focus();
-                        return;
                     }
-
-                    saveNotice.classList.remove('d-none');
-                    saveNotice.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
             })();
         </script>

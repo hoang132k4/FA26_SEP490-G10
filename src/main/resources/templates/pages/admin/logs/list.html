@@ -22,11 +22,11 @@
             </a>
         </section>
 
-        <div th:if="${!logMonitoringConnected}" class="alert alert-info d-flex align-items-start gap-2 mb-4" role="status">
+        <div th:if="${demoData}" class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="status">
             <i class="bi bi-info-circle-fill mt-1"></i>
             <div>
-                <strong>Nguồn nhật ký chưa được kết nối.</strong>
-                <div class="small">Ứng dụng chưa lưu audit log vào nguồn dữ liệu. Bảng sẽ hiển thị nhật ký khi backend được kết nối; hiện không có dữ liệu mẫu.</div>
+                <strong>Nhật ký đang lưu trong bộ nhớ.</strong>
+                <div class="small">Nhật ký được tạo bởi các thao tác admin trong phiên chạy này; dữ liệu sẽ mất khi tắt ứng dụng.</div>
             </div>
         </div>
 
@@ -90,7 +90,7 @@
                             <td colspan="5" class="text-center py-5">
                                 <i class="bi bi-journal-text fs-2 d-block mb-2" style="color: var(--pastel-blue);"></i>
                                 <span class="fw-semibold d-block">Chưa có nhật ký hệ thống</span>
-                                <span class="small text-muted">Sự kiện sẽ xuất hiện tại đây sau khi backend ghi và cung cấp audit log.</span>
+                                <span class="small text-muted">Các thao tác cập nhật user sẽ được ghi nhận tại đây.</span>
                             </td>
                         </tr>
                     </tbody>

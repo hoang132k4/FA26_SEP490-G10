@@ -33,7 +33,9 @@
                             <span class="small text-muted">Xem chi tiết và cập nhật tài khoản</span>
                         </div>
                     </div>
-                    <span class="badge rounded-pill align-self-start" style="background-color: #F1EDFA; color: #7862A8;">Chức năng tiếp theo</span>
+                    <a th:href="@{/admin/users}" class="btn btn-sm btn-steel-outline align-self-start">
+                        Mở danh sách <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
                 </article>
             </div>
             <div class="col-md-6 col-xl-4">
@@ -45,7 +47,12 @@
                             <span class="small text-muted">Theo dõi hoạt động quản trị</span>
                         </div>
                     </div>
-                    <span class="badge rounded-pill align-self-start" style="background-color: #FFF3E0; color: #9A5B00;">Chức năng tiếp theo</span>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="small text-muted"><span th:text="${totalLogs}">0</span> sự kiện trong phiên</span>
+                        <a th:href="@{/admin/logs}" class="btn btn-sm btn-steel-outline">
+                            Mở nhật ký <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
                 </article>
             </div>
         </section>
@@ -56,8 +63,8 @@
                 <div>
                     <h2 id="dashboard-scope-title" class="h5 fw-bold mb-2">Phạm vi dashboard</h2>
                     <p class="text-muted mb-0">
-                        Đây là màn hình tổng quan dành cho Admin. Số liệu người dùng sẽ hiển thị khi được kết nối với dữ liệu thực.
-                        Danh sách người dùng (bao gồm xem chi tiết và cập nhật) cùng nhật ký hệ thống sẽ được triển khai ở các màn hình riêng.
+                        Backend hiện dùng dữ liệu demo trong bộ nhớ để kiểm thử quản lý người dùng và theo dõi hoạt động.
+                        Thay đổi và nhật ký sẽ được giữ trong phiên chạy hiện tại; kết nối database sẽ thay thế nguồn lưu tạm này.
                     </p>
                 </div>
             </div>

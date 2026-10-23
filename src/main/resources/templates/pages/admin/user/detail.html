@@ -30,11 +30,11 @@
             </div>
         </section>
 
-        <div th:if="${user == null}" class="alert alert-info d-flex align-items-start gap-2" role="status">
+        <div th:if="${demoData}" class="alert alert-warning d-flex align-items-start gap-2" role="status">
             <i class="bi bi-info-circle-fill mt-1"></i>
             <div>
-                <strong>Chưa có dữ liệu người dùng để hiển thị.</strong>
-                <div class="small">Giao diện chi tiết đã sẵn sàng; cần kết nối nguồn dữ liệu người dùng để tải hồ sơ theo mã này.</div>
+                <strong>Đang xem dữ liệu demo trong bộ nhớ.</strong>
+                <div class="small">Các thay đổi chỉ tồn tại đến khi tắt ứng dụng; dữ liệu Supabase chưa được kết nối.</div>
             </div>
         </div>
 
@@ -50,7 +50,7 @@
                             th:text="${user != null and user.fullName != null ? user.fullName : 'Chưa có dữ liệu'}">Chưa có dữ liệu</h2>
                         <p class="text-muted mb-3" th:text="${user != null and user.email != null ? user.email : 'Chưa có email'}">Chưa có email</p>
                         <span class="badge rounded-pill px-3 py-2"
-                              th:classappend="${user != null and user.status != null and user.status == 'ACTIVE'} ? 'text-bg-success' : 'text-bg-secondary'"
+                              th:classappend="${user != null and user.status != null and #strings.toString(user.status) == 'ACTIVE'} ? 'text-bg-success' : 'text-bg-secondary'"
                               th:text="${user != null and user.status != null ? user.status : 'Chưa có trạng thái'}">Chưa có trạng thái</span>
                     </div>
 

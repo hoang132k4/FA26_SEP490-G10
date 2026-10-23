@@ -24,11 +24,11 @@
             </div>
         </section>
 
-        <div th:if="${!userListConnected}" class="alert alert-info d-flex align-items-start gap-2 mb-4" role="status">
+        <div th:if="${demoData}" class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="status">
             <i class="bi bi-info-circle-fill mt-1"></i>
             <div>
-                <strong>Nguồn dữ liệu người dùng chưa được kết nối.</strong>
-                <div class="small">Giao diện danh sách đã sẵn sàng. Danh sách sẽ hiển thị khi controller được kết nối với repository người dùng.</div>
+                <strong>Đang sử dụng dữ liệu demo trong bộ nhớ.</strong>
+                <div class="small">Các thay đổi chỉ tồn tại đến khi tắt ứng dụng; dữ liệu Supabase chưa được kết nối.</div>
             </div>
         </div>
 
@@ -114,8 +114,8 @@
                         <tr th:if="${#lists.isEmpty(users)}">
                             <td colspan="6" class="text-center py-5">
                                 <i class="bi bi-people fs-2 d-block mb-2" style="color: var(--pastel-blue);"></i>
-                                <span class="fw-semibold d-block">Chưa có dữ liệu người dùng để hiển thị</span>
-                                <span class="small text-muted">Kết nối nguồn dữ liệu để tải danh sách tài khoản.</span>
+                                <span class="fw-semibold d-block">Chưa có người dùng</span>
+                                <span class="small text-muted">Hiện chưa có tài khoản trong dữ liệu backend.</span>
                             </td>
                         </tr>
                     </tbody>
