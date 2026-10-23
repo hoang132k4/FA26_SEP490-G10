@@ -1,9 +1,134 @@
-﻿<div th:replace="~{layouts/admin-layout :: html(
-    pageTitle='Nháº­t kÃ½ Há»‡ thá»‘ng - JLPP',
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Nhật ký hệ thống - JEPS',
     activeMenu='logs',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">System Audit Logs</h3>
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a th:href="@{/admin/dashboard}" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Nhật ký hệ thống</li>
+            </ol>
+        </nav>
+
+        <section class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+            <div>
+                <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Giám sát hệ thống</span>
+                <h1 class="h3 fw-bold mt-1 mb-2">Nhật ký hệ thống</h1>
+                <p class="text-muted mb-0">Theo dõi và tra cứu các sự kiện được ghi nhận trong hệ thống.</p>
+            </div>
+            <a th:href="@{/admin/logs}" class="btn btn-steel-outline">
+                <i class="bi bi-arrow-clockwise me-1"></i>Làm mới
+            </a>
+        </section>
+
+        <div th:if="${!logMonitoringConnected}" class="alert alert-info d-flex align-items-start gap-2 mb-4" role="status">
+            <i class="bi bi-info-circle-fill mt-1"></i>
+            <div>
+                <strong>Nguồn nhật ký chưa được kết nối.</strong>
+                <div class="small">Ứng dụng chưa lưu audit log vào nguồn dữ liệu. Bảng sẽ hiển thị nhật ký khi backend được kết nối; hiện không có dữ liệu mẫu.</div>
+            </div>
+        </div>
+
+        <section class="card kotoba-card p-3 p-lg-4">
+            <div class="d-flex flex-column flex-xl-row justify-content-between gap-3 mb-4">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Sự kiện hệ thống</h2>
+                    <p class="small text-muted mb-0">
+                        <span th:text="${#lists.size(systemLogs)}">0</span> sự kiện
+                        <span class="mx-1">&bull;</span>
+                        <span id="logVisibleCount" th:text="${#lists.size(systemLogs)}">0</span> đang hiển thị
+                    </p>
+                </div>
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                    <div class="input-group" style="min-width: min(100%, 280px);">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input id="logSearch" type="search" class="form-control"
+                               placeholder="Tìm trong nhật ký..." aria-label="Tìm trong nhật ký">
+                    </div>
+                    <select id="levelFilter" class="form-select" aria-label="Lọc theo cấp độ" style="min-width: 160px;">
+                        <option value="">Tất cả cấp độ</option>
+                        <option value="ERROR">Error</option>
+                        <option value="WARN">Warning</option>
+                        <option value="INFO">Info</option>
+                        <option value="DEBUG">Debug</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr class="small text-muted">
+                            <th scope="col" class="fw-semibold">Thời gian</th>
+                            <th scope="col" class="fw-semibold">Cấp độ</th>
+                            <th scope="col" class="fw-semibold">Nguồn</th>
+                            <th scope="col" class="fw-semibold">Người thực hiện</th>
+                            <th scope="col" class="fw-semibold">Nội dung sự kiện</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody">
+                        <tr th:each="entry : ${systemLogs}" class="log-row"
+                            th:attr="data-level=${entry.level},
+                                     data-search=${entry.timestamp + ' ' + entry.source + ' ' + entry.actor + ' ' + entry.message}">
+                            <td class="text-nowrap small" th:text="${entry.timestamp}">Thời gian</td>
+                            <td>
+                                <span class="badge rounded-pill"
+                                      th:classappend="${entry.level != null and #strings.toString(entry.level) == 'ERROR'} ? 'text-bg-danger' :
+                                          (${entry.level != null and #strings.toString(entry.level) == 'WARN'} ? 'text-bg-warning' :
+                                          (${entry.level != null and #strings.toString(entry.level) == 'INFO'} ? 'text-bg-primary' : 'text-bg-secondary'))"
+                                      th:text="${entry.level}">INFO</span>
+                            </td>
+                            <td class="small" th:text="${entry.source}">Application</td>
+                            <td class="small" th:text="${entry.actor != null ? entry.actor : 'System'}">System</td>
+                            <td class="small" th:text="${entry.message}">Event message</td>
+                        </tr>
+                        <tr id="noFilteredLogs" class="d-none">
+                            <td colspan="5" class="text-center py-4 text-muted">Không tìm thấy sự kiện phù hợp bộ lọc.</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(systemLogs)}">
+                            <td colspan="5" class="text-center py-5">
+                                <i class="bi bi-journal-text fs-2 d-block mb-2" style="color: var(--pastel-blue);"></i>
+                                <span class="fw-semibold d-block">Chưa có nhật ký hệ thống</span>
+                                <span class="small text-muted">Sự kiện sẽ xuất hiện tại đây sau khi backend ghi và cung cấp audit log.</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
+
+    <script>
+        (() => {
+            const searchInput = document.getElementById('logSearch');
+            const levelFilter = document.getElementById('levelFilter');
+            const rows = Array.from(document.querySelectorAll('.log-row'));
+            const noResults = document.getElementById('noFilteredLogs');
+            const visibleCount = document.getElementById('logVisibleCount');
+
+            const filterLogs = () => {
+                const query = searchInput.value.trim().toLocaleLowerCase();
+                const level = levelFilter.value;
+                let visibleRows = 0;
+
+                rows.forEach((row) => {
+                    const matchesQuery = row.dataset.search.toLocaleLowerCase().includes(query);
+                    const matchesLevel = !level || row.dataset.level === level;
+                    const visible = matchesQuery && matchesLevel;
+
+                    row.classList.toggle('d-none', !visible);
+                    if (visible) {
+                        visibleRows += 1;
+                    }
+                });
+
+                visibleCount.textContent = visibleRows;
+                noResults.classList.toggle('d-none', visibleRows > 0 || rows.length === 0);
+            };
+
+            searchInput.addEventListener('input', filterLogs);
+            levelFilter.addEventListener('change', filterLogs);
+        })();
+    </script>
 </div>
