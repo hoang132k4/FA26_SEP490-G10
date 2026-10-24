@@ -5,7 +5,7 @@ spring:
   application:
     name: jlpp-platform
 
-  # Thymeleaf configuration
+  # Cấu hình Thymeleaf chung cho các môi trường
   thymeleaf:
     cache: false
     prefix: classpath:/templates/
@@ -13,7 +13,7 @@ spring:
     mode: HTML
     encoding: UTF-8
 
-  # Database configuration (Default to H2 for instant startup)
+  # Cấu hình mặc định (Dùng H2 database khi không bật profile supabase)
   datasource:
     url: jdbc:h2:mem:jlppdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -34,8 +34,25 @@ spring:
       hibernate:
         format_sql: true
 
-# Logging
-logging:
-  level:
-    com.jlpp: DEBUG
-    org.springframework.web: INFO
+  # Cấu hình riêng khi chạy với profile 'supabase'
+  config:
+    activate:
+      on-profile: supabase
+
+---
+spring:
+  config:
+    activate:
+      on-profile: supabase
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.eztcijnvnmcievogjufk}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
