@@ -3,7 +3,7 @@
 <head th:replace="~{layouts/base :: head(${pageTitle})}"></head>
 <body class="d-flex flex-column min-vh-100 bg-light">
     <!-- Top Nav Header -->
-    <div th:replace="~{fragments/header :: header('GUEST')}"></div>
+    <div th:replace="~{fragments/header :: header(${currentRole})}"></div>
 
     <!-- Main Public Content -->
     <main class="flex-grow-1">

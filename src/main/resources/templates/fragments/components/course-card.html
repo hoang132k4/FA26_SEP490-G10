@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-    <div th:fragment="courseCard(course, isLearner)" class="col-md-6 col-lg-4 mb-4">
+    <div th:fragment="courseCard(course)" class="col-md-6 col-lg-4 mb-4">
         <div class="card h-100 kotoba-card overflow-hidden">
             <div class="position-relative">
-                <img th:src="${course.thumbnail != null ? course.thumbnail : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
-                     class="card-img-top" alt="Course Image" style="height: 190px; object-fit: cover;">
+                <img th:if="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                     th:src="${course.thumbnail}" class="card-img-top" th:alt="${course.title}"
+                     style="height: 190px; object-fit: cover;">
+                <div th:unless="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                     class="d-flex align-items-center justify-content-center bg-light" style="height: 190px;">
+                    <i class="bi bi-book fs-1 text-muted" aria-hidden="true"></i>
+                </div>
                 <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill" 
                       style="background-color: var(--navy-dark); color: white;"
                       th:text="${course.level != null ? course.level : 'N4'}">N4</span>
@@ -32,8 +37,7 @@
                             399,000 đ
                         </span>
                     </div>
-                    <a th:if="${!isLearner}" th:href="@{/courses/{id}(id=${course.id != null ? course.id : 1})}" class="btn btn-steel-outline btn-sm">Chi tiết</a>
-                    <a th:if="${isLearner}" th:href="@{/learning/courses/{id}(id=${course.id != null ? course.id : 1})}" class="btn btn-steel btn-sm">Vào học</a>
+                    <a th:href="@{/courses/{id}(id=${course.id})}" class="btn btn-steel-outline btn-sm">Course preview</a>
                 </div>
             </div>
         </div>
