@@ -1,0 +1,194 @@
+<div th:replace="~{layouts/manager-layout :: html(
+    pageTitle='Quản lý Khóa học - Manager',
+    activeMenu='manager-courses',
+    content=~{::#mainContent}
+)}">
+<div id="mainContent">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: var(--navy-dark); font-size:1.65rem;">Quản lý Khóa học</h2>
+            <p class="mb-0" style="color: var(--text-muted); font-size:0.9rem;">Danh sách khóa học được đọc trực tiếp từ database</p>
+        </div>
+        <div class="kotoba-card px-4 py-2 d-flex align-items-center gap-2">
+            <i class="bi bi-collection" style="color:var(--steel-blue);"></i>
+            <span style="font-size:0.85rem;">Tổng: <strong th:text="${courseCount}">0</strong> khóa học</span>
+        </div>
+        <a class="btn btn-primary ms-3" th:href="@{/manager/courses/new}"><i class="bi bi-plus-lg me-1"></i>Thêm khóa học</a>
+    </div>
+
+    <div class="alert alert-danger" role="alert" th:if="${courseError}" th:text="${courseError}"></div>
+    <div class="alert alert-success" role="alert" th:if="${courseSuccess}" th:text="${courseSuccess}"></div>
+
+    <div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalTitle" aria-hidden="true" th:if="${courseForm != null}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <form method="post" th:action="${courseForm['id'] == '' ? '/manager/courses' : '/manager/courses/' + courseForm['id']}">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5 fw-bold" id="courseModalTitle" th:text="${courseForm['id'] == '' ? 'Thêm khóa học' : 'Sửa khóa học'}">Thêm khóa học</h2>
+                        <a class="btn-close" th:href="@{/manager/courses}" aria-label="Đóng"></a>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label" for="courseName">Tên khóa học</label>
+                            <input class="form-control" id="courseName" name="name" required maxlength="255" th:value="${courseForm['name']}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="courseLevel">Cấp độ</label>
+                            <select class="form-select" id="courseLevel" name="level" required>
+                                <option th:each="level : ${ {'N5','N4','N3','N2','N1'} }" th:value="${level}" th:text="${level}" th:selected="${courseForm['level'] == level}">N5</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="courseStatus">Trạng thái</label>
+                            <select class="form-select" id="courseStatus" name="status" required>
+                                <option value="ACTIVE" th:selected="${courseForm['status'] == 'ACTIVE'}">Đang hoạt động</option>
+                                <option value="INACTIVE" th:selected="${courseForm['status'] == 'INACTIVE'}">Tạm ẩn</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a class="btn btn-outline-secondary" th:href="@{/manager/courses}">Huỷ</a>
+                        <button class="btn btn-primary" type="submit">Lưu khóa học</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script th:if="${courseForm != null}">
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalElement = document.getElementById('courseModal');
+            if (modalElement && window.bootstrap) bootstrap.Modal.getOrCreateInstance(modalElement).show();
+        });
+    </script>
+
+    <div class="kotoba-card p-3 mb-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-lg-5">
+                <label class="visually-hidden" for="courseSearch">Tìm khóa học</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input id="courseSearch" class="form-control" type="search" placeholder="Tìm theo tên hoặc mã khóa học...">
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <label class="visually-hidden" for="courseLevelFilter">Lọc theo cấp độ</label>
+                <select id="courseLevelFilter" class="form-select">
+                    <option value="">Tất cả cấp độ</option>
+                    <option value="N5">N5</option><option value="N4">N4</option><option value="N3">N3</option>
+                    <option value="N2">N2</option><option value="N1">N1</option>
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-2">
+                <label class="visually-hidden" for="courseStatusFilter">Lọc theo trạng thái</label>
+                <select id="courseStatusFilter" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="ACTIVE">Đang hoạt động</option>
+                    <option value="INACTIVE">Tạm ẩn</option>
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <button id="courseFilterReset" type="button" class="btn btn-outline-secondary w-100">Xoá bộ lọc</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="kotoba-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:0.9rem;">
+                <thead>
+                    <tr style="background:var(--bg-page); border-bottom:1px solid var(--border-subtle);">
+                        <th class="ps-4 py-3">ID</th>
+                        <th class="py-3">Tên khóa học</th>
+                        <th class="py-3">Cấp độ</th>
+                        <th class="py-3">Số bài học</th>
+                        <th class="py-3">Trạng thái</th>
+                        <th class="pe-4 py-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="course : ${courses}" class="course-data-row"
+                        th:attr="data-id=${course['id']},data-name=${course['name']},data-level=${course['level']},data-status=${course['status']}"
+                        style="border-bottom:1px solid var(--border-light);">
+                        <td class="ps-4 py-3 text-muted" th:text="${course['id']}">1</td>
+                        <td class="py-3 fw-semibold" style="color:var(--text-main);" th:text="${course['name']}">Tên khóa học</td>
+                        <td class="py-3"><span class="badge rounded-pill" style="background:var(--steel-blue);color:#fff;" th:text="${course['level']}">N5</span></td>
+                        <td class="py-3" th:text="${course['lessonCount']}">—</td>
+                        <td class="py-3" th:text="${course['status']}">Trạng thái</td>
+                        <td class="pe-4 py-3"><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}"><i class="bi bi-pencil"></i> Sửa</a></td>
+                    </tr>
+                    <tr id="courseEmptyState" th:hidden="${!#lists.isEmpty(courses)}">
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox d-block mb-2" style="font-size:1.6rem;"></i>
+                            <span th:if="${courseError == null}">Không tìm thấy khóa học phù hợp.</span>
+                            <span th:if="${courseError != null}">Không tải được danh sách khóa học.</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="px-4 py-3" style="border-top:1px solid var(--border-subtle);background:var(--bg-page);">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <span style="font-size:0.82rem;color:var(--text-muted);">Đang hiển thị <strong id="courseVisibleCount" th:text="${courseCount}">0</strong>/<strong th:text="${courseCount}">0</strong> khóa học</span>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="coursePageSize" class="small text-muted">Mỗi trang</label>
+                    <select id="coursePageSize" class="form-select form-select-sm" style="width:auto">
+                        <option value="5">5</option><option value="10" selected>10</option><option value="20">20</option>
+                    </select>
+                    <nav aria-label="Phân trang khóa học"><ul id="coursePagination" class="pagination pagination-sm mb-0"></ul></nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const rows = Array.from(document.querySelectorAll('.course-data-row'));
+            const search = document.getElementById('courseSearch');
+            if (!search) return;
+            const levelFilter = document.getElementById('courseLevelFilter');
+            const statusFilter = document.getElementById('courseStatusFilter');
+            const pageSize = document.getElementById('coursePageSize');
+            const pager = document.getElementById('coursePagination');
+            const emptyState = document.getElementById('courseEmptyState');
+            let currentPage = 1;
+            const normalize = value => (value || '').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+            function render() {
+                const query = normalize(search.value.trim());
+                const matches = rows.filter(row => {
+                    const matchesText = normalize(row.dataset.name + ' ' + row.dataset.id).includes(query);
+                    const matchesLevel = !levelFilter.value || (row.dataset.level || '').toUpperCase() === levelFilter.value;
+                    const matchesStatus = !statusFilter.value || (row.dataset.status || '').toUpperCase() === statusFilter.value;
+                    return matchesText && matchesLevel && matchesStatus;
+                });
+                const size = Number(pageSize.value);
+                const pages = Math.max(1, Math.ceil(matches.length / size));
+                currentPage = Math.min(currentPage, pages);
+                const start = (currentPage - 1) * size;
+                rows.forEach(row => { row.hidden = true; });
+                matches.slice(start, start + size).forEach(row => { row.hidden = false; });
+                if (emptyState) emptyState.hidden = matches.length > 0;
+                document.getElementById('courseVisibleCount').textContent = matches.length;
+                pager.replaceChildren();
+                const addPageButton = (label, page, disabled, active) => {
+                    const item = document.createElement('li');
+                    item.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                    const button = document.createElement('button');
+                    button.type = 'button'; button.className = 'page-link'; button.textContent = label;
+                    button.disabled = disabled; button.setAttribute('aria-label', label === '‹' ? 'Trang trước' : label === '›' ? 'Trang sau' : 'Trang ' + label);
+                    button.addEventListener('click', () => { currentPage = page; render(); });
+                    item.appendChild(button); pager.appendChild(item);
+                };
+                addPageButton('‹', currentPage - 1, currentPage === 1, false);
+                for (let page = 1; page <= pages; page++) addPageButton(String(page), page, false, page === currentPage);
+                addPageButton('›', currentPage + 1, currentPage === pages, false);
+            }
+            [search, levelFilter, statusFilter].forEach(control => control.addEventListener('input', () => { currentPage = 1; render(); }));
+            pageSize.addEventListener('change', () => { currentPage = 1; render(); });
+            document.getElementById('courseFilterReset').addEventListener('click', () => {
+                search.value = ''; levelFilter.value = ''; statusFilter.value = ''; currentPage = 1; render();
+            });
+            render();
+        })();
+    </script>
+</div>
+</div>
