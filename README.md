@@ -1,2 +1,2 @@
 # FA26_SEP490-G10
-JLPP - Japanese Learning Path Platform 
+JEPS - JLPT Exam Preparation System
