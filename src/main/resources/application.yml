@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
   application:
@@ -37,8 +37,48 @@ spring:
           lob:
             non_contextual_creation: true
 
+  # Mail configuration (Gmail SMTP)
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: phanmanh14122000@gmail.com
+    password: nfcqielpfwmsfjbw
+    properties:
+      mail:
+        debug: true
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+# Application Custom Configurations
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8081}
+  reset-password:
+    token-validity-minutes: 15
+    rate-limit-per-window: 3
+    rate-limit-window-minutes: 15
+
 # Logging
 logging:
   level:
     com.jlpp: DEBUG
     org.springframework.web: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: supabase
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.eztcijnvnmcievogjufk.supabase.co:5432/postgres}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+
