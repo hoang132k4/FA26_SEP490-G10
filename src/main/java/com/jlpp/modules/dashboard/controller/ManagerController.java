@@ -16,12 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
-import com.jlpp.modules.course.dto.CourseOption;
-import com.jlpp.modules.course.service.CourseService;
+import com.jlpp.modules.manager.course.dto.CourseOption;
+import com.jlpp.modules.manager.course.service.CourseService;
 
 /**
  * Manager area pages. Lesson management lives in
- * {@link com.jlpp.modules.lesson.controller.ManagerLessonController}.
+ * {@link com.jlpp.modules.manager.lesson.controller.ManagerLessonController}.
  */
 @Controller
 @RequestMapping("/manager")

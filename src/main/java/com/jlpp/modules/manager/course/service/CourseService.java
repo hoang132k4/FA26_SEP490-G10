@@ -1,7 +1,7 @@
-package com.jlpp.modules.course.service;
+package com.jlpp.modules.manager.course.service;
 
-import com.jlpp.modules.course.dto.CourseOption;
-import com.jlpp.modules.course.repository.CourseRepository;
+import com.jlpp.modules.manager.course.dto.CourseOption;
+import com.jlpp.modules.manager.course.repository.CourseRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -13,7 +13,7 @@ public class DashboardController {
 
     @GetMapping("/manager/dashboard")
     public String managerDashboard() {
-        return "pages/admin/dashboard/manager-dashboard";
+        return "pages/manager/dashboard/manager-dashboard";
     }
 
     @GetMapping("/learning/dashboard")
