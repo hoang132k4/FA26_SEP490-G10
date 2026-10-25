@@ -1,0 +1,203 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle=${course.title + ' - Học viên JEPS'},
+    activeMenu='courses',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none text-muted">Học tập</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/learning/courses}" class="text-decoration-none text-muted">Khóa học JLPT</a></li>
+                <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page" th:text="${course.title}">Chi tiết khóa học</li>
+            </ol>
+        </nav>
+
+        <!-- Course Hero Section (Learner View) -->
+        <div class="card p-4 p-md-5 kotoba-card mb-4 shadow-sm border-0" 
+             style="background: linear-gradient(135deg, #173B57 0%, #244F70 100%); color: #FFFFFF; border-radius: 20px;">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge px-3 py-1 rounded-pill" style="background-color: var(--sakura-accent); color: white; font-weight: 700;"
+                              th:text="${course.level}">N5</span>
+                        <span class="badge bg-white text-dark rounded-pill" th:text="${'Mã: ' + course.code}">JLPT-N5</span>
+                        
+                        <!-- Enrollment Status Badge -->
+                        <span th:if="${isEnrolled}" class="badge bg-success rounded-pill px-3 py-1">
+                            <i class="bi bi-check-circle-fill me-1"></i> Đã đăng ký
+                        </span>
+                        <span th:if="${!isEnrolled}" class="badge bg-light text-dark rounded-pill px-3 py-1">
+                            Chưa đăng ký
+                        </span>
+                    </div>
+
+                    <h1 class="h2 fw-bold mb-3 text-white" th:text="${course.title}">Khóa học Nhập môn Tiếng Nhật</h1>
+                    <p class="lead mb-4 text-white-50" style="font-size: 1.05rem;" th:text="${course.shortDescription}">
+                        Mô tả ngắn gọn về khóa học...
+                    </p>
+
+                    <!-- Meta specs -->
+                    <div class="d-flex flex-wrap gap-4 text-white-50 small">
+                        <div><i class="bi bi-clock me-1 text-white"></i> <span th:text="${course.durationHours + ' giờ đào tạo'}">40 giờ</span></div>
+                        <div><i class="bi bi-journal-text me-1 text-white"></i> <span th:text="${course.lessonCount + ' bài giảng'}">30 bài</span></div>
+                        <div><i class="bi bi-star-fill text-warning me-1"></i> <span th:text="${course.rating + '/5.0 đánh giá'}">4.9/5.0</span></div>
+                    </div>
+                </div>
+
+                <!-- Registration / Action Card -->
+                <div class="col-lg-4 mt-4 mt-lg-0">
+                    <div class="card p-4 shadow bg-white text-dark text-center rounded-4 border-0">
+                        <!-- If Enrolled -->
+                        <div th:if="${isEnrolled}">
+                            <div class="d-inline-flex p-3 rounded-circle bg-success-subtle text-success mb-2">
+                                <i class="bi bi-patch-check-fill fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold text-success mb-1">Khóa học đang hoạt động</h5>
+                            <p class="small text-muted mb-3">
+                                Đã đăng ký ngày: <span th:text="${#temporals.format(registration.registeredAt, 'dd/MM/yyyy')}">23/10/2026</span>
+                            </p>
+
+                            <!-- Progress Bar -->
+                            <div class="mb-3 text-start">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Tiến độ học tập</span>
+                                    <span class="fw-bold text-dark" th:text="${registration.progressPercent + '%'}">0%</span>
+                                </div>
+                                <div class="progress progress-kotoba" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" th:style="'width: ' + ${registration.progressPercent} + '%;'"></div>
+                                </div>
+                            </div>
+
+                            <a th:href="@{/learning/materials}" class="btn btn-sakura w-100 py-2 fw-semibold">
+                                <i class="bi bi-play-circle-fill me-1"></i> Tiếp tục bài học
+                            </a>
+                        </div>
+
+                        <!-- If NOT Enrolled -->
+                        <div th:if="${!isEnrolled}">
+                            <span class="text-muted small text-uppercase fw-semibold">Học phí</span>
+                            <div class="mt-1 mb-3" th:if="${course.discountPrice != null && course.discountPrice > 0}">
+                                <h3 class="fw-bold text-danger mb-0" th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">199,000 đ</h3>
+                                <small class="text-muted text-decoration-line-through" th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</small>
+                            </div>
+                            <div class="mt-1 mb-3" th:if="${course.discountPrice == null || course.discountPrice == 0}">
+                                <h3 class="fw-bold mb-0" style="color: var(--navy-dark);" th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">299,000 đ</h3>
+                            </div>
+
+                            <a th:href="@{/learning/courses/{id}/register(id=${course.id})}" class="btn btn-sakura w-100 py-2 fw-semibold mb-2">
+                                <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học này
+                            </a>
+                            <small class="text-muted d-block">
+                                <i class="bi bi-check2-circle text-success me-1"></i> Học viên JEPS được truy cập không giới hạn
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Details Body -->
+        <div class="row">
+            <!-- Left: Objectives, Syllabus -->
+            <div class="col-lg-8">
+                <!-- Objectives -->
+                <div class="card p-4 kotoba-card mb-4 shadow-sm" th:if="${course.objectives != null}">
+                    <h5 class="fw-bold mb-3" style="color: var(--navy-dark);">
+                        <i class="bi bi-check2-circle text-primary me-2"></i> Mục tiêu đào tạo &amp; Chuẩn đầu ra
+                    </h5>
+                    <div class="text-muted" style="white-space: pre-line; line-height: 1.8;" th:text="${course.objectives}">
+                        Mục tiêu khóa học...
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="card p-4 kotoba-card mb-4 shadow-sm">
+                    <h5 class="fw-bold mb-3" style="color: var(--navy-dark);">
+                        <i class="bi bi-card-text text-primary me-2"></i> Nội dung tổng quan khóa học
+                    </h5>
+                    <p class="text-muted" style="line-height: 1.8;" th:text="${course.fullDescription}">
+                        Mô tả chi tiết khóa học...
+                    </p>
+
+                    <!-- Covered Skills -->
+                    <div class="mt-3" th:if="${course.coveredSkills != null}">
+                        <h6 class="fw-semibold text-dark small mb-2">Học phần kỹ năng:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill" 
+                                  th:each="skill : ${#strings.arraySplit(course.coveredSkills, ',')}" 
+                                  th:text="${#strings.trim(skill)}">Kỹ năng</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Syllabus / Lessons Structure -->
+                <div class="card p-4 kotoba-card mb-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0" style="color: var(--navy-dark);">
+                            <i class="bi bi-list-task text-primary me-2"></i> Khung giáo trình &amp; Danh sách bài học
+                        </h5>
+                        <span class="badge bg-light text-muted border" th:text="${lessons != null ? lessons.size() + ' bài học' : '0 bài'}">8 bài</span>
+                    </div>
+
+                    <div class="list-group list-group-flush border-top border-light">
+                        <div class="list-group-item py-3 px-0 d-flex justify-content-between align-items-center" 
+                             th:each="lesson : ${lessons}">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-light text-muted border rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                    <i class="bi bi-play-circle" th:if="${lesson.lessonType == 'VIDEO'}"></i>
+                                    <i class="bi bi-book" th:if="${lesson.lessonType == 'READING'}"></i>
+                                    <i class="bi bi-pencil" th:if="${lesson.lessonType == 'PRACTICE'}"></i>
+                                    <i class="bi bi-question-circle" th:if="${lesson.lessonType == 'QUIZ'}"></i>
+                                </span>
+                                <div>
+                                    <h6 class="mb-0 fw-semibold text-dark" th:text="${lesson.title}">Tên bài giảng</h6>
+                                    <small class="text-muted" th:text="${lesson.sectionName}">Chương 1</small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <span th:if="${lesson.isFreePreview}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                                    Học thử
+                                </span>
+                                <span th:if="${isEnrolled}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">
+                                    Đã mở khóa
+                                </span>
+                                <span class="small text-muted" th:text="${lesson.durationMinutes + ' phút'}">30 phút</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Target & Other Courses -->
+            <div class="col-lg-4">
+                <div class="card p-4 kotoba-card mb-4 shadow-sm">
+                    <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-bullseye me-1 text-primary"></i> Trình độ mục tiêu</h6>
+                    <p class="text-muted small mb-0">
+                        Khóa học này được thiết kế để bạn sẵn sàng thi đỗ cấp độ <strong class="text-dark" th:text="${course.level}">N5</strong> trong kỳ thi JLPT kế tiếp.
+                    </p>
+                </div>
+
+                <div class="card p-4 kotoba-card mb-4 shadow-sm" th:if="${course.prerequisites != null}">
+                    <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-info-circle me-1 text-primary"></i> Yêu cầu đầu vào</h6>
+                    <p class="text-muted small mb-0" th:text="${course.prerequisites}">Yêu cầu...</p>
+                </div>
+
+                <!-- Related Courses -->
+                <div class="card p-4 kotoba-card shadow-sm" th:if="${relatedCourses != null && !relatedCourses.isEmpty()}">
+                    <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-collection me-1 text-primary"></i> Khóa học cùng cấp độ</h6>
+                    <div class="d-flex flex-column gap-3">
+                        <div th:each="rel : ${relatedCourses}" class="d-flex gap-3 align-items-center pb-3 border-bottom border-light">
+                            <img th:src="${rel.thumbnailUrl}" class="rounded-3" style="width: 70px; height: 50px; object-fit: cover;" alt="">
+                            <div class="flex-grow-1">
+                                <a th:href="@{/learning/courses/{id}(id=${rel.id})}" class="text-decoration-none text-dark fw-semibold small d-block" th:text="${rel.title}">Tên khóa</a>
+                                <span class="badge bg-light text-muted border small" th:text="${rel.level}">N4</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

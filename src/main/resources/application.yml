@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
   application:
@@ -13,29 +13,97 @@ spring:
     mode: HTML
     encoding: UTF-8
 
-  # Database configuration (Default to H2 for instant startup)
-  datasource:
-    url: jdbc:h2:mem:jlppdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
+  # Spring Security OAuth2 Client Configuration for Google Sign In / Sign Up
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:google-client-id-placeholder}
+            client-secret: ${GOOGLE_CLIENT_SECRET:google-client-secret-placeholder}
+            scope: openid,profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+  # Supabase PostgreSQL Database configuration
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.eztcijnvnmcievogjufk}
+    password: ${SPRING_DATASOURCE_PASSWORD:Cme85Dpt1b2HwrBQ}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 30000
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  # Mail configuration (Gmail SMTP)
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: phanmanh14122000@gmail.com
+    password: nfcqielpfwmsfjbw
+    properties:
+      mail:
+        debug: true
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+# Application Custom Configurations
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8081}
+  reset-password:
+    token-validity-minutes: 15
+    rate-limit-per-window: 3
+    rate-limit-window-minutes: 15
+
+  # Mail configuration (uses env vars if provided)
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_SMTP_STARTTLS:false}
+
 
 # Logging
 logging:
   level:
     com.jlpp: DEBUG
     org.springframework.web: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: supabase
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.eztcijnvnmcievogjufk.supabase.co:5432/postgres}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+

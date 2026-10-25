@@ -31,6 +31,24 @@
                 </a>
             </li>
             <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'courses'} ? 'active' : ''" th:href="@{/learning/courses}">
+                    <i class="bi bi-collection-play"></i>
+                    <span>Khóa học JLPT</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'recommended'} ? 'active' : ''" th:href="@{/learning/courses/recommended}">
+                    <i class="bi bi-stars text-warning"></i>
+                    <span>Gợi ý cho bạn</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'my-courses'} ? 'active' : ''" th:href="@{/learning/my-courses}">
+                    <i class="bi bi-bookmark-check"></i>
+                    <span>Khóa học của tôi</span>
+                </a>
+            </li>
+            <li>
                 <a class="nav-link" th:classappend="${activeMenu == 'flashcards'} ? 'active' : ''" th:href="@{/flashcards}">
                     <i class="bi bi-book"></i>
                     <span>Từ vựng</span>
@@ -64,6 +82,12 @@
                 <a class="nav-link" th:classappend="${activeMenu == 'learning-path'} ? 'active' : ''" th:href="@{/learning-path}">
                     <i class="bi bi-bar-chart"></i>
                     <span>Tiến độ học</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'profile'} ? 'active' : ''" th:href="@{/profile}">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Hồ sơ cá nhân</span>
                 </a>
             </li>
         </ul>

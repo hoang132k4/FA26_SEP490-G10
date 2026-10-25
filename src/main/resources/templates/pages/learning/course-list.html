@@ -1,0 +1,119 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Danh sách Khóa học - JEPS',
+    activeMenu='courses',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Top Section Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <span class="badge text-bg-light border small text-muted mb-1">Học phần JLPT</span>
+                <h3 class="fw-bold mb-1" style="color: var(--navy-dark);">Khám phá Khóa học Tiếng Nhật</h3>
+                <p class="text-muted small mb-0">Các khóa luyện thi từ N5 đến N1 được thiết kế chuyên sâu theo lộ trình cá nhân hóa</p>
+            </div>
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+                <a th:href="@{/learning/courses/recommended}" class="btn btn-sakura btn-sm px-3 shadow-sm">
+                    <i class="bi bi-stars me-1"></i> Khóa học đề xuất cho bạn
+                </a>
+                <a th:href="@{/learning/my-courses}" class="btn btn-steel-outline btn-sm px-3">
+                    <i class="bi bi-bookmark-check me-1"></i> Khóa học của tôi
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card p-3 kotoba-card mb-4 shadow-sm">
+            <form th:action="@{/learning/courses}" method="get" class="row g-3 align-items-center">
+                <!-- Search Input -->
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" 
+                               name="keyword" 
+                               th:value="${filter.keyword}" 
+                               class="form-control border-start-0" 
+                               placeholder="Tìm theo tên khóa học, kỹ năng, chữ Hán...">
+                    </div>
+                </div>
+
+                <!-- Sort By -->
+                <div class="col-md-3">
+                    <select name="sortBy" class="form-select" onchange="this.form.submit()">
+                        <option value="popular" th:selected="${filter.sortBy == 'popular'}">Phổ biến nhất</option>
+                        <option value="recently_updated" th:selected="${filter.sortBy == 'recently_updated'}">Mới cập nhật</option>
+                        <option value="price_asc" th:selected="${filter.sortBy == 'price_asc'}">Học phí: Thấp đến cao</option>
+                        <option value="price_desc" th:selected="${filter.sortBy == 'price_desc'}">Học phí: Cao đến thấp</option>
+                    </select>
+                </div>
+
+                <input type="hidden" name="level" th:value="${filter.level}">
+
+                <div class="col-md-4 d-flex gap-2 justify-content-md-end">
+                    <button type="submit" class="btn btn-steel px-4">
+                        <i class="bi bi-funnel me-1"></i> Lọc
+                    </button>
+                    <a th:href="@{/learning/courses}" class="btn btn-outline-secondary px-3" title="Đặt lại">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Level Pills -->
+        <div class="d-flex flex-wrap gap-2 mb-4 align-items-center">
+            <span class="small fw-semibold text-muted me-2"><i class="bi bi-layers me-1"></i> Phân loại cấp độ:</span>
+            <a th:href="@{/learning/courses(level='', keyword=${filter.keyword}, sortBy=${filter.sortBy})}"
+               class="btn btn-sm rounded-pill px-3"
+               th:classappend="${filter.level == null || filter.level == '' || filter.level == 'ALL'} ? 'btn-steel' : 'btn-light border'">
+                Tất cả
+            </a>
+            <a th:each="lvl : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }"
+               th:href="@{/learning/courses(level=${lvl}, keyword=${filter.keyword}, sortBy=${filter.sortBy})}"
+               class="btn btn-sm rounded-pill px-3"
+               th:classappend="${filter.level == lvl} ? 'btn-steel' : 'btn-light border'"
+               th:text="${lvl}">
+                N5
+            </a>
+        </div>
+
+        <!-- Courses Grid -->
+        <div class="row" th:if="${courses != null && !courses.isEmpty()}">
+            <th:block th:each="c : ${courses}">
+                <div th:replace="~{fragments/components/course-card :: courseCard(${c}, true)}"></div>
+            </th:block>
+        </div>
+
+        <!-- Empty State -->
+        <div class="text-center py-5" th:if="${courses == null || courses.isEmpty()}">
+            <div class="d-inline-flex p-4 rounded-circle bg-light mb-3 text-muted">
+                <i class="bi bi-journal-x fs-1"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">Không tìm thấy khóa học phù hợp</h5>
+            <p class="text-muted small mb-3">Vui lòng thử tìm kiếm lại với tiêu chí khác.</p>
+            <a th:href="@{/learning/courses}" class="btn btn-steel-outline btn-sm">Xem tất cả khóa học</a>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center mt-4" th:if="${coursePage != null && coursePage.totalPages > 1}">
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-kotoba">
+                    <li class="page-item" th:classappend="${coursePage.first} ? 'disabled' : ''">
+                        <a class="page-link" th:href="@{/learning/courses(page=${coursePage.number - 1}, keyword=${filter.keyword}, level=${filter.level}, sortBy=${filter.sortBy})}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, coursePage.totalPages - 1)}"
+                        th:classappend="${i == coursePage.number} ? 'active' : ''">
+                        <a class="page-link" th:href="@{/learning/courses(page=${i}, keyword=${filter.keyword}, level=${filter.level}, sortBy=${filter.sortBy})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${coursePage.last} ? 'disabled' : ''">
+                        <a class="page-link" th:href="@{/learning/courses(page=${coursePage.number + 1}, keyword=${filter.keyword}, level=${filter.level}, sortBy=${filter.sortBy})}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
