@@ -11,7 +11,7 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
+@Repository("managerCourseRepository")
 public class CourseRepository {
 
     private final JdbcTemplate jdbcTemplate;
