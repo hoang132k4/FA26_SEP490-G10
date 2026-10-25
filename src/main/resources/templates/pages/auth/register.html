@@ -1,25 +1,112 @@
-﻿<div th:replace="~{layouts/auth-layout :: html(
-    pageTitle='ÄÄƒng kÃ½ tÃ i khoáº£n - JLPP',
+<div th:replace="~{layouts/auth-layout :: html(
+    pageTitle='Đăng ký tài khoản - JEPS',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h4 class="fw-bold text-center mb-4">ÄÄƒng kÃ½ thÃ nh viÃªn</h4>
+        <div class="text-center mb-4">
+            <h4 class="fw-bold mb-1" style="color: var(--text-primary)">Đăng ký tài khoản</h4>
+            <p class="small text-muted mb-0">Bắt đầu hành trình chinh phục JLPT cùng JEPS</p>
+        </div>
+
         <form th:action="@{/auth/register}" method="post">
+            <!-- Họ và tên -->
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Há» vÃ  tÃªn</label>
-                <input type="text" name="fullName" class="form-control" required placeholder="Nguyá»…n VÄƒn A">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)">
+                    Họ và tên <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">
+                        <i class="bi bi-person"></i>
+                    </span>
+                    <input type="text" name="fullName" class="form-control border-start-0" required placeholder="Nguyễn Văn A">
+                </div>
             </div>
+
+            <!-- Email -->
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Email</label>
-                <input type="email" name="email" class="form-control" required placeholder="name@example.com">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)">
+                    Email <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">
+                        <i class="bi bi-envelope"></i>
+                    </span>
+                    <input type="email" name="email" class="form-control border-start-0" required placeholder="learner@jeps.edu.vn">
+                </div>
             </div>
+
+            <!-- Số điện thoại -->
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Máº­t kháº©u</label>
-                <input type="password" name="password" class="form-control" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)">
+                    Số điện thoại <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">
+                        <i class="bi bi-telephone"></i>
+                    </span>
+                    <input type="tel" name="phone" class="form-control border-start-0" required placeholder="0912345678">
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 py-2">Táº¡o tÃ i khoáº£n</button>
-            <div class="text-center mt-3 small">
-                ÄÃ£ cÃ³ tÃ i khoáº£n? <a th:href="@{/auth/login}">ÄÄƒng nháº­p</a>
+
+            <!-- Mật khẩu -->
+            <div class="mb-2">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)">
+                    Mật khẩu <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">
+                        <i class="bi bi-lock"></i>
+                    </span>
+                    <input type="password" name="password" class="form-control border-start-0" required placeholder="••••••••">
+                </div>
+                <div class="form-text small text-muted mt-1" style="font-size: 0.78rem;">
+                    Từ 8–64 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+                </div>
+            </div>
+
+            <!-- Xác nhận mật khẩu -->
+            <div class="mb-4">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)">
+                    Xác nhận mật khẩu <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">
+                        <i class="bi bi-shield-check"></i>
+                    </span>
+                    <input type="password" name="confirmPassword" class="form-control border-start-0" required placeholder="••••••••">
+                </div>
+            </div>
+
+            <!-- Nút Đăng ký tài khoản -->
+            <button type="submit" class="btn btn-sakura w-100 py-2 fw-semibold">
+                <i class="bi bi-person-plus me-1"></i> Đăng ký tài khoản
+            </button>
+
+            <!-- Divider -->
+            <div class="position-relative my-4 text-center">
+                <hr class="text-muted opacity-25 m-0">
+                <span class="position-absolute top-50 start-50 translate-middle px-3 bg-white text-muted small" style="white-space: nowrap; font-size: 0.8rem;">
+                    Hoặc đăng ký nhanh bằng
+                </span>
+            </div>
+
+            <!-- Nút Đăng ký với Google -->
+            <a th:href="@{/auth/login}" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center fw-semibold shadow-sm bg-white" style="border-color: #dee2e6; color: #374151;">
+                <svg class="me-2" width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.36 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                Đăng ký với Google
+            </a>
+
+            <!-- Liên kết Đăng nhập -->
+            <div class="text-center mt-4 small text-muted">
+                Đã có tài khoản? 
+                <a th:href="@{/auth/login}" class="fw-semibold text-decoration-none" style="color: var(--sakura-accent)">
+                    Đăng nhập ngay
+                </a>
             </div>
         </form>
     </div>
