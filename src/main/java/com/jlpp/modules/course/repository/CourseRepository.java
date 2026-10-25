@@ -8,7 +8,6 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +26,7 @@ public class CourseRepository {
     public List<CourseOption> findAll() {
         return jdbcTemplate.query("""
                 SELECT c.course_id, c.course_title, c.jlpt_level, c.status,
-                       COUNT(l.lesson_id) AS lesson_count
+                       COUNT(DISTINCT l.lesson_id) AS lesson_count
                 FROM courses c
                 LEFT JOIN lessons l ON l.course_id = c.course_id
                 GROUP BY c.course_id, c.course_title, c.jlpt_level, c.status
@@ -38,7 +37,7 @@ public class CourseRepository {
     public Optional<CourseOption> findById(long courseId) {
         return jdbcTemplate.query("""
                 SELECT c.course_id, c.course_title, c.jlpt_level, c.status,
-                       COUNT(l.lesson_id) AS lesson_count
+                       COUNT(DISTINCT l.lesson_id) AS lesson_count
                 FROM courses c
                 LEFT JOIN lessons l ON l.course_id = c.course_id
                 WHERE c.course_id = ?
@@ -51,7 +50,7 @@ public class CourseRepository {
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO courses (course_title, jlpt_level, status) VALUES (?, ?, ?)",
-                    Statement.RETURN_GENERATED_KEYS);
+                    new String[] {"course_id"});
             statement.setString(1, title);
             statement.setString(2, level);
             statement.setString(3, status);

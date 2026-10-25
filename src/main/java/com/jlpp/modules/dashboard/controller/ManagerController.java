@@ -2,6 +2,10 @@ package com.jlpp.modules.dashboard.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.dao.DataAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.transaction.TransactionException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +27,8 @@ import com.jlpp.modules.course.service.CourseService;
 @RequestMapping("/manager")
 public class ManagerController {
 
+    private static final Logger log = LoggerFactory.getLogger(ManagerController.class);
+
     private final CourseService courseService;
 
     public ManagerController(CourseService courseService) {
@@ -36,9 +42,16 @@ public class ManagerController {
 
     @GetMapping("/courses")
     public String courses(Model model) {
-        List<Map<String, Object>> courses = courseService.findCourses().stream()
-                .map(this::toCourseView)
-                .toList();
+        List<Map<String, Object>> courses;
+        try {
+            courses = courseService.findCourses().stream()
+                    .map(this::toCourseView)
+                    .toList();
+        } catch (DataAccessException | TransactionException exception) {
+            courses = List.of();
+            model.addAttribute("courseError",
+                    "Không kết nối được Supabase. Kiểm tra file .env và thông tin Session Pooler rồi tải lại.");
+        }
         model.addAttribute("courses", courses);
         model.addAttribute("courseCount", courses.size());
         model.addAttribute("courseForm", model.containsAttribute("courseForm")
@@ -48,7 +61,7 @@ public class ManagerController {
 
     @GetMapping("/courses/new")
     public String newCourse(Model model) {
-        model.addAttribute("courseForm", Map.of("id", "", "name", "", "level", "N5", "status", "ACTIVE"));
+        model.addAttribute("courseForm", Map.of("id", "", "name", "", "level", "N5", "status", "PUBLISHED"));
         return courses(model);
     }
 
@@ -56,7 +69,7 @@ public class ManagerController {
     public String editCourse(@PathVariable long courseId, Model model, RedirectAttributes redirectAttributes) {
         return courseService.findCourse(courseId).map(course -> {
             model.addAttribute("courseForm", Map.of("id", course.id(), "name", course.title(),
-                    "level", course.level(), "status", course.status()));
+                    "level", course.level(), "status", normalizedCourseStatus(course.status())));
             return courses(model);
         }).orElseGet(() -> {
             redirectAttributes.addFlashAttribute("courseError", "Không tìm thấy khóa học cần sửa.");
@@ -72,6 +85,9 @@ public class ManagerController {
             redirectAttributes.addFlashAttribute("courseSuccess", "Đã thêm khóa học.");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("courseError", exception.getMessage());
+        } catch (DataAccessException exception) {
+            log.error("Could not create course", exception);
+            redirectAttributes.addFlashAttribute("courseError", "Không thể hoàn tất thao tác thêm khóa học. Kiểm tra log ứng dụng để biết chi tiết.");
         }
         return "redirect:/manager/courses";
     }
@@ -85,6 +101,9 @@ public class ManagerController {
             redirectAttributes.addFlashAttribute("courseSuccess", "Đã cập nhật khóa học.");
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("courseError", exception.getMessage());
+        } catch (DataAccessException exception) {
+            log.error("Could not update course {}", courseId, exception);
+            redirectAttributes.addFlashAttribute("courseError", "Không thể hoàn tất thao tác cập nhật khóa học. Kiểm tra log ứng dụng để biết chi tiết.");
         }
         return "redirect:/manager/courses";
     }
@@ -107,7 +126,7 @@ public class ManagerController {
 
     private String validStatus(String status) {
         String value = status == null ? "" : status.trim().toUpperCase();
-        if (!List.of("ACTIVE", "INACTIVE").contains(value)) {
+        if (!List.of("DRAFT", "PUBLISHED", "ARCHIVED").contains(value)) {
             throw new IllegalArgumentException("Vui lòng chọn trạng thái hợp lệ.");
         }
         return value;
@@ -145,8 +164,39 @@ public class ManagerController {
         course.put("level", row.level());
         course.put("description", "-");
         course.put("status", row.status());
+        course.put("statusLabel", courseStatusLabel(row.status()));
+        course.put("statusFilterValue", normalizedCourseStatus(row.status()));
         course.put("lessonCount", row.lessonCount());
         course.put("createdAt", "-");
         return course;
+    }
+
+    private String courseStatusLabel(String status) {
+        if ("PUBLISHED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
+            return "Published";
+        }
+        if ("UNPUBLISHED".equalsIgnoreCase(status) || "INACTIVE".equalsIgnoreCase(status)) {
+            return "Unpublished";
+        }
+        if ("DRAFT".equalsIgnoreCase(status)) {
+            return "Unpublished";
+        }
+        if ("ARCHIVED".equalsIgnoreCase(status)) {
+            return "Archived";
+        }
+        return status;
+    }
+
+    private String normalizedCourseStatus(String status) {
+        if ("ACTIVE".equalsIgnoreCase(status)) {
+            return "published";
+        }
+        if ("INACTIVE".equalsIgnoreCase(status)) {
+            return "DRAFT";
+        }
+        if ("UNPUBLISHED".equalsIgnoreCase(status)) {
+            return "DRAFT";
+        }
+        return status == null ? null : status.toUpperCase();
     }
 }

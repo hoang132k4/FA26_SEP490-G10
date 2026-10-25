@@ -41,8 +41,9 @@
                         <div>
                             <label class="form-label" for="courseStatus">Trạng thái</label>
                             <select class="form-select" id="courseStatus" name="status" required>
-                                <option value="ACTIVE" th:selected="${courseForm['status'] == 'ACTIVE'}">Đang hoạt động</option>
-                                <option value="INACTIVE" th:selected="${courseForm['status'] == 'INACTIVE'}">Tạm ẩn</option>
+                                <option value="PUBLISHED" th:selected="${courseForm['status'] == 'PUBLISHED'}">Published</option>
+                                <option value="DRAFT" th:selected="${courseForm['status'] == 'DRAFT'}">Unpublished</option>
+                                <option value="ARCHIVED" th:selected="${courseForm['status'] == 'ARCHIVED'}">Archived</option>
                             </select>
                         </div>
                     </div>
@@ -82,8 +83,9 @@
                 <label class="visually-hidden" for="courseStatusFilter">Lọc theo trạng thái</label>
                 <select id="courseStatusFilter" class="form-select">
                     <option value="">Tất cả trạng thái</option>
-                    <option value="ACTIVE">Đang hoạt động</option>
-                    <option value="INACTIVE">Tạm ẩn</option>
+                    <option value="PUBLISHED">Published</option>
+                    <option value="DRAFT">Unpublished</option>
+                    <option value="ARCHIVED">Archived</option>
                 </select>
             </div>
             <div class="col-lg-2">
@@ -107,13 +109,13 @@
                 </thead>
                 <tbody>
                     <tr th:each="course : ${courses}" class="course-data-row"
-                        th:attr="data-id=${course['id']},data-name=${course['name']},data-level=${course['level']},data-status=${course['status']}"
+                        th:attr="data-id=${course['id']},data-name=${course['name']},data-level=${course['level']},data-status=${course['statusFilterValue']}"
                         style="border-bottom:1px solid var(--border-light);">
                         <td class="ps-4 py-3 text-muted" th:text="${course['id']}">1</td>
                         <td class="py-3 fw-semibold" style="color:var(--text-main);" th:text="${course['name']}">Tên khóa học</td>
                         <td class="py-3"><span class="badge rounded-pill" style="background:var(--steel-blue);color:#fff;" th:text="${course['level']}">N5</span></td>
                         <td class="py-3" th:text="${course['lessonCount']}">—</td>
-                        <td class="py-3" th:text="${course['status']}">Trạng thái</td>
+                        <td class="py-3" th:text="${course['statusLabel']}">Status</td>
                         <td class="pe-4 py-3"><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}"><i class="bi bi-pencil"></i> Sửa</a></td>
                     </tr>
                     <tr id="courseEmptyState" th:hidden="${!#lists.isEmpty(courses)}">
@@ -157,7 +159,7 @@
                 const matches = rows.filter(row => {
                     const matchesText = normalize(row.dataset.name + ' ' + row.dataset.id).includes(query);
                     const matchesLevel = !levelFilter.value || (row.dataset.level || '').toUpperCase() === levelFilter.value;
-                    const matchesStatus = !statusFilter.value || (row.dataset.status || '').toUpperCase() === statusFilter.value;
+                    const matchesStatus = !statusFilter.value || (row.dataset.status || '').toLowerCase() === statusFilter.value.toLowerCase();
                     return matchesText && matchesLevel && matchesStatus;
                 });
                 const size = Number(pageSize.value);
