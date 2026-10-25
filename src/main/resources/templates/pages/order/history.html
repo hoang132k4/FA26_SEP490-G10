@@ -1,0 +1,137 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Lịch sử đơn hàng - JEPS',
+    activeMenu='orders',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Breadcrumb & Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Lịch sử đơn hàng</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Lịch sử đơn hàng (Order History)</h3>
+            </div>
+            <div>
+                <a th:href="@{/courses}" class="btn btn-outline-primary px-3 shadow-sm">
+                    <i class="bi bi-cart-plus me-1"></i> Khám phá khóa học
+                </a>
+            </div>
+        </div>
+
+        <!-- Alert Notification (if redirected with error) -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Status Filter Tabs (Mockup element 1) -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a th:href="@{/orders(status='ALL')}"
+               class="btn btn-sm px-4 py-2 rounded-3 fw-semibold border"
+               th:classappend="${currentStatus == 'ALL'} ? 'btn-primary shadow-sm text-white' : 'btn-light text-secondary'">
+                Tất cả (All Orders)
+            </a>
+            <a th:href="@{/orders(status='PROCESSING')}"
+               class="btn btn-sm px-4 py-2 rounded-3 fw-semibold border"
+               th:classappend="${currentStatus == 'PROCESSING'} ? 'btn-primary shadow-sm text-white' : 'btn-light text-secondary'">
+                Đang xử lý (Processing)
+            </a>
+            <a th:href="@{/orders(status='COMPLETED')}"
+               class="btn btn-sm px-4 py-2 rounded-3 fw-semibold border"
+               th:classappend="${currentStatus == 'COMPLETED'} ? 'btn-primary shadow-sm text-white' : 'btn-light text-secondary'">
+                Hoàn thành (Completed)
+            </a>
+            <a th:href="@{/orders(status='CANCELLED')}"
+               class="btn btn-sm px-4 py-2 rounded-3 fw-semibold border"
+               th:classappend="${currentStatus == 'CANCELLED'} ? 'btn-primary shadow-sm text-white' : 'btn-light text-secondary'">
+                Đã hủy (Cancelled)
+            </a>
+        </div>
+
+        <!-- Orders Table Card -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            <div class="table-responsive" th:if="${hasOrders}">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase fw-semibold" style="border-bottom: 2px solid var(--border-subtle);">
+                        <tr>
+                            <th scope="col" class="ps-4 py-3">Order No.</th>
+                            <th scope="col" class="py-3">Date</th>
+                            <th scope="col" class="py-3">Course / Summary</th>
+                            <th scope="col" class="py-3">Total</th>
+                            <th scope="col" class="py-3">Status</th>
+                            <th scope="col" class="text-end pe-4 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="order : ${orders}" class="border-bottom">
+                            <!-- Order Number -->
+                            <td class="ps-4 py-3 fw-bold" style="color: var(--navy-dark)">
+                                <span th:text="${order.orderNumber}">ORD-20261009-001</span>
+                            </td>
+
+                            <!-- Order Date -->
+                            <td class="py-3 text-muted" th:text="${order.orderDateFormatted}">
+                                2026/10/09
+                            </td>
+
+                            <!-- Course / Item Summary -->
+                            <td class="py-3" style="color: var(--text-main)">
+                                <span class="fw-semibold" th:text="${order.itemSummary}">JLPT N4 Full Course</span>
+                            </td>
+
+                            <!-- Total Amount -->
+                            <td class="py-3 fw-bold" style="color: var(--navy-dark)" th:text="${order.totalAmountFormatted}">
+                                2,500,000 VND
+                            </td>
+
+                            <!-- Order Status Badge -->
+                            <td class="py-3">
+                                <span th:if="${order.orderStatus.name() == 'COMPLETED'}" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold">
+                                    <i class="bi bi-check-circle me-1"></i> Completed
+                                </span>
+                                <span th:if="${order.orderStatus.name() == 'PROCESSING'}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-semibold">
+                                    <i class="bi bi-clock-history me-1"></i> Processing
+                                </span>
+                                <span th:if="${order.orderStatus.name() == 'CANCELLED'}" class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold">
+                                    <i class="bi bi-x-circle me-1"></i> Cancelled
+                                </span>
+                            </td>
+
+                            <!-- Action: View Detail (Mockup element 2) -->
+                            <td class="text-end pe-4 py-3">
+                                <a th:href="@{/orders/{orderNumber}(orderNumber=${order.orderNumber})}"
+                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                                    View Detail <i class="bi bi-chevron-right small ms-1"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div th:unless="${hasOrders}" class="p-5 text-center">
+                <div class="mb-3">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center bg-light text-muted" style="width: 80px; height: 80px;">
+                        <i class="bi bi-receipt fs-1"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold mb-1" style="color: var(--navy-dark)">Không tìm thấy đơn hàng</h5>
+                <p class="text-muted small mb-4">Bạn chưa có đơn hàng nào phù hợp với bộ lọc này.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a th:href="@{/orders(status='ALL')}" class="btn btn-outline-secondary px-3 py-2 rounded-3">
+                        Xem tất cả đơn hàng
+                    </a>
+                    <a th:href="@{/courses}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
+                        <i class="bi bi-bag-plus me-1"></i> Khám phá khóa học ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
