@@ -1,4 +1,4 @@
-package com.jlpp.modules.manager.course.controller;
+package com.jlpp.modules.manager.courses.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

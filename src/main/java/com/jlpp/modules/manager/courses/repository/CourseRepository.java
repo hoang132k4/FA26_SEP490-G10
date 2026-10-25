@@ -1,6 +1,6 @@
-package com.jlpp.modules.manager.course.repository;
+package com.jlpp.modules.manager.courses.repository;
 
-import com.jlpp.modules.manager.course.dto.CourseOption;
+import com.jlpp.modules.manager.courses.dto.CourseOption;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;

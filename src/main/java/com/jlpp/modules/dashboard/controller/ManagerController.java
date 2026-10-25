@@ -16,12 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
-import com.jlpp.modules.manager.course.dto.CourseOption;
-import com.jlpp.modules.manager.course.service.CourseService;
+import com.jlpp.modules.manager.courses.dto.CourseOption;
+import com.jlpp.modules.manager.courses.service.CourseService;
 
 /**
  * Manager area pages. Lesson management lives in
- * {@link com.jlpp.modules.manager.lesson.controller.ManagerLessonController}.
+ * {@link com.jlpp.modules.manager.lessons.controller.ManagerLessonController}.
  */
 @Controller
 @RequestMapping("/manager")
@@ -130,11 +130,6 @@ public class ManagerController {
             throw new IllegalArgumentException("Vui lòng chọn trạng thái hợp lệ.");
         }
         return value;
-    }
-
-    @GetMapping("/flashcards")
-    public String flashcards() {
-        return "pages/manager/course/manager-flashcards";
     }
 
     @GetMapping("/reports")
