@@ -1,0 +1,61 @@
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Cập nhật người dùng',
+    activeMenu='users',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="mb-4">
+            <a class="small text-decoration-none" th:href="@{/admin/users/{id}(id=${user.userId})}">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại chi tiết người dùng
+            </a>
+            <h1 class="h3 fw-bold mt-2 mb-1">Cập nhật tài khoản</h1>
+            <p class="text-muted mb-0">Mật khẩu không được hiển thị hoặc thay đổi từ màn hình này.</p>
+        </div>
+
+        <section class="card kotoba-card p-4">
+            <form th:action="@{/admin/users/{id}(id=${user.userId})}" th:object="${userUpdateRequest}" method="post">
+                <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
+                    <p class="mb-0" th:each="error : ${#fields.globalErrors()}" th:text="${error}">Không thể cập nhật.</p>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="fullName" class="form-label fw-semibold">Họ và tên</label>
+                        <input id="fullName" type="text" class="form-control" th:field="*{fullName}" required maxlength="150">
+                        <div class="small text-danger mt-1" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}">Lỗi</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="username" class="form-label fw-semibold">Tên đăng nhập</label>
+                        <input id="username" type="text" class="form-control" th:field="*{username}" required maxlength="100">
+                        <div class="small text-danger mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Lỗi</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label fw-semibold">Email</label>
+                        <input id="email" type="email" class="form-control" th:field="*{email}" required maxlength="254">
+                        <div class="small text-danger mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Lỗi</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="role" class="form-label fw-semibold">Vai trò</label>
+                        <select id="role" class="form-select" th:field="*{role}" required>
+                            <option value="">Chọn vai trò</option>
+                            <option th:each="role : ${roles}" th:value="${role}" th:text="${role}">LEARNER</option>
+                        </select>
+                        <div class="small text-danger mt-1" th:if="${#fields.hasErrors('role')}" th:errors="*{role}">Lỗi</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="accountStatus" class="form-label fw-semibold">Trạng thái tài khoản</label>
+                        <select id="accountStatus" class="form-select" th:field="*{accountStatus}" required>
+                            <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}">ACTIVE</option>
+                        </select>
+                        <div class="small text-danger mt-1" th:if="${#fields.hasErrors('accountStatus')}" th:errors="*{accountStatus}">Lỗi</div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a class="btn btn-outline-secondary rounded-pill" th:href="@{/admin/users/{id}(id=${user.userId})}">Hủy</a>
+                    <button type="submit" class="btn btn-primary rounded-pill">
+                        <i class="bi bi-check2 me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>

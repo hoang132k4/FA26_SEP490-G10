@@ -1,9 +1,9 @@
 package com.jlpp.modules.course.entity;
 
-import com.jlpp.common.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +14,17 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "courses")
-public class Course extends BaseEntity {
+public class Course {
+
+    @Id
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -84,4 +94,69 @@ public class Course extends BaseEntity {
     @OrderBy("orderIndex ASC")
     @Builder.Default
     private List<Lesson> lessons = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public Course(Long courseId, String courseTitle, String jlptLevel, Double price, String description,
+                  String status, String duration, String thumbnailUrl, Integer lessonCount, Boolean featured) {
+        this.id = courseId;
+        this.title = courseTitle;
+        this.level = jlptLevel;
+        this.price = price;
+        this.shortDescription = description;
+        this.status = status;
+        this.thumbnailUrl = thumbnailUrl;
+        this.lessonCount = lessonCount;
+        this.featured = featured;
+    }
+
+    // Alias methods for compatibility across modules
+    public Long getCourseId() {
+        return getId();
+    }
+
+    public void setCourseId(Long courseId) {
+        this.id = courseId;
+    }
+
+    public String getCourseTitle() {
+        return title;
+    }
+
+    public void setCourseTitle(String courseTitle) {
+        this.title = courseTitle;
+    }
+
+    public String getJlptLevel() {
+        return level;
+    }
+
+    public void setJlptLevel(String jlptLevel) {
+        this.level = jlptLevel;
+    }
+
+    public String getDescription() {
+        return shortDescription != null && !shortDescription.isBlank() ? shortDescription : fullDescription;
+    }
+
+    public String getThumbnail() {
+        return thumbnailUrl;
+    }
+
+    public String getDuration() {
+        return durationHours != null ? durationHours + " giờ" : "40 giờ";
+    }
 }

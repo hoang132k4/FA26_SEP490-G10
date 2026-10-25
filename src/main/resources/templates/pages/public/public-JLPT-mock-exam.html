@@ -1,0 +1,93 @@
+<div th:replace="~{layouts/public-layout :: html(
+    pageTitle='JLPT Mock Exam',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <section class="card kotoba-card p-4 p-lg-5 mb-4">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <span class="text-uppercase fw-bold small text-muted">Luyện tập theo cấp độ</span>
+                    <h1 class="fw-bold mb-2">JLPT Mock Exam</h1>
+                    <p class="text-muted mb-0">Xem các đề thi thử được công bố từ hệ thống.</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <span class="badge rounded-pill px-3 py-2" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                        <i class="bi bi-unlock me-1"></i> Xem công khai
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section th:if="${exam != null}" class="card kotoba-card p-4 p-lg-5 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div>
+                    <span class="text-uppercase fw-bold small text-muted">Chi tiết đề thi</span>
+                    <h2 class="fw-bold mb-1" th:text="${exam.examTitle}">Exam title</h2>
+                    <p class="text-muted mb-0" th:if="${exam.description != null}" th:text="${exam.description}">Exam description</p>
+                </div>
+                <a th:href="@{/mock-exam}" class="btn btn-light border rounded-pill">Back to JLPT Mock Exam</a>
+            </div>
+            <div class="row g-3">
+                <div class="col-sm-6 col-lg-3" th:if="${exam.jlptLevel != null}">
+                    <div class="p-3 rounded-3 h-100" style="background-color: #F6F8FA;">
+                        <span class="small text-muted d-block">JLPT level</span>
+                        <strong class="fs-5" th:text="${exam.jlptLevel}">N5</strong>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3" th:if="${exam.durationMinutes != null}">
+                    <div class="p-3 rounded-3 h-100" style="background-color: #F6F8FA;">
+                        <span class="small text-muted d-block">Duration</span>
+                        <strong class="fs-5" th:text="${exam.durationMinutes + ' minutes'}">60 minutes</strong>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3" th:if="${exam.totalQuestions != null}">
+                    <div class="p-3 rounded-3 h-100" style="background-color: #F6F8FA;">
+                        <span class="small text-muted d-block">Questions</span>
+                        <strong class="fs-5" th:text="${exam.totalQuestions}">0</strong>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3" th:if="${exam.passingScore != null}">
+                    <div class="p-3 rounded-3 h-100" style="background-color: #F6F8FA;">
+                        <span class="small text-muted d-block">Passing score</span>
+                        <strong class="fs-5" th:text="${exam.passingScore}">0</strong>
+                    </div>
+                </div>
+            </div>
+            <a th:href="@{/exams/{id}/start(id=${exam.examId})}" class="btn btn-steel mt-4">
+                <span th:if="${isAuthenticated}">Start exam</span>
+                <span th:unless="${isAuthenticated}">Register to take the test</span>
+                <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </section>
+
+        <section th:if="${exam == null and !mockExams.isEmpty()}" class="row g-3 mb-4">
+            <div th:each="mockExam : ${mockExams}" class="col-md-6 col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex align-items-start justify-content-between mb-3">
+                        <div>
+                            <span class="badge rounded-pill mb-2" style="background-color: #EBF4FA; color: var(--navy-dark);"
+                                  th:if="${mockExam.jlptLevel != null}" th:text="${mockExam.jlptLevel}">N5</span>
+                            <h2 class="h4 fw-bold mb-0" th:text="${mockExam.examTitle}">Exam title</h2>
+                        </div>
+                        <i class="bi bi-pencil-square fs-3" style="color: var(--steel-blue);"></i>
+                    </div>
+                    <p class="text-muted flex-grow-1" th:if="${mockExam.description != null}" th:text="${mockExam.description}"></p>
+                    <div class="small text-muted mb-3">
+                        <span th:if="${mockExam.durationMinutes != null}" th:text="${mockExam.durationMinutes + ' minutes'}"></span>
+                        <span th:if="${mockExam.durationMinutes != null and mockExam.totalQuestions != null}"> &bull; </span>
+                        <span th:if="${mockExam.totalQuestions != null}" th:text="${mockExam.totalQuestions + ' questions'}"></span>
+                    </div>
+                    <a class="btn btn-steel-outline w-100" th:href="@{/mock-exam/{id}(id=${mockExam.examId})}">
+                        View exam details <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </article>
+            </div>
+        </section>
+
+        <div th:if="${exam == null and mockExams.isEmpty()}" class="card kotoba-card text-center p-5">
+            <i class="bi bi-journal-x fs-1 text-muted mb-3"></i>
+            <h2 class="h4 fw-bold">No JLPT mock exams are available</h2>
+            <p class="text-muted mb-0">There are currently no JLPT mock exam records in the database.</p>
+        </div>
+    </div>
+</div>

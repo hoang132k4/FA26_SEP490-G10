@@ -41,4 +41,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.status = 'PUBLISHED' " +
            "AND c.level = :level ORDER BY c.enrollmentCount DESC")
     List<Course> findRecommendedByLevel(@Param("level") String level);
+
+    @Query("SELECT c FROM Course c WHERE c.featured = true ORDER BY c.id ASC")
+    List<Course> findByFeaturedTrueOrderByCourseIdAsc();
 }

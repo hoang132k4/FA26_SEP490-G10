@@ -1,0 +1,52 @@
+<div th:replace="~{layouts/public-layout :: html(
+    pageTitle='Course List',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <section class="card kotoba-card p-4 p-lg-5 mb-4">
+            <span class="text-uppercase fw-bold small text-muted">Chương trình đào tạo</span>
+            <div class="row align-items-end g-3">
+                <div class="col-lg-7">
+                    <h1 class="fw-bold mb-2">Course List</h1>
+                    <p class="text-muted mb-0">Khóa học luyện thi JLPT theo từng cấp độ từ N5 đến N1.</p>
+                </div>
+                <div class="col-lg-5">
+                    <form th:action="@{/courses}" method="get" class="d-flex gap-2">
+                        <input type="hidden" name="level" th:value="${selectedLevel}">
+                        <label for="courseSearch" class="visually-hidden">Tìm khóa học</label>
+                        <input id="courseSearch" class="form-control rounded-pill" type="search" name="q"
+                               th:value="${searchQuery}" placeholder="Tìm theo tên, cấp độ...">
+                        <button class="btn btn-steel" type="submit"><i class="bi bi-search me-1"></i>Tìm</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-4" aria-label="Lọc khóa học theo cấp độ">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a class="btn btn-sm rounded-pill"
+                   th:classappend="${selectedLevel == ''} ? 'btn-steel' : 'btn-steel-outline'"
+                   th:href="@{/courses(q=${searchQuery})}">Tất cả cấp độ</a>
+                <a th:each="level : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }"
+                   class="btn btn-sm rounded-pill"
+                   th:classappend="${selectedLevel == level} ? 'btn-steel' : 'btn-steel-outline'"
+                   th:href="@{/courses(level=${level},q=${searchQuery})}"
+                   th:text="${level}">N5</a>
+                <span class="small text-muted ms-auto" th:text="${courseCount + ' khóa học'}">5 khóa học</span>
+            </div>
+        </section>
+
+        <div th:if="${!courses.isEmpty()}" class="row">
+            <div th:each="course : ${courses}">
+                <div th:replace="~{fragments/components/course-card :: courseCard(${course}, false)}"></div>
+            </div>
+        </div>
+
+        <div th:if="${courses.isEmpty()}" class="card kotoba-card text-center p-5">
+            <i class="bi bi-search fs-1 text-muted mb-3"></i>
+            <h2 class="h4 fw-bold">Không tìm thấy khóa học phù hợp</h2>
+            <p class="text-muted mb-3">Hãy thử từ khóa khác hoặc xem tất cả khóa học.</p>
+            <a th:href="@{/courses}" class="btn btn-steel align-self-center">View Course List</a>
+        </div>
+    </div>
+</div>

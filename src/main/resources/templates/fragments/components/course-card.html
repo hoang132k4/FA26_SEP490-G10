@@ -5,10 +5,17 @@
         <div class="card h-100 kotoba-card overflow-hidden d-flex flex-column" th:if="${course != null}">
             <!-- Thumbnail & Level Badge -->
             <div class="position-relative">
-                <img th:src="${course.thumbnailUrl != null && !#strings.isEmpty(course.thumbnailUrl) ? course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                <img th:if="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                     th:src="${course.thumbnail}" 
                      class="card-img-top" 
                      th:alt="${course.title}" 
                      style="height: 195px; object-fit: cover;">
+                <img th:unless="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                     th:src="${course.thumbnailUrl != null && !#strings.isEmpty(course.thumbnailUrl) ? course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                     class="card-img-top" 
+                     th:alt="${course.title}" 
+                     style="height: 195px; object-fit: cover;">
+                
                 <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill shadow-sm" 
                       style="background-color: var(--navy-dark); color: white; font-weight: 700; letter-spacing: 0.5px;"
                       th:text="${course.level != null ? course.level : 'N5'}">N5</span>
@@ -23,7 +30,7 @@
                 <!-- Meta: Duration & Lesson count -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="small text-muted">
-                        <i class="bi bi-clock me-1 text-primary"></i> <span th:text="${course.durationHours != null ? course.durationHours + ' giờ học' : '40 giờ'}">40 giờ</span>
+                        <i class="bi bi-clock me-1 text-primary"></i> <span th:text="${course.duration != null ? course.duration : (course.durationHours != null ? course.durationHours + ' giờ học' : '40 giờ')}">40 giờ</span>
                     </span>
                     <span class="small text-muted">
                         <i class="bi bi-journal-bookmark me-1 text-primary"></i> <span th:text="${course.lessonCount != null ? course.lessonCount + ' bài học' : '30 bài'}">30 bài</span>
@@ -32,17 +39,14 @@
                 
                 <!-- Title -->
                 <h5 class="card-title fw-bold text-dark mb-2" style="line-height: 1.4;">
-                    <a th:if="${isLearner == null || !isLearner}" th:href="@{/courses/{id}(id=${course.id})}" class="text-decoration-none text-dark hover-primary" th:text="${course.title}">
-                        Khóa học Nhập môn Tiếng Nhật JLPT
-                    </a>
-                    <a th:if="${isLearner != null && isLearner}" th:href="@{/learning/courses/{id}(id=${course.id})}" class="text-decoration-none text-dark hover-primary" th:text="${course.title}">
+                    <a th:href="@{/courses/{id}(id=${course.id})}" class="text-decoration-none text-dark hover-primary" th:text="${course.title}">
                         Khóa học Nhập môn Tiếng Nhật JLPT
                     </a>
                 </h5>
 
                 <!-- Description -->
                 <p class="card-text text-muted small flex-grow-1 mb-3" style="line-height: 1.6;" 
-                   th:text="${course.shortDescription != null ? #strings.abbreviate(course.shortDescription, 110) : 'Chương trình đào tạo toàn diện kiến thức theo chuẩn kỳ thi JLPT.'}">
+                   th:text="${course.description != null ? #strings.abbreviate(course.description, 110) : 'Chương trình đào tạo toàn diện kiến thức theo chuẩn kỳ thi JLPT.'}">
                     Mô tả tóm tắt nội dung khóa học...
                 </p>
 
@@ -76,11 +80,8 @@
 
                     <!-- CTA Buttons -->
                     <div class="d-flex gap-2">
-                        <a th:if="${isLearner == null || !isLearner}" th:href="@{/courses/{id}(id=${course.id})}" class="btn btn-steel-outline btn-sm px-3">
-                            Chi tiết
-                        </a>
-                        <a th:if="${isLearner != null && isLearner}" th:href="@{/learning/courses/{id}(id=${course.id})}" class="btn btn-steel btn-sm px-3">
-                            Xem khóa học
+                        <a th:href="@{/courses/{id}(id=${course.id})}" class="btn btn-steel-outline btn-sm px-3">
+                            Course preview
                         </a>
                     </div>
                 </div>
