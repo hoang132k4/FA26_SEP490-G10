@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
-public class PublicCourseController {
+public class PublicPageController {
 
     @GetMapping("/")
     public String home() {
