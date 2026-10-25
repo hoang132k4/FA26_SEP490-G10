@@ -43,4 +43,14 @@ public class User extends BaseEntity {
 
     @Column(name = "target_jlpt_level", length = 20)
     private String targetJlptLevel;
+
+    @Column(name = "auth_provider", length = 30)
+    @Builder.Default
+    private String authProvider = "LOCAL";
+
+    @Column(name = "provider_id", length = 100)
+    private String providerId;
+
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
 }

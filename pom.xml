@@ -63,6 +63,12 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- Spring Security OAuth2 Client for Google Login & Registration -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
         <!-- Mail Sender for Reset Password link -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
