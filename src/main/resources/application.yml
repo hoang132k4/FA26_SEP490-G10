@@ -13,6 +13,17 @@ spring:
     mode: HTML
     encoding: UTF-8
 
+  # Spring Security OAuth2 Client Configuration for Google Sign In / Sign Up
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:google-client-id-placeholder}
+            client-secret: ${GOOGLE_CLIENT_SECRET:google-client-secret-placeholder}
+            scope: openid,profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
   # Supabase PostgreSQL Database configuration
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0}

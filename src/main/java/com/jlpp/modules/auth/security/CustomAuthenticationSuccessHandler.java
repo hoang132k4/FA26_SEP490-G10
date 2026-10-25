@@ -1,5 +1,7 @@
 package com.jlpp.modules.auth.security;
 
+import com.jlpp.modules.auth.model.CustomOAuth2User;
+import com.jlpp.modules.user.entity.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,6 +31,17 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             Authentication authentication) throws IOException, ServletException {
 
         clearAuthenticationAttributes(request);
+
+        // Check if authenticated user logged in via OAuth2 and requires profile completion (phone number)
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof CustomOAuth2User oAuth2User) {
+            User user = oAuth2User.getUser();
+            if (user.getPhone() == null || user.getPhone().isBlank()) {
+                log.info("Google authenticated user '{}' requires profile completion (phone missing). Redirecting to /auth/complete-profile", user.getEmail());
+                redirectStrategy.sendRedirect(request, response, "/auth/complete-profile");
+                return;
+            }
+        }
 
         String targetUrl = determineTargetUrl(authentication);
         log.info("User '{}' authenticated successfully, redirecting to: {}", authentication.getName(), targetUrl);

@@ -49,6 +49,9 @@ public class PasswordResetServiceTest {
     private EmailService emailService;
 
     @Mock
+    private com.jlpp.modules.auth.service.RegisterService registerService;
+
+    @Mock
     private com.jlpp.modules.auth.service.ChangePasswordService changePasswordService;
 
     private PasswordResetTokenStore tokenStore;
@@ -80,7 +83,7 @@ public class PasswordResetServiceTest {
         ReflectionTestUtils.setField(passwordResetService, "baseUrl", "http://localhost:8081");
         ReflectionTestUtils.setField(passwordResetService, "tokenValidityMinutes", 15);
 
-        authController = new AuthController(passwordResetService, changePasswordService);
+        authController = new AuthController(registerService, passwordResetService, changePasswordService, userRepository);
         validator = Validation.buildDefaultValidatorFactory().getValidator();
 
         testUser = User.builder()
