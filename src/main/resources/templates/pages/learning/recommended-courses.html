@@ -134,7 +134,9 @@
 
             <!-- Other Courses Grid -->
             <div class="row">
-                <div th:each="c : ${otherCourses}" th:replace="~{fragments/components/course-card :: courseCard(${c}, true)}"></div>
+                <th:block th:each="c : ${otherCourses}">
+                    <div th:replace="~{fragments/components/course-card :: courseCard(${c}, true)}"></div>
+                </th:block>
             </div>
         </div>
     </div>
