@@ -1,18 +1,136 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Chá»‰nh sá»­a há»“ sÆ¡ - JLPP',
-    activeMenu='profile',
-    content=~{::#mainContent}
-)}">
+<div th:replace="${profile != null and !profile.learner} ? ~{layouts/admin-layout :: html('Chỉnh sửa hồ sơ - JEPS', 'profile', ~{::#mainContent})} : ~{layouts/learner-layout :: html('Chỉnh sửa hồ sơ - JEPS', 'profile', ~{::#mainContent})}">
     <div id="mainContent">
-        <div class="card p-4 jlpp-card col-md-8">
-            <h4 class="fw-bold mb-3">Chá»‰nh sá»­a thÃ´ng tin</h4>
-            <form th:action="@{/profile/edit}" method="post">
-                <div class="mb-3">
-                    <label class="form-label">Há» vÃ  tÃªn</label>
-                    <input type="text" name="fullName" class="form-control" th:value="">
+        <!-- Breadcrumb & Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{${profile.dashboardUrl}}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/profile}" class="text-decoration-none" style="color: var(--fuji-blue)">Hồ sơ cá nhân</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Cập nhật thông tin cá nhân</h3>
+            </div>
+            <div>
+                <a th:href="@{/profile}" class="btn btn-outline-secondary px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại hồ sơ
+                </a>
+            </div>
+        </div>
+
+        <!-- Global Error Alert -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <form th:action="@{/profile/edit}" th:object="${editProfileRequest}" method="post">
+                        <!-- Họ và Tên -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" style="color: var(--text-main)" for="fullName">
+                                Họ và tên <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                                <input type="text"
+                                       id="fullName"
+                                       th:field="*{fullName}"
+                                       class="form-control border-start-0"
+                                       th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                                       placeholder="Nhập họ và tên đầy đủ"
+                                       required
+                                       maxlength="100">
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                        </div>
+
+                        <!-- Địa chỉ Email -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" style="color: var(--text-main)" for="email">
+                                Địa chỉ Email <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                                <input type="email"
+                                       id="email"
+                                       th:field="*{email}"
+                                       class="form-control border-start-0"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                                       placeholder="email@example.com"
+                                       required
+                                       maxlength="150">
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            <div class="form-text small text-muted">Email là định danh chính để đăng nhập hệ thống và nhận email khôi phục mật khẩu.</div>
+                        </div>
+
+                        <!-- Số điện thoại -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold" style="color: var(--text-main)" for="phone">
+                                Số điện thoại
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-telephone"></i></span>
+                                <input type="tel"
+                                       id="phone"
+                                       th:field="*{phone}"
+                                       class="form-control border-start-0"
+                                       th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''"
+                                       placeholder="Ví dụ: 0912345678"
+                                       maxlength="20">
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                            <div class="form-text small text-muted">Số điện thoại di động gồm 10 chữ số bắt đầu bằng số 0 (không bắt buộc).</div>
+                        </div>
+
+                        <hr class="text-muted my-4 opacity-25">
+
+                        <!-- Read-only Account Information Section -->
+                        <h6 class="fw-bold mb-3" style="color: var(--navy-dark)">Thông tin hệ thống cố định (Không thể sửa đổi)</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <span class="text-muted small d-block mb-1">Tên đăng nhập</span>
+                                    <strong class="text-secondary" th:text="${profile.username != null ? profile.username : 'Chưa thiết lập'}">learner01</strong>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <span class="text-muted small d-block mb-1">Vai trò tài khoản</span>
+                                    <strong class="text-secondary" th:text="${profile.roleDisplayName}">Học viên</strong>
+                                </div>
+                            </div>
+                            <div class="col-sm-6" th:if="${profile.learner}">
+                                <div class="p-3 bg-light rounded-3">
+                                    <span class="text-muted small d-block mb-1">Trình độ JLPT hiện tại</span>
+                                    <span class="badge bg-secondary" th:text="${profile.currentJlptLevel}">N5</span>
+                                </div>
+                            </div>
+                            <div class="col-sm-6" th:if="${profile.learner}">
+                                <div class="p-3 bg-light rounded-3">
+                                    <span class="text-muted small d-block mb-1">Mục tiêu JLPT</span>
+                                    <span class="badge" style="background-color: var(--sunset-coral); color: white;" th:text="${profile.targetJlptLevel}">N3</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Action Buttons -->
+                        <div class="d-flex justify-content-between align-items-center pt-2">
+                            <a th:href="@{/profile}" class="btn btn-outline-secondary px-4 py-2">
+                                <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold shadow-sm">
+                                <i class="bi bi-check-circle me-1"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <button type="submit" class="btn btn-primary">LÆ°u</button>
-            </form>
+            </div>
         </div>
     </div>
 </div>

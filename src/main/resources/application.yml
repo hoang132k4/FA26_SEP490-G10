@@ -71,6 +71,20 @@ app:
     rate-limit-per-window: 3
     rate-limit-window-minutes: 15
 
+  # Mail configuration (uses env vars if provided)
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_SMTP_STARTTLS:false}
+
+
 # Logging
 logging:
   level:

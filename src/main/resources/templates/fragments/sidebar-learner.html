@@ -84,6 +84,12 @@
                     <span>Tiến độ học</span>
                 </a>
             </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'profile'} ? 'active' : ''" th:href="@{/profile}">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Hồ sơ cá nhân</span>
+                </a>
+            </li>
         </ul>
 
         <!-- Bottom Artistic Fuji Watermark & Japanese Motifs -->
