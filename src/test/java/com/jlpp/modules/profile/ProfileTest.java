@@ -17,11 +17,15 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.mock.web.MockMultipartFile;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -342,5 +346,63 @@ public class ProfileTest {
         assertThatThrownBy(() -> profileService.updateProfile(LEARNER_EMAIL, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Địa chỉ email đã được sử dụng");
+    }
+
+    @Test
+    @DisplayName("SRV-04: ProfileService.updateAvatar uploads image and saves avatarUrl successfully")
+    void profileService_updateAvatar_success() {
+        MockMultipartFile avatarFile = new MockMultipartFile(
+                "avatarFile",
+                "test-avatar.png",
+                "image/png",
+                "fake-image-bytes".getBytes()
+        );
+
+        ProfileResponse response = profileService.updateAvatar(LEARNER_EMAIL, avatarFile);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getAvatarUrl()).isNotNull();
+        assertThat(response.getAvatarUrl()).startsWith("/uploads/avatars/avatar_");
+
+        User updatedUser = userRepository.findByEmailIgnoreCase(LEARNER_EMAIL).orElseThrow();
+        assertThat(updatedUser.getAvatarUrl()).isEqualTo(response.getAvatarUrl());
+    }
+
+    @Test
+    @DisplayName("SRV-05: ProfileService.updateAvatar rejects non-image files")
+    void profileService_updateAvatar_invalidType_throwsException() {
+        MockMultipartFile textFile = new MockMultipartFile(
+                "avatarFile",
+                "malicious.txt",
+                "text/plain",
+                "not an image".getBytes()
+        );
+
+        assertThatThrownBy(() -> profileService.updateAvatar(LEARNER_EMAIL, textFile))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Chỉ chấp nhận tệp hình ảnh");
+    }
+
+    @Test
+    @DisplayName("WEB-06: POST /profile/avatar handles file upload and redirects to /profile with flash message")
+    void profileController_updateAvatar_success() throws Exception {
+        MockMultipartFile validImage = new MockMultipartFile(
+                "avatarFile",
+                "my-photo.jpg",
+                "image/jpeg",
+                "sample-image-content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/profile/avatar")
+                        .file(validImage)
+                        .with(csrf())
+                        .with(user(LEARNER_EMAIL).roles("LEARNER")))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/profile"))
+                .andExpect(flash().attribute("successMessage", "Cập nhật ảnh đại diện thành công!"));
+
+        User user = userRepository.findByEmailIgnoreCase(LEARNER_EMAIL).orElseThrow();
+        assertThat(user.getAvatarUrl()).isNotNull();
+        assertThat(user.getAvatarUrl()).startsWith("/uploads/avatars/avatar_");
     }
 }

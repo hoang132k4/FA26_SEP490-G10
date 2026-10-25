@@ -26,34 +26,41 @@
             <div class="collapse navbar-collapse" id="topNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/}">Trang chủ</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/}">Home Page</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/courses}">Khóa học</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/courses}">Course List</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/mock-exam}">Thi thử JLPT</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/mock-exam}">JLPT Mock Exam</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/about}">Giới thiệu</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/about}">About Us</a>
                     </li>
                 </ul>
 
                 <div class="d-flex align-items-center gap-3">
                     <!-- If Not Authenticated -->
-                    <div th:if="${role == null || role == 'GUEST'}" class="d-flex gap-2">
+                    <div th:if="${(currentUser == null and (role == null or role == 'GUEST' or role == '')) and (isAuthenticated == null or !isAuthenticated)}" class="d-flex gap-2">
                         <a th:href="@{/auth/login}" class="btn btn-steel-outline btn-sm">Đăng nhập</a>
                         <a th:href="@{/auth/register}" class="btn btn-steel btn-sm">Bắt đầu học</a>
                     </div>
 
                     <!-- If Authenticated -->
-                    <div th:if="${role != null && role != 'GUEST'}" class="dropdown">
-                        <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle fs-5" style="color: var(--navy-dark)"></i>
-                            <span th:text="${userName != null ? userName : 'Nguyễn Văn A'}">Nguyễn Văn A</span>
+                    <div th:if="${currentUser != null or (role != null and role != 'GUEST' and role != '') or (isAuthenticated != null and isAuthenticated)}" class="dropdown">
+                        <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-sm" type="button" data-bs-toggle="dropdown">
+                            <img th:if="${currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()}"
+                                 th:src="${currentUser.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover" style="width: 26px; height: 26px;" />
+                            <i th:unless="${currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()}" class="bi bi-person-circle fs-5" style="color: var(--navy-dark)"></i>
+                            <span th:text="${userName != null ? userName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : 'Học viên')}">Học viên</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
-                            <li><a class="dropdown-item py-2" th:href="@{/learning/dashboard}"><i class="bi bi-speedometer2 me-2"></i> Tổng quan học tập</a></li>
+                            <li>
+                                <a class="dropdown-item py-2"
+                                   th:href="@{${currentUser != null and currentUser.role != null and currentUser.role.name() == 'ADMIN' ? '/admin/dashboard' : (currentUser != null and currentUser.role != null and currentUser.role.name() == 'MANAGER' ? '/manager/dashboard' : '/learning/dashboard')}}">
+                                    <i class="bi bi-speedometer2 me-2"></i> Tổng quan học tập
+                                </a>
+                            </li>
                             <li><a class="dropdown-item py-2" th:href="@{/profile}"><i class="bi bi-person me-2"></i> Hồ sơ cá nhân</a></li>
                             <li><a class="dropdown-item py-2" th:href="@{/order/history}"><i class="bi bi-receipt me-2"></i> Đơn hàng</a></li>
                             <li><hr class="dropdown-divider"></li>

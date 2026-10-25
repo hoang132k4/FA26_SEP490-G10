@@ -35,3 +35,8 @@ target/
 .project
 .classpath
 
+# User Uploads & Local config
+uploads/**
+!uploads/.gitkeep
+application-local.yml
+

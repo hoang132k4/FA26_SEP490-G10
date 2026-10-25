@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
@@ -136,5 +138,27 @@ public class ProfileController {
             model.addAttribute("errorMessage", "Đã xảy ra lỗi khi đổi mật khẩu. Vui lòng thử lại sau.");
             return "pages/auth/change-password";
         }
+    }
+
+    @PostMapping("/avatar")
+    public String handleUpdateAvatar(
+            @RequestParam("avatarFile") MultipartFile avatarFile,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+
+        if (principal == null) {
+            return "redirect:/auth/login";
+        }
+
+        try {
+            profileService.updateAvatar(principal.getName(), avatarFile);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật ảnh đại diện thành công!");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Unexpected error updating avatar for user: {}", principal.getName(), ex);
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi tải ảnh đại diện lên.");
+        }
+        return "redirect:/profile";
     }
 }

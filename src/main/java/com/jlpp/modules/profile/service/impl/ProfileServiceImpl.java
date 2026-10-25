@@ -15,6 +15,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 
 @Slf4j
@@ -124,7 +131,55 @@ public class ProfileServiceImpl implements ProfileService {
                 .dashboardUrl(dashboardUrl)
                 .isLearner(user.getRole() == RoleEnum.LEARNER)
                 .createdAtFormatted(createdAtFormatted)
+                .avatarUrl(user.getAvatarUrl())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponse updateAvatar(String identifier, MultipartFile avatarFile) {
+        if (avatarFile == null || avatarFile.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn tệp ảnh hợp lệ.");
+        }
+
+        String contentType = avatarFile.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("Chỉ chấp nhận tệp hình ảnh (JPG, PNG, WEBP, GIF).");
+        }
+
+        if (avatarFile.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Kích thước ảnh tối đa là 5MB.");
+        }
+
+        User user = findUserByIdentifier(identifier);
+
+        try {
+            Path uploadDir = Paths.get("uploads", "avatars");
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            String originalFilename = avatarFile.getOriginalFilename();
+            String extension = ".png";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String fileName = "avatar_" + user.getId() + "_" + System.currentTimeMillis() + extension;
+            Path targetPath = uploadDir.resolve(fileName);
+
+            Files.copy(avatarFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            String avatarUrl = "/uploads/avatars/" + fileName;
+            user.setAvatarUrl(avatarUrl);
+            userRepository.save(user);
+
+            updateSecurityContext(user);
+            log.info("Avatar updated successfully for user ID: {}, path: {}", user.getId(), avatarUrl);
+            return mapToProfileResponse(user);
+        } catch (IOException e) {
+            log.error("Failed to save avatar image", e);
+            throw new RuntimeException("Không thể lưu ảnh đại diện. Vui lòng thử lại sau.", e);
+        }
     }
 
     private void updateSecurityContext(User user) {

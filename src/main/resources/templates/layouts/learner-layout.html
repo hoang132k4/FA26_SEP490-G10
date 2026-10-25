@@ -28,10 +28,21 @@
                 <!-- User Dropdown Profile -->
                 <div class="dropdown">
                     <button class="btn d-flex align-items-center gap-2 p-1 border-0" type="button" data-bs-toggle="dropdown">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: var(--navy-dark); color: white;">
-                            <i class="bi bi-person-fill fs-5"></i>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center overflow-hidden shadow-sm" style="width: 38px; height: 38px; background-color: var(--navy-dark); color: white;">
+                            <img th:if="${(currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty())}"
+                                 th:src="${currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty() ? currentUser.avatarUrl : profile.avatarUrl}"
+                                 alt="Avatar" class="w-100 h-100 object-fit-cover" />
+                            <span th:if="${((currentUser != null and (currentUser.avatarUrl == null or currentUser.avatarUrl.isEmpty())) or (profile != null and (profile.avatarUrl == null or profile.avatarUrl.isEmpty()))) and ((currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null))}"
+                                  class="fw-bold"
+                                  th:text="${currentUser != null and currentUser.fullName != null ? #strings.substring(currentUser.fullName, 0, 1).toUpperCase() : #strings.substring(profile.fullName, 0, 1).toUpperCase()}">
+                                U
+                            </span>
+                            <i th:unless="${(currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null)}" class="bi bi-person-fill fs-5"></i>
                         </div>
-                        <span class="fw-semibold small" style="color: var(--text-main);">Nguyễn Văn A</span>
+                        <span class="fw-semibold small" style="color: var(--text-main);"
+                              th:text="${currentUser != null and currentUser.fullName != null ? currentUser.fullName : (profile != null and profile.fullName != null ? profile.fullName : 'Học viên')}">
+                            Nguyễn Văn A
+                        </span>
                         <i class="bi bi-chevron-down small text-muted"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
