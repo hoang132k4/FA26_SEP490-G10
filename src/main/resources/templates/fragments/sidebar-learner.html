@@ -73,9 +73,9 @@
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'exams'} ? 'active' : ''" th:href="@{/exams}">
-                    <i class="bi bi-trophy"></i>
-                    <span>Luyện JLPT</span>
+                <a class="nav-link" th:classappend="${activeMenu == 'exams' or activeMenu == 'placement' or activeMenu == 'history' or activeMenu == 'exam-history'} ? 'active' : ''" th:href="@{/exams}">
+                    <i class="bi bi-award"></i>
+                    <span>Đánh giá năng lực</span>
                 </a>
             </li>
             <li>
@@ -84,6 +84,7 @@
                     <span>Tiến độ học</span>
                 </a>
             </li>
+
             <li>
                 <a class="nav-link" th:classappend="${activeMenu == 'profile'} ? 'active' : ''" th:href="@{/profile}">
                     <i class="bi bi-person-badge"></i>
