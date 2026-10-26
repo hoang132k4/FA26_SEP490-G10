@@ -4,8 +4,6 @@ import com.jlpp.common.constants.RoleEnum;
 import com.jlpp.modules.auth.controller.AuthController;
 import com.jlpp.modules.auth.dto.ForgotPasswordRequest;
 import com.jlpp.modules.auth.dto.ResetPasswordRequest;
-import com.jlpp.modules.auth.model.PasswordResetToken;
-import com.jlpp.modules.auth.repository.PasswordResetTokenStore;
 import com.jlpp.modules.auth.service.EmailService;
 import com.jlpp.modules.auth.service.PasswordResetService;
 import com.jlpp.modules.auth.service.RateLimiter;
@@ -54,7 +52,6 @@ public class PasswordResetServiceTest {
     @Mock
     private com.jlpp.modules.auth.service.ChangePasswordService changePasswordService;
 
-    private PasswordResetTokenStore tokenStore;
     private PasswordEncoder passwordEncoder;
     private RateLimiter rateLimiter;
     private PasswordResetServiceImpl passwordResetService;
@@ -67,7 +64,6 @@ public class PasswordResetServiceTest {
 
     @BeforeEach
     void setUp() {
-        tokenStore = new PasswordResetTokenStore();
         passwordEncoder = new BCryptPasswordEncoder(10);
         rateLimiter = new RateLimiter();
         ReflectionTestUtils.setField(rateLimiter, "maxRequests", 3);
@@ -75,7 +71,6 @@ public class PasswordResetServiceTest {
 
         passwordResetService = new PasswordResetServiceImpl(
                 userRepository,
-                tokenStore,
                 emailService,
                 passwordEncoder,
                 rateLimiter
@@ -95,6 +90,14 @@ public class PasswordResetServiceTest {
                 .status("ACTIVE")
                 .build();
         testUser.setId(100L);
+
+        lenient().when(userRepository.findByResetTokenHash(anyString())).thenAnswer(inv -> {
+            String hash = inv.getArgument(0);
+            if (testUser != null && hash != null && hash.equals(testUser.getResetTokenHash())) {
+                return Optional.of(testUser);
+            }
+            return Optional.empty();
+        });
     }
 
     @Test
@@ -163,17 +166,21 @@ public class PasswordResetServiceTest {
     @Test
     @DisplayName("RP-06: Expired credential - Reset rejected")
     void testRP06_ExpiredCredential_Rejected() {
-        PasswordResetToken expiredToken = PasswordResetToken.builder()
-                .tokenHash("sample-expired-hash")
-                .userId(testUser.getId())
-                .email(testEmail)
-                .expiryDate(LocalDateTime.now().minusMinutes(5)) // expired
-                .used(false)
-                .build();
-        tokenStore.save(expiredToken);
+        when(userRepository.findByEmailIgnoreCase(testEmail)).thenReturn(Optional.of(testUser));
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
 
-        assertThat(expiredToken.isExpired()).isTrue();
-        assertThat(expiredToken.isValid()).isFalse();
+        passwordResetService.processForgotPassword(testEmail);
+        verify(emailService).sendPasswordResetEmail(eq(testEmail), linkCaptor.capture());
+
+        String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
+
+        // Manually expire the token
+        testUser.setResetTokenExpiry(LocalDateTime.now().minusMinutes(5));
+
+        assertThat(passwordResetService.validateResetToken(rawToken)).isFalse();
+        assertThatThrownBy(() -> passwordResetService.resetPassword(rawToken, "NewPassword123!"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("đã hết hạn");
     }
 
     @Test
@@ -220,8 +227,8 @@ public class PasswordResetServiceTest {
     void testRP10_PasswordConfirmationMismatch_ValidationError() {
         ResetPasswordRequest request = ResetPasswordRequest.builder()
                 .token("valid-token")
-                .newPassword("ValidPassword123")
-                .confirmPassword("DifferentPassword123")
+                .newPassword("ValidPassword123!")
+                .confirmPassword("DifferentPassword123!")
                 .build();
 
         assertThat(request.isPasswordMatching()).isFalse();
@@ -240,7 +247,6 @@ public class PasswordResetServiceTest {
     @DisplayName("RP-11: Valid new password - Password updated successfully")
     void testRP11_ValidNewPassword_PasswordUpdated() {
         when(userRepository.findByEmailIgnoreCase(testEmail)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
 
         passwordResetService.processForgotPassword(testEmail);
@@ -251,15 +257,16 @@ public class PasswordResetServiceTest {
 
         passwordResetService.resetPassword(rawToken, newPassword);
 
-        verify(userRepository, times(1)).save(testUser);
+        verify(userRepository, atLeastOnce()).save(testUser);
         assertThat(passwordEncoder.matches(newPassword, testUser.getPassword())).isTrue();
+        assertThat(testUser.getResetTokenHash()).isNull();
+        assertThat(testUser.getResetTokenExpiry()).isNull();
     }
 
     @Test
     @DisplayName("RP-12: Reuse of consumed credential - Reset rejected")
     void testRP12_ReusedCredential_Rejected() {
         when(userRepository.findByEmailIgnoreCase(testEmail)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
 
         passwordResetService.processForgotPassword(testEmail);
@@ -268,10 +275,10 @@ public class PasswordResetServiceTest {
         String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
 
         // First use
-        passwordResetService.resetPassword(rawToken, "FirstNewPassword123");
+        passwordResetService.resetPassword(rawToken, "FirstNewPassword123!");
 
-        // Second use attempt must be rejected
-        assertThatThrownBy(() -> passwordResetService.resetPassword(rawToken, "SecondNewPassword123"))
+        // Second use attempt must be rejected because resetTokenHash is now null
+        assertThatThrownBy(() -> passwordResetService.resetPassword(rawToken, "SecondNewPassword123!"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -279,14 +286,13 @@ public class PasswordResetServiceTest {
     @DisplayName("RP-13: Login with new password - Authentication succeeds")
     void testRP13_LoginWithNewPassword_Succeeds() {
         when(userRepository.findByEmailIgnoreCase(testEmail)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
 
         passwordResetService.processForgotPassword(testEmail);
         verify(emailService).sendPasswordResetEmail(eq(testEmail), linkCaptor.capture());
 
         String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
-        String newPassword = "BrandNewPassword123";
+        String newPassword = "BrandNewPassword123!";
 
         passwordResetService.resetPassword(rawToken, newPassword);
 
@@ -297,14 +303,13 @@ public class PasswordResetServiceTest {
     @DisplayName("RP-14: Login with old password - Authentication fails")
     void testRP14_LoginWithOldPassword_Fails() {
         when(userRepository.findByEmailIgnoreCase(testEmail)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
 
         passwordResetService.processForgotPassword(testEmail);
         verify(emailService).sendPasswordResetEmail(eq(testEmail), linkCaptor.capture());
 
         String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
-        passwordResetService.resetPassword(rawToken, "NewlySetPassword123");
+        passwordResetService.resetPassword(rawToken, "NewlySetPassword123!");
 
         assertThat(passwordEncoder.matches(oldRawPassword, testUser.getPassword())).isFalse();
     }

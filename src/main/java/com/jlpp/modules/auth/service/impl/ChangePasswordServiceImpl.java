@@ -1,7 +1,6 @@
 package com.jlpp.modules.auth.service.impl;
 
 import com.jlpp.modules.auth.dto.ChangePasswordRequest;
-import com.jlpp.modules.auth.repository.PasswordResetTokenStore;
 import com.jlpp.modules.auth.service.ChangePasswordService;
 import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.user.repository.UserRepository;
@@ -18,7 +17,6 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final PasswordResetTokenStore tokenStore;
 
     @Override
     @Transactional
@@ -47,8 +45,8 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
 
         // 2. Verify new password is not empty and meets length requirements (GB-03)
         String newPassword = request.getNewPassword();
-        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 64) {
-            throw new IllegalArgumentException("Mật khẩu mới phải có độ dài từ 8 đến 64 ký tự.");
+        if (newPassword == null || !newPassword.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z\\d\\s]).{8,64}$")) {
+            throw new IllegalArgumentException("Mật khẩu phải từ 8-64 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
         }
 
         // 3. Verify confirmation matches new password
@@ -64,10 +62,11 @@ public class ChangePasswordServiceImpl implements ChangePasswordService {
         // 5. Hash and update password
         String encodedNewPassword = passwordEncoder.encode(newPassword);
         user.setPassword(encodedNewPassword);
-        userRepository.save(user);
 
         // 6. Invalidate any active reset tokens for this user
-        tokenStore.invalidateTokensForEmail(user.getEmail());
+        user.setResetTokenHash(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
 
         log.info("Password changed successfully for user ID: {}", user.getId());
     }
