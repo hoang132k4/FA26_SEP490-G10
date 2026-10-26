@@ -1,102 +1,121 @@
 <div th:replace="~{layouts/public-layout :: html(
-    pageTitle='Danh sách Khóa học - Kotoba',
+    pageTitle='Danh sách Khóa học JLPT - JEPS',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <!-- Filter Header -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom border-light">
-            <div>
-                <span class="text-uppercase fw-bold small text-muted">Chương trình đào tạo</span>
-                <h2 class="fw-bold mb-0 text-dark">Các Khóa học Luyện thi JLPT</h2>
-            </div>
-            
-            <!-- Level Filter Pills -->
-            <div class="d-flex gap-2 mt-3 mt-md-0">
-                <button class="btn btn-steel btn-sm">Tất cả</button>
-                <button class="btn btn-light btn-sm border">N5</button>
-                <button class="btn btn-light btn-sm border">N4</button>
-                <button class="btn btn-light btn-sm border">N3</button>
-                <button class="btn btn-light btn-sm border">N2</button>
-                <button class="btn btn-light btn-sm border">N1</button>
+        <!-- Hero Banner for Course Catalog -->
+        <div class="p-4 p-md-5 mb-4 rounded-4 shadow-sm" style="background: linear-gradient(135deg, var(--navy-dark) 0%, var(--steel-blue) 100%); color: white;">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-white text-dark mb-2 px-3 py-1 rounded-pill fw-semibold">Khung Năng Lực JLPT N5 - N1</span>
+                    <h1 class="display-6 fw-bold mb-2">Chương Trình Đào Tạo Tiếng Nhật Chuẩn Học Thuật</h1>
+                    <p class="lead mb-0 text-white-50" style="font-size: 1.05rem;">
+                        Lộ trình học bài bản từ sơ cấp đến cao cấp kết hợp phương pháp học chủ động và hệ thống ngân hàng đề thi chuẩn Bộ Giáo dục Nhật Bản.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <a th:href="@{/auth/register}" class="btn btn-sakura px-4 py-2">
+                        <i class="bi bi-person-plus me-1"></i> Đăng ký học viên
+                    </a>
+                </div>
             </div>
         </div>
 
+        <!-- Filter & Search Bar Form -->
+        <div class="card p-3 kotoba-card mb-4 shadow-sm">
+            <form th:action="@{/courses}" method="get" class="row g-3 align-items-center">
+                <!-- Search Input -->
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" 
+                               name="keyword" 
+                               th:value="${filter.keyword}" 
+                               class="form-control border-start-0" 
+                               placeholder="Tìm khóa học theo tiêu đề, kỹ năng, chữ Hán...">
+                    </div>
+                </div>
+
+                <!-- Sort By -->
+                <div class="col-md-3">
+                    <select name="sortBy" class="form-select" onchange="this.form.submit()">
+                        <option value="popular" th:selected="${filter.sortBy == 'popular'}">Phổ biến nhất</option>
+                        <option value="recently_updated" th:selected="${filter.sortBy == 'recently_updated'}">Mới cập nhật</option>
+                        <option value="price_asc" th:selected="${filter.sortBy == 'price_asc'}">Học phí: Thấp đến cao</option>
+                        <option value="price_desc" th:selected="${filter.sortBy == 'price_desc'}">Học phí: Cao đến thấp</option>
+                    </select>
+                </div>
+
+                <!-- Hidden Level or current level retain -->
+                <input type="hidden" name="level" th:value="${filter.level}">
+
+                <!-- Search Button & Reset -->
+                <div class="col-md-4 d-flex gap-2 justify-content-md-end">
+                    <button type="submit" class="btn btn-steel px-4">
+                        <i class="bi bi-funnel me-1"></i> Lọc kết quả
+                    </button>
+                    <a th:href="@{/courses}" class="btn btn-outline-secondary px-3" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Level Filter Pills -->
+        <div class="d-flex flex-wrap gap-2 mb-4 align-items-center">
+            <span class="small fw-semibold text-muted me-2"><i class="bi bi-layers me-1"></i> Cấp độ JLPT:</span>
+            <a th:href="@{/courses(level='', keyword=${filter.keyword}, sortBy=${filter.sortBy})}"
+               class="btn btn-sm rounded-pill px-3"
+               th:classappend="${filter.level == null || filter.level == '' || filter.level == 'ALL'} ? 'btn-steel' : 'btn-light border'">
+                Tất cả các cấp độ
+            </a>
+            <a th:each="lvl : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }"
+               th:href="@{/courses(level=${lvl}, keyword=${filter.keyword}, sortBy=${filter.sortBy})}"
+               class="btn btn-sm rounded-pill px-3"
+               th:classappend="${filter.level == lvl} ? 'btn-steel' : 'btn-light border'"
+               th:text="${lvl}">
+                N5
+            </a>
+        </div>
+
         <!-- Course Cards Grid -->
-        <div class="row">
-            <!-- Course 1: N5 -->
-            <div th:replace="~{fragments/components/course-card :: courseCard(
-                course=${ {
-                    id: 1,
-                    title: 'Khóa học Nhập môn Tiếng Nhật & JLPT N5 Toàn diện',
-                    description: 'Nắm vững bảng chữ cái Hiragana, Katakana, 100 chữ Hán căn bản và ngữ pháp giao tiếp đời sống.',
-                    level: 'N5',
-                    lessonCount: 30,
-                    duration: '40 giờ',
-                    price: 299000,
-                    thumbnail: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=800&auto=format&fit=crop'
-                } },
-                isLearner=false
-            )}"></div>
+        <div class="row" th:if="${courses != null && !courses.isEmpty()}">
+            <th:block th:each="c : ${courses}">
+                <div th:replace="~{fragments/components/course-card :: courseCard(${c}, false)}"></div>
+            </th:block>
+        </div>
 
-            <!-- Course 2: N4 -->
-            <div th:replace="~{fragments/components/course-card :: courseCard(
-                course=${ {
-                    id: 2,
-                    title: 'Luyện thi Sơ cấp Cấp tốc JLPT N4',
-                    description: 'Mở rộng 300 Hán tự thông dụng, ngữ pháp sơ cấp nâng cao và rèn luyện kỹ năng nghe hiểu hội thoại ngắn.',
-                    level: 'N4',
-                    lessonCount: 35,
-                    duration: '50 giờ',
-                    price: 399000,
-                    thumbnail: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop'
-                } },
-                isLearner=false
-            )}"></div>
+        <!-- Empty State -->
+        <div class="text-center py-5" th:if="${courses == null || courses.isEmpty()}">
+            <div class="d-inline-flex p-4 rounded-circle bg-light mb-3 text-muted">
+                <i class="bi bi-journal-x fs-1"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-1">Không tìm thấy khóa học phù hợp</h4>
+            <p class="text-muted small mb-4">Vui lòng thử tìm kiếm với từ khóa khác hoặc xóa bớt tiêu chí lọc cấp độ.</p>
+            <a th:href="@{/courses}" class="btn btn-steel-outline btn-sm">Xem tất cả khóa học</a>
+        </div>
 
-            <!-- Course 3: N3 -->
-            <div th:replace="~{fragments/components/course-card :: courseCard(
-                course=${ {
-                    id: 3,
-                    title: 'Chinh phục Đột phá Điểm số JLPT N3',
-                    description: 'Bước ngoặt trung cấp với 650 Kanji, 150 mẫu ngữ pháp then chốt và chiến lược làm bài đọc hiểu phân tích.',
-                    level: 'N3',
-                    lessonCount: 42,
-                    duration: '65 giờ',
-                    price: 549000,
-                    thumbnail: 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'
-                } },
-                isLearner=false
-            )}"></div>
-
-            <!-- Course 4: N2 -->
-            <div th:replace="~{fragments/components/course-card :: courseCard(
-                course=${ {
-                    id: 4,
-                    title: 'Luyện đề Chuyên sâu & Kỹ năng Làm bài N2',
-                    description: 'Khóa học trang bị tư duy giải đề chuẩn, phản xạ nghe hiểu tốc độ cao và mở rộng vốn từ vựng thương mại.',
-                    level: 'N2',
-                    lessonCount: 48,
-                    duration: '75 giờ',
-                    price: 699000,
-                    thumbnail: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?q=80&w=800&auto=format&fit=crop'
-                } },
-                isLearner=false
-            )}"></div>
-
-            <!-- Course 5: N1 -->
-            <div th:replace="~{fragments/components/course-card :: courseCard(
-                course=${ {
-                    id: 5,
-                    title: 'Chuyên gia Tiếng Nhật Học thuật JLPT N1',
-                    description: 'Đỉnh cao ngôn ngữ với ngữ pháp văn viết cổ và văn phong xã luận, văn học hiện đại chuẩn đề Bộ Giáo dục Nhật.',
-                    level: 'N1',
-                    lessonCount: 50,
-                    duration: '90 giờ',
-                    price: 899000,
-                    thumbnail: 'https://images.unsplash.com/photo-1492571350019-22de08371fd3?q=80&w=800&auto=format&fit=crop'
-                } },
-                isLearner=false
-            )}"></div>
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-center mt-4" th:if="${coursePage != null && coursePage.totalPages > 1}">
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-kotoba">
+                    <li class="page-item" th:classappend="${coursePage.first} ? 'disabled' : ''">
+                        <a class="page-link" th:href="@{/courses(page=${coursePage.number - 1}, keyword=${filter.keyword}, level=${filter.level}, sortBy=${filter.sortBy})}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, coursePage.totalPages - 1)}"
+                        th:classappend="${i == coursePage.number} ? 'active' : ''">
+                        <a class="page-link" th:href="@{/courses(page=${i}, keyword=${filter.keyword}, level=${filter.level}, sortBy=${filter.sortBy})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${coursePage.last} ? 'disabled' : ''">
+                        <a class="page-link" th:href="@{/courses(page=${coursePage.number + 1}, keyword=${filter.keyword}, level=${filter.level}, sortBy=${filter.sortBy})}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>

@@ -1,0 +1,65 @@
+<div th:replace="~{layouts/public-layout :: html(
+    pageTitle='About Us',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <section class="card kotoba-card p-4 p-lg-5 mb-4 overflow-hidden">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <span class="badge rounded-pill px-3 py-2 mb-3" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                        JEPS &bull; 日本語試験対策
+                    </span>
+                    <h1 class="display-5 fw-bold mb-3" style="color: var(--navy-dark);">About Us</h1>
+                    <h2 class="h4 fw-bold mb-3" style="color: var(--navy-dark);">Học tiếng Nhật có lộ trình, chinh phục JLPT tự tin</h2>
+                    <p class="fs-5 text-muted mb-0">
+                        JEPS (Japanese Exam Preparation System) là nền tảng hỗ trợ người học xây dựng lộ trình,
+                        ôn tập kiến thức và chuẩn bị cho kỳ thi năng lực tiếng Nhật JLPT.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 170px; height: 170px; background: #EBF4FA;">
+                        <i class="bi bi-journal-bookmark-fill display-1" style="color: var(--steel-blue);"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="row g-3 mb-5">
+            <div class="col-md-4">
+                <div class="card kotoba-card h-100 p-4">
+                    <i class="bi bi-signpost-split fs-2 mb-3" style="color: var(--steel-blue);"></i>
+                    <h2 class="h5 fw-bold">Lộ trình rõ ràng</h2>
+                    <p class="text-muted mb-0">Khám phá nội dung học theo từng cấp độ từ N5 đến N1 để lựa chọn mục tiêu phù hợp.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card kotoba-card h-100 p-4">
+                    <i class="bi bi-book-half fs-2 mb-3" style="color: var(--steel-blue);"></i>
+                    <h2 class="h5 fw-bold">Kiến thức trọng tâm</h2>
+                    <p class="text-muted mb-0">Các khóa học tập trung vào từ vựng, kanji, ngữ pháp và kỹ năng cần thiết cho JLPT.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card kotoba-card h-100 p-4">
+                    <i class="bi bi-clipboard-check fs-2 mb-3" style="color: var(--steel-blue);"></i>
+                    <h2 class="h5 fw-bold">Làm quen kỳ thi</h2>
+                    <p class="text-muted mb-0">Tìm hiểu cấu trúc đề thi thử ở các cấp độ để chủ động lên kế hoạch ôn luyện.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card kotoba-card p-4 p-lg-5">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <h2 class="h3 fw-bold mb-2">Bắt đầu từ mục tiêu của bạn</h2>
+                    <p class="text-muted mb-0">Xem các khóa học và chọn cấp độ JLPT muốn chinh phục tiếp theo.</p>
+                </div>
+                <div class="col-lg-4 d-flex flex-wrap gap-2 justify-content-lg-end">
+                    <a th:href="@{/courses}" class="btn btn-steel">Course List</a>
+                    <a th:href="@{/mock-exam}" class="btn btn-steel-outline">JLPT Mock Exam</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>

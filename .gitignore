@@ -35,8 +35,10 @@ target/
 .project
 .classpath
 
-# User Uploads & Local config
+# Uploads & Temp files
 uploads/**
 !uploads/.gitkeep
 application-local.yml
+*.bak
+
 

@@ -1,0 +1,143 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Gợi ý Khóa học - JEPS',
+    activeMenu='recommended',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Top Assessment & Recommendation Banner -->
+        <div class="card p-4 p-md-5 mb-4 shadow-sm border-0" 
+             style="background: linear-gradient(135deg, #173B57 0%, #315C78 100%); color: #FFFFFF; border-radius: 20px;">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-inline-flex align-items-center gap-2 mb-2 px-3 py-1 bg-white text-dark rounded-pill small fw-semibold">
+                        <i class="bi bi-stars text-warning"></i> AI Personalization Engine
+                    </div>
+                    <h2 class="display-6 fw-bold text-white mb-2">Khóa học Đề xuất theo Năng lực của bạn</h2>
+                    <p class="lead mb-0 text-white-50" style="font-size: 1.05rem;">
+                        Dựa trên kết quả đánh giá năng lực hiện tại (<strong class="text-white" th:text="${learner.currentJlptLevel}">N5</strong>) 
+                        và mục tiêu (<strong class="text-white" th:text="${learner.targetJlptLevel}">N4</strong>), hệ thống đã lựa chọn lộ trình tối ưu nhất dành riêng cho bạn.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <a th:href="@{/learning/courses}" class="btn btn-outline-light px-4 py-2 rounded-pill">
+                        <i class="bi bi-grid me-1"></i> Xem toàn bộ khóa học
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: AI Recommended Courses Cards (SRS 2.5.1 (1)) -->
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold mb-1" style="color: var(--navy-dark);">
+                        <i class="bi bi-award-fill text-warning me-2"></i> Khóa học phù hợp nhất với bạn
+                    </h4>
+                    <p class="text-muted small mb-0">Các học phần được hệ thống AI đánh giá đạt tỷ lệ tương thích cao nhất</p>
+                </div>
+            </div>
+
+            <!-- Recommended Cards List -->
+            <div class="row">
+                <div class="col-lg-6 mb-4" th:each="item : ${recommendedItems}">
+                    <div class="card h-100 kotoba-card p-4 border-2 shadow-sm d-flex flex-column" 
+                         style="border-color: rgba(49, 92, 120, 0.25);">
+                        <!-- Badge & Match Score -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge px-3 py-1 rounded-pill bg-danger-subtle text-danger fw-semibold" th:text="${item.tag}">
+                                Mục tiêu trọng tâm
+                            </span>
+                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-bold">
+                                <i class="bi bi-patch-check-fill me-1"></i> Phù hợp <span th:text="${item.matchPercentage + '%'}">98%</span>
+                            </span>
+                        </div>
+
+                        <!-- Course Title & Level -->
+                        <div class="d-flex align-items-start gap-3 mb-3">
+                            <img th:src="${item.course.thumbnailUrl}" class="rounded-3" style="width: 100px; height: 75px; object-fit: cover;" alt="">
+                            <div class="flex-grow-1">
+                                <span class="badge px-2 py-1 rounded-pill mb-1" style="background-color: var(--navy-dark); color: white;" 
+                                      th:text="${item.course.level}">N4</span>
+                                <h5 class="fw-bold text-dark mb-1" style="line-height: 1.4;">
+                                    <a th:href="@{/learning/courses/{id}(id=${item.course.id})}" class="text-decoration-none text-dark hover-primary" 
+                                       th:text="${item.course.title}">
+                                        Tên khóa học
+                                    </a>
+                                </h5>
+                                <small class="text-muted" th:text="${'Mã khóa: ' + item.course.code}">JLPT-N4</small>
+                            </div>
+                        </div>
+
+                        <!-- Match Reason Box -->
+                        <div class="p-3 rounded-3 mb-3 small" style="background-color: #F8FAFC; border-left: 3px solid var(--steel-blue);">
+                            <strong class="text-dark d-block mb-1"><i class="bi bi-lightbulb text-warning me-1"></i> Lý do đề xuất:</strong>
+                            <span class="text-muted" th:text="${item.matchReason}">Lý do phù hợp...</span>
+                        </div>
+
+                        <!-- Meta Specs: Lessons, Skills, Price -->
+                        <div class="row g-2 mb-3 small text-muted">
+                            <div class="col-6">
+                                <i class="bi bi-journal-bookmark me-1 text-primary"></i> <span th:text="${item.course.lessonCount + ' bài học'}">35 bài</span>
+                            </div>
+                            <div class="col-6">
+                                <i class="bi bi-clock me-1 text-primary"></i> <span th:text="${item.course.durationHours + ' giờ đào tạo'}">50 giờ</span>
+                            </div>
+                            <div class="col-12" th:if="${item.course.coveredSkills != null}">
+                                <i class="bi bi-check2-circle me-1 text-success"></i> 
+                                <span th:text="${item.course.coveredSkills}">Kỹ năng...</span>
+                            </div>
+                        </div>
+
+                        <!-- Price & Action Buttons (SRS 2.5.1 (1)) -->
+                        <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-light">
+                            <div>
+                                <span class="text-muted small d-block">Học phí:</span>
+                                <h4 class="fw-bold mb-0" style="color: var(--navy-dark);" 
+                                    th:text="${item.course.discountPrice != null && item.course.discountPrice > 0 ? #numbers.formatDecimal(item.course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ' : (item.course.price > 0 ? #numbers.formatDecimal(item.course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí')}">
+                                    299,000 đ
+                                </h4>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a th:href="@{/learning/courses/{id}(id=${item.course.id})}" class="btn btn-steel-outline btn-sm px-3">
+                                    <i class="bi bi-eye me-1"></i> Chi tiết
+                                </a>
+                                <a th:if="${!item.isEnrolled}" th:href="@{/learning/courses/{id}/register(id=${item.course.id})}" class="btn btn-sakura btn-sm px-3">
+                                    <i class="bi bi-pencil-square me-1"></i> Đăng ký
+                                </a>
+                                <span th:if="${item.isEnrolled}" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Đã đăng ký
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Browse Other JLPT Courses (SRS 2.5.1 (2)) -->
+        <div class="mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1" style="color: var(--navy-dark);">
+                        <i class="bi bi-compass text-primary me-2"></i> Khám phá các khóa học JLPT khác
+                    </h5>
+                    <p class="text-muted small mb-0">So sánh chương trình đào tạo giữa các cấp độ N5, N4, N3, N2, N1</p>
+                </div>
+                <!-- Navigation controls (SRS 2.5.1 (2)) -->
+                <div class="d-flex gap-2">
+                    <a th:href="@{/learning/courses}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> Xem tất cả
+                    </a>
+                </div>
+            </div>
+
+            <!-- Other Courses Grid -->
+            <div class="row">
+                <th:block th:each="c : ${otherCourses}">
+                    <div th:replace="~{fragments/components/course-card :: courseCard(${c}, true)}"></div>
+                </th:block>
+            </div>
+        </div>
+    </div>
+</div>

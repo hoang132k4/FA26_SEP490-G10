@@ -1,0 +1,183 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Đăng ký khóa học - JEPS',
+    activeMenu='courses',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Breadcrumb / Back Link -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-0">
+                    <li class="breadcrumb-item"><a th:href="@{/learning/courses}" class="text-decoration-none text-muted">Khóa học JLPT</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/learning/courses/recommended}" class="text-decoration-none text-muted">Đề xuất cho bạn</a></li>
+                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Đăng ký khóa học</li>
+                </ol>
+            </nav>
+            <a th:href="@{/learning/courses/recommended}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại trang gợi ý
+            </a>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Course Summary & Syllabus Preview (SRS 2.5.2 (3), (4)) -->
+            <div class="col-lg-7 mb-4">
+                <!-- Course Summary Card -->
+                <div class="card p-4 kotoba-card mb-4 shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-1 rounded-pill" style="background-color: var(--sakura-accent); color: white; font-weight: 700;"
+                              th:text="${course.level}">N5</span>
+                        <span class="badge bg-light text-muted border" th:text="${'Mã: ' + course.code}">JLPT-N5</span>
+                    </div>
+
+                    <h4 class="fw-bold text-dark mb-2" th:text="${course.title}">Khóa học Tiếng Nhật JLPT</h4>
+                    <p class="text-muted small mb-3" th:text="${course.shortDescription}">Mô tả khóa học...</p>
+
+                    <!-- Meta specs grid -->
+                    <div class="row g-2 p-3 bg-light rounded-3 mb-3 small">
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted d-block">Thời lượng:</span>
+                            <strong class="text-dark"><i class="bi bi-clock me-1 text-primary"></i> <span th:text="${course.durationHours + ' giờ'}">40 giờ</span></strong>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted d-block">Số bài giảng:</span>
+                            <strong class="text-dark"><i class="bi bi-journal-check me-1 text-primary"></i> <span th:text="${course.lessonCount + ' bài'}">30 bài</span></strong>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted d-block">Đánh giá:</span>
+                            <strong class="text-dark"><i class="bi bi-star-fill text-warning me-1"></i> <span th:text="${course.rating + '/5.0'}">4.9/5.0</span></strong>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted d-block">Chứng chỉ:</span>
+                            <strong class="text-dark"><i class="bi bi-patch-check text-success me-1"></i> Chuẩn JLPT</strong>
+                        </div>
+                    </div>
+
+                    <!-- Covered Skills -->
+                    <div class="mb-3" th:if="${course.coveredSkills != null}">
+                        <span class="small fw-semibold text-dark d-block mb-1">Kỹ năng bao gồm:</span>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-white text-secondary border small" 
+                                  th:each="skill : ${#strings.arraySplit(course.coveredSkills, ',')}" 
+                                  th:text="${#strings.trim(skill)}">Kỹ năng</span>
+                        </div>
+                    </div>
+
+                    <!-- Learning Objectives Preview -->
+                    <div class="border-top pt-3" th:if="${course.objectives != null}">
+                        <span class="small fw-semibold text-dark d-block mb-1"><i class="bi bi-check2-circle text-success me-1"></i> Kết quả đầu ra kỳ vọng:</span>
+                        <div class="text-muted small" style="white-space: pre-line; line-height: 1.6;" th:text="${course.objectives}">
+                            Mục tiêu...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lessons & Materials Structure (SRS 2.5.2 (4)) -->
+                <div class="card p-4 kotoba-card shadow-sm">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-layers text-primary me-2"></i> Cấu trúc chương trình học (<span th:text="${course.lessons != null ? course.lessons.size() : 0}">8</span> bài)
+                    </h6>
+                    <div class="list-group list-group-flush small">
+                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center" 
+                             th:each="lesson : ${course.lessons}">
+                            <div>
+                                <i class="bi bi-check-circle text-muted me-2"></i>
+                                <span class="fw-semibold text-dark" th:text="${lesson.title}">Bài học</span>
+                                <small class="text-muted ms-2" th:text="${'(' + lesson.sectionName + ')'}">(Chương 1)</small>
+                            </div>
+                            <span class="badge bg-light text-muted border" th:text="${lesson.durationMinutes + 'p'}">25p</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Registration & Enrollment Form (SRS 2.5.2 (2)) -->
+            <div class="col-lg-5">
+                <div class="card p-4 kotoba-card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="border-bottom pb-3 mb-3">
+                        <span class="badge px-3 py-1 rounded-pill bg-primary-subtle text-primary fw-semibold small mb-2">Đăng ký học phần</span>
+                        <h5 class="fw-bold text-dark mb-0">Xác nhận thông tin học viên</h5>
+                    </div>
+
+                    <!-- Price Calculation Box -->
+                    <div class="p-3 bg-light rounded-3 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">Học phí niêm yết:</span>
+                            <span class="text-muted text-decoration-line-through small" 
+                                  th:if="${course.discountPrice != null && course.discountPrice > 0}"
+                                  th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</span>
+                            <span class="fw-semibold text-dark" 
+                                  th:if="${course.discountPrice == null || course.discountPrice == 0}"
+                                  th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">299,000 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary-subtle">
+                            <span class="fw-bold text-dark">Thành tiền thanh toán:</span>
+                            <h4 class="fw-bold text-danger mb-0" 
+                                th:if="${course.discountPrice != null && course.discountPrice > 0}"
+                                th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">199,000 đ</h4>
+                            <h4 class="fw-bold text-dark mb-0" 
+                                th:if="${course.discountPrice == null || course.discountPrice == 0}"
+                                th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ (Miễn phí)'}">0 đ</h4>
+                        </div>
+                    </div>
+
+                    <!-- Enrollment Form -->
+                    <form th:action="@{/learning/courses/{id}/register(id=${course.id})}" th:object="${registrationRequest}" method="post">
+                        <input type="hidden" th:field="*{courseId}">
+
+                        <!-- Full Name -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">Họ và tên học viên <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{fullName}" class="form-control" required placeholder="Nguyễn Văn A">
+                            <div class="invalid-feedback d-block text-danger small" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">Email đăng ký <span class="text-danger">*</span></label>
+                            <input type="email" th:field="*{email}" class="form-control" required placeholder="name@example.com">
+                            <div class="invalid-feedback d-block text-danger small" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">Số điện thoại liên hệ</label>
+                            <input type="tel" th:field="*{phone}" class="form-control" placeholder="09xxxxxxxx">
+                        </div>
+
+                        <!-- Payment Method Selection -->
+                        <div class="mb-3" th:if="${course.price > 0}">
+                            <label class="form-label small fw-semibold text-dark">Phương thức thanh toán</label>
+                            <select th:field="*{paymentMethod}" class="form-select">
+                                <option value="VNPAY">Cổng thanh toán VNPay (ATM / QR Code / Visa)</option>
+                                <option value="MOMO">Ví điện tử MoMo</option>
+                                <option value="BANK_TRANSFER">Chuyển khoản ngân hàng trực tiếp</option>
+                                <option value="FREE">Học thử / Đăng ký trải nghiệm</option>
+                            </select>
+                        </div>
+                        <input th:if="${course.price == 0}" type="hidden" th:field="*{paymentMethod}" value="FREE">
+
+                        <!-- Note -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">Ghi chú (nếu có)</label>
+                            <textarea th:field="*{note}" class="form-control" rows="2" placeholder="Ví dụ: Mong muốn ôn thi kỳ thi tháng 7..."></textarea>
+                        </div>
+
+                        <!-- Terms Agreement -->
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" class="form-check-input" id="termsCheck" th:field="*{termsAccepted}" required>
+                            <label class="form-check-label small text-muted" for="termsCheck">
+                                Tôi đồng ý với Điều khoản tham gia khóa học &amp; Quy định học viên của JEPS.
+                            </label>
+                            <div class="invalid-feedback d-block text-danger small" th:if="${#fields.hasErrors('termsAccepted')}" th:errors="*{termsAccepted}"></div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-sakura w-100 py-3 fw-semibold fs-6 shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Xác nhận &amp; Đăng ký khóa học
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

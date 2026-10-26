@@ -2,38 +2,88 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
     <div th:fragment="courseCard(course, isLearner)" class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100 kotoba-card overflow-hidden">
+        <div class="card h-100 kotoba-card overflow-hidden d-flex flex-column" th:if="${course != null}">
+            <!-- Thumbnail & Level Badge -->
             <div class="position-relative">
-                <img th:src="${course.thumbnail != null ? course.thumbnail : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
-                     class="card-img-top" alt="Course Image" style="height: 190px; object-fit: cover;">
-                <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill" 
-                      style="background-color: var(--navy-dark); color: white;"
-                      th:text="${course.level != null ? course.level : 'N4'}">N4</span>
+                <img th:if="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                     th:src="${course.thumbnail}" 
+                     class="card-img-top" 
+                     th:alt="${course.title}" 
+                     style="height: 195px; object-fit: cover;">
+                <img th:unless="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                     th:src="${course.thumbnailUrl != null && !#strings.isEmpty(course.thumbnailUrl) ? course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                     class="card-img-top" 
+                     th:alt="${course.title}" 
+                     style="height: 195px; object-fit: cover;">
+                
+                <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill shadow-sm" 
+                      style="background-color: var(--navy-dark); color: white; font-weight: 700; letter-spacing: 0.5px;"
+                      th:text="${course.level != null ? course.level : 'N5'}">N5</span>
+                
+                <span th:if="${course.featured != null && course.featured}" class="position-absolute top-0 end-0 m-3 badge px-2 py-1 rounded-pill bg-danger shadow-sm">
+                    <i class="bi bi-fire me-1"></i> Nổi bật
+                </span>
             </div>
-            <div class="card-body d-flex flex-column p-4">
+
+            <!-- Card Body -->
+            <div class="card-body d-flex flex-column p-4 flex-grow-1">
+                <!-- Meta: Duration & Lesson count -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="small text-muted">
-                        <i class="bi bi-clock me-1"></i> <span th:text="${course.duration != null ? course.duration : '45 giờ học'}">45 giờ</span>
+                        <i class="bi bi-clock me-1 text-primary"></i> <span th:text="${course.duration != null ? course.duration : (course.durationHours != null ? course.durationHours + ' giờ học' : '40 giờ')}">40 giờ</span>
                     </span>
                     <span class="small text-muted">
-                        <i class="bi bi-book me-1"></i> <span th:text="${course.lessonCount != null ? course.lessonCount + ' bài học' : '24 bài học'}">24 bài</span>
+                        <i class="bi bi-journal-bookmark me-1 text-primary"></i> <span th:text="${course.lessonCount != null ? course.lessonCount + ' bài học' : '30 bài'}">30 bài</span>
                     </span>
                 </div>
                 
-                <h5 class="card-title fw-bold text-dark mb-2" th:text="${course.title}">Chinh phục Ngữ pháp & Đọc hiểu JLPT N4</h5>
-                <p class="card-text text-muted small flex-grow-1" style="line-height: 1.6;" th:text="${course.description != null ? #strings.abbreviate(course.description, 95) : 'Hệ thống hóa toàn bộ kiến thức ngữ pháp trọng tâm, mẹo làm bài đọc hiểu chuẩn đề thi thật.'}">
-                    Hệ thống hóa toàn bộ kiến thức ngữ pháp trọng tâm...
+                <!-- Title -->
+                <h5 class="card-title fw-bold text-dark mb-2" style="line-height: 1.4;">
+                    <a th:href="@{/courses/{id}(id=${course.id})}" class="text-decoration-none text-dark hover-primary" th:text="${course.title}">
+                        Khóa học Nhập môn Tiếng Nhật JLPT
+                    </a>
+                </h5>
+
+                <!-- Description -->
+                <p class="card-text text-muted small flex-grow-1 mb-3" style="line-height: 1.6;" 
+                   th:text="${course.description != null ? #strings.abbreviate(course.description, 110) : 'Chương trình đào tạo toàn diện kiến thức theo chuẩn kỳ thi JLPT.'}">
+                    Mô tả tóm tắt nội dung khóa học...
                 </p>
-                
-                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-light">
+
+                <!-- Covered Skills Badges -->
+                <div class="mb-3" th:if="${course.coveredSkills != null && !#strings.isEmpty(course.coveredSkills)}">
+                    <span class="badge bg-light text-secondary border small me-1 mb-1" 
+                          th:each="skill : ${#strings.arraySplit(course.coveredSkills, ',')}" 
+                          th:text="${#strings.trim(skill)}">Kỹ năng</span>
+                </div>
+
+                <!-- Footer: Price & Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-light">
                     <div>
-                        <span class="fw-bold fs-5" style="color: var(--steel-blue)" 
-                              th:text="${course.price != null && course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">
-                            399,000 đ
-                        </span>
+                        <div th:if="${course.discountPrice != null && course.discountPrice > 0}">
+                            <span class="fw-bold fs-5 text-danger" 
+                                  th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                199,000 đ
+                            </span>
+                            <small class="text-muted text-decoration-line-through ms-1" 
+                                   th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                299,000 đ
+                            </small>
+                        </div>
+                        <div th:if="${course.discountPrice == null || course.discountPrice == 0}">
+                            <span class="fw-bold fs-5" style="color: var(--steel-blue)" 
+                                  th:text="${course.price != null && course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">
+                                299,000 đ
+                            </span>
+                        </div>
                     </div>
-                    <a th:if="${!isLearner}" th:href="@{/courses/{id}(id=${course.id != null ? course.id : 1})}" class="btn btn-steel-outline btn-sm">Chi tiết</a>
-                    <a th:if="${isLearner}" th:href="@{/learning/courses/{id}(id=${course.id != null ? course.id : 1})}" class="btn btn-steel btn-sm">Vào học</a>
+
+                    <!-- CTA Buttons -->
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/courses/{id}(id=${course.id})}" class="btn btn-steel-outline btn-sm px-3">
+                            Course preview
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

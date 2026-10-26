@@ -1,9 +1,60 @@
-﻿<div th:replace="~{layouts/admin-layout :: html(
-    pageTitle='Nháº­t kÃ½ Há»‡ thá»‘ng - JLPP',
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Nhật ký hệ thống',
     activeMenu='logs',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">System Audit Logs</h3>
+        <section class="mb-4">
+            <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Quản trị hệ thống</span>
+            <h1 class="h3 fw-bold mt-1 mb-1">Nhật ký hệ thống</h1>
+            <p class="text-muted mb-0">Theo dõi các hoạt động được ghi nhận trong hệ thống.</p>
+        </section>
+
+        <section class="card kotoba-card p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th scope="col">Thời gian</th>
+                        <th scope="col">Loại</th>
+                        <th scope="col">Hoạt động</th>
+                        <th scope="col">Mã người dùng</th>
+                        <th scope="col">IP</th>
+                        <th scope="col">Chi tiết</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="log : ${logs.content}">
+                        <td class="text-nowrap" th:text="${log.timestamp != null ? #temporals.format(log.timestamp, 'dd/MM/yyyy HH:mm:ss') : '—'}">—</td>
+                        <td><span class="badge text-bg-light" th:text="${log.logType}">ADMIN</span></td>
+                        <td th:text="${log.actionPerformed}">USER_UPDATED</td>
+                        <td th:text="${log.userId != null ? log.userId : '—'}">—</td>
+                        <td th:text="${log.ipAddress != null ? log.ipAddress : '—'}">—</td>
+                        <td th:text="${log.details != null ? log.details : '—'}">—</td>
+                    </tr>
+                    <tr th:if="${logs.empty}">
+                        <td colspan="6" class="text-center text-muted py-5">Chưa có nhật ký hệ thống.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav th:if="${logs.totalPages > 1}" class="mt-4" aria-label="Phân trang nhật ký hệ thống">
+                <ul class="pagination justify-content-end mb-0">
+                    <li class="page-item" th:classappend="${logs.first} ? 'disabled'">
+                        <a class="page-link" th:if="${!logs.first}" th:href="@{/admin/logs(page=${logs.number - 1})}">Trước</a>
+                        <span class="page-link" th:if="${logs.first}">Trước</span>
+                    </li>
+                    <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, logs.totalPages - 1)}"
+                        th:classappend="${pageNumber == logs.number} ? 'active'">
+                        <a class="page-link" th:href="@{/admin/logs(page=${pageNumber})}" th:text="${pageNumber + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${logs.last} ? 'disabled'">
+                        <a class="page-link" th:if="${!logs.last}" th:href="@{/admin/logs(page=${logs.number + 1})}">Tiếp</a>
+                        <span class="page-link" th:if="${logs.last}">Tiếp</span>
+                    </li>
+                </ul>
+            </nav>
+        </section>
     </div>
 </div>

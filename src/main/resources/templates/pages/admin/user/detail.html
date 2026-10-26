@@ -1,0 +1,49 @@
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Chi tiết người dùng',
+    activeMenu='users',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div>
+                <a class="small text-decoration-none" th:href="@{/admin/users}">
+                    <i class="bi bi-arrow-left me-1"></i> Danh sách người dùng
+                </a>
+                <h1 class="h3 fw-bold mt-2 mb-1">Chi tiết người dùng</h1>
+                <p class="text-muted mb-0">Thông tin tài khoản trong hệ thống.</p>
+            </div>
+            <a class="btn btn-primary rounded-pill" th:href="@{/admin/users/{id}/edit(id=${user.userId})}">
+                <i class="bi bi-pencil me-1"></i> Cập nhật tài khoản
+            </a>
+        </div>
+
+        <section class="card kotoba-card p-4">
+            <div class="d-flex align-items-center gap-3 pb-4 mb-4 border-bottom">
+                <span class="stat-icon-wrapper stat-icon-book"><i class="bi bi-person"></i></span>
+                <div>
+                    <h2 class="h5 fw-bold mb-1" th:text="${user.fullName}">Họ tên</h2>
+                    <span class="text-muted" th:text="${user.username}">username</span>
+                </div>
+            </div>
+            <dl class="row mb-0">
+                <dt class="col-sm-4 col-lg-3 py-2">Mã người dùng</dt>
+                <dd class="col-sm-8 col-lg-9 py-2" th:text="${user.userId}">1</dd>
+                <dt class="col-sm-4 col-lg-3 py-2">Email</dt>
+                <dd class="col-sm-8 col-lg-9 py-2" th:text="${user.displayEmail}">email@example.com</dd>
+                <dt class="col-sm-4 col-lg-3 py-2">Vai trò</dt>
+                <dd class="col-sm-8 col-lg-9 py-2" th:text="${user.role}">LEARNER</dd>
+                <dt class="col-sm-4 col-lg-3 py-2">Trạng thái</dt>
+                <dd class="col-sm-8 col-lg-9 py-2" th:text="${user.displayStatus != null ? user.displayStatus : 'Chưa xác định'}">ACTIVE</dd>
+                <dt class="col-sm-4 col-lg-3 py-2">Số điện thoại</dt>
+                <dd class="col-sm-8 col-lg-9 py-2" th:text="${user.phoneNumber != null ? user.phoneNumber : '—'}">—</dd>
+                <dt class="col-sm-4 col-lg-3 py-2">Trình độ JLPT hiện tại</dt>
+                <dd class="col-sm-8 col-lg-9 py-2" th:text="${user.currentJlptLevel != null ? user.currentJlptLevel : '—'}">—</dd>
+                <dt class="col-sm-4 col-lg-3 py-2">Trình độ JLPT mục tiêu</dt>
+                <dd class="col-sm-8 col-lg-9 py-2" th:text="${user.targetJlptLevel != null ? user.targetJlptLevel : '—'}">—</dd>
+                <dt class="col-sm-4 col-lg-3 py-2">Ngày tạo</dt>
+                <dd class="col-sm-8 col-lg-9 py-2"
+                    th:text="${user.createdAt != null ? #temporals.format(user.createdAt, 'dd/MM/yyyy HH:mm') : '—'}">—</dd>
+            </dl>
+        </section>
+    </div>
+</div>

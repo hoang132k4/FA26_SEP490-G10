@@ -1,25 +1,130 @@
-﻿<div th:replace="~{layouts/auth-layout :: html(
-    pageTitle='ÄÄƒng kÃ½ tÃ i khoáº£n - JLPP',
+<div th:replace="~{layouts/auth-layout :: html(
+    pageTitle='Đăng ký tài khoản - JEPS',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h4 class="fw-bold text-center mb-4">ÄÄƒng kÃ½ thÃ nh viÃªn</h4>
-        <form th:action="@{/auth/register}" method="post">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold mb-1" style="color: var(--text-primary)">Đăng ký tài khoản</h4>
+            <p class="small text-muted">Bắt đầu hành trình chinh phục JLPT cùng JEPS</p>
+        </div>
+
+        <form th:action="@{/auth/register}" th:object="${registerRequest}" method="post" novalidate>
+            <!-- Full Name -->
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Há» vÃ  tÃªn</label>
-                <input type="text" name="fullName" class="form-control" required placeholder="Nguyá»…n VÄƒn A">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="fullNameInput">
+                    Họ và tên <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                    <input type="text"
+                           id="fullNameInput"
+                           th:field="*{fullName}"
+                           class="form-control border-start-0"
+                           th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                           placeholder="Nguyễn Văn A"
+                           maxlength="100"
+                           title="Full Name"
+                           required>
+                </div>
+                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
             </div>
+
+            <!-- Email -->
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Email</label>
-                <input type="email" name="email" class="form-control" required placeholder="name@example.com">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="emailInput">
+                    Email <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                    <input type="email"
+                           id="emailInput"
+                           th:field="*{email}"
+                           class="form-control border-start-0"
+                           th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                           placeholder="learner@jeps.edu.vn"
+                           title="Email"
+                           required>
+                </div>
+                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
             </div>
+
+            <!-- Phone Number -->
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Máº­t kháº©u</label>
-                <input type="password" name="password" class="form-control" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="phoneInput">
+                    Số điện thoại <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-telephone"></i></span>
+                    <input type="tel"
+                           id="phoneInput"
+                           th:field="*{phone}"
+                           class="form-control border-start-0"
+                           th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''"
+                           placeholder="0912345678"
+                           maxlength="10"
+                           title="Phone Number"
+                           required>
+                </div>
+                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 py-2">Táº¡o tÃ i khoáº£n</button>
-            <div class="text-center mt-3 small">
-                ÄÃ£ cÃ³ tÃ i khoáº£n? <a th:href="@{/auth/login}">ÄÄƒng nháº­p</a>
+
+            <!-- Password -->
+            <div class="mb-3">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="passwordInput">
+                    Mật khẩu <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                    <input type="password"
+                           id="passwordInput"
+                           th:field="*{password}"
+                           class="form-control border-start-0"
+                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                           placeholder="••••••••"
+                           minlength="8"
+                           maxlength="64"
+                           title="Password / Confirm Password"
+                           required>
+                </div>
+                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                <small class="form-text text-muted" style="font-size: 0.78rem;">
+                    Từ 8-64 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+                </small>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-4">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="confirmPasswordInput">
+                    Xác nhận mật khẩu <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-shield-check"></i></span>
+                    <input type="password"
+                           id="confirmPasswordInput"
+                           th:field="*{confirmPassword}"
+                           class="form-control border-start-0"
+                           th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid' : ''"
+                           placeholder="••••••••"
+                           minlength="8"
+                           maxlength="64"
+                           title="Password / Confirm Password"
+                           required>
+                </div>
+                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+            </div>
+
+            <!-- Register Button -->
+            <button type="submit" class="btn btn-sakura w-100 py-2 fw-semibold">
+                <i class="bi bi-person-plus me-1"></i> Đăng ký tài khoản
+            </button>
+
+
+            <!-- Login Navigation Link -->
+            <div class="text-center mt-4 small text-muted">
+                Đã có tài khoản? 
+                <a th:href="@{/auth/login}" class="fw-semibold text-decoration-none" style="color: var(--sakura-accent)">
+                    Đăng nhập ngay
+                </a>
             </div>
         </form>
     </div>

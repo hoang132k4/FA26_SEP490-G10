@@ -1,35 +1,101 @@
 ﻿<div th:replace="~{layouts/admin-layout :: html(
-    pageTitle='Admin Dashboard - JLPP',
+    pageTitle='Admin Dashboard',
     activeMenu='admin-dashboard',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-4">Admin Dashboard</h3>
-        <div class="row">
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">Tá»•ng ngÆ°á»i dÃ¹ng</span>
-                    <h2 class="fw-bold text-primary">1,240</h2>
-                </div>
+        <section class="mb-4">
+            <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Khu vực quản trị</span>
+            <h1 class="h3 fw-bold mt-1 mb-2">Admin Dashboard</h1>
+            <p class="text-muted mb-0">Tổng quan các chức năng quản trị hệ thống Japanese Exam Preparation System.</p>
+        </section>
+
+        <section class="row g-3 mb-4" aria-label="Thông tin tổng quan">
+            <div class="col-md-6 col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="stat-icon-wrapper stat-icon-book"><i class="bi bi-people"></i></span>
+                        <div>
+                            <h2 class="h6 fw-bold mb-1">Người dùng</h2>
+                            <span class="small text-muted">Tổng số tài khoản</span>
+                        </div>
+                    </div>
+                    <p class="h4 fw-bold mb-0" style="color: var(--navy-dark);" th:text="${totalUsers}">0</p>
+                </article>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">Doanh thu thÃ¡ng</span>
-                    <h2 class="fw-bold text-success">45,000,000 Ä‘</h2>
-                </div>
+            <div class="col-md-6 col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="stat-icon-wrapper" style="background-color: #F1EDFA; color: #7862A8;"><i class="bi bi-person-lines-fill"></i></span>
+                        <div>
+                            <h2 class="h6 fw-bold mb-1">Danh sách người dùng</h2>
+                            <span class="small text-muted">Xem chi tiết và cập nhật tài khoản</span>
+                        </div>
+                    </div>
+                    <a class="btn btn-sm rounded-pill align-self-start" style="background-color: #F1EDFA; color: #7862A8;" th:href="@{/admin/users}">
+                        Mở danh sách <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </article>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">Sá»‘ Ä‘á» thi</span>
-                    <h2 class="fw-bold text-info">86</h2>
-                </div>
+            <div class="col-md-6 col-xl-4">
+                <article class="card kotoba-card h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="stat-icon-wrapper stat-icon-flame"><i class="bi bi-journal-text"></i></span>
+                        <div>
+                            <h2 class="h6 fw-bold mb-1">Nhật ký hệ thống</h2>
+                            <span class="small text-muted">Theo dõi hoạt động quản trị</span>
+                        </div>
+                    </div>
+                    <a class="btn btn-sm rounded-pill align-self-start" style="background-color: #FFF3E0; color: #9A5B00;" th:href="@{/admin/logs}">
+                        Xem nhật ký <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </article>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 jlpp-card">
-                    <span class="text-muted small">CÃ¢u há»i trong kho</span>
-                    <h2 class="fw-bold text-warning">5,420</h2>
-                </div>
+        </section>
+
+        <section class="row g-3 mb-4" aria-label="Trạng thái tài khoản">
+            <div class="col-md-6">
+                <article class="card kotoba-card p-4 h-100">
+                    <span class="small text-muted mb-2">Tài khoản đang hoạt động</span>
+                    <strong class="h3 mb-0" style="color: var(--status-success);" th:text="${activeUsers}">0</strong>
+                </article>
             </div>
-        </div>
+            <div class="col-md-6">
+                <article class="card kotoba-card p-4 h-100">
+                    <span class="small text-muted mb-2">Tài khoản không hoạt động</span>
+                    <strong class="h3 mb-0" style="color: var(--status-warning);" th:text="${inactiveUsers}">0</strong>
+                </article>
+            </div>
+        </section>
+
+        <section class="card kotoba-card p-4" aria-labelledby="recent-logs-title">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="recent-logs-title" class="h5 fw-bold mb-0">Hoạt động gần đây</h2>
+                <a class="btn btn-outline-primary btn-sm rounded-pill" th:href="@{/admin/logs}">Tất cả nhật ký</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Loại</th>
+                        <th>Hoạt động</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="log : ${recentLogs}">
+                        <td class="text-nowrap" th:text="${log.timestamp != null ? #temporals.format(log.timestamp, 'dd/MM/yyyy HH:mm') : '—'}">—</td>
+                        <td><span class="badge text-bg-light" th:text="${log.logType}">ADMIN</span></td>
+                        <td th:text="${log.actionPerformed}">USER_UPDATED</td>
+                        <td th:text="${log.details != null ? log.details : '—'}">—</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(recentLogs)}">
+                        <td colspan="4" class="text-center text-muted py-4">Chưa có hoạt động được ghi nhận.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </div>

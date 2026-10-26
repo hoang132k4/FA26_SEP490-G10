@@ -1,11 +1,115 @@
-﻿<div th:replace="~{layouts/admin-layout :: html(
-    pageTitle='Quáº£n lÃ½ NgÆ°á»i dÃ¹ng - JLPP',
+<div th:replace="~{layouts/admin-layout :: html(
+    pageTitle='Quản lý người dùng',
     activeMenu='users',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="fw-bold">Danh sÃ¡ch ngÆ°á»i dÃ¹ng</h3>
-        </div>
+        <section class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div>
+                <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Quản trị hệ thống</span>
+                <h1 class="h3 fw-bold mt-1 mb-1">Danh sách người dùng</h1>
+                <p class="text-muted mb-0">Tra cứu tài khoản, xem thông tin và cập nhật quyền hoặc trạng thái.</p>
+            </div>
+            <span class="badge rounded-pill text-bg-light px-3 py-2">
+                <span th:text="${users.totalElements}">0</span> tài khoản
+            </span>
+        </section>
+
+        <section class="card kotoba-card p-4">
+            <form class="row g-3 align-items-end mb-4" th:action="@{/admin/users}" method="get">
+                <div class="col-lg-5">
+                    <label for="keyword" class="form-label fw-semibold">Tìm kiếm</label>
+                    <input id="keyword" name="keyword" type="search" class="form-control"
+                           placeholder="Họ tên, tên đăng nhập hoặc email" th:value="${keyword}">
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label for="role" class="form-label fw-semibold">Vai trò</label>
+                    <select id="role" name="role" class="form-select">
+                        <option value="">Tất cả vai trò</option>
+                        <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"
+                                th:selected="${selectedRole == role.name()}">LEARNER</option>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label for="status" class="form-label fw-semibold">Trạng thái</label>
+                    <select id="status" name="status" class="form-select">
+                        <option value="">Tất cả trạng thái</option>
+                        <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}"
+                                th:selected="${selectedStatus == status}">ACTIVE</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary rounded-pill flex-grow-1">
+                        <i class="bi bi-search me-1"></i> Tìm
+                    </button>
+                    <a class="btn btn-outline-secondary rounded-pill" th:href="@{/admin/users}">Xóa lọc</a>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th scope="col">Người dùng</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Vai trò</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col">Ngày tạo</th>
+                        <th scope="col" class="text-end">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="user : ${users.content}">
+                        <td>
+                            <a class="fw-semibold text-decoration-none" style="color: var(--navy-dark);"
+                               th:href="@{/admin/users/{id}(id=${user.userId})}" th:text="${user.fullName}">Tên người dùng</a>
+                            <div class="small text-muted" th:text="${user.username}">@username</div>
+                        </td>
+                        <td th:text="${user.displayEmail}">email@example.com</td>
+                        <td><span class="badge text-bg-light" th:text="${user.role}">LEARNER</span></td>
+                        <td>
+                            <span class="badge rounded-pill"
+                                  th:classappend="${user.displayStatus == 'ACTIVE'} ? 'text-bg-success' : 'text-bg-secondary'"
+                                  th:text="${user.displayStatus != null ? user.displayStatus : 'CHƯA XÁC ĐỊNH'}">ACTIVE</span>
+                        </td>
+                        <td class="text-nowrap" th:text="${user.createdAt != null ? #temporals.format(user.createdAt, 'dd/MM/yyyy') : '—'}">—</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-primary rounded-pill"
+                               th:href="@{/admin/users/{id}(id=${user.userId})}" title="Xem chi tiết" aria-label="Xem chi tiết">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary rounded-pill"
+                               th:href="@{/admin/users/{id}/edit(id=${user.userId})}" title="Cập nhật" aria-label="Cập nhật">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${users.empty}">
+                        <td colspan="6" class="text-center text-muted py-5">Không tìm thấy người dùng phù hợp.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav th:if="${users.totalPages > 1}" class="mt-4" aria-label="Phân trang danh sách người dùng">
+                <ul class="pagination justify-content-end mb-0">
+                    <li class="page-item" th:classappend="${users.first} ? 'disabled'">
+                        <a class="page-link" th:if="${!users.first}"
+                           th:href="@{/admin/users(page=${users.number - 1}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus})}">Trước</a>
+                        <span class="page-link" th:if="${users.first}">Trước</span>
+                    </li>
+                    <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, users.totalPages - 1)}"
+                        th:classappend="${pageNumber == users.number} ? 'active'">
+                        <a class="page-link" th:href="@{/admin/users(page=${pageNumber}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus})}"
+                           th:text="${pageNumber + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${users.last} ? 'disabled'">
+                        <a class="page-link" th:if="${!users.last}"
+                           th:href="@{/admin/users(page=${users.number + 1}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus})}">Tiếp</a>
+                        <span class="page-link" th:if="${users.last}">Tiếp</span>
+                    </li>
+                </ul>
+            </nav>
+        </section>
     </div>
 </div>

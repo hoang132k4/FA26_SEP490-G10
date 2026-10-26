@@ -27,4 +27,12 @@ public interface PasswordResetService {
      * @param newPassword The new plaintext password
      */
     void resetPassword(String token, String newPassword);
+
+    /**
+     * Retrieves the latest generated reset link for the given email (useful for local development testing).
+     *
+     * @param email The user email
+     * @return The reset URL, or null if not available
+     */
+    String getLatestGeneratedResetLink(String email);
 }

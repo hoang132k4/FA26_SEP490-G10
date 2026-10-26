@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="kotoba-sidebar">
+        <!-- Logo & Brand Header -->
+        <a th:href="@{/manager/dashboard}" class="kotoba-brand">
+            <div class="kotoba-logo-circle">
+                <svg viewBox="0 0 100 100" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="50" fill="#E06D53" />
+                    <circle cx="50" cy="42" r="22" fill="#FFFFFF" opacity="0.3" />
+                    <path d="M 20 85 L 43 32 L 57 32 L 80 85 Z" fill="#173B57" />
+                    <path d="M 43 32 L 57 32 L 62 48 L 56 44 L 50 50 L 44 44 L 38 48 Z" fill="#FFFFFF" />
+                </svg>
+            </div>
+            <div class="kotoba-brand-text">
+                <h4>JEPS</h4>
+                <span>Quản lý Nội dung</span>
+            </div>
+        </a>
+
+        <!-- Manager Role Badge -->
+        <div style="margin: 0 6px 18px 6px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.85); font-size:0.75rem; font-weight:600; padding:5px 12px; border-radius:9999px; letter-spacing:0.5px;">
+                <i class="bi bi-shield-check" style="color:#B9D1E1;"></i> Manager Portal
+            </span>
+        </div>
+
+        <!-- Main Navigation Links -->
+        <ul class="kotoba-nav">
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-dashboard'} ? 'active' : ''" th:href="@{/manager/dashboard}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-courses'} ? 'active' : ''" th:href="@{/manager/courses}">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                    <span>Khóa học</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-lessons'} ? 'active' : ''" th:href="@{/manager/lessons}">
+                    <i class="bi bi-book-half"></i>
+                    <span>Bài học</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-questions'} ? 'active' : ''" th:href="@{/manager/questions}">
+                    <i class="bi bi-patch-question-fill"></i><span>Câu hỏi</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-quizzes'} ? 'active' : ''" th:href="@{/manager/quizzes}">
+                    <i class="bi bi-ui-checks-grid"></i><span>Câu đố</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-exams'} ? 'active' : ''" th:href="@{/manager/exams}">
+                    <i class="bi bi-file-earmark-text-fill"></i><span>Đề thi</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-flashcards'} ? 'active' : ''" th:href="@{/manager/flashcards}">
+                    <i class="bi bi-card-text"></i>
+                    <span>Flashcard</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'manager-reports'} ? 'active' : ''" th:href="@{/manager/reports}">
+                    <i class="bi bi-bar-chart-line-fill"></i>
+                    <span>Báo cáo</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Divider -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.07); margin: 16px 6px;"></div>
+
+        <!-- Bottom Actions -->
+        <ul class="kotoba-nav">
+            <li>
+                <a class="nav-link" th:href="@{/auth/logout}" style="color: rgba(255,120,100,0.85);">
+                    <i class="bi bi-box-arrow-right" style="color: rgba(255,120,100,0.7);"></i>
+                    <span>Đăng xuất</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Bottom Fuji Art Watermark -->
+        <div class="sidebar-fuji-art">
+            <div class="sidebar-fuji-quote">管理者</div>
+            <svg viewBox="0 0 200 120" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 20 50 Q 40 40 60 50 T 100 50" stroke="#B9D1E1" stroke-width="1.5" fill="none" opacity="0.6" />
+                <path d="M 120 30 Q 140 20 160 30 T 190 30" stroke="#B9D1E1" stroke-width="1.5" fill="none" opacity="0.6" />
+                <path d="M 20 120 L 90 40 L 110 40 L 180 120 Z" fill="#244F70" />
+                <path d="M 90 40 L 110 40 L 120 62 L 108 56 L 100 64 L 92 56 L 80 62 Z" fill="#FFFFFF" opacity="0.9" />
+            </svg>
+        </div>
+    </div>
+</body>
+</html>

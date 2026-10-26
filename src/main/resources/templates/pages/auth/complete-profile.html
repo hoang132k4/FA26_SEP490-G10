@@ -1,0 +1,80 @@
+<div th:replace="~{layouts/auth-layout :: html(
+    pageTitle='Hoàn tất hồ sơ - JEPS',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="text-center mb-4">
+            <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <i class="bi bi-person-check-fill fs-4"></i>
+            </div>
+            <h4 class="fw-bold mb-1" style="color: var(--text-primary)">Hoàn tất hồ sơ</h4>
+            <p class="small text-muted mb-0">Chào mừng bạn đến với JEPS! Vui lòng cập nhật số điện thoại để hoàn tất tài khoản học tập.</p>
+        </div>
+
+        <form th:action="@{/auth/complete-profile}" th:object="${completeProfileRequest}" method="post" novalidate>
+            <!-- Full Name -->
+            <div class="mb-3">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="fullName">
+                    Họ và tên <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                    <input type="text"
+                           id="fullName"
+                           th:field="*{fullName}"
+                           class="form-control border-start-0"
+                           th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                           placeholder="Nguyễn Văn A"
+                           maxlength="100"
+                           required>
+                </div>
+                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+            </div>
+
+            <!-- Email (Verified via Google - Read Only) -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label small fw-semibold mb-0" style="color: var(--text-primary)" for="email">Email</label>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                        <i class="bi bi-patch-check-fill me-1"></i> Google Verified
+                    </span>
+                </div>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                    <input type="email"
+                           id="email"
+                           th:value="*{email}"
+                           class="form-control border-start-0 bg-light"
+                           readonly>
+                </div>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="mb-4">
+                <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="phone">
+                    Số điện thoại <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-telephone"></i></span>
+                    <input type="tel"
+                           id="phone"
+                           th:field="*{phone}"
+                           class="form-control border-start-0"
+                           th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''"
+                           placeholder="0912345678"
+                           maxlength="10"
+                           required>
+                </div>
+                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                <small class="form-text text-muted" style="font-size: 0.78rem;">
+                    Dùng để bảo mật tài khoản và liên hệ hỗ trợ lộ trình học.
+                </small>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-sakura w-100 py-2 fw-semibold">
+                <i class="bi bi-check2-circle me-1"></i> Hoàn tất & Bắt đầu học
+            </button>
+        </form>
+    </div>
+</div>

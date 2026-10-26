@@ -1,7 +1,5 @@
 package com.jlpp.modules.auth.service.impl;
 
-import com.jlpp.modules.auth.model.PasswordResetToken;
-import com.jlpp.modules.auth.repository.PasswordResetTokenStore;
 import com.jlpp.modules.auth.service.EmailService;
 import com.jlpp.modules.auth.service.PasswordResetService;
 import com.jlpp.modules.auth.service.RateLimiter;
@@ -28,7 +26,6 @@ import java.util.Optional;
 public class PasswordResetServiceImpl implements PasswordResetService {
 
     private final UserRepository userRepository;
-    private final PasswordResetTokenStore tokenStore;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final RateLimiter rateLimiter;
@@ -72,26 +69,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             return;
         }
 
-        // Invalidate any existing active tokens for this user
-        tokenStore.invalidateTokensForEmail(normalizedEmail);
-
         // Generate cryptographically secure random token (32 bytes = 256 bits)
         byte[] randomBytes = new byte[32];
         SECURE_RANDOM.nextBytes(randomBytes);
         String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
 
-        // Hash token with SHA-256 before storage
+        // Hash token with SHA-256 before storage on Supabase database
         String tokenHash = hashToken(rawToken);
 
-        PasswordResetToken resetToken = PasswordResetToken.builder()
-                .tokenHash(tokenHash)
-                .userId(user.getId())
-                .email(normalizedEmail)
-                .expiryDate(LocalDateTime.now().plusMinutes(tokenValidityMinutes))
-                .used(false)
-                .build();
-
-        tokenStore.save(resetToken);
+        user.setResetTokenHash(tokenHash);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(tokenValidityMinutes));
+        userRepository.save(user);
 
         // Construct reset link
         String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
@@ -103,15 +91,22 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
 
     @Override
+    public String getLatestGeneratedResetLink(String email) {
+        return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean validateResetToken(String token) {
         if (token == null || token.isBlank()) {
             return false;
         }
 
         String tokenHash = hashToken(token.trim());
-        Optional<PasswordResetToken> tokenOpt = tokenStore.findByTokenHash(tokenHash);
+        Optional<User> userOpt = userRepository.findByResetTokenHash(tokenHash);
 
-        return tokenOpt.map(PasswordResetToken::isValid).orElse(false);
+        return userOpt.map(u -> u.getResetTokenExpiry() != null && u.getResetTokenExpiry().isAfter(LocalDateTime.now()))
+                .orElse(false);
     }
 
     @Override
@@ -121,23 +116,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new IllegalArgumentException("Mã xác thực không hợp lệ.");
         }
 
-        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 64) {
-            throw new IllegalArgumentException("Mật khẩu mới phải có độ dài từ 8 đến 64 ký tự.");
+        if (newPassword == null || !newPassword.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z\\d\\s]).{8,64}$")) {
+            throw new IllegalArgumentException("Mật khẩu phải từ 8-64 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
         }
 
         String tokenHash = hashToken(token.trim());
-        PasswordResetToken resetToken = tokenStore.findByTokenHash(tokenHash)
+        User user = userRepository.findByResetTokenHash(tokenHash)
                 .orElseThrow(() -> new IllegalArgumentException("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn."));
 
-        if (!resetToken.isValid()) {
-            if (resetToken.isUsed()) {
-                throw new IllegalArgumentException("Liên kết đặt lại mật khẩu này đã được sử dụng.");
-            }
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Liên kết đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu liên kết mới.");
         }
-
-        User user = userRepository.findById(resetToken.getUserId())
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin tài khoản người dùng."));
 
         if ("DISABLED".equalsIgnoreCase(user.getStatus()) || "LOCKED".equalsIgnoreCase(user.getStatus())) {
             throw new IllegalStateException("Tài khoản này đã bị khóa hoặc vô hiệu hóa.");
@@ -146,12 +135,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // Hash new password using BCrypt
         String hashedPassword = passwordEncoder.encode(newPassword);
         user.setPassword(hashedPassword);
+        // Clear token immediately after consumption
+        user.setResetTokenHash(null);
+        user.setResetTokenExpiry(null);
         userRepository.save(user);
-
-        // Mark token as consumed immediately
-        resetToken.setUsed(true);
-        tokenStore.save(resetToken);
-        tokenStore.invalidateTokensForEmail(user.getEmail());
 
         log.info("Password updated successfully for user ID: {}", user.getId());
     }
