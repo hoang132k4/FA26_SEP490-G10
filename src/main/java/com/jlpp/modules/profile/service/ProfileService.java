@@ -2,7 +2,6 @@ package com.jlpp.modules.profile.service;
 
 import com.jlpp.modules.profile.dto.EditProfileRequest;
 import com.jlpp.modules.profile.dto.ProfileResponse;
-
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ProfileService {
@@ -11,7 +10,11 @@ public interface ProfileService {
 
     EditProfileRequest getEditProfileForm(String identifier);
 
-    ProfileResponse updateProfile(String identifier, EditProfileRequest request);
+    ProfileResponse updateProfile(String identifier, EditProfileRequest request, MultipartFile avatarFile);
+
+    default ProfileResponse updateProfile(String identifier, EditProfileRequest request) {
+        return updateProfile(identifier, request, null);
+    }
 
     ProfileResponse updateAvatar(String identifier, MultipartFile avatarFile);
 }

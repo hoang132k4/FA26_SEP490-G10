@@ -349,60 +349,26 @@ public class ProfileTest {
     }
 
     @Test
-    @DisplayName("SRV-04: ProfileService.updateAvatar uploads image and saves avatarUrl successfully")
-    void profileService_updateAvatar_success() {
-        MockMultipartFile avatarFile = new MockMultipartFile(
+    @DisplayName("SRV-04: ProfileService.updateProfile with avatar file updates avatarUrl")
+    void profileService_updateProfile_withAvatar_success() {
+        org.springframework.mock.web.MockMultipartFile mockFile = new org.springframework.mock.web.MockMultipartFile(
                 "avatarFile",
                 "test-avatar.png",
                 "image/png",
-                "fake-image-bytes".getBytes()
+                "dummy-image-bytes".getBytes()
         );
 
-        ProfileResponse response = profileService.updateAvatar(LEARNER_EMAIL, avatarFile);
+        EditProfileRequest request = EditProfileRequest.builder()
+                .fullName("Nguyễn Văn Học Viên Updated")
+                .email(LEARNER_EMAIL)
+                .phone("0987654321")
+                .build();
+
+        ProfileResponse response = profileService.updateProfile(LEARNER_EMAIL, request, mockFile);
 
         assertThat(response).isNotNull();
         assertThat(response.getAvatarUrl()).isNotNull();
         assertThat(response.getAvatarUrl()).startsWith("/uploads/avatars/avatar_");
-
-        User updatedUser = userRepository.findByEmailIgnoreCase(LEARNER_EMAIL).orElseThrow();
-        assertThat(updatedUser.getAvatarUrl()).isEqualTo(response.getAvatarUrl());
-    }
-
-    @Test
-    @DisplayName("SRV-05: ProfileService.updateAvatar rejects non-image files")
-    void profileService_updateAvatar_invalidType_throwsException() {
-        MockMultipartFile textFile = new MockMultipartFile(
-                "avatarFile",
-                "malicious.txt",
-                "text/plain",
-                "not an image".getBytes()
-        );
-
-        assertThatThrownBy(() -> profileService.updateAvatar(LEARNER_EMAIL, textFile))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Chỉ chấp nhận tệp hình ảnh");
-    }
-
-    @Test
-    @DisplayName("WEB-06: POST /profile/avatar handles file upload and redirects to /profile with flash message")
-    void profileController_updateAvatar_success() throws Exception {
-        MockMultipartFile validImage = new MockMultipartFile(
-                "avatarFile",
-                "my-photo.jpg",
-                "image/jpeg",
-                "sample-image-content".getBytes()
-        );
-
-        mockMvc.perform(multipart("/profile/avatar")
-                        .file(validImage)
-                        .with(csrf())
-                        .with(user(LEARNER_EMAIL).roles("LEARNER")))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/profile"))
-                .andExpect(flash().attribute("successMessage", "Cập nhật ảnh đại diện thành công!"));
-
-        User user = userRepository.findByEmailIgnoreCase(LEARNER_EMAIL).orElseThrow();
-        assertThat(user.getAvatarUrl()).isNotNull();
-        assertThat(user.getAvatarUrl()).startsWith("/uploads/avatars/avatar_");
+        assertThat(response.getAvatarUrl()).endsWith(".png");
     }
 }

@@ -1,45 +1,33 @@
 <div th:replace="${profile != null and !profile.learner} ? ~{layouts/admin-layout :: html('Hồ sơ cá nhân - JEPS', 'profile', ~{::#mainContent})} : ~{layouts/learner-layout :: html('Hồ sơ cá nhân - JEPS', 'profile', ~{::#mainContent})}">
     <div id="mainContent">
         <!-- Breadcrumb & Page Header -->
-        <div class="mb-4 mt-2">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-1">
-                    <li class="breadcrumb-item"><a th:href="@{${profile.dashboardUrl}}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Hồ sơ cá nhân</li>
-                </ol>
-            </nav>
-            <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Thông tin tài khoản</h3>
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{${profile.dashboardUrl}}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Hồ sơ cá nhân</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Thông tin tài khoản</h3>
+            </div>
         </div>
 
         <div class="row g-4">
             <!-- Left Column: User Summary Card -->
             <div class="col-lg-4 col-md-5">
                 <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white h-100">
-                    <!-- Avatar with Upload Button -->
-                    <div class="d-flex flex-column align-items-center mb-3">
-                        <div class="position-relative" style="width: 100px; height: 100px;">
-                            <div class="rounded-circle overflow-hidden shadow-sm d-flex align-items-center justify-content-center text-white w-100 h-100 border border-3 border-light"
-                                 style="background: linear-gradient(135deg, #173B57 0%, #244F70 100%);">
-                                <img th:if="${profile.avatarUrl != null and !profile.avatarUrl.isEmpty()}"
-                                     th:src="${profile.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover" id="avatarPreview" />
-                                <span th:unless="${profile.avatarUrl != null and !profile.avatarUrl.isEmpty()}"
-                                      style="font-size: 40px; font-weight: bold;"
-                                      th:text="${profile.fullName != null and !profile.fullName.isEmpty() ? profile.fullName.substring(0, 1).toUpperCase() : 'U'}">U</span>
-                            </div>
-
-                            <!-- Camera trigger button -->
-                            <label for="avatarFileInput" class="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0 shadow d-flex align-items-center justify-content-center"
-                                   style="width: 32px; height: 32px; cursor: pointer; border: 2px solid #fff;"
-                                   title="Chọn ảnh từ máy tính để đổi ảnh đại diện">
-                                <i class="bi bi-camera-fill" style="font-size: 13px;"></i>
-                            </label>
-
-                            <!-- Hidden upload form -->
-                            <form id="avatarUploadForm" th:action="@{/profile/avatar}" method="post" enctype="multipart/form-data" class="d-none">
-                                <input type="file" id="avatarFileInput" name="avatarFile" accept="image/png, image/jpeg, image/jpg, image/webp" onchange="submitAvatarForm()" />
-                            </form>
+                    <div class="d-flex justify-content-center mb-3">
+                        <div th:if="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
+                             class="rounded-circle overflow-hidden shadow-sm d-flex align-items-center justify-content-center border"
+                             style="width: 90px; height: 90px;">
+                            <img th:src="${profile.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
-                        <small class="text-muted mt-2" style="font-size: 11px;">Nhấp vào <i class="bi bi-camera-fill"></i> để chọn ảnh đại diện</small>
+                        <div th:unless="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
+                             class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm"
+                             style="width: 90px; height: 90px; background: linear-gradient(135deg, #173B57 0%, #244F70 100%); font-size: 36px; font-weight: bold;">
+                            <span th:text="${profile.fullName != null and !profile.fullName.isEmpty() ? profile.fullName.substring(0, 1).toUpperCase() : 'U'}">U</span>
+                        </div>
                     </div>
                     <h5 class="fw-bold mb-1" style="color: var(--navy-dark)" th:text="${profile.fullName}">Họ và Tên</h5>
                     <p class="text-muted small mb-2" th:text="${profile.email}">email@example.com</p>
@@ -138,7 +126,7 @@
                             <div class="p-3 rounded-3 border" style="background-color: #F8FAFC;">
                                 <span class="text-muted small d-block mb-1">Mục tiêu JLPT hướng tới</span>
                                 <div class="d-flex align-items-center gap-2">
-                                    <span class="badge fs-6 px-3 py-2 rounded-pill" style="background-color: var(--sunset-coral); color: white;" th:text="${profile.targetJlptLevel}">N3</span>
+                                    <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill" th:text="${profile.targetJlptLevel != null and !profile.targetJlptLevel.isBlank() ? profile.targetJlptLevel : 'Chưa thiết lập'}">N3</span>
                                 </div>
                             </div>
                         </div>
@@ -149,20 +137,5 @@
                 </div>
             </div>
         </div>
-
-        <script>
-            function submitAvatarForm() {
-                const input = document.getElementById('avatarFileInput');
-                if (input && input.files && input.files[0]) {
-                    const file = input.files[0];
-                    if (file.size > 5 * 1024 * 1024) {
-                        alert('Kích thước ảnh vượt quá giới hạn 5MB. Vui lòng chọn ảnh nhỏ hơn.');
-                        input.value = '';
-                        return;
-                    }
-                    document.getElementById('avatarUploadForm').submit();
-                }
-            }
-        </script>
     </div>
 </div>

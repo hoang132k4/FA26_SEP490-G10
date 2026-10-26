@@ -35,6 +35,8 @@ public class GlobalUserAdvice {
         if (currentUser != null) {
             String roleName = currentUser.getRole() != null ? currentUser.getRole().name() : "LEARNER";
             model.addAttribute("currentUser", currentUser);
+            model.addAttribute("currentUserFullName", currentUser.getFullName());
+            model.addAttribute("currentUserAvatar", currentUser.getAvatarUrl());
             model.addAttribute("userName", currentUser.getFullName());
             model.addAttribute("role", roleName);
             model.addAttribute("currentRole", roleName);

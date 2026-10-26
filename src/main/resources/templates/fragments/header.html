@@ -49,10 +49,10 @@
                     <!-- If Authenticated -->
                     <div th:if="${currentUser != null or (role != null and role != 'GUEST' and role != '') or (isAuthenticated != null and isAuthenticated)}" class="dropdown">
                         <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-sm" type="button" data-bs-toggle="dropdown">
-                            <img th:if="${currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()}"
-                                 th:src="${currentUser.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover" style="width: 26px; height: 26px;" />
-                            <i th:unless="${currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()}" class="bi bi-person-circle fs-5" style="color: var(--navy-dark)"></i>
-                            <span th:text="${userName != null ? userName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : 'Học viên')}">Học viên</span>
+                            <img th:if="${(currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (currentUserAvatar != null and !currentUserAvatar.isEmpty())}"
+                                 th:src="${currentUserAvatar != null and !currentUserAvatar.isEmpty() ? currentUserAvatar : currentUser.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover" style="width: 26px; height: 26px;" />
+                            <i th:unless="${(currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (currentUserAvatar != null and !currentUserAvatar.isEmpty())}" class="bi bi-person-circle fs-5" style="color: var(--navy-dark)"></i>
+                            <span th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : (userName != null ? userName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : 'Học viên'))}">Học viên</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
                             <li>

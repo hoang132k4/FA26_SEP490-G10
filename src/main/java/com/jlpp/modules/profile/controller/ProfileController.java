@@ -58,6 +58,7 @@ public class ProfileController {
     public String handleEditProfile(
             @Valid @ModelAttribute("editProfileRequest") EditProfileRequest request,
             BindingResult bindingResult,
+            @RequestParam(value = "avatarFile", required = false) MultipartFile avatarFile,
             Model model,
             Principal principal,
             RedirectAttributes redirectAttributes) {
@@ -73,7 +74,7 @@ public class ProfileController {
         }
 
         try {
-            profileService.updateProfile(principal.getName(), request);
+            profileService.updateProfile(principal.getName(), request, avatarFile);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ cá nhân thành công!");
             return "redirect:/profile";
         } catch (IllegalArgumentException ex) {

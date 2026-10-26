@@ -14,8 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.web.multipart.MultipartFile;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,7 +52,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
-    public ProfileResponse updateProfile(String identifier, EditProfileRequest request) {
+    public ProfileResponse updateProfile(String identifier, EditProfileRequest request, MultipartFile avatarFile) {
         User user = findUserByIdentifier(identifier);
 
         String trimmedFullName = request.getFullName() != null ? request.getFullName().trim() : "";
@@ -72,6 +72,11 @@ public class ProfileServiceImpl implements ProfileService {
         user.setFullName(trimmedFullName);
         user.setPhone(trimmedPhone);
 
+        // Process avatar file upload if provided
+        if (avatarFile != null && !avatarFile.isEmpty()) {
+            handleAvatarUpload(user, avatarFile);
+        }
+
         User savedUser = userRepository.save(user);
         log.info("Profile updated successfully for user ID: {}, email: {}", savedUser.getId(), savedUser.getEmail());
 
@@ -79,6 +84,42 @@ public class ProfileServiceImpl implements ProfileService {
         updateSecurityContext(savedUser);
 
         return mapToProfileResponse(savedUser);
+    }
+
+    private void handleAvatarUpload(User user, MultipartFile avatarFile) {
+        String contentType = avatarFile.getContentType();
+        if (contentType == null || !(contentType.equalsIgnoreCase("image/jpeg")
+                || contentType.equalsIgnoreCase("image/png")
+                || contentType.equalsIgnoreCase("image/jpg")
+                || contentType.equalsIgnoreCase("image/webp"))) {
+            throw new IllegalArgumentException("Định dạng ảnh không hợp lệ. Vui lòng tải lên ảnh định dạng JPEG, PNG hoặc WebP.");
+        }
+
+        if (avatarFile.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Dung lượng ảnh đại diện không được vượt quá 5MB.");
+        }
+
+        try {
+            Path uploadDir = Paths.get("uploads", "avatars");
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            String originalFilename = avatarFile.getOriginalFilename();
+            String extension = "png";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+            }
+
+            String fileName = "avatar_" + user.getId() + "_" + System.currentTimeMillis() + "." + extension;
+            Path targetPath = uploadDir.resolve(fileName);
+            Files.copy(avatarFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            user.setAvatarUrl("/uploads/avatars/" + fileName);
+        } catch (IOException e) {
+            log.error("Failed to save avatar image for user ID: {}", user.getId(), e);
+            throw new RuntimeException("Không thể lưu ảnh đại diện. Vui lòng thử lại sau.", e);
+        }
     }
 
     private User findUserByIdentifier(String identifier) {
