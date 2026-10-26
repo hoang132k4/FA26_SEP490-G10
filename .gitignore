@@ -35,3 +35,7 @@ target/
 .project
 .classpath
 
+# Uploads & Temp files
+uploads/
+*.bak
+

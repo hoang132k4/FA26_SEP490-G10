@@ -73,13 +73,11 @@ public class GoogleOAuth2IntegrationTest {
     }
 
     @Test
-    @DisplayName("UI 2: Register page contains Google Sign-up button with /oauth2/authorization/google")
-    void testRegisterPage_ContainsGoogleButton() throws Exception {
+    @DisplayName("UI 2: Register page does not contain Google Sign-up button")
+    void testRegisterPage_DoesNotContainGoogleButton() throws Exception {
         mockMvc.perform(get("/auth/register"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Hoặc đăng ký nhanh bằng")))
-                .andExpect(content().string(containsString("Đăng ký với Google")))
-                .andExpect(content().string(containsString("/oauth2/authorization/google")));
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Đăng ký với Google"))));
     }
 
     @Test
