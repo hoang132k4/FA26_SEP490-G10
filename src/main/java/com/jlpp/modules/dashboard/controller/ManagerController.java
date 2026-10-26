@@ -137,11 +137,6 @@ public class ManagerController {
         return "pages/manager/report/manager-reports";
     }
 
-    @GetMapping("/quizzes")
-    public String quizzes() {
-        return "pages/manager/quiz/list";
-    }
-
     private Map<String, Object> toCourseView(CourseOption row) {
         Map<String, Object> course = new LinkedHashMap<>();
         course.put("id", row.id());
