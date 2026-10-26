@@ -142,11 +142,6 @@ public class ManagerController {
         return "pages/manager/question/list";
     }
 
-    @GetMapping("/quizzes")
-    public String quizzes() {
-        return "pages/manager/quiz/list";
-    }
-
     @GetMapping("/exams")
     public String exams() {
         return "pages/manager/exam/list";
