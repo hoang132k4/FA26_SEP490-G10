@@ -147,11 +147,6 @@ public class ManagerController {
         return "pages/manager/quiz/list";
     }
 
-    @GetMapping("/exams")
-    public String exams() {
-        return "pages/manager/exam/list";
-    }
-
     private Map<String, Object> toCourseView(CourseOption row) {
         Map<String, Object> course = new LinkedHashMap<>();
         course.put("id", row.id());
