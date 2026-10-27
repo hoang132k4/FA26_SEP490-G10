@@ -1,16 +1,193 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Hiá»‡u chá»‰nh lá»‹ch há»c - JLPP',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Điều chỉnh lịch học - JEPS',
     activeMenu='learning-path',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">Cáº­p nháº­t thá»i gian & CÆ°á»ng Ä‘á»™ há»c táº­p</h3>
-        <form th:action="@{/learning-path/recalibrate}" method="post" class="col-md-6">
-            <div class="mb-3">
-                <label class="form-label">Sá»‘ giá» cÃ³ thá»ƒ há»c má»—i tuáº§n</label>
-                <input type="number" name="weeklyHours" class="form-control" value="10">
+        <!-- Breadcrumb & Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/learning-path}" class="text-decoration-none" style="color: var(--fuji-blue)">Lộ trình học tập</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Điều chỉnh lịch học</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Điều chỉnh lịch trình lộ trình học tập (Recalibrate Schedule)</h3>
             </div>
-            <button type="submit" class="btn btn-primary">TÃ­nh toÃ¡n láº¡i lá»™ trÃ¬nh</button>
-        </form>
+            <div>
+                <a th:href="@{/learning-path}" class="btn btn-outline-secondary btn-sm px-3 py-2 rounded-3">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại lộ trình
+                </a>
+            </div>
+        </div>
+
+        <!-- STATE 1: EMPTY STATE (Khi Database chưa có Learning Path) -->
+        <div th:if="${!hasPath}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+            <div class="mb-4">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                     style="width: 88px; height: 88px; background-color: rgba(245, 158, 11, 0.1); color: #D97706;">
+                    <i class="bi bi-calendar-x fs-1"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-2" style="color: var(--navy-dark)">Chưa đủ dữ liệu để điều chỉnh lịch học</h4>
+            <p class="text-secondary mx-auto mb-4" style="max-width: 580px; line-height: 1.6;">
+                Hệ thống không tìm thấy lộ trình học tập đang hoạt động của bạn. Chức năng điều chỉnh lịch học chỉ khả dụng khi bạn đã có một lộ trình học tập hợp lệ trong cơ sở dữ liệu.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a th:href="@{/learning-path}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
+                    <i class="bi bi-journal-text me-1"></i> Kiểm tra lộ trình
+                </a>
+            </div>
+        </div>
+
+        <!-- STATE 2: RECALIBRATE SIMULATION (Khi đã có Learning Path) -->
+        <div th:if="${hasPath}">
+            <!-- Strict Simulation / Preview Notice Banner -->
+            <div class="alert alert-info border-0 shadow-sm rounded-4 p-4 mb-4 d-flex align-items-start gap-3 bg-white border-start border-4 border-info">
+                <div class="fs-3 text-info mt-1"><i class="bi bi-info-circle-fill"></i></div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-dark">Chế độ xem trước & mô phỏng (Simulation Preview Mode)</h6>
+                    <p class="mb-0 text-secondary small" style="line-height: 1.6;">
+                        Chức năng này giúp bạn thử nghiệm thay đổi cường độ học tập (số giờ học mỗi tuần) để xem trước ngày hoàn thành dự kiến mới và kế hoạch phân bổ bài học.
+                        <strong>Hệ thống hoạt động ở chế độ chỉ đọc và không thực hiện bất kỳ thao tác lưu hay sửa đổi nào vào cơ sở dữ liệu.</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Recalibration Parameter Form -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <h5 class="fw-bold mb-3" style="color: var(--navy-dark)">
+                    <i class="bi bi-sliders2 me-2 text-primary"></i> Thiết lập tham số điều chỉnh
+                </h5>
+                <form th:action="@{/learning-path/recalibrate}" method="post" class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="weeklyHours" class="form-label fw-semibold small text-secondary">
+                            Số giờ có thể học mỗi tuần (Giờ/Tuần) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-clock-history"></i></span>
+                            <input type="number" id="weeklyHours" name="weeklyHours" class="form-control"
+                                   min="1" max="40" required
+                                   th:value="${preview != null ? preview.newWeeklyHours : (request != null ? request.weeklyHours : path.weeklyHours)}"
+                                   placeholder="Ví dụ: 10">
+                            <span class="input-group-text bg-light">giờ/tuần</span>
+                        </div>
+                        <span class="text-muted small">Khuyến nghị từ 7 đến 21 giờ/tuần để đảm bảo tiếp thu tốt nhất.</span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="startDate" class="form-label fw-semibold small text-secondary">
+                            Ngày bắt đầu áp dụng điều chỉnh
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-calendar-check"></i></span>
+                            <input type="date" id="startDate" name="startDate" class="form-control"
+                                   th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 shadow-sm fw-semibold">
+                            <i class="bi bi-calculator me-1"></i> Tính toán mô phỏng
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Simulation Results Area -->
+            <div th:if="${preview != null}">
+                <!-- Comparison Metric Cards -->
+                <div class="row g-4 mb-4">
+                    <!-- Original Schedule Card -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                            <div class="text-muted small fw-semibold text-uppercase mb-2">Lịch học kế hoạch ban đầu</div>
+                            <div class="d-flex justify-content-between align-items-baseline mb-3">
+                                <span class="fs-4 fw-bold" style="color: var(--navy-dark)" th:text="${preview.originalWeeklyHours} + ' giờ/tuần'">10 giờ/tuần</span>
+                                <span class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill">Kế hoạch cũ</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-muted small">
+                                <i class="bi bi-calendar3"></i>
+                                <span>Ngày hoàn thành dự kiến: </span>
+                                <strong class="text-dark" th:text="${preview.originalCompletionDate}">15/12/2026</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Proposed Adjusted Schedule Card -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 border-start border-4 border-primary">
+                            <div class="text-primary small fw-semibold text-uppercase mb-2">Lịch học đề xuất mô phỏng</div>
+                            <div class="d-flex justify-content-between align-items-baseline mb-3">
+                                <span class="fs-4 fw-bold text-primary" th:text="${preview.newWeeklyHours} + ' giờ/tuần'">14 giờ/tuần</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill"
+                                      th:text="${preview.daysDifferenceText}">Hoàn thành sớm hơn 14 ngày</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-muted small">
+                                <i class="bi bi-calendar-event text-primary"></i>
+                                <span>Ngày hoàn thành mới: </span>
+                                <strong class="text-primary fs-6" th:text="${preview.newCompletionDate}">01/12/2026</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pace Analysis Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <h6 class="fw-bold mb-2" style="color: var(--navy-dark)">
+                        <i class="bi bi-speedometer2 me-2 text-warning"></i> Đánh giá nhịp độ học tập đề xuất
+                    </h6>
+                    <p class="text-secondary mb-0 small" style="line-height: 1.6;" th:text="${preview.paceAnalysisText}">
+                        Cường độ học tập Tiêu chuẩn (Standard): Phân bổ 10 giờ/tuần là nhịp độ cân bằng và bền vững nhất để tiếp thu sâu kiến thức ngữ pháp và luyện nghe đều đặn.
+                    </p>
+                </div>
+
+                <!-- Proposed Timeline Table -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
+                    <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0" style="color: var(--navy-dark)">
+                            <i class="bi bi-calendar-range me-2 text-primary"></i> Lịch học đề xuất chi tiết (Preview Schedule)
+                        </h5>
+                        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill">Dự kiến xong trong <span th:text="${preview.weeksNeeded}">6</span> tuần</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light text-secondary small text-uppercase fw-semibold" style="border-bottom: 2px solid var(--border-subtle);">
+                                <tr>
+                                    <th scope="col" class="ps-4 py-3" style="width: 80px;">STT</th>
+                                    <th scope="col" class="py-3">Bài học / Cột mốc</th>
+                                    <th scope="col" class="py-3" style="width: 140px;">Tuần học</th>
+                                    <th scope="col" class="py-3" style="width: 160px;">Ngày học dự kiến mới</th>
+                                    <th scope="col" class="text-end pe-4 py-3" style="width: 150px;">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="item : ${preview.rescheduledItems}" class="border-bottom">
+                                    <td class="ps-4 py-3 text-muted" th:text="${item.orderIndex}">1</td>
+                                    <td class="py-3">
+                                        <strong class="d-block text-dark" th:text="${item.title}">Bài 1: Từ vựng</strong>
+                                        <span class="text-muted small" th:text="${item.sectionName}">Chương 1</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-light text-dark border px-2 py-1" th:text="'Tuần ' + ${item.targetWeek}">Tuần 1</span>
+                                    </td>
+                                    <td class="py-3 text-primary fw-semibold" th:text="${item.plannedDateFormatted}">
+                                        01/10/2026
+                                    </td>
+                                    <td class="text-end pe-4 py-3">
+                                        <span class="badge px-3 py-2 rounded-pill fw-semibold"
+                                              th:classappend="${item.status == 'COMPLETED'} ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'"
+                                              th:text="${item.statusDisplay}">Đã hoàn thành</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
