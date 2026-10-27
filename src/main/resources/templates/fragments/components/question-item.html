@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-    <div th:fragment="questionItem(q, index, showSolution)" class="card p-4 mb-4 jeps-card question-box" th:id="'question-' + ${q.id}">
+    <div th:fragment="questionItem(q, index, showSolution)" class="card p-4 mb-4 kotoba-card question-box" th:id="'question-' + ${q.id}" th:data-skill-group="${q.skillGroup}">
         <!-- Question Header -->
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
             <h6 class="fw-bold mb-0" style="color: var(--sakura-accent)">
@@ -16,29 +16,48 @@
             昨日、田中さんと映画を____。
         </div>
 
-        <!-- Audio Player if listening question -->
-        <div th:if="${q.audioUrl != null}" class="mb-4 p-2 bg-light rounded-3 border">
+        <!-- Audio Player if listening question has audio -->
+        <div th:if="${q.audioUrl != null}" class="mb-4 p-3 bg-light rounded-3 border">
+            <label class="form-label small fw-bold text-muted mb-1"><i class="bi bi-headphones me-1"></i> Tệp âm thanh bài nghe:</label>
             <audio controls class="w-100">
-                <source th:src="${q.audioUrl}" type="audio/mpeg">
-                Trình duyệt không hỗ trợ audio.
+                <source th:src="${q.audioUrl}">
+                Trình duyệt không hỗ trợ phát audio.
             </audio>
         </div>
 
+        <!-- Notice if listening question lacks audio -->
+        <div th:if="${q.audioUrl == null and (q.skillGroup == 'LISTENING' or (q.category != null and (q.category.contains('Nghe') or q.category.contains('Choukai'))))}" class="alert alert-secondary py-2 small mb-3">
+            <i class="bi bi-volume-mute me-1"></i> Chưa có tệp âm thanh cho câu hỏi này.
+        </div>
+
         <!-- Options List -->
-        <div class="options-container">
+        <div class="options-container d-flex flex-column gap-2">
             <div th:each="opt : ${q.options}" 
-                 class="option-item d-flex align-items-center"
-                 th:classappend="${showSolution && opt.correct} ? 'border-success bg-success-subtle' : ''">
-                <div class="form-check w-100 m-0">
-                    <input class="form-check-input me-2" type="radio" 
+                 class="option-item p-3 rounded-3 border transition-all"
+                 th:classappend="${showSolution && opt.correct} ? 'border-success bg-success-subtle' : (${showSolution && q.userAnswerId != null && q.userAnswerId == opt.id && !opt.correct} ? 'border-danger bg-danger-subtle' : '')">
+                <div class="form-check w-100 m-0 d-flex align-items-center">
+                    <input class="form-check-input me-3" type="radio" 
                            th:name="'answer_' + ${q.id}" 
                            th:value="${opt.id}" 
                            th:id="'opt_' + ${opt.id}"
                            th:checked="${q.userAnswerId != null && q.userAnswerId == opt.id}"
                            th:disabled="${showSolution}">
-                    <label class="form-check-label w-100 cursor-pointer" th:for="'opt_' + ${opt.id}">
-                        <span class="fw-bold me-2" style="color: var(--sakura-accent)" th:text="${opt.label}">A.</span>
-                        <span class="text-dark" th:text="${opt.text}">見ました</span>
+                    <label class="form-check-label w-100 cursor-pointer d-flex align-items-center justify-content-between" th:for="'opt_' + ${opt.id}">
+                        <div>
+                            <span class="fw-bold me-2" style="color: var(--sakura-accent)" th:text="${opt.label}">1.</span>
+                            <span class="text-dark" th:text="${opt.text}">Lựa chọn</span>
+                        </div>
+                        <div th:if="${showSolution}">
+                            <span th:if="${q.userAnswerId != null && q.userAnswerId == opt.id && opt.correct}" class="badge bg-success">
+                                <i class="bi bi-check-circle-fill me-1"></i> Lựa chọn đúng
+                            </span>
+                            <span th:if="${q.userAnswerId != null && q.userAnswerId == opt.id && !opt.correct}" class="badge bg-danger">
+                                <i class="bi bi-x-circle-fill me-1"></i> Bạn đã chọn sai
+                            </span>
+                            <span th:if="${(q.userAnswerId == null || q.userAnswerId != opt.id) && opt.correct}" class="badge bg-success">
+                                <i class="bi bi-check-lg me-1"></i> Đáp án đúng
+                            </span>
+                        </div>
                     </label>
                 </div>
             </div>
@@ -49,7 +68,9 @@
             <div class="fw-bold text-success mb-1">
                 <i class="bi bi-check-circle-fill me-1"></i> Giải thích chi tiết:
             </div>
-            <p class="mb-0 text-secondary small" th:text="${q.explanation}">Hành động đã xảy ra trong quá khứ (昨日 - hôm qua) nên chia về thể quá khứ 見ました.</p>
+            <p class="mb-0 text-secondary small" th:text="${q.explanation != null ? q.explanation : 'Chưa có ghi chú giải thích bổ sung cho câu hỏi này.'}">
+                Giải thích chi tiết ngữ pháp...
+            </p>
         </div>
     </div>
 </body>
