@@ -90,6 +90,12 @@
                     <span>Hồ sơ cá nhân</span>
                 </a>
             </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'orders'} ? 'active' : ''" th:href="@{/orders}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Lịch sử đơn hàng</span>
+                </a>
+            </li>
         </ul>
 
         <!-- Bottom Artistic Fuji Watermark & Japanese Motifs -->
