@@ -324,4 +324,80 @@ public class OrderTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Không tìm thấy đơn hàng");
     }
+
+    @Test
+    @DisplayName("OD-05: Fallback displays 'Chưa có thông tin' when paymentMethod and paymentStatus are null")
+    @WithMockUser(username = LEARNER_A_EMAIL, roles = {"LEARNER"})
+    void orderDetail_nullPaymentInfo_displaysNeutralFallbackLabel() throws Exception {
+        Order nullPaymentOrder = Order.builder()
+                .orderNumber("ORD-20261027-NULL")
+                .user(learnerA)
+                .totalAmount(new BigDecimal("990000"))
+                .orderStatus(OrderStatus.PROCESSING)
+                .paymentMethod(null)
+                .paymentStatus(null)
+                .build();
+        nullPaymentOrder.setCreatedAt(LocalDateTime.of(2026, 10, 27, 9, 30));
+
+        OrderItem item = OrderItem.builder()
+                .courseId(201L)
+                .itemName("Luyện thi N3 cấp tốc")
+                .price(new BigDecimal("990000"))
+                .quantity(1)
+                .subtotal(new BigDecimal("990000"))
+                .build();
+        nullPaymentOrder.addItem(item);
+        orderRepository.save(nullPaymentOrder);
+
+        mockMvc.perform(get("/orders/ORD-20261027-NULL"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/order/detail"))
+                .andExpect(model().attributeExists("order"))
+                .andExpect(content().string(containsString("ORD-20261027-NULL")))
+                .andExpect(content().string(containsString("Chưa có thông tin")))
+                .andExpect(content().string(not(containsString("VNPay QR"))));
+
+        // Direct Service assertion
+        OrderDetailResponse detail = orderService.getOrderDetailByOrderNumber(LEARNER_A_EMAIL, "ORD-20261027-NULL");
+        assertThat(detail.getPaymentMethod()).isEqualTo("Chưa có thông tin");
+        assertThat(detail.getPaymentStatus()).isEqualTo("Chưa có thông tin");
+    }
+
+    @Test
+    @DisplayName("OD-06: Fallback displays 'Chưa có thông tin' when paymentMethod and paymentStatus are empty or blank")
+    void orderDetail_blankPaymentInfo_displaysNeutralFallbackLabel() {
+        Order blankPaymentOrder = Order.builder()
+                .orderNumber("ORD-20261027-BLANK")
+                .user(learnerA)
+                .totalAmount(new BigDecimal("500000"))
+                .orderStatus(OrderStatus.PROCESSING)
+                .paymentMethod("   ")
+                .paymentStatus("")
+                .build();
+        blankPaymentOrder.setCreatedAt(LocalDateTime.of(2026, 10, 27, 10, 0));
+        orderRepository.save(blankPaymentOrder);
+
+        OrderDetailResponse detail = orderService.getOrderDetailByOrderNumber(LEARNER_A_EMAIL, "ORD-20261027-BLANK");
+        assertThat(detail.getPaymentMethod()).isEqualTo("Chưa có thông tin");
+        assertThat(detail.getPaymentStatus()).isEqualTo("Chưa có thông tin");
+    }
+
+    @Test
+    @DisplayName("SRV-04: OrderRepository eager fetches items with @EntityGraph avoiding N+1 queries without duplicates")
+    void orderRepository_entityGraph_eagerFetchesItemsWithoutDuplicates() {
+        List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDescIdDesc(learnerA.getId());
+        assertThat(orders).hasSize(2);
+
+        // Verify items collection is fully loaded and initialized without lazy loading exception
+        for (Order order : orders) {
+            assertThat(order.getItems()).isNotNull();
+            assertThat(order.getItems().size()).isGreaterThan(0);
+        }
+
+        // Verify with status filter
+        List<Order> completedOrders = orderRepository.findByUserIdAndOrderStatusOrderByCreatedAtDescIdDesc(
+                learnerA.getId(), OrderStatus.COMPLETED);
+        assertThat(completedOrders).hasSize(1);
+        assertThat(completedOrders.get(0).getItems()).hasSize(2);
+    }
 }

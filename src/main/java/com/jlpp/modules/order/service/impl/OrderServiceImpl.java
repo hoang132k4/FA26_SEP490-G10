@@ -139,12 +139,20 @@ public class OrderServiceImpl implements OrderService {
                 ? order.getItems().stream().map(this::mapToOrderItemDetail).collect(Collectors.toList())
                 : Collections.emptyList();
 
+        String paymentMethod = (order.getPaymentMethod() != null && !order.getPaymentMethod().isBlank())
+                ? order.getPaymentMethod()
+                : "Chưa có thông tin";
+
+        String paymentStatus = (order.getPaymentStatus() != null && !order.getPaymentStatus().isBlank())
+                ? order.getPaymentStatus()
+                : "Chưa có thông tin";
+
         return OrderDetailResponse.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .orderDateFormatted(dateTimeFormatted)
-                .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod() : "VNPay QR")
-                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus() : "SUCCESS")
+                .paymentMethod(paymentMethod)
+                .paymentStatus(paymentStatus)
                 .orderStatus(order.getOrderStatus())
                 .statusVietnamese(order.getOrderStatus().getVietnameseName())
                 .statusEnglish(order.getOrderStatus().getEnglishName())
