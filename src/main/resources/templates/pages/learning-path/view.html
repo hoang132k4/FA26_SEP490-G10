@@ -1,15 +1,178 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Lá»™ trÃ¬nh há»c táº­p - JLPP',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Lộ trình học tập - JEPS',
     activeMenu='learning-path',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold">Lá»™ trÃ¬nh há»c táº­p cÃ¡ nhÃ¢n hÃ³a</h3>
-            <a th:href="@{/learning-path/recalibrate}" class="btn btn-outline-warning btn-sm">
-                <i class="bi bi-sliders"></i> Hiá»‡u chá»‰nh lá»‹ch há»c
-            </a>
+        <!-- Breadcrumb & Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Lộ trình học tập</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Lộ trình học tập cá nhân hóa (Learning Path)</h3>
+            </div>
+            <div>
+                <a th:href="@{/learning-path/recalibrate}" class="btn btn-outline-warning btn-sm px-3 py-2 rounded-3 shadow-sm fw-semibold">
+                    <i class="bi bi-sliders me-1"></i> Điều chỉnh lịch học
+                </a>
+            </div>
         </div>
-        <p class="text-secondary">Theo dÃµi tiáº¿n Ä‘á»™ bÃ i há»c vÃ  má»‘c thi má»¥c tiÃªu.</p>
+
+        <!-- STATE 1: EMPTY STATE (Khi Database chưa có Learning Path) -->
+        <div th:if="${!hasPath}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+            <div class="mb-4">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                     style="width: 88px; height: 88px; background-color: rgba(224, 109, 83, 0.1); color: var(--sunset-coral, #E06D53);">
+                    <i class="bi bi-compass fs-1"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-2" style="color: var(--navy-dark)">Bạn chưa có lộ trình học tập</h4>
+            <p class="text-secondary mx-auto mb-4" style="max-width: 580px; line-height: 1.6;">
+                Hệ thống chưa tìm thấy dữ liệu lộ trình học tập được kích hoạt cho tài khoản của bạn trên cơ sở dữ liệu. Để xây dựng lộ trình học tập cá nhân hóa tối ưu nhất, bạn có thể thực hiện bài đánh giá năng lực hoặc tham gia một khóa học JLPT.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a th:href="@{/courses}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
+                    <i class="bi bi-collection-play me-1"></i> Khám phá khóa học
+                </a>
+                <a th:href="@{/learning/dashboard}" class="btn btn-outline-secondary px-4 py-2 rounded-3">
+                    <i class="bi bi-house-door me-1"></i> Về trang tổng quan
+                </a>
+            </div>
+        </div>
+
+        <!-- STATE 2: POPULATED STATE (Khi đã có Learning Path thực tế) -->
+        <div th:if="${hasPath}">
+            <!-- Overview Card -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-7">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill fw-semibold"
+                                  th:text="'Mục tiêu: ' + ${path.targetLevel}">Mục tiêu: N4</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-semibold"
+                                  th:text="${path.pathStatus}">ACTIVE</span>
+                        </div>
+                        <h4 class="fw-bold mb-2" style="color: var(--navy-dark)" th:text="${path.courseTitle}">
+                            Khóa học JLPT N4 Toàn diện
+                        </h4>
+                        <div class="d-flex flex-wrap gap-4 text-muted small mt-3">
+                            <div>
+                                <i class="bi bi-calendar3 me-1 text-primary"></i>
+                                <span>Bắt đầu: </span>
+                                <strong class="text-dark" th:text="${path.startDateFormatted}">01/10/2026</strong>
+                            </div>
+                            <div>
+                                <i class="bi bi-flag me-1 text-danger"></i>
+                                <span>Dự kiến xong: </span>
+                                <strong class="text-dark" th:text="${path.projectedEndDateFormatted}">15/12/2026</strong>
+                            </div>
+                            <div>
+                                <i class="bi bi-clock-history me-1 text-warning"></i>
+                                <span>Cường độ: </span>
+                                <strong class="text-dark" th:text="${path.weeklyHours} + ' giờ/tuần'">10 giờ/tuần</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Gauge Column -->
+                    <div class="col-lg-5 border-start-lg ps-lg-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-semibold">Tiến độ hoàn thành lộ trình</span>
+                            <span class="fs-5 fw-bold text-primary" th:text="${path.progressPercent} + '%'">50%</span>
+                        </div>
+                        <div class="progress rounded-pill mb-3" style="height: 12px; background-color: var(--border-subtle, #EBF1F5);">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary rounded-pill"
+                                 role="progressbar"
+                                 th:style="'width: ' + ${path.progressPercent} + '%;'"
+                                 th:aria-valuenow="${path.progressPercent}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span><i class="bi bi-check-circle-fill text-success me-1"></i> <strong th:text="${path.completedLessons}">5</strong> bài đã xong</span>
+                            <span><i class="bi bi-hourglass-split text-secondary me-1"></i> Còn <strong th:text="${path.remainingLessons}">5</strong> bài</span>
+                            <span><i class="bi bi-book text-primary me-1"></i> Tổng <strong th:text="${path.totalLessons}">10</strong> bài</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline of Learning Items -->
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0" style="color: var(--navy-dark)">
+                        <i class="bi bi-list-check me-2 text-primary"></i> Kế hoạch học tập chi tiết (Learning Timeline)
+                    </h5>
+                    <span class="text-muted small" th:text="'Tổng số bài học: ' + ${path.totalLessons}">Tổng số bài học: 10</span>
+                </div>
+
+                <div class="p-4" th:if="${#lists.isEmpty(path.items)}">
+                    <p class="text-muted text-center py-4 mb-0">Chưa có bài học nào được cấu hình trong lộ trình này.</p>
+                </div>
+
+                <div class="table-responsive" th:if="${!#lists.isEmpty(path.items)}">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light text-secondary small text-uppercase fw-semibold" style="border-bottom: 2px solid var(--border-subtle);">
+                            <tr>
+                                <th scope="col" class="ps-4 py-3" style="width: 100px;">Thứ tự</th>
+                                <th scope="col" class="py-3">Nội dung bài học</th>
+                                <th scope="col" class="py-3" style="width: 160px;">Thời lượng</th>
+                                <th scope="col" class="py-3" style="width: 150px;">Ngày dự kiến</th>
+                                <th scope="col" class="py-3" style="width: 150px;">Trạng thái</th>
+                                <th scope="col" class="text-end pe-4 py-3" style="width: 130px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${path.items}" class="border-bottom">
+                                <!-- Order Index / Icon -->
+                                <td class="ps-4 py-3">
+                                    <span class="badge rounded-circle d-inline-flex align-items-center justify-content-center"
+                                          th:classappend="${item.status == 'COMPLETED'} ? 'bg-success text-white' : (${item.status == 'IN_PROGRESS'} ? 'bg-primary text-white' : 'bg-light text-secondary border')"
+                                          style="width: 32px; height: 32px; font-size: 0.85rem;"
+                                          th:text="${item.orderIndex}">1</span>
+                                </td>
+
+                                <!-- Title & Section -->
+                                <td class="py-3">
+                                    <strong class="d-block text-dark" th:text="${item.title}">Bài 1: Từ vựng nền tảng</strong>
+                                    <span class="text-muted small" th:text="${item.sectionName}">Chương 1</span>
+                                </td>
+
+                                <!-- Duration -->
+                                <td class="py-3 text-muted small">
+                                    <i class="bi bi-clock me-1"></i>
+                                    <span th:text="${item.durationMinutes} + ' phút'">30 phút</span>
+                                </td>
+
+                                <!-- Planned Date -->
+                                <td class="py-3 text-muted small">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    <span th:text="${item.plannedDateFormatted}">01/10/2026</span>
+                                </td>
+
+                                <!-- Status Badge -->
+                                <td class="py-3">
+                                    <span class="badge px-3 py-2 rounded-pill fw-semibold"
+                                          th:classappend="${item.status == 'COMPLETED'} ? 'bg-success-subtle text-success border border-success-subtle' : (${item.status == 'IN_PROGRESS'} ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle')"
+                                          th:text="${item.statusDisplay}">Đã hoàn thành</span>
+                                </td>
+
+                                <!-- Action -->
+                                <td class="text-end pe-4 py-3">
+                                    <a th:href="@{${item.actionUrl}}"
+                                       class="btn btn-sm px-3 rounded-3"
+                                       th:classappend="${item.status == 'IN_PROGRESS'} ? 'btn-primary shadow-sm' : (${item.status == 'COMPLETED'} ? 'btn-outline-success' : 'btn-outline-secondary')"
+                                       th:text="${item.actionText}">Học tiếp</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
