@@ -19,8 +19,15 @@
     <div class="alert alert-danger" role="alert" th:if="${courseError}" th:text="${courseError}"></div>
     <div class="alert alert-success" role="alert" th:if="${courseSuccess}" th:text="${courseSuccess}"></div>
 
+    <style th:if="${courseForm != null}">
+        #courseModal .course-modal-dialog { height: calc(100vh - 2rem); max-height: calc(100vh - 2rem); }
+        #courseModal .modal-content { height: 100%; max-height: 100%; }
+        #courseModal form { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+        #courseModal .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+        #courseModal .modal-header, #courseModal .modal-footer { flex: 0 0 auto; }
+    </style>
     <div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalTitle" aria-hidden="true" th:if="${courseForm != null}">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable course-modal-dialog">
             <div class="modal-content border-0 rounded-4 shadow">
                 <form method="post" th:action="${courseForm['id'] == '' ? '/manager/courses' : '/manager/courses/' + courseForm['id']}">
                     <div class="modal-header">
@@ -28,23 +35,41 @@
                         <a class="btn-close" th:href="@{/manager/courses}" aria-label="Đóng"></a>
                     </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label" for="courseName">Tên khóa học</label>
-                            <input class="form-control" id="courseName" name="name" required maxlength="255" th:value="${courseForm['name']}">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="courseLevel">Cấp độ</label>
-                            <select class="form-select" id="courseLevel" name="level" required>
-                                <option th:each="level : ${ {'N5','N4','N3','N2','N1'} }" th:value="${level}" th:text="${level}" th:selected="${courseForm['level'] == level}">N5</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label" for="courseStatus">Trạng thái</label>
-                            <select class="form-select" id="courseStatus" name="status" required>
-                                <option value="PUBLISHED" th:selected="${courseForm['status'] == 'PUBLISHED'}">Published</option>
-                                <option value="DRAFT" th:selected="${courseForm['status'] == 'DRAFT'}">Unpublished</option>
-                                <option value="ARCHIVED" th:selected="${courseForm['status'] == 'ARCHIVED'}">Archived</option>
-                            </select>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label" for="courseName">Tên khóa học</label>
+                                <input class="form-control" id="courseName" name="name" required maxlength="255" th:value="${courseForm['name']}">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="courseLevel">Cấp độ JLPT</label>
+                                <select class="form-select" id="courseLevel" name="level" required>
+                                    <option th:each="level : ${ {'N5','N4','N3','N2','N1'} }" th:value="${level}" th:text="${level}" th:selected="${courseForm['level'] == level}">N5</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="coursePrice">Giá khóa học (VND)</label>
+                                <input class="form-control" id="coursePrice" name="price" type="number" min="0" step="1000" required th:value="${courseForm['price']}">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="courseDuration">Thời lượng (giờ)</label>
+                                <input class="form-control" id="courseDuration" name="durationHours" type="number" min="0" step="1" required th:value="${courseForm['durationHours']}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="courseDescription">Mô tả</label>
+                                <textarea class="form-control" id="courseDescription" name="description" rows="3" maxlength="2000" th:text="${courseForm['description']}"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="courseObjectives">Mục tiêu khóa học</label>
+                                <textarea class="form-control" id="courseObjectives" name="objectives" rows="3" maxlength="5000" th:text="${courseForm['objectives']}"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="coursePrerequisites">Điều kiện tiên quyết</label>
+                                <textarea class="form-control" id="coursePrerequisites" name="prerequisites" rows="3" maxlength="2000" th:text="${courseForm['prerequisites']}"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="courseTargetAudience">Đối tượng học viên</label>
+                                <textarea class="form-control" id="courseTargetAudience" name="targetAudience" rows="3" maxlength="2000" th:text="${courseForm['targetAudience']}"></textarea>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -115,8 +140,21 @@
                         <td class="py-3 fw-semibold" style="color:var(--text-main);" th:text="${course['name']}">Tên khóa học</td>
                         <td class="py-3"><span class="badge rounded-pill" style="background:var(--steel-blue);color:#fff;" th:text="${course['level']}">N5</span></td>
                         <td class="py-3" th:text="${course['lessonCount']}">—</td>
-                        <td class="py-3" th:text="${course['statusLabel']}">Status</td>
-                        <td class="pe-4 py-3"><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}"><i class="bi bi-pencil"></i> Sửa</a></td>
+                        <td class="py-3">
+                            <span class="badge rounded-pill"
+                                  th:classappend="${course['statusFilterValue'] == 'PUBLISHED' or course['statusFilterValue'] == 'published' ? ' bg-success' : (course['statusFilterValue'] == 'ARCHIVED' ? ' bg-secondary' : ' bg-warning text-dark')}"
+                                  th:text="${course['statusLabel']}">Status</span>
+                        </td>
+                        <td class="pe-4 py-3">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <a class="btn btn-sm btn-outline-secondary" th:href="@{/manager/courses/{id}/view(id=${course['id']})}" title="Xem chi tiết" aria-label="Xem chi tiết">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </a>
+                                <a class="btn btn-sm btn-outline-primary" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}" title="Sửa khóa học" aria-label="Sửa khóa học">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </td>
                     </tr>
                     <tr id="courseEmptyState" th:hidden="${!#lists.isEmpty(courses)}">
                         <td colspan="6" class="text-center py-5 text-muted">
