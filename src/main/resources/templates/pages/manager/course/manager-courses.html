@@ -4,16 +4,26 @@
     content=~{::#mainContent}
 )}">
 <div id="mainContent">
-    <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
             <h2 class="fw-bold mb-1" style="color: var(--navy-dark); font-size:1.65rem;">Quản lý Khóa học</h2>
             <p class="mb-0" style="color: var(--text-muted); font-size:0.9rem;">Danh sách khóa học được đọc trực tiếp từ database</p>
         </div>
-        <div class="kotoba-card px-4 py-2 d-flex align-items-center gap-2">
-            <i class="bi bi-collection" style="color:var(--steel-blue);"></i>
-            <span style="font-size:0.85rem;">Tổng: <strong th:text="${courseCount}">0</strong> khóa học</span>
+        <div class="d-flex align-items-center gap-3">
+            <div class="kotoba-card px-4 py-2 d-flex align-items-center gap-2">
+                <i class="bi bi-collection" style="color:var(--steel-blue);"></i>
+                <span style="font-size:0.85rem;">Tổng: <strong th:text="${courseCount}">0</strong> khóa học</span>
+            </div>
+            <div class="btn-group" role="group" aria-label="Kiểu hiển thị khóa học">
+                <button id="courseGridViewButton" type="button" class="btn btn-outline-primary active" aria-pressed="true" title="Dạng thẻ" aria-label="Dạng thẻ">
+                    <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                </button>
+                <button id="courseListViewButton" type="button" class="btn btn-outline-primary" aria-pressed="false" title="Dạng danh sách" aria-label="Dạng danh sách">
+                    <i class="bi bi-list-ul" aria-hidden="true"></i>
+                </button>
+            </div>
+            <a class="btn btn-primary" th:href="@{/manager/courses/new}"><i class="bi bi-plus-lg me-1"></i>Thêm khóa học</a>
         </div>
-        <a class="btn btn-primary ms-3" th:href="@{/manager/courses/new}"><i class="bi bi-plus-lg me-1"></i>Thêm khóa học</a>
     </div>
 
     <div class="alert alert-danger" role="alert" th:if="${courseError}" th:text="${courseError}"></div>
@@ -119,7 +129,7 @@
         </div>
     </div>
 
-    <div class="kotoba-card overflow-hidden">
+    <div id="managerCourseListView" class="course-view-panel kotoba-card overflow-hidden" hidden>
         <div class="table-responsive">
             <table class="table table-hover mb-0" style="font-size:0.9rem;">
                 <thead>
@@ -166,22 +176,92 @@
                 </tbody>
             </table>
         </div>
-        <div class="px-4 py-3" style="border-top:1px solid var(--border-subtle);background:var(--bg-page);">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <span style="font-size:0.82rem;color:var(--text-muted);">Đang hiển thị <strong id="courseVisibleCount" th:text="${courseCount}">0</strong>/<strong th:text="${courseCount}">0</strong> khóa học</span>
-                <div class="d-flex align-items-center gap-2">
-                    <label for="coursePageSize" class="small text-muted">Mỗi trang</label>
-                    <select id="coursePageSize" class="form-select form-select-sm" style="width:auto">
-                        <option value="5">5</option><option value="10" selected>10</option><option value="20">20</option>
-                    </select>
-                    <nav aria-label="Phân trang khóa học"><ul id="coursePagination" class="pagination pagination-sm mb-0"></ul></nav>
-                </div>
+    </div>
+    <div class="kotoba-card px-4 py-3 mt-3" style="background:var(--bg-page);">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Đang hiển thị <strong id="courseVisibleCount" th:text="${courseCount}">0</strong>/<strong th:text="${courseCount}">0</strong> khóa học</span>
+            <div class="d-flex align-items-center gap-2">
+                <label for="coursePageSize" class="small text-muted">Mỗi trang</label>
+                <select id="coursePageSize" class="form-select form-select-sm" style="width:auto">
+                    <option value="5">5</option><option value="10" selected>10</option><option value="20">20</option>
+                </select>
+                <nav aria-label="Phân trang khóa học"><ul id="coursePagination" class="pagination pagination-sm mb-0"></ul></nav>
             </div>
         </div>
     </div>
+    <div id="managerCourseGridView" class="course-view-panel row g-4">
+        <div th:each="course : ${courses}" class="col-12 col-md-6 col-xl-4 course-data-card"
+             th:attr="data-id=${course['id']},data-name=${course['name']},data-level=${course['level']},data-status=${course['statusFilterValue']}">
+            <article class="card h-100 kotoba-card overflow-hidden d-flex flex-column">
+                <div class="position-relative course-manager-cover">
+                    <img th:if="${course['thumbnailUrl'] != null and !#strings.isEmpty(course['thumbnailUrl'])}"
+                         th:src="${course['thumbnailUrl']}" class="w-100" th:alt="${course['name']}" loading="lazy">
+                    <img th:unless="${course['thumbnailUrl'] != null and !#strings.isEmpty(course['thumbnailUrl'])}"
+                         src="https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=1000&auto=format&fit=crop"
+                         class="w-100" th:alt="${course['name']}" loading="lazy">
+                    <span class="position-absolute top-0 start-0 m-3 badge rounded-pill px-3 py-2 course-manager-level" th:text="${course['level']}">N5</span>
+                    <span th:if="${course['featured'] == true}" class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-danger">
+                        <i class="bi bi-fire me-1"></i>Nổi bật
+                    </span>
+                    <span class="position-absolute top-0 end-0 m-3 badge rounded-pill"
+                          th:style="${course['featured'] == true ? 'top: 2rem' : ''}"
+                          th:classappend="${course['statusFilterValue'] == 'PUBLISHED' or course['statusFilterValue'] == 'published' ? ' bg-success' : (course['statusFilterValue'] == 'ARCHIVED' ? ' bg-secondary' : ' bg-warning text-dark')}"
+                          th:text="${course['statusLabel']}">Trạng thái</span>
+                </div>
+                <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small text-muted"><i class="bi bi-clock me-1 text-primary"></i><span th:text="${course['durationHours'] != null ? course['durationHours'] + ' giờ' : '40 giờ'}">40 giờ</span></span>
+                        <span class="small text-muted"><i class="bi bi-journal-bookmark me-1 text-primary"></i><span th:text="|${course['lessonCount']} bài học|">0 bài học</span></span>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2 course-manager-title" th:text="${course['name']}">Tên khóa học</h5>
+                    <p class="text-muted small mb-3 course-manager-description"
+                       th:text="${course['description'] != null and !#strings.isEmpty(course['description']) ? #strings.abbreviate(course['description'], 110) : 'Chương trình học tiếng Nhật cấp độ ' + course['level'] + ', được thiết kế theo lộ trình JLPT.'}">
+                        Mô tả khóa học
+                    </p>
+                    <div class="mb-3" th:if="${course['coveredSkills'] != null and !#strings.isEmpty(course['coveredSkills'])}">
+                        <span th:each="skill : ${#strings.arraySplit(course['coveredSkills'], ',')}"
+                              class="badge bg-light text-secondary border small me-1 mb-1" th:text="${#strings.trim(skill)}">Kỹ năng</span>
+                    </div>
+                    <div class="mb-3">
+                        <div th:if="${course['discountPrice'] != null and course['discountPrice'] > 0}">
+                            <span class="fw-bold fs-5 text-danger" th:text="${#numbers.formatDecimal(course['discountPrice'], 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</span>
+                            <small class="text-muted text-decoration-line-through ms-1" th:if="${course['price'] != null}" th:text="${#numbers.formatDecimal(course['price'], 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</small>
+                        </div>
+                        <span th:if="${course['discountPrice'] == null or course['discountPrice'] <= 0}"
+                              class="fw-bold fs-5" style="color:var(--steel-blue)"
+                              th:text="${course['price'] != null and course['price'] > 0 ? #numbers.formatDecimal(course['price'], 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">Miễn phí</span>
+                    </div>
+                    <div class="d-flex gap-2 mt-auto pt-3 border-top">
+                        <button class="btn btn-dark flex-grow-1 course-manager-compose" type="button">
+                            <i class="bi bi-sliders me-2" aria-hidden="true"></i>Soạn giáo trình
+                        </button>
+                        <a class="btn btn-outline-secondary course-manager-icon-btn" th:href="@{/manager/courses/{id}/view(id=${course['id']})}"
+                           title="Xem chi tiết" aria-label="Xem chi tiết"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                        <a class="btn btn-outline-primary course-manager-icon-btn" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}"
+                           title="Sửa khóa học" aria-label="Sửa khóa học"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div id="courseGridEmptyState" class="col-12 text-center py-5 text-muted" hidden>
+            <i class="bi bi-inbox d-block mb-2" style="font-size:1.6rem;"></i>Không tìm thấy khóa học phù hợp.
+        </div>
+    </div>
+    <style>
+        .course-view-panel[hidden] { display: none !important; }
+        .course-manager-cover { height: 190px; overflow: hidden; background: linear-gradient(135deg, #173d5b, #cf7850); }
+        .course-manager-cover img { height: 100%; object-fit: cover; }
+        .course-manager-level { background: var(--navy-dark); color: #fff; }
+        .course-manager-title { color: var(--navy-dark); line-height: 1.4; }
+        .course-manager-compose { background: #111827; border-color: #111827; border-radius: 0.75rem; min-height: 42px; font-weight: 600; }
+        .course-manager-compose:hover { background: #202b40; border-color: #202b40; }
+        .course-manager-icon-btn { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 42px; }
+        @media (max-width: 767.98px) { .course-manager-cover { height: 170px; } }
+    </style>
     <script>
         (function () {
             const rows = Array.from(document.querySelectorAll('.course-data-row'));
+            const cards = Array.from(document.querySelectorAll('.course-data-card'));
             const search = document.getElementById('courseSearch');
             if (!search) return;
             const levelFilter = document.getElementById('courseLevelFilter');
@@ -189,8 +269,26 @@
             const pageSize = document.getElementById('coursePageSize');
             const pager = document.getElementById('coursePagination');
             const emptyState = document.getElementById('courseEmptyState');
+            const gridEmptyState = document.getElementById('courseGridEmptyState');
+            const listView = document.getElementById('managerCourseListView');
+            const gridView = document.getElementById('managerCourseGridView');
+            const listButton = document.getElementById('courseListViewButton');
+            const gridButton = document.getElementById('courseGridViewButton');
             let currentPage = 1;
+            const savedView = localStorage.getItem('managerCourseView');
+            const initialView = savedView === 'list' ? 'list' : 'grid';
             const normalize = value => (value || '').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+            function setView(view) {
+                const isGrid = view === 'grid';
+                listView.hidden = isGrid;
+                gridView.hidden = !isGrid;
+                listButton.classList.toggle('active', !isGrid);
+                gridButton.classList.toggle('active', isGrid);
+                listButton.setAttribute('aria-pressed', String(!isGrid));
+                gridButton.setAttribute('aria-pressed', String(isGrid));
+                localStorage.setItem('managerCourseView', view);
+            }
 
             function render() {
                 const query = normalize(search.value.trim());
@@ -205,8 +303,12 @@
                 currentPage = Math.min(currentPage, pages);
                 const start = (currentPage - 1) * size;
                 rows.forEach(row => { row.hidden = true; });
+                cards.forEach(card => { card.hidden = true; });
+                const visibleIds = new Set(matches.slice(start, start + size).map(row => row.dataset.id));
                 matches.slice(start, start + size).forEach(row => { row.hidden = false; });
+                cards.forEach(card => { card.hidden = !visibleIds.has(card.dataset.id); });
                 if (emptyState) emptyState.hidden = matches.length > 0;
+                if (gridEmptyState) gridEmptyState.hidden = matches.length > 0;
                 document.getElementById('courseVisibleCount').textContent = matches.length;
                 pager.replaceChildren();
                 const addPageButton = (label, page, disabled, active) => {
@@ -227,6 +329,9 @@
             document.getElementById('courseFilterReset').addEventListener('click', () => {
                 search.value = ''; levelFilter.value = ''; statusFilter.value = ''; currentPage = 1; render();
             });
+            listButton.addEventListener('click', () => setView('list'));
+            gridButton.addEventListener('click', () => setView('grid'));
+            setView(initialView);
             render();
         })();
     </script>

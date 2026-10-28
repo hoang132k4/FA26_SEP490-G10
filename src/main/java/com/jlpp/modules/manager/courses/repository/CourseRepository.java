@@ -22,32 +22,67 @@ public class CourseRepository {
     private final JdbcTemplate jdbcTemplate;
     private final RowMapper<CourseOption> courseRowMapper = (rs, row) -> new CourseOption(
             rs.getLong("course_id"), rs.getString("course_title"), rs.getString("jlpt_level"),
-            rs.getString("status"), rs.getInt("lesson_count"));
+            rs.getString("status"), rs.getInt("lesson_count"), rs.getString("course_description"),
+            rs.getString("course_thumbnail"), nullableDouble(rs.getObject("course_price")),
+            nullableDouble(rs.getObject("course_discount_price")), nullableInteger(rs.getObject("course_duration")),
+            rs.getString("course_skills"), nullableBoolean(rs.getObject("course_featured")));
 
     public CourseRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<CourseOption> findAll() {
-        return jdbcTemplate.query("""
-                SELECT c.course_id, c.course_title, c.jlpt_level, c.status,
-                       COUNT(DISTINCT l.lesson_id) AS lesson_count
-                FROM courses c
-                LEFT JOIN lessons l ON l.course_id = c.course_id
-                GROUP BY c.course_id, c.course_title, c.jlpt_level, c.status
-                ORDER BY c.jlpt_level DESC, c.course_id
-                """, courseRowMapper);
+        Set<String> columns = allCourseColumns();
+        return jdbcTemplate.query(courseSelect(columns) + " ORDER BY c.jlpt_level DESC, c.course_id", courseRowMapper);
     }
 
     public Optional<CourseOption> findById(long courseId) {
-        return jdbcTemplate.query("""
-                SELECT c.course_id, c.course_title, c.jlpt_level, c.status,
-                       COUNT(DISTINCT l.lesson_id) AS lesson_count
-                FROM courses c
-                LEFT JOIN lessons l ON l.course_id = c.course_id
-                WHERE c.course_id = ?
-                GROUP BY c.course_id, c.course_title, c.jlpt_level, c.status
-                """, courseRowMapper, courseId).stream().findFirst();
+        return jdbcTemplate.query(courseSelect(allCourseColumns()) + " WHERE c.course_id = ?", courseRowMapper, courseId)
+                .stream().findFirst();
+    }
+
+    private String courseSelect(Set<String> columns) {
+        return "SELECT c.course_id, c.course_title, c.jlpt_level, c.status, "
+                + optionalColumn(columns, "course_description", "short_description", "description", "full_description") + ", "
+                + optionalColumn(columns, "course_thumbnail", "thumbnail_url", "thumbnail") + ", "
+                + optionalColumn(columns, "course_price", "price") + ", "
+                + optionalColumn(columns, "course_discount_price", "discount_price") + ", "
+                + optionalColumn(columns, "course_duration", "duration_hours", "duration") + ", "
+                + optionalColumn(columns, "course_skills", "covered_skills") + ", "
+                + optionalColumn(columns, "course_featured", "is_featured", "featured") + ", "
+                + "(SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.course_id) AS lesson_count "
+                + "FROM courses c";
+    }
+
+    private String optionalColumn(Set<String> columns, String alias, String... candidates) {
+        for (String candidate : candidates) {
+            if (columns.contains(candidate)) return "c." + candidate + " AS " + alias;
+        }
+        return "NULL AS " + alias;
+    }
+
+    private Set<String> allCourseColumns() {
+        return jdbcTemplate.execute((ConnectionCallback<Set<String>>) connection -> {
+            Set<String> columns = new java.util.HashSet<>();
+            try (java.sql.ResultSet metadata = connection.getMetaData().getColumns(null, null, "courses", null)) {
+                while (metadata.next()) columns.add(metadata.getString("COLUMN_NAME").toLowerCase(Locale.ROOT));
+            }
+            return columns;
+        });
+    }
+
+    private static Double nullableDouble(Object value) {
+        return value instanceof Number number ? number.doubleValue() : null;
+    }
+
+    private static Integer nullableInteger(Object value) {
+        return value instanceof Number number ? number.intValue() : null;
+    }
+
+    private static Boolean nullableBoolean(Object value) {
+        if (value instanceof Boolean booleanValue) return booleanValue;
+        if (value instanceof Number number) return number.intValue() != 0;
+        return value == null ? null : Boolean.parseBoolean(value.toString());
     }
 
     public Optional<String> findStatusById(long courseId) {

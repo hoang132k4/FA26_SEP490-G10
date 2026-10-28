@@ -214,7 +214,10 @@ public class ManagerCourseController {
     private Map<String, Object> toCourseView(CourseOption row) {
         Map<String, Object> course = new LinkedHashMap<>();
         course.put("id", row.id()); course.put("name", row.title()); course.put("level", row.level());
-        course.put("description", "-"); course.put("status", row.status());
+        course.put("description", row.description()); course.put("thumbnailUrl", row.thumbnailUrl());
+        course.put("price", row.price()); course.put("discountPrice", row.discountPrice());
+        course.put("durationHours", row.durationHours()); course.put("coveredSkills", row.coveredSkills());
+        course.put("featured", row.featured()); course.put("status", row.status());
         course.put("statusLabel", courseStatusLabel(row.status()));
         course.put("statusFilterValue", normalizedCourseStatus(row.status()));
         course.put("lessonCount", row.lessonCount()); course.put("createdAt", "-");
@@ -223,9 +226,9 @@ public class ManagerCourseController {
 
     private Object getCourseValue(Map<String, Object> course, String... keys) {
         for (String key : keys) {
-            Object value = course.entrySet().stream().filter(entry -> key.equalsIgnoreCase(entry.getKey()))
-                    .map(Map.Entry::getValue).findFirst().orElse(null);
-            if (value != null) return value;
+            for (Map.Entry<String, Object> entry : course.entrySet()) {
+                if (key.equalsIgnoreCase(entry.getKey()) && entry.getValue() != null) return entry.getValue();
+            }
         }
         return "";
     }
