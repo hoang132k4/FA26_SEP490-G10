@@ -35,7 +35,7 @@ public class JdbcLearnerQuestionReaderTest {
         long count = questionReader.countQuestionsByExamId(8L);
 
         assertEquals(5L, count);
-        verify(jdbcTemplate).queryForObject(contains("SELECT COUNT(*) FROM questions WHERE exam_id = ?"), eq(Long.class), eq(8L));
+        verify(jdbcTemplate).queryForObject(contains("SELECT COUNT(*) FROM exam_questions WHERE exam_id = ?"), eq(Long.class), eq(8L));
     }
 
     @Test

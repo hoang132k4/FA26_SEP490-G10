@@ -33,7 +33,7 @@ public class JdbcLearnerExamResultReader implements LearnerExamResultReader {
         if (userId == null) return new ArrayList<>();
 
         String sql = """
-            SELECT r.result_id, r.exam_id, e.title AS exam_title, e.exam_type, e.jlpt_level,
+            SELECT r.result_id, r.exam_id, e.exam_title, e.exam_type, e.jlpt_level,
                    r.start_time, r.end_time, r.total_score, r.percentage, r.passed_status, r.result_status,
                    ROW_NUMBER() OVER (PARTITION BY r.user_id, r.exam_id ORDER BY r.end_time ASC NULLS LAST, r.result_id ASC) AS attempt_number
             FROM exam_results r
@@ -76,7 +76,7 @@ public class JdbcLearnerExamResultReader implements LearnerExamResultReader {
         if (resultId == null || userId == null) return Optional.empty();
 
         String sql = """
-            SELECT r.result_id, r.exam_id, e.title AS exam_title, e.exam_type, e.jlpt_level, e.passing_score,
+            SELECT r.result_id, r.exam_id, e.exam_title, e.exam_type, e.jlpt_level, e.passing_score,
                    r.start_time, r.end_time, r.total_score, r.percentage, r.passed_status, r.result_status
             FROM exam_results r
             JOIN exams e ON e.exam_id = r.exam_id
