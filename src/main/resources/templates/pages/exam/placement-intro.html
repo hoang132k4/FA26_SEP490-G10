@@ -1,0 +1,675 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle=${pageTitle != null ? pageTitle : 'Đánh giá năng lực tiếng Nhật đầu vào - JEPS'},
+    activeMenu='placement',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+
+        <!-- 1. Header Hero Banner -->
+        <section class="card kotoba-card p-4 p-lg-5 mb-4 border-0 shadow-sm"
+                 style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: var(--radius-lg, 20px);">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <span class="badge px-3 py-2 rounded-pill mb-3"
+                          style="background-color: rgba(255, 255, 255, 0.16); color: #FFF; font-weight: 500; backdrop-filter: blur(4px);">
+                        <i class="bi bi-compass-fill me-1 text-warning"></i> Chẩn đoán Năng lực Đầu vào &amp; Lộ trình AI
+                    </span>
+                    <h1 class="fw-bold mb-3 text-white display-6">Bài kiểm tra Đánh giá Năng lực Đầu vào</h1>
+                    <p class="text-white-50 mb-4" style="max-width: 680px; font-size: 1.05rem; line-height: 1.6;">
+                        Xác định chính xác trình độ tiếng Nhật hiện tại của bạn theo chuẩn khung JLPT (N5 &ndash; N3).
+                        Dữ liệu làm bài được chuyển tới trợ lý AI để phân tích điểm mạnh, điểm yếu và xây dựng lộ trình học tập cá nhân hóa phù hợp nhất.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-2">
+                            <i class="bi bi-clock-history me-1 text-info"></i> Thời lượng: 30 phút
+                        </span>
+                        <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-2">
+                            <i class="bi bi-card-checklist me-1 text-warning"></i> 4 câu hỏi chẩn đoán
+                        </span>
+                        <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-2">
+                            <i class="bi bi-shield-check me-1 text-success"></i> Không tính điểm rớt
+                        </span>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center text-lg-end">
+                    <div class="d-inline-block p-4 rounded-circle border border-white border-opacity-25 shadow-lg"
+                         style="background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 100%);">
+                        <i class="bi bi-compass display-1 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Feature & Benefit Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card kotoba-card h-100 p-4 border-0 shadow-sm transition-all"
+                     style="border-radius: var(--radius-md, 14px); background-color: #FFFFFF;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                         style="width: 52px; height: 52px; background-color: #EBF4FA; color: var(--navy-dark);">
+                        <i class="bi bi-bullseye fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2" style="color: var(--navy-dark);">1. Định vị chuẩn xác theo bậc học</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.6;">
+                        Hệ thống tự động điều chỉnh bài kiểm tra theo cấp độ mong muốn và kinh nghiệm thực tế (-1 bậc nền tảng nếu chưa từng học qua).
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card kotoba-card h-100 p-4 border-0 shadow-sm transition-all"
+                     style="border-radius: var(--radius-md, 14px); background-color: #FFFFFF;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                         style="width: 52px; height: 52px; background-color: #FFF4E5; color: #D97706;">
+                        <i class="bi bi-cpu-fill fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2" style="color: var(--navy-dark);">2. Cá nhân hóa lộ trình AI</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.6;">
+                        Sau khi hoàn thành, hệ thống AI tự động phân tích điểm mạnh, điểm yếu và gợi ý các khóa học, bài giảng sát nhất với nhu cầu của bạn.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card kotoba-card h-100 p-4 border-0 shadow-sm transition-all"
+                     style="border-radius: var(--radius-md, 14px); background-color: #FFFFFF;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                         style="width: 52px; height: 52px; background-color: #E8F8F0; color: #10B981;">
+                        <i class="bi bi-heart-pulse-fill fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2" style="color: var(--navy-dark);">3. Không áp lực đậu &ndash; rớt</h5>
+                    <p class="text-muted small mb-0" style="line-height: 1.6;">
+                        Mục tiêu là chẩn đoán học tập, không áp đặt điểm chuẩn đánh rớt. Bạn hoàn toàn tự tin làm bài theo đúng năng lực thực tế của mình.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Guidelines & Important Notes Card -->
+        <div class="card kotoba-card p-4 mb-4 border-0 shadow-sm" style="border-radius: var(--radius-md, 14px); background-color: #FFFFFF;">
+            <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: var(--navy-dark);">
+                <i class="bi bi-info-circle-fill text-primary me-2"></i> Hướng dẫn &amp; Lưu ý trước khi làm bài
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2 text-muted small">
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success fs-6 mt-1"></i>
+                            <span><strong>Thời gian làm bài:</strong> 30 phút. Đồng hồ đếm ngược sẽ bắt đầu chạy ngay khi bạn vào phòng thi.</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success fs-6 mt-1"></i>
+                            <span><strong>Cấu trúc bài thi:</strong> Gồm 4 câu hỏi trắc nghiệm khách quan bao quát Từ vựng, Ngữ pháp và Đọc hiểu.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2 text-muted small">
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success fs-6 mt-1"></i>
+                            <span><strong>Làm bài trung thực:</strong> Không tra từ điển hoặc tài liệu ngoài để kết quả chẩn đoán AI mang lại hiệu quả cao nhất.</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success fs-6 mt-1"></i>
+                            <span><strong>Lưu tạm tự động:</strong> Đáp án của bạn được lưu tạm liên tục, có thể xem lại bảng câu hỏi và nộp bài bất kỳ lúc nào.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4A. Initial Call to Action Card (Hiển thị khi chưa khảo sát) -->
+        <div id="initialCtaSection" class="card kotoba-card p-5 mb-5 border-0 shadow-sm text-center"
+             style="border-radius: var(--radius-lg, 20px); background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);">
+            <div class="py-3" style="max-width: 600px; margin: 0 auto;">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm"
+                     style="width: 72px; height: 72px; background: linear-gradient(135deg, #173B57 0%, #315C78 100%); color: white;">
+                    <i class="bi bi-compass fs-2"></i>
+                </div>
+                <h3 class="fw-bold mb-2" style="color: var(--navy-dark);">Sẵn sàng đánh giá năng lực của bạn?</h3>
+                <p class="text-muted mb-4">
+                    Nhấn vào nút bên dưới để chọn trình độ mong muốn và xác nhận bạn đã từng học qua cấp độ đó hay chưa. Hệ thống sẽ tự động chỉ định đề kiểm tra phù hợp.
+                </p>
+                <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow-sm d-inline-flex align-items-center gap-2"
+                        id="btnOpenSurveyModal"
+                        data-bs-toggle="modal"
+                        data-bs-target="#placementSurveyModal"
+                        style="background-color: var(--navy-dark); border-color: var(--navy-dark); font-size: 1.1rem;">
+                    <i class="bi bi-compass fs-5"></i>
+                    <span>Đánh giá đầu vào</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4B. Assigned Exam Card (Hiển thị sau khi chọn xong khảo sát trên popup) -->
+        <div id="assignedExamSection" class="card kotoba-card p-4 p-lg-5 mb-5 border-0 shadow-sm d-none"
+             style="border-radius: var(--radius-lg, 20px); background: #FFFFFF; border-top: 4px solid var(--navy-dark) !important;">
+            
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 pb-3 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 fw-semibold fs-6">
+                        <i class="bi bi-check-circle-fill me-1"></i> Đã chọn đề kiểm tra phù hợp
+                    </span>
+                    <span class="badge rounded-pill px-3 py-2 fw-bold"
+                          style="background-color: #EBF4FA; color: var(--navy-dark);">
+                        Mục tiêu: <span id="summaryTargetLevelBadge">N3</span>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1"
+                        data-bs-toggle="modal" data-bs-target="#placementSurveyModal">
+                    <i class="bi bi-pencil-square me-1"></i> Thay đổi lựa chọn
+                </button>
+            </div>
+
+            <!-- Learner Survey Profile Summary Box with Clear Level Formula -->
+            <div class="p-3 mb-3 rounded-3 border" style="background-color: #F8FAFC; border-color: #E2E8F0 !important;">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <div class="small text-muted mb-1"><i class="bi bi-bullseye me-1 text-danger"></i> Cấp độ bạn muốn học:</div>
+                        <div class="fw-bold fs-5" style="color: var(--navy-dark);" id="summaryTargetLevelText">JLPT N3</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted mb-1"><i class="bi bi-question-circle me-1 text-primary"></i> Đã từng học qua chưa:</div>
+                        <div class="fw-bold fs-5" id="summaryPriorStudyText">Chưa từng học</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted mb-1"><i class="bi bi-award-fill me-1 text-warning"></i> Cấp độ bài kiểm tra chỉ định:</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary px-3 py-2 rounded-pill fs-6" id="summaryAssignedLevelBadge">JLPT N4</span>
+                            <span class="small text-muted fw-semibold" id="summaryLevelFormulaText">(-1 bậc nền tảng)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rule Explanation Banner -->
+            <div class="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center gap-2"
+                 id="summaryRuleExplanation" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                <span id="summaryRuleExplanationText">
+                    Bạn muốn học N3 nhưng chưa từng học cấp độ này, hệ thống chỉ định bài kiểm tra <strong>JLPT N4</strong> để đánh giá kiến thức nền tảng trước khi bước vào N3.
+                </span>
+            </div>
+
+            <!-- Exam Details Card from Database -->
+            <div class="card p-4 rounded-4 mb-4 border-0" style="background: linear-gradient(135deg, #F0F6FA 0%, #E8F1F8 100%);">
+                <div class="row align-items-center g-3">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge rounded-pill px-3 py-1 fw-bold"
+                                  style="background-color: var(--navy-dark); color: white;"
+                                  id="cardAssignedLevelBadge"
+                                  th:text="${exam.jlptLevel != null ? exam.jlptLevel : 'N5-N3'}">N4</span>
+                            <span class="badge bg-success text-white rounded-pill px-3 py-1">
+                                <i class="bi bi-lightning-charge-fill me-1"></i> Đề thi chính thức
+                            </span>
+                        </div>
+                        <h3 class="fw-bold mb-2" style="color: var(--navy-dark);"
+                            id="cardExamTitle"
+                            th:text="${exam.examTitle}">Bài kiểm tra đánh giá năng lực tiếng Nhật đầu vào</h3>
+                        <p class="text-muted small mb-3" style="max-width: 650px;"
+                           th:text="${exam.description}">Đánh giá toàn diện kiến thức nhằm giúp AI xây dựng lộ trình học tập và đề xuất khóa học phù hợp nhất.</p>
+
+                        <div class="d-flex flex-wrap gap-4 text-muted small">
+                            <div><i class="bi bi-clock me-1 text-primary"></i> Thời lượng: <strong class="text-dark" th:text="${exam.durationMinutes} + ' phút'">30 phút</strong></div>
+                            <div><i class="bi bi-question-circle me-1 text-primary"></i> Số câu hỏi: <strong class="text-dark" th:text="${exam.totalQuestions} + ' câu'">4 câu</strong></div>
+                            <div><i class="bi bi-award me-1 text-primary"></i> Tổng điểm: <strong class="text-dark" th:text="${exam.totalPoints} + ' điểm'">20 điểm</strong></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-center text-lg-end mt-4 mt-lg-0">
+                        <a th:href="@{/exams/placement/take}" id="btnStartExamNow"
+                           class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center gap-2"
+                           style="background-color: var(--navy-dark); border-color: var(--navy-dark); font-size: 1.15rem;">
+                            <span id="btnStartExamText">Bắt đầu làm bài</span>
+                            <i class="bi bi-arrow-right fs-5"></i>
+                        </a>
+                        <div class="small text-muted mt-2">Bấm giờ đếm ngược khi nhấn vào nút</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- 5. POPUP MODAL: KHẢO SÁT CHỌN LEVEL & TIỀN SỬ HỌC TIẾNG NHẬT   -->
+        <!-- ================================================================= -->
+        <div class="modal fade" id="placementSurveyModal" tabindex="-1" aria-labelledby="placementSurveyModalLabel" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg, 20px); overflow: hidden;">
+                    
+                    <!-- Modal Header -->
+                    <div class="modal-header p-4 border-0" style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width: 44px; height: 44px; background: rgba(255,255,255,0.15);">
+                                <i class="bi bi-stars fs-4 text-warning"></i>
+                            </div>
+                            <div>
+                                <h5 class="modal-title fw-bold mb-0 text-white" id="placementSurveyModalLabel">
+                                    Khảo sát Mục tiêu &amp; Trình độ học tập
+                                </h5>
+                                <div class="text-white-50 small">
+                                    Cung cấp thông tin để hệ thống chuẩn bị đề kiểm tra và lộ trình AI tốt nhất
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="modal-body p-4 p-lg-5" style="background-color: #F8FAFC;">
+                        
+                        <!-- BƯỚC 1: CHỌN LEVEL BẠN MUỐN HỌC -->
+                        <div class="mb-5">
+                            <label class="form-label fw-bold d-flex align-items-center mb-3" style="color: var(--navy-dark); font-size: 1.05rem;">
+                                <span class="badge rounded-circle bg-primary me-2 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;">1</span>
+                                Chọn cấp độ tiếng Nhật (JLPT) bạn muốn học:
+                            </label>
+                            
+                            <div class="row g-3" id="levelSelectionGroup">
+                                <!-- N5 Card -->
+                                <div class="col">
+                                    <div class="level-card p-3 text-center rounded-3 border bg-white cursor-pointer h-100 transition-all"
+                                         data-level="N5" data-desc="JLPT N5 (Sơ cấp 1 - Nhập môn)">
+                                        <div class="fw-bold fs-4 mb-1 level-code text-primary">N5</div>
+                                        <div class="small text-muted fw-semibold">Nhập môn</div>
+                                        <div class="small text-muted-50" style="font-size: 0.75rem;">Sơ cấp 1</div>
+                                    </div>
+                                </div>
+                                <!-- N4 Card -->
+                                <div class="col">
+                                    <div class="level-card p-3 text-center rounded-3 border bg-white cursor-pointer h-100 transition-all"
+                                         data-level="N4" data-desc="JLPT N4 (Sơ cấp 2 - Căn bản)">
+                                        <div class="fw-bold fs-4 mb-1 level-code text-primary">N4</div>
+                                        <div class="small text-muted fw-semibold">Sơ cấp 2</div>
+                                        <div class="small text-muted-50" style="font-size: 0.75rem;">Căn bản</div>
+                                    </div>
+                                </div>
+                                <!-- N3 Card -->
+                                <div class="col">
+                                    <div class="level-card p-3 text-center rounded-3 border bg-white cursor-pointer h-100 transition-all"
+                                         data-level="N3" data-desc="JLPT N3 (Trung cấp - Đột phá)">
+                                        <div class="fw-bold fs-4 mb-1 level-code text-primary">N3</div>
+                                        <div class="small text-muted fw-semibold">Trung cấp</div>
+                                        <div class="small text-muted-50" style="font-size: 0.75rem;">Đột phá</div>
+                                    </div>
+                                </div>
+                                <!-- N2 Card -->
+                                <div class="col">
+                                    <div class="level-card p-3 text-center rounded-3 border bg-white cursor-pointer h-100 transition-all"
+                                         data-level="N2" data-desc="JLPT N2 (Trung cao cấp - Doanh nghiệp)">
+                                        <div class="fw-bold fs-4 mb-1 level-code text-primary">N2</div>
+                                        <div class="small text-muted fw-semibold">Trung cao</div>
+                                        <div class="small text-muted-50" style="font-size: 0.75rem;">Doanh nghiệp</div>
+                                    </div>
+                                </div>
+                                <!-- N1 Card -->
+                                <div class="col">
+                                    <div class="level-card p-3 text-center rounded-3 border bg-white cursor-pointer h-100 transition-all"
+                                         data-level="N1" data-desc="JLPT N1 (Cao cấp - Bản xứ)">
+                                        <div class="fw-bold fs-4 mb-1 level-code text-primary">N1</div>
+                                        <div class="small text-muted fw-semibold">Cao cấp</div>
+                                        <div class="small text-muted-50" style="font-size: 0.75rem;">Bản xứ</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BƯỚC 2: CHỌN XEM ĐÃ TỪNG HỌC QUA LEVEL ĐÓ CHƯA (CHỈ CÓ 2 LỰA CHỌN) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex align-items-center mb-3" style="color: var(--navy-dark); font-size: 1.05rem;">
+                                <span class="badge rounded-circle bg-primary me-2 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;">2</span>
+                                <span>Bạn đã từng học qua cấp độ <span id="currentLevelName" class="badge bg-primary px-2 py-1">N5</span> này chưa?</span>
+                            </label>
+
+                            <div class="row g-3" id="hasStudiedSelectionGroup">
+                                <!-- Option 1: Đã từng học -->
+                                <div class="col-md-6">
+                                    <label class="study-option-card d-flex align-items-start p-3 rounded-3 border bg-white cursor-pointer transition-all h-100">
+                                        <input type="radio" name="hasStudiedRadio" value="YES"
+                                               class="form-check-input me-3 mt-1">
+                                        <div>
+                                            <div class="fw-bold text-dark d-flex align-items-center gap-2 mb-1">
+                                                <span>Đã từng học</span>
+                                                <span class="badge bg-success-subtle text-success small">Thi đúng level</span>
+                                            </div>
+                                            <div class="small text-muted mb-2">Bạn đã từng học qua hoặc tiếp xúc với kiến thức thuộc trình độ này trước đây.</div>
+                                            <div class="small text-primary fw-semibold" id="yesRuleHint">
+                                                👉 Làm bài kiểm tra cấp độ: <span class="badge bg-success text-white">N5</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Option 2: Chưa từng học -->
+                                <div class="col-md-6">
+                                    <label class="study-option-card d-flex align-items-start p-3 rounded-3 border bg-white cursor-pointer transition-all h-100">
+                                        <input type="radio" name="hasStudiedRadio" value="NO"
+                                               class="form-check-input me-3 mt-1">
+                                        <div>
+                                            <div class="fw-bold text-dark d-flex align-items-center gap-2 mb-1">
+                                                <span>Chưa từng học</span>
+                                                <span class="badge bg-warning-subtle text-warning-emphasis small">-1 bậc nền tảng</span>
+                                            </div>
+                                            <div class="small text-muted mb-2">Chưa từng học qua cấp độ này, muốn bắt đầu học từ đầu.</div>
+                                            <div class="small text-warning-emphasis fw-semibold" id="noRuleHint">
+                                                👉 Làm bài kiểm tra cấp độ: <span class="badge bg-warning text-dark">N5</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LIVE FEEDBACK PREVIEW IN MODAL -->
+                        <div id="modalLiveRuleBox" class="p-3 rounded-3 border d-none" style="background-color: #EBF4FA; border-color: #B9D1E1 !important;">
+                            <div class="d-flex align-items-center gap-2 text-primary">
+                                <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
+                                <span class="small fw-semibold" id="modalLiveRuleText">
+                                    Chỉ định bài kiểm tra: <strong>JLPT N4</strong> (Do bạn muốn học N3 nhưng chưa từng học qua).
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="modal-footer p-3 p-lg-4 bg-white border-top d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">
+                            Đóng
+                        </button>
+                        <button type="button" class="btn btn-primary rounded-pill px-5 py-2 fw-semibold shadow-sm"
+                                id="btnConfirmSurvey" disabled
+                                style="background-color: var(--navy-dark); border-color: var(--navy-dark);">
+                            <span>Xác nhận &amp; Xem đề kiểm tra</span>
+                            <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Styling for survey modal & interactive cards */
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    .level-card {
+        border-color: #E2E8F0 !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .level-card:hover {
+        border-color: var(--navy-dark) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(23, 59, 87, 0.08);
+    }
+    .level-card.selected {
+        border-color: var(--navy-dark) !important;
+        background-color: #EBF4FA !important;
+        box-shadow: 0 4px 12px rgba(23, 59, 87, 0.12);
+        position: relative;
+    }
+    .level-card.selected .level-code {
+        color: var(--navy-dark) !important;
+        font-weight: 800;
+    }
+    .study-option-card {
+        border-color: #E2E8F0 !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .study-option-card:hover {
+        border-color: var(--navy-dark) !important;
+        background-color: #F8FAFC !important;
+    }
+    .study-option-card.selected {
+        border-color: var(--navy-dark) !important;
+        background-color: #EBF4FA !important;
+        box-shadow: 0 4px 12px rgba(23, 59, 87, 0.08);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let selectedLevel = 'N5';
+        let selectedLevelDesc = 'JLPT N5 (Sơ cấp 1 - Nhập môn)';
+        let selectedHasStudied = null; // 'YES' hoặc 'NO'
+        let calculatedAssignedLevel = 'N5';
+
+        const levelCards = document.querySelectorAll('.level-card');
+        const studyCards = document.querySelectorAll('.study-option-card');
+        const studyRadios = document.querySelectorAll('input[name="hasStudiedRadio"]');
+        const btnConfirm = document.getElementById('btnConfirmSurvey');
+
+        const currentLevelName = document.getElementById('currentLevelName');
+        const yesRuleHint = document.getElementById('yesRuleHint');
+        const noRuleHint = document.getElementById('noRuleHint');
+        const modalLiveRuleBox = document.getElementById('modalLiveRuleBox');
+        const modalLiveRuleText = document.getElementById('modalLiveRuleText');
+
+        const initialCtaSection = document.getElementById('initialCtaSection');
+        const assignedExamSection = document.getElementById('assignedExamSection');
+
+        const summaryTargetLevelBadge = document.getElementById('summaryTargetLevelBadge');
+        const summaryTargetLevelText = document.getElementById('summaryTargetLevelText');
+        const summaryPriorStudyText = document.getElementById('summaryPriorStudyText');
+        const summaryAssignedLevelBadge = document.getElementById('summaryAssignedLevelBadge');
+        const summaryLevelFormulaText = document.getElementById('summaryLevelFormulaText');
+        const summaryRuleExplanationText = document.getElementById('summaryRuleExplanationText');
+
+        const cardAssignedLevelBadge = document.getElementById('cardAssignedLevelBadge');
+        const cardExamTitle = document.getElementById('cardExamTitle');
+        const btnStartExamNow = document.getElementById('btnStartExamNow');
+        const btnStartExamText = document.getElementById('btnStartExamText');
+
+        // Hàm tính toán cấp độ bài kiểm tra theo đúng quy tắc:
+        // Đã từng học: thi đúng level
+        // Chưa từng học: thi level - 1 bậc (Ví dụ: N3 nhưng thi N4)
+        function computeAssignedLevel(targetLevel, hasStudied) {
+            if (hasStudied === 'YES') {
+                return targetLevel;
+            } else {
+                switch (targetLevel) {
+                    case 'N1': return 'N2';
+                    case 'N2': return 'N3';
+                    case 'N3': return 'N4';
+                    case 'N4': return 'N5';
+                    case 'N5': return 'N5'; // N5 là thấp nhất
+                    default: return targetLevel;
+                }
+            }
+        }
+
+        function updateModalHints() {
+            if (currentLevelName) currentLevelName.textContent = selectedLevel;
+
+            const minusOneLevel = computeAssignedLevel(selectedLevel, 'NO');
+            if (yesRuleHint) {
+                yesRuleHint.innerHTML = `👉 Làm bài kiểm tra cấp độ: <span class="badge bg-success text-white">${selectedLevel}</span>`;
+            }
+            if (noRuleHint) {
+                if (selectedLevel === 'N5') {
+                    noRuleHint.innerHTML = `👉 Làm bài kiểm tra cấp độ: <span class="badge bg-warning text-dark">N5 (Cơ bản nhất)</span>`;
+                } else {
+                    noRuleHint.innerHTML = `👉 Làm bài kiểm tra cấp độ: <span class="badge bg-warning text-dark">${minusOneLevel} (-1 bậc)</span>`;
+                }
+            }
+
+            if (selectedHasStudied) {
+                calculatedAssignedLevel = computeAssignedLevel(selectedLevel, selectedHasStudied);
+                if (modalLiveRuleBox) modalLiveRuleBox.classList.remove('d-none');
+                if (modalLiveRuleText) {
+                    if (selectedHasStudied === 'YES') {
+                        modalLiveRuleText.innerHTML = `Hệ thống sẽ chỉ định bài kiểm tra: <strong>JLPT ${calculatedAssignedLevel}</strong> (Đúng cấp độ ${selectedLevel} bạn đã từng học).`;
+                    } else {
+                        if (selectedLevel === 'N5') {
+                            modalLiveRuleText.innerHTML = `Hệ thống sẽ chỉ định bài kiểm tra: <strong>JLPT N5</strong> (Cấp độ cơ bản nhất cho người mới bắt đầu).`;
+                        } else {
+                            modalLiveRuleText.innerHTML = `Hệ thống sẽ chỉ định bài kiểm tra: <strong>JLPT ${calculatedAssignedLevel}</strong> (Do bạn muốn học ${selectedLevel} nhưng chưa từng học qua cấp độ này).`;
+                        }
+                    }
+                }
+            } else {
+                if (modalLiveRuleBox) modalLiveRuleBox.classList.add('d-none');
+            }
+        }
+
+        // Restore previously cached survey from localStorage if available
+        const cachedLevel = localStorage.getItem('placement_target_level');
+        const cachedLevelDesc = localStorage.getItem('placement_target_desc');
+        const cachedHasStudied = localStorage.getItem('placement_has_studied');
+        const cachedAssignedLevel = localStorage.getItem('placement_assigned_level');
+
+        if (cachedLevel && cachedHasStudied) {
+            applySurveyChoice(cachedLevel, cachedLevelDesc, cachedHasStudied, cachedAssignedLevel || computeAssignedLevel(cachedLevel, cachedHasStudied), false);
+        } else {
+            // Mặc định chọn N5
+            levelCards.forEach(c => {
+                if (c.getAttribute('data-level') === 'N5') c.classList.add('selected');
+            });
+            updateModalHints();
+        }
+
+        // Handle Level Card Click
+        levelCards.forEach(card => {
+            card.addEventListener('click', function () {
+                levelCards.forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedLevel = this.getAttribute('data-level');
+                selectedLevelDesc = this.getAttribute('data-desc');
+                updateModalHints();
+                validateForm();
+            });
+        });
+
+        // Handle Prior Study Radio / Card Click
+        studyCards.forEach(card => {
+            card.addEventListener('click', function () {
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    updateStudySelection(radio);
+                }
+            });
+        });
+
+        studyRadios.forEach(radio => {
+            radio.addEventListener('change', function () {
+                updateStudySelection(this);
+            });
+        });
+
+        function updateStudySelection(radio) {
+            studyCards.forEach(c => c.classList.remove('selected'));
+            const parent = radio.closest('.study-option-card');
+            if (parent) parent.classList.add('selected');
+
+            selectedHasStudied = radio.value;
+            updateModalHints();
+            validateForm();
+        }
+
+        function validateForm() {
+            if (selectedLevel && selectedHasStudied) {
+                btnConfirm.removeAttribute('disabled');
+            } else {
+                btnConfirm.setAttribute('disabled', 'disabled');
+            }
+        }
+
+        // Confirm Button Click on Modal
+        btnConfirm.addEventListener('click', function () {
+            if (!selectedLevel || !selectedHasStudied) return;
+
+            calculatedAssignedLevel = computeAssignedLevel(selectedLevel, selectedHasStudied);
+
+            // Save to localStorage
+            localStorage.setItem('placement_target_level', selectedLevel);
+            localStorage.setItem('placement_target_desc', selectedLevelDesc);
+            localStorage.setItem('placement_has_studied', selectedHasStudied);
+            localStorage.setItem('placement_assigned_level', calculatedAssignedLevel);
+
+            // Close Modal
+            const modalEl = document.getElementById('placementSurveyModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+
+            // Apply choice and show assigned exam
+            applySurveyChoice(selectedLevel, selectedLevelDesc, selectedHasStudied, calculatedAssignedLevel, true);
+        });
+
+        function applySurveyChoice(level, levelDesc, hasStudied, assignedLevel, shouldScroll) {
+            selectedLevel = level;
+            selectedLevelDesc = levelDesc;
+            selectedHasStudied = hasStudied;
+            calculatedAssignedLevel = assignedLevel || computeAssignedLevel(level, hasStudied);
+
+            // Cập nhật thông tin tóm tắt trên trang
+            if (summaryTargetLevelBadge) summaryTargetLevelBadge.textContent = level;
+            if (summaryTargetLevelText) summaryTargetLevelText.textContent = `JLPT ${level}`;
+            if (summaryPriorStudyText) {
+                summaryPriorStudyText.textContent = (hasStudied === 'YES') ? 'Đã từng học' : 'Chưa từng học';
+                summaryPriorStudyText.className = (hasStudied === 'YES') ? 'fw-bold fs-5 text-success' : 'fw-bold fs-5 text-secondary';
+            }
+            if (summaryAssignedLevelBadge) summaryAssignedLevelBadge.textContent = `JLPT ${calculatedAssignedLevel}`;
+            if (summaryLevelFormulaText) {
+                summaryLevelFormulaText.textContent = (hasStudied === 'YES') ? '(Đúng cấp độ bạn chọn)' : '(-1 bậc nền tảng)';
+            }
+
+            if (summaryRuleExplanationText) {
+                if (hasStudied === 'YES') {
+                    summaryRuleExplanationText.innerHTML = `Bạn muốn học <strong>${level}</strong> và <strong>đã từng học</strong> cấp độ này, hệ thống chỉ định bài kiểm tra đúng chuẩn <strong>JLPT ${calculatedAssignedLevel}</strong> để đánh giá mức độ nắm vững kiến thức hiện tại.`;
+                } else {
+                    if (level === 'N5') {
+                        summaryRuleExplanationText.innerHTML = `Bạn muốn học <strong>${level}</strong> và <strong>chưa từng học</strong> tiếng Nhật, hệ thống chỉ định bài kiểm tra <strong>JLPT N5</strong> (cấp độ cơ bản nhất) để đánh giá năng lực nhập môn.`;
+                    } else {
+                        summaryRuleExplanationText.innerHTML = `Bạn muốn học <strong>${level}</strong> nhưng <strong>chưa từng học</strong> qua cấp độ này, hệ thống chỉ định bài kiểm tra <strong>JLPT ${calculatedAssignedLevel} (-1 bậc)</strong> để kiểm tra nền tảng trước khi bước vào lộ trình ${level}.`;
+                    }
+                }
+            }
+
+            // Cập nhật thẻ đề thi
+            if (cardAssignedLevelBadge) cardAssignedLevelBadge.textContent = calculatedAssignedLevel;
+            if (btnStartExamText) btnStartExamText.textContent = `Bắt đầu làm bài kiểm tra ${calculatedAssignedLevel}`;
+
+            if (btnStartExamNow) {
+                const baseUrl = btnStartExamNow.getAttribute('href').split('?')[0];
+                btnStartExamNow.setAttribute('href', `${baseUrl}?targetLevel=${encodeURIComponent(level)}&hasStudied=${encodeURIComponent(hasStudied)}&assignedLevel=${encodeURIComponent(calculatedAssignedLevel)}`);
+            }
+
+            // Đồng bộ trạng thái Modal
+            levelCards.forEach(c => {
+                if (c.getAttribute('data-level') === level) {
+                    c.classList.add('selected');
+                } else {
+                    c.classList.remove('selected');
+                }
+            });
+            studyRadios.forEach(r => {
+                if (r.value === hasStudied) {
+                    r.checked = true;
+                    const p = r.closest('.study-option-card');
+                    if (p) p.classList.add('selected');
+                } else {
+                    const p = r.closest('.study-option-card');
+                    if (p) p.classList.remove('selected');
+                }
+            });
+
+            updateModalHints();
+            validateForm();
+
+            // Toggle visibility
+            if (initialCtaSection) initialCtaSection.classList.add('d-none');
+            if (assignedExamSection) assignedExamSection.classList.remove('d-none');
+
+            if (shouldScroll && assignedExamSection) {
+                assignedExamSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+</script>
