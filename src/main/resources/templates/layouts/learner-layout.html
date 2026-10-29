@@ -12,13 +12,19 @@
         <!-- Top Bar with Search & Profile -->
         <header class="kotoba-topbar">
             <!-- Search Pill -->
-            <div class="kotoba-search-pill">
+            <div class="kotoba-search-pill"
+                 th:if="${hideTopSearch != true
+                         and activeMenu != 'learner-dashboard' and activeMenu != 'dashboard'
+                         and activeMenu != 'exams' and activeMenu != 'placement' and activeMenu != 'history' and activeMenu != 'exam-history'
+                         and activeMenu != 'learning-path'
+                         and activeMenu != 'profile'
+                         and activeMenu != 'orders' and activeMenu != 'order'}">
                 <i class="bi bi-search text-muted"></i>
                 <input type="text" placeholder="Tìm kiếm từ vựng, bài học, ngữ pháp...">
             </div>
 
             <!-- Right Controls: Notification & User Profile -->
-            <div class="d-flex align-items-center gap-4">
+            <div class="d-flex align-items-center gap-4 ms-auto">
                 <!-- Notification Bell with Red Badge -->
                 <button class="btn btn-link position-relative p-1 text-muted" type="button" style="text-decoration: none;">
                     <i class="bi bi-bell fs-5" style="color: var(--navy-dark)"></i>
