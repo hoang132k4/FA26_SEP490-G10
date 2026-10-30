@@ -1,16 +1,19 @@
 <div th:replace="~{layouts/manager-layout :: html(pageTitle='Quản lý Đề thi - Manager', activeMenu='manager-exams', content=~{::#mainContent})}">
 <div id="mainContent">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div><h2 class="fw-bold mb-1" style="color:var(--navy-dark);">Quản lý Đề thi</h2><p class="mb-0 text-muted">Dữ liệu được đọc trực tiếp từ database</p></div>
+        <div><h2 class="fw-bold mb-1" style="color:var(--navy-dark);">Quản lý Đề thi</h2>
+            <p class="mb-0 text-muted">Quản lý đề thi và câu hỏi trong đề</p></div>
         <a class="btn btn-primary" th:href="@{/manager/exams/new}"><i class="bi bi-plus-lg me-1"></i>Tạo đề thi</a>
     </div>
     <div class="alert alert-danger" th:if="${examError}" th:text="${examError}"></div>
     <div class="alert alert-success" th:if="${examSuccess}" th:text="${examSuccess}"></div>
+
     <div class="row g-3 mb-4">
         <div class="col-md-4"><div class="kotoba-card p-3"><small class="text-muted">Placement</small><h3 th:text="${placementCount}">0</h3></div></div>
         <div class="col-md-4"><div class="kotoba-card p-3"><small class="text-muted">JLPT Mock</small><h3 th:text="${mockCount}">0</h3></div></div>
         <div class="col-md-4"><div class="kotoba-card p-3"><small class="text-muted">Milestone</small><h3 th:text="${milestoneCount}">0</h3></div></div>
     </div>
+
     <form class="kotoba-card p-3 mb-3" method="get" th:action="@{/manager/exams}">
         <div class="row g-2">
             <div class="col-lg-4"><input class="form-control" name="search" th:value="${search}" placeholder="Tìm theo tên đề thi..."></div>
@@ -20,9 +23,31 @@
             <div class="col-lg-2 d-flex gap-2"><button class="btn btn-outline-primary flex-grow-1" type="submit">Lọc</button><a class="btn btn-outline-secondary" th:href="@{/manager/exams}">Xoá</a></div>
         </div>
     </form>
-    <div class="kotoba-card overflow-hidden"><div class="table-responsive"><table class="table table-hover mb-0 align-middle">
-        <thead><tr><th class="ps-4">ID</th><th>Tên đề thi</th><th>Loại</th><th>Cấp độ</th><th>Thời lượng</th><th>Số câu</th><th>Trạng thái</th><th class="pe-4">Thao tác</th></tr></thead>
-        <tbody><tr th:each="exam : ${exams}"><td class="ps-4" th:text="${exam.examId}"></td><td class="fw-semibold" th:text="${exam.examTitle}"></td><td th:text="${exam.examType}"></td><td th:text="${exam.jlptLevel}"></td><td th:text="${exam.durationMinutes + ' phút'}"></td><td th:text="${exam.totalQuestions}"></td><td th:text="${exam.status}"></td><td class="pe-4"><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/exams/{id}/edit(id=${exam.examId})}"><i class="bi bi-pencil"></i> Sửa</a></td></tr><tr th:if="${#lists.isEmpty(exams)}"><td colspan="8" class="text-center text-muted py-5">Không tìm thấy đề thi.</td></tr></tbody>
-    </table></div></div>
+
+    <div class="kotoba-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead><tr><th class="ps-4">ID</th><th>Tên đề thi</th><th>Loại</th><th>Cấp độ</th><th>Thời lượng</th><th>Số câu</th><th>Trạng thái</th><th class="pe-4">Thao tác</th></tr></thead>
+                <tbody>
+                <tr th:each="exam : ${exams}">
+                    <td class="ps-4" th:text="${exam.examId}"></td>
+                    <td class="fw-semibold" th:text="${exam.examTitle}"></td>
+                    <td><span class="badge bg-info" th:text="${exam.examType}"></span></td>
+                    <td th:text="${exam.jlptLevel}"></td>
+                    <td th:text="${exam.durationMinutes + ' phút'}"></td>
+                    <td th:text="${exam.totalQuestions}"></td>
+                    <td><span class="badge" th:classappend="${exam.status == 'PUBLISHED' || exam.status == 'ACTIVE' ? 'bg-success' : (exam.status == 'DRAFT' ? 'bg-warning text-dark' : 'bg-secondary')}" th:text="${exam.status}"></span></td>
+                    <td class="pe-4">
+                        <div class="btn-group btn-group-sm">
+                            <a class="btn btn-outline-primary" th:href="@{/manager/exams/{id}/edit(id=${exam.examId})}"><i class="bi bi-pencil"></i></a>
+                            <a class="btn btn-outline-success" th:href="@{/manager/exams/{id}/questions(id=${exam.examId})}" title="Quản lý câu hỏi"><i class="bi bi-list-check"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(exams)}"><td colspan="8" class="text-center text-muted py-5">Không tìm thấy đề thi.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 </div>

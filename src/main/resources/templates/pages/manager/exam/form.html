@@ -1,19 +1,113 @@
 <div th:replace="~{layouts/manager-layout :: html(pageTitle=${isEdit ? 'Sửa Đề thi - Manager' : 'Tạo Đề thi - Manager'}, activeMenu='manager-exams', content=~{::#mainContent})}">
 <div id="mainContent">
-    <div class="d-flex justify-content-between align-items-center mb-4"><div><h2 class="fw-bold" style="color:var(--navy-dark);" th:text="${isEdit ? 'Sửa cấu hình đề thi' : 'Tạo đề thi'}"></h2><p class="text-muted mb-0">Thông tin được lưu vào database.</p></div><a class="btn btn-outline-secondary" th:href="@{/manager/exams}">Quay lại</a></div>
-    <div class="alert alert-danger" th:if="${examError}" th:text="${examError}"></div>
-    <form class="kotoba-card p-4" method="post" th:object="${examForm}" th:action="${isEdit ? '/manager/exams/' + examForm.examId : '/manager/exams'}">
-        <div class="row g-3">
-            <div class="col-12"><label class="form-label">Tên đề thi</label><input class="form-control" th:field="*{examTitle}" required><div class="text-danger small" th:errors="*{examTitle}"></div></div>
-            <div class="col-md-4"><label class="form-label">Loại đề thi</label><select class="form-select" th:field="*{examType}" required><option value="">-- Chọn --</option><option th:each="item : ${options.examTypes}" th:value="${item}" th:text="${item}"></option></select><div class="text-danger small" th:errors="*{examType}"></div></div>
-            <div class="col-md-4"><label class="form-label">Cấp độ JLPT</label><select class="form-select" th:field="*{jlptLevel}" required><option value="">-- Chọn --</option><option th:each="item : ${options.jlptLevels}" th:value="${item}" th:text="${item}"></option></select><div class="text-danger small" th:errors="*{jlptLevel}"></div></div>
-            <div class="col-md-4"><label class="form-label">Trạng thái</label><select class="form-select" th:field="*{status}" required><option value="">-- Chọn --</option><option th:each="item : ${options.statuses}" th:value="${item}" th:text="${item}"></option></select><div class="text-danger small" th:errors="*{status}"></div></div>
-            <div class="col-md-4"><label class="form-label">Thời lượng (phút)</label><input class="form-control" type="number" min="1" max="600" th:field="*{durationMinutes}" required><div class="text-danger small" th:errors="*{durationMinutes}"></div></div>
-            <div class="col-md-4"><label class="form-label">Tổng số câu hỏi</label><input class="form-control" type="number" min="1" max="500" th:field="*{totalQuestions}" required><div class="text-danger small" th:errors="*{totalQuestions}"></div></div>
-            <div class="col-md-4"><label class="form-label">Điểm đạt (%)</label><input class="form-control" type="number" min="0" max="100" th:field="*{passingScore}" required><div class="text-danger small" th:errors="*{passingScore}"></div></div>
-            <div class="col-12"><label class="form-label">Mô tả</label><textarea class="form-control" rows="5" th:field="*{description}"></textarea><div class="text-danger small" th:errors="*{description}"></div></div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold" style="color:var(--navy-dark);" th:text="${isEdit ? 'Sửa cấu hình đề thi' : 'Tạo đề thi'}"></h2>
+            <p class="text-muted mb-0">Thông tin được lưu vào database.</p>
         </div>
-        <div class="mt-4 d-flex justify-content-end gap-2"><a class="btn btn-outline-secondary" th:href="@{/manager/exams}">Huỷ</a><button class="btn btn-primary" type="submit">Lưu cấu hình</button></div>
+        <a class="btn btn-outline-secondary" th:href="@{/manager/exams}">Quay lại</a>
+    </div>
+    <div class="alert alert-danger" th:if="${examError}" th:text="${examError}"></div>
+
+    <!-- Thông tin câu hỏi đã gắn (chỉ khi sửa) -->
+    <div th:if="${isEdit}" class="kotoba-card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted">Câu hỏi đã gắn: <strong th:text="${linkedCount ?: 0}">0</strong></span>
+                <span th:if="${totalPoints != null}" class="ms-3 text-muted small">
+                    Tổng điểm: <strong th:text="${totalPoints}"></strong>
+                </span>
+            </div>
+            <a class="btn btn-sm btn-outline-success" th:href="@{/manager/exams/{id}/questions(id=${examForm.examId})}">
+                <i class="bi bi-list-check me-1"></i>Quản lý câu hỏi
+            </a>
+        </div>
+    </div>
+
+    <form class="kotoba-card p-4" method="post" th:object="${examForm}"
+          th:action="${isEdit ? '/manager/exams/' + examForm.examId : '/manager/exams'}">
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label">Tên đề thi <span class="text-danger">*</span></label>
+                <input class="form-control" th:field="*{examTitle}" required>
+                <div class="text-danger small" th:errors="*{examTitle}"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Loại đề thi <span class="text-danger">*</span></label>
+                <select class="form-select" th:field="*{examType}" required>
+                    <option value="">-- Chọn --</option>
+                    <option th:each="item : ${options.examTypes}" th:value="${item}" th:text="${item}"></option>
+                </select>
+                <div class="text-danger small" th:errors="*{examType}"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Cấp độ JLPT <span class="text-danger">*</span></label>
+                <select class="form-select" th:field="*{jlptLevel}" required>
+                    <option value="">-- Chọn --</option>
+                    <option th:each="item : ${options.jlptLevels}" th:value="${item}" th:text="${item}"></option>
+                </select>
+                <div class="text-danger small" th:errors="*{jlptLevel}"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+                <select class="form-select" th:field="*{status}" required>
+                    <option value="">-- Chọn --</option>
+                    <option th:each="item : ${options.statuses}" th:value="${item}" th:text="${item}"></option>
+                </select>
+                <div class="text-danger small" th:errors="*{status}"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Thời lượng (phút) <span class="text-danger">*</span></label>
+                <input class="form-control" type="number" min="1" max="600" th:field="*{durationMinutes}" required>
+                <div class="text-danger small" th:errors="*{durationMinutes}"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tổng số câu hỏi <span class="text-danger">*</span></label>
+                <input class="form-control" type="number" min="1" max="500" th:field="*{totalQuestions}" required>
+                <div class="text-danger small" th:errors="*{totalQuestions}"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Điểm đạt (%) <span class="text-danger">*</span></label>
+                <input class="form-control" type="number" min="0" max="100" th:field="*{passingScore}" required>
+                <div class="text-danger small" th:errors="*{passingScore}"></div>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Mô tả</label>
+                <textarea class="form-control" rows="5" th:field="*{description}"></textarea>
+                <div class="text-danger small" th:errors="*{description}"></div>
+            </div>
+        </div>
+        <div class="mt-4 d-flex justify-content-end gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{/manager/exams}">Huỷ</a>
+            <button class="btn btn-primary" type="submit">Lưu cấu hình</button>
+        </div>
     </form>
+
+    <!-- Danh sách câu hỏi đã gắn (chỉ khi sửa và có câu hỏi) -->
+    <div th:if="${isEdit && examQuestions != null && !#lists.isEmpty(examQuestions)}" class="kotoba-card overflow-hidden mt-4">
+        <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-bold" style="color:var(--navy-dark);">Câu hỏi trong đề (<span th:text="${examQuestions != null ? #lists.size(examQuestions) : 0}">0</span>)</span>
+            <a class="btn btn-sm btn-outline-success" th:href="@{/manager/exams/{id}/questions(id=${examForm.examId})}">
+                <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead><tr><th class="ps-4">#</th><th>Nội dung</th><th>Loại</th><th>Section</th><th>Điểm</th></tr></thead>
+                <tbody>
+                <tr th:each="row : ${examQuestions}">
+                    <td class="ps-4" th:text="${row.orderIndex()}"></td>
+                    <td style="min-width:250px;max-width:400px;">
+                        <div class="text-truncate" style="max-width:400px;" th:text="${row.content()}"></div>
+                        <small class="text-muted" th:text="${(row.jlptLevel() ?: '') + ' ' + (row.skillType() ?: '') + ' ' + (row.difficulty() ?: '')}"></small>
+                    </td>
+                    <td><span class="badge bg-primary" th:text="${row.questionType()}"></span></td>
+                    <td><span class="badge bg-dark" th:text="${row.section()}"></span></td>
+                    <td th:text="${row.points()}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 </div>

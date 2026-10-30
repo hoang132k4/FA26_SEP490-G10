@@ -11,6 +11,16 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
 
     List<Exam> findByExamTypeIgnoreCase(String examType);
 
+    List<Exam> findByExamTypeIgnoreCaseAndStatusIgnoreCase(String examType, String status);
+
+    List<Exam> findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase(String examType, String jlptLevel);
+
+    List<Exam> findByExamTypeIgnoreCaseAndJlptLevelIgnoreCaseAndStatusIgnoreCase(String examType, String jlptLevel, String status);
+
+    List<Exam> findByCourseId(Long courseId);
+
+    List<Exam> findByCourseIdAndExamTypeIgnoreCase(Long courseId, String examType);
+
     @Query("""
             select e from Exam e
             where (:search = '' or lower(e.examTitle) like lower(concat('%', :search, '%')))
