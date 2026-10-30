@@ -1,0 +1,28 @@
+<div th:replace="~{layouts/manager-layout :: html(
+    pageTitle='Ngân hàng câu hỏi - JEPS',
+    activeMenu='manager-questions',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div>
+                <h2 class="fw-bold mb-1" style="color:var(--navy-dark)">Ngân hàng câu hỏi</h2>
+                <p class="text-muted mb-0">Tổ chức câu hỏi theo kỹ năng và cấp độ JLPT.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" type="button" disabled title="Chức năng nhập dữ liệu sẽ được kết nối khi kho câu hỏi sẵn sàng"><i class="bi bi-file-earmark-arrow-up me-1"></i> Nhập Excel</button>
+                <button class="btn btn-primary" type="button" disabled title="Chức năng tạo câu hỏi sẽ được kết nối khi kho câu hỏi sẵn sàng"><i class="bi bi-plus-lg me-1"></i> Thêm câu hỏi</button>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4"><div class="kotoba-card p-3"><div class="text-muted small">Tổng câu hỏi</div><div class="fs-3 fw-bold">0</div></div></div>
+            <div class="col-md-4"><div class="kotoba-card p-3"><div class="text-muted small">Đã xuất bản</div><div class="fs-3 fw-bold text-success">0</div></div></div>
+            <div class="col-md-4"><div class="kotoba-card p-3"><div class="text-muted small">Bản nháp</div><div class="fs-3 fw-bold text-warning">0</div></div></div>
+        </div>
+        <div class="kotoba-card p-5 text-center">
+            <i class="bi bi-patch-question" style="font-size:2.5rem;color:var(--steel-blue)"></i>
+            <h5 class="fw-bold mt-3">Chưa có câu hỏi nào</h5>
+            <p class="text-muted mb-0">Danh sách câu hỏi sẽ xuất hiện tại đây khi nguồn dữ liệu được thêm vào hệ thống.</p>
+        </div>
+    </div>
+</div>

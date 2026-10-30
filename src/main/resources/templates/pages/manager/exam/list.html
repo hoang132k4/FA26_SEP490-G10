@@ -1,0 +1,14 @@
+<div th:replace="~{layouts/manager-layout :: html(
+    pageTitle='Quản lý đề thi - JEPS',
+    activeMenu='manager-exams',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div><h2 class="fw-bold mb-1" style="color:var(--navy-dark)">Quản lý đề thi</h2><p class="text-muted mb-0">Theo dõi trạng thái và cấu trúc các đề thi thử JLPT.</p></div>
+            <button class="btn btn-primary" type="button" disabled title="Chức năng tạo đề thi sẽ được kết nối khi kho câu hỏi sẵn sàng"><i class="bi bi-plus-lg me-1"></i> Tạo đề thi</button>
+        </div>
+        <div class="row g-3 mb-4"><div class="col-sm-4"><div class="kotoba-card p-3"><span class="text-muted small">Tổng đề thi</span><div class="fs-3 fw-bold">0</div></div></div><div class="col-sm-4"><div class="kotoba-card p-3"><span class="text-muted small">Đang xuất bản</span><div class="fs-3 fw-bold text-success">0</div></div></div><div class="col-sm-4"><div class="kotoba-card p-3"><span class="text-muted small">Bản nháp</span><div class="fs-3 fw-bold text-warning">0</div></div></div></div>
+        <div class="kotoba-card p-5 text-center"><i class="bi bi-file-earmark-text fs-1" style="color:var(--steel-blue)"></i><h5 class="fw-bold mt-3">Chưa có đề thi nào</h5><p class="text-muted mb-0">Tạo đề thi sau khi ngân hàng câu hỏi được thiết lập.</p></div>
+    </div>
+</div>

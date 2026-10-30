@@ -63,11 +63,11 @@
 
                         <!-- Action Footer -->
                         <div class="d-flex gap-2 mt-auto pt-3 border-top border-light">
-                            <a th:href="@{/learning/materials}" class="btn btn-sakura btn-sm flex-grow-1 py-2 fw-semibold">
-                                <i class="bi bi-play-circle-fill me-1"></i> Tiếp tục học
+                            <a th:href="@{/learning/courses/{id}/lessons(id=${reg.course.id})}" class="btn btn-sakura btn-sm flex-grow-1 py-2 fw-semibold">
+                                <i class="bi bi-play-circle-fill me-1"></i> Xem bài học
                             </a>
-                            <a th:href="@{/learning/courses/{id}(id=${reg.course.id})}" class="btn btn-outline-secondary btn-sm px-3" title="Chi tiết giáo trình">
-                                <i class="bi bi-info-circle"></i>
+                            <a th:href="@{/learning/courses/{id}/materials(id=${reg.course.id})}" class="btn btn-outline-secondary btn-sm px-3" title="Tài liệu khóa học">
+                                <i class="bi bi-folder2"></i>
                             </a>
                         </div>
                     </div>

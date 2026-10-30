@@ -90,11 +90,18 @@
                     <span class="small text-muted">Học phí tham khảo</span>
                     <p class="fs-3 fw-bold mb-3" style="color: var(--steel-blue);"
                        th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</p>
-                    <a th:if="${!isAuthenticated}" th:href="@{/auth/register(continue=${'/courses/' + course.id})}" class="btn btn-steel w-100 mb-2">Đăng ký để mua khóa học</a>
-                    <div th:if="${isAuthenticated}" class="alert alert-info mb-2">
-                        Mua khóa học để mở nội dung bài học.
-                    </div>
-                    <a th:href="@{/courses}" class="btn btn-steel-outline w-100">Back to Course List</a>
+                    <a th:if="${!isAuthenticated}" th:href="@{/auth/register(continue=${'/learning/courses/' + course.id + '/register'})}" class="btn btn-sakura w-100 mb-2 fw-bold">
+                        <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học ngay
+                    </a>
+                    <a th:if="${isAuthenticated}" th:href="@{/learning/courses/{id}/register(id=${course.id})}" class="btn btn-sakura w-100 mb-2 fw-bold">
+                        <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học ngay
+                    </a>
+                    <a th:if="${isAuthenticated}" th:href="@{/learning/courses/{id}(id=${course.id})}" class="btn btn-steel-outline w-100 mb-2">
+                        <i class="bi bi-eye me-1"></i> Xem chi tiết khóa học
+                    </a>
+                    <a th:if="${!isAuthenticated}" th:href="@{/courses}" class="btn btn-steel-outline w-100">
+                        <i class="bi bi-arrow-left me-1"></i> Danh sách khóa học
+                    </a>
                     <p class="small text-muted mt-3 mb-0">Nội dung bài học chỉ dành cho tài khoản đã đăng ký và sở hữu khóa học.</p>
                 </div>
             </aside>

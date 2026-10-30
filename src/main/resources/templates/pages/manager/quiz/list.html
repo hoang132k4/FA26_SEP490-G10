@@ -1,0 +1,16 @@
+<div th:replace="~{layouts/manager-layout :: html(
+    pageTitle='Quản lý câu đố - JEPS',
+    activeMenu='manager-quizzes',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div><h2 class="fw-bold mb-1" style="color:var(--navy-dark)">Quản lý câu đố</h2><p class="text-muted mb-0">Tạo và theo dõi các bộ câu đố ôn luyện.</p></div>
+            <button class="btn btn-primary" type="button" disabled title="Chức năng tạo câu đố sẽ được kết nối khi kho câu hỏi sẵn sàng"><i class="bi bi-plus-lg me-1"></i> Tạo câu đố</button>
+        </div>
+        <div class="kotoba-card overflow-hidden">
+            <div class="table-responsive"><table class="table mb-0"><thead><tr><th class="ps-4 py-3">Tên câu đố</th><th class="py-3">Cấp độ</th><th class="py-3">Số câu</th><th class="py-3">Trạng thái</th><th class="py-3 pe-4">Thao tác</th></tr></thead>
+            <tbody><tr><td colspan="5" class="text-center text-muted py-5"><i class="bi bi-ui-checks-grid d-block fs-2 mb-2"></i>Chưa có câu đố nào được tạo.</td></tr></tbody></table></div>
+        </div>
+    </div>
+</div>

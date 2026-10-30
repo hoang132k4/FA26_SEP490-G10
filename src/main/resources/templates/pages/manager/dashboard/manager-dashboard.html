@@ -4,6 +4,26 @@
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-4">Bảng điều khiển quản lý</h3>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div>
+                <h2 class="fw-bold mb-1" style="color:var(--navy-dark)">Bảng điều khiển quản lý</h2>
+                <p class="text-muted mb-0">Điểm bắt đầu để quản lý nội dung học tập trên JEPS.</p>
+            </div>
+            <a class="btn btn-primary" th:href="@{/manager/courses}"><i class="bi bi-journal-plus me-1"></i> Quản lý khóa học</a>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/courses}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-journal-bookmark fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Khóa học</div><small class="text-muted">Thiết lập cấp độ và trạng thái xuất bản.</small></div></a></div>
+            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/lessons}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-book-half fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Bài học</div><small class="text-muted">Theo dõi nội dung theo từng khóa học.</small></div></a></div>
+            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/questions}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-patch-question fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Câu hỏi</div><small class="text-muted">Xây dựng ngân hàng câu hỏi JLPT.</small></div></a></div>
+            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/exams}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-file-earmark-text fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Đề thi</div><small class="text-muted">Chuẩn bị đề thi thử cho người học.</small></div></a></div>
+        </div>
+        <div class="kotoba-card p-4">
+            <h5 class="fw-bold mb-3">Thao tác nhanh</h5>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-primary" th:href="@{/manager/courses/new}"><i class="bi bi-plus-lg me-1"></i> Thêm khóa học</a>
+                <a class="btn btn-outline-primary" th:href="@{/manager/quizzes}"><i class="bi bi-ui-checks-grid me-1"></i> Xem câu đố</a>
+                <a class="btn btn-outline-primary" th:href="@{/manager/reports}"><i class="bi bi-bar-chart-line me-1"></i> Xem báo cáo</a>
+            </div>
+        </div>
     </div>
 </div>

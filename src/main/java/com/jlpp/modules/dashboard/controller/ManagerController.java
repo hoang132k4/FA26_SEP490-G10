@@ -137,6 +137,11 @@ public class ManagerController {
         return "pages/manager/report/manager-reports";
     }
 
+    @GetMapping("/lessons")
+    public String lessons() {
+        return "pages/manager/lesson/list";
+    }
+
     @GetMapping("/questions")
     public String questions() {
         return "pages/manager/question/list";
@@ -150,6 +155,11 @@ public class ManagerController {
     @GetMapping("/exams")
     public String exams() {
         return "pages/manager/exam/list";
+    }
+
+    @GetMapping("/flashcards")
+    public String flashcards() {
+        return "pages/manager/flashcard/list";
     }
 
     private Map<String, Object> toCourseView(CourseOption row) {

@@ -61,9 +61,9 @@
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'listening'} ? 'active' : ''" th:href="@{/learning/materials}">
-                    <i class="bi bi-headphones"></i>
-                    <span>Luyện nghe</span>
+                <a class="nav-link" th:classappend="${activeMenu == 'listening' || activeMenu == 'materials'} ? 'active' : ''" th:href="@{/learning/materials}">
+                    <i class="bi bi-folder2-open"></i>
+                    <span>Tài liệu & Audio</span>
                 </a>
             </li>
             <li>
