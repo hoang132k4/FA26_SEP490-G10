@@ -1,9 +1,241 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Lá»‹ch sá»­ thi - JLPP',
-    activeMenu='exam-history',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Lịch sử làm bài - Đánh giá năng lực - Kotoba JEPS',
+    activeMenu='history',
     content=~{::#mainContent}
 )}">
+
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">Lá»‹ch sá»­ bÃ i thi Ä‘Ã£ lÃ m</h3>
+        <!-- 1. Breadcrumb: Trang chủ / Đánh giá năng lực / Lịch sử làm bài -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item">
+                    <a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--medium-blue);">
+                        <i class="bi bi-house-door me-1"></i>Trang chủ
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a th:href="@{/exams}" class="text-decoration-none" style="color: var(--medium-blue);">
+                        Đánh giá năng lực
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Lịch sử làm bài</li>
+            </ol>
+        </nav>
+
+        <!-- 2. Top Banner -->
+        <section class="card kotoba-card p-4 p-lg-5 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <span class="badge px-3 py-2 rounded-pill mb-2" style="background-color: rgba(255,255,255,0.15); color: #FFF; font-weight: 500;">
+                        <i class="bi bi-clock-history me-1 text-warning"></i> Theo dõi tiến độ học tập
+                    </span>
+                    <h1 class="fw-bold mb-2 text-white">Lịch sử làm bài</h1>
+                    <p class="text-white-50 mb-0" style="max-width: 650px; line-height: 1.6;">
+                        Theo dõi kết quả điểm số thực tế, tỷ lệ hoàn thành và sự tiến bộ qua các kỳ thi thử JLPT, kiểm tra cột mốc và đánh giá năng lực đầu vào.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a th:href="@{/exams}" class="btn btn-outline-light rounded-pill px-4 py-2">
+                        <i class="bi bi-arrow-left me-1"></i> Đánh giá năng lực
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Category Filter Tabs: Chỉ nằm bên trong trang Lịch sử làm bài -->
+        <div th:if="${historyList != null and !#lists.isEmpty(historyList)}" class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+            <div class="d-flex flex-wrap gap-2" id="historyFilterGroup">
+                <button type="button"
+                        class="btn rounded-pill px-4 py-2 fw-semibold filter-tab-btn btn-primary shadow-sm"
+                        data-filter="ALL"
+                        onclick="filterHistory('ALL', this)">
+                    <i class="bi bi-grid-fill me-1"></i> Tất cả (<span id="count-all">0</span>)
+                </button>
+                <button type="button"
+                        class="btn rounded-pill px-4 py-2 fw-semibold filter-tab-btn btn-light border text-muted"
+                        data-filter="PLACEMENT_TEST"
+                        onclick="filterHistory('PLACEMENT_TEST', this)">
+                    <i class="bi bi-compass me-1"></i> Đánh giá đầu vào (<span id="count-placement">0</span>)
+                </button>
+                <button type="button"
+                        class="btn rounded-pill px-4 py-2 fw-semibold filter-tab-btn btn-light border text-muted"
+                        data-filter="MILESTONE"
+                        onclick="filterHistory('MILESTONE', this)">
+                    <i class="bi bi-flag-fill me-1"></i> Đánh giá cột mốc (<span id="count-milestone">0</span>)
+                </button>
+                <button type="button"
+                        class="btn rounded-pill px-4 py-2 fw-semibold filter-tab-btn btn-light border text-muted"
+                        data-filter="JLPT_MOCK"
+                        onclick="filterHistory('JLPT_MOCK', this)">
+                    <i class="bi bi-trophy-fill me-1"></i> Thi thử JLPT (<span id="count-mock">0</span>)
+                </button>
+            </div>
+            <div class="text-muted small">
+                Hiển thị <strong id="visibleCount" th:text="${#lists.size(historyList)}">0</strong> bài thi
+            </div>
+        </div>
+
+        <!-- 4. Real History Records Table (Dữ liệu thật từ Supabase exam_results) -->
+        <div th:if="${historyList != null and !#lists.isEmpty(historyList)}" class="card kotoba-card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px;">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="historyTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="text-center" style="width: 70px;">Lần thi</th>
+                            <th scope="col">Tên đề thi</th>
+                            <th scope="col" style="width: 170px;">Loại bài thi</th>
+                            <th scope="col" class="text-center" style="width: 90px;">Cấp độ</th>
+                            <th scope="col" class="text-center" style="width: 120px;">Điểm số</th>
+                            <th scope="col" class="text-center" style="width: 140px;">Trạng thái</th>
+                            <th scope="col" style="width: 160px;">Thời gian nộp</th>
+                            <th scope="col" class="text-end" style="width: 130px;">Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr th:each="item : ${historyList}"
+                            class="history-row"
+                            th:data-exam-type="${item.examType}">
+                            <td class="text-center fw-bold text-secondary">
+                                <span class="badge bg-light text-dark rounded-circle border" th:text="${'#' + item.attemptNumber}">#1</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${item.examTitle}">Tên bài thi</div>
+                                <div class="text-muted small" th:text="'Mã kết quả: #' + ${item.resultId}">ID</div>
+                            </td>
+                            <td>
+                                <span th:if="${item.examType == 'PLACEMENT_TEST'}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
+                                    <i class="bi bi-compass me-1"></i> Đánh giá đầu vào
+                                </span>
+                                <span th:if="${item.examType == 'MILESTONE'}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1 rounded-pill">
+                                    <i class="bi bi-flag-fill me-1"></i> Đánh giá cột mốc
+                                </span>
+                                <span th:if="${item.examType == 'JLPT_MOCK'}" class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-1 rounded-pill">
+                                    <i class="bi bi-trophy-fill me-1"></i> Thi thử JLPT
+                                </span>
+                                <span th:if="${item.examType != 'PLACEMENT_TEST' and item.examType != 'MILESTONE' and item.examType != 'JLPT_MOCK'}" class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill" th:text="${item.examType}">Khác</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-dark-subtle text-dark px-2 py-1 rounded-pill fw-semibold" th:text="${item.jlptLevel != null ? item.jlptLevel : '--'}">N4</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-bold text-dark fs-6" th:text="${item.totalScore != null ? item.totalScore : 0}">0</span>
+                                <span th:if="${item.percentage != null}" class="small text-muted d-block" th:text="'(' + ${item.percentage} + '%)'"></span>
+                            </td>
+                            <td class="text-center">
+                                <span th:if="${item.examType == 'PLACEMENT_TEST'}" class="badge bg-success text-white px-3 py-1 rounded-pill">
+                                    <i class="bi bi-check-circle me-1"></i> Hoàn thành
+                                </span>
+                                <span th:if="${item.examType != 'PLACEMENT_TEST' and item.passedStatus == true}" class="badge bg-success text-white px-3 py-1 rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Đạt (PASS)
+                                </span>
+                                <span th:if="${item.examType != 'PLACEMENT_TEST' and item.passedStatus != true}" class="badge bg-danger text-white px-3 py-1 rounded-pill">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Chưa đạt
+                                </span>
+                            </td>
+                            <td class="small text-secondary" th:text="${item.formattedDate}">01/01/2026 12:00</td>
+                            <td class="text-end">
+                                <a th:href="@{/exams/history/{id}(id=${item.resultId})}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="bi bi-eye me-1"></i> Xem lại
+                                </a>
+                            </td>
+                        </tr>
+                        <!-- Empty Row for filter tab when no items match -->
+                        <tr id="emptyFilterRow" style="display: none;">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                <span>Không tìm thấy bài thi nào trong danh mục này.</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5. Empty State (Khi học viên chưa có lịch sử thi nào) -->
+        <div th:if="${historyList == null or #lists.isEmpty(historyList)}" class="card kotoba-card text-center p-5 border-0 shadow-sm my-4" style="border-radius: 16px;">
+            <div class="my-4">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-journal-x fs-1 text-muted"></i>
+                </div>
+                <h3 class="fw-bold text-dark">Bạn chưa có lịch sử làm bài thi</h3>
+                <p class="text-secondary mx-auto mb-4" style="max-width: 600px; line-height: 1.6;">
+                    Khi bạn hoàn thành bài đánh giá đầu vào, bài kiểm tra cột mốc khóa học hoặc đề thi thử JLPT, toàn bộ kết quả sẽ được tự động lưu vào cơ sở dữ liệu Supabase và hiển thị tại đây.
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a th:href="@{/exams/placement}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-compass me-1"></i> Làm bài test đầu vào
+                    </a>
+                    <a th:href="@{/exams/mock}" class="btn btn-steel rounded-pill px-4 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-trophy-fill me-1"></i> Thi thử JLPT
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Client Script for Category Filtering -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                initHistoryCounts();
+            });
+
+            function initHistoryCounts() {
+                var rows = document.querySelectorAll('.history-row');
+                var total = rows.length;
+                var placementCount = 0;
+                var milestoneCount = 0;
+                var mockCount = 0;
+
+                rows.forEach(function (row) {
+                    var type = row.getAttribute('data-exam-type');
+                    if (type === 'PLACEMENT_TEST') placementCount++;
+                    else if (type === 'MILESTONE') milestoneCount++;
+                    else if (type === 'JLPT_MOCK') mockCount++;
+                });
+
+                var elAll = document.getElementById('count-all');
+                var elPlacement = document.getElementById('count-placement');
+                var elMilestone = document.getElementById('count-milestone');
+                var elMock = document.getElementById('count-mock');
+
+                if (elAll) elAll.textContent = total;
+                if (elPlacement) elPlacement.textContent = placementCount;
+                if (elMilestone) elMilestone.textContent = milestoneCount;
+                if (elMock) elMock.textContent = mockCount;
+            }
+
+            function filterHistory(type, btnElement) {
+                // Update active tab styling
+                var buttons = document.querySelectorAll('.filter-tab-btn');
+                buttons.forEach(function (btn) {
+                    btn.classList.remove('btn-primary', 'shadow-sm');
+                    btn.classList.add('btn-light', 'border', 'text-muted');
+                });
+                btnElement.classList.remove('btn-light', 'border', 'text-muted');
+                btnElement.classList.add('btn-primary', 'shadow-sm');
+
+                var rows = document.querySelectorAll('.history-row');
+                var visibleCount = 0;
+
+                rows.forEach(function (row) {
+                    var rowType = row.getAttribute('data-exam-type');
+                    if (type === 'ALL' || rowType === type) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                var emptyRow = document.getElementById('emptyFilterRow');
+                if (emptyRow) {
+                    emptyRow.style.display = (visibleCount === 0) ? '' : 'none';
+                }
+
+                var countDisplay = document.getElementById('visibleCount');
+                if (countDisplay) {
+                    countDisplay.textContent = visibleCount;
+                }
+            }
+        </script>
     </div>
 </div>

@@ -20,6 +20,7 @@ public class CustomUserDetails implements UserDetails {
     private final String password;
     private final RoleEnum role;
     private final String status;
+    private final String avatarUrl;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public CustomUserDetails(User user) {
@@ -30,6 +31,7 @@ public class CustomUserDetails implements UserDetails {
         this.password = user.getPassword();
         this.role = user.getRole();
         this.status = user.getStatus();
+        this.avatarUrl = user.getAvatarUrl();
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
     }
 

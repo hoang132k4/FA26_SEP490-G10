@@ -17,11 +17,15 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.mock.web.MockMultipartFile;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -342,5 +346,29 @@ public class ProfileTest {
         assertThatThrownBy(() -> profileService.updateProfile(LEARNER_EMAIL, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Địa chỉ email đã được sử dụng");
+    }
+
+    @Test
+    @DisplayName("SRV-04: ProfileService.updateProfile with avatar file updates avatarUrl")
+    void profileService_updateProfile_withAvatar_success() {
+        org.springframework.mock.web.MockMultipartFile mockFile = new org.springframework.mock.web.MockMultipartFile(
+                "avatarFile",
+                "test-avatar.png",
+                "image/png",
+                "dummy-image-bytes".getBytes()
+        );
+
+        EditProfileRequest request = EditProfileRequest.builder()
+                .fullName("Nguyễn Văn Học Viên Updated")
+                .email(LEARNER_EMAIL)
+                .phone("0987654321")
+                .build();
+
+        ProfileResponse response = profileService.updateProfile(LEARNER_EMAIL, request, mockFile);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getAvatarUrl()).isNotNull();
+        assertThat(response.getAvatarUrl()).startsWith("/uploads/avatars/avatar_");
+        assertThat(response.getAvatarUrl()).endsWith(".png");
     }
 }

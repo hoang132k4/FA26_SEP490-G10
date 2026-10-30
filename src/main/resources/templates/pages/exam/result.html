@@ -1,13 +1,251 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Káº¿t quáº£ thi & Lá»i giáº£i - JLPP',
-    activeMenu='exams',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Kết quả thi - Kotoba JEPS',
+    activeMenu=${activeMenu != null ? activeMenu : (isHistoricalView ? 'history' : (result.examType == 'PLACEMENT_TEST' ? 'placement' : 'exams'))},
     content=~{::#mainContent}
 )}">
+
     <div id="mainContent">
-        <div class="card p-4 jlpp-card mb-4 text-center">
-            <h3 class="fw-bold text-success">Káº¿t quáº£ lÃ m bÃ i</h3>
-            <h1 class="display-4 fw-bold">155/180</h1>
-            <p class="text-muted">Äáº T (PASSED)</p>
+        <!-- Hero Result Banner -->
+        <div class="card p-4 p-lg-5 mb-4 border-0 shadow-sm"
+             style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                        <!-- Exam Type & Level Badge -->
+                        <span th:if="${result.examType == 'PLACEMENT_TEST'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                            <i class="bi bi-compass me-1"></i> Đánh giá năng lực đầu vào
+                        </span>
+                        <span th:if="${result.examType == 'MILESTONE'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                            <i class="bi bi-flag-fill me-1"></i> Kiểm tra cột mốc <span th:if="${result.jlptLevel != null}" th:text="'(' + ${result.jlptLevel} + ')'"></span>
+                        </span>
+                        <span th:if="${result.examType == 'JLPT_MOCK' or (result.examType != 'PLACEMENT_TEST' and result.examType != 'MILESTONE')}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                            <i class="bi bi-award me-1"></i> <span th:text="${result.jlptLevel != null ? result.jlptLevel : 'JLPT'}">N4</span>
+                        </span>
+
+                        <!-- Pass/Fail/Completed Badge -->
+                        <span th:if="${result.examType == 'PLACEMENT_TEST'}" class="badge bg-success text-white rounded-pill px-3 py-1 fs-6 fw-bold">
+                            <i class="bi bi-check-circle-fill me-1"></i> HOÀN THÀNH ĐÁNH GIÁ (COMPLETED)
+                        </span>
+                        <span th:if="${result.examType != 'PLACEMENT_TEST' and result.passed == true}" class="badge bg-success text-white rounded-pill px-3 py-1 fs-6 fw-bold">
+                            <i class="bi bi-trophy-fill me-1"></i> ĐẠT (PASSED)
+                        </span>
+                        <span th:if="${result.examType != 'PLACEMENT_TEST' and result.passed != true}" class="badge bg-danger text-white rounded-pill px-3 py-1 fs-6 fw-bold">
+                            <i class="bi bi-x-circle-fill me-1"></i> CHƯA ĐẠT (NOT PASSED)
+                        </span>
+
+
+                        <!-- Master Saved Badge -->
+                        <span th:if="${result.resultId != null}" class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 small">
+                            <i class="bi bi-database-check text-warning me-1"></i> Lưu kết quả: #<span th:text="${result.resultId}">1</span>
+                        </span>
+                    </div>
+
+                    <h2 class="fw-bold mb-2 text-white" th:text="${result.examTitle}">Kết quả bài thi</h2>
+                    <p class="text-white-50 mb-4 small">
+                        Điểm số thực tế được tính toán tự động từ ngân hàng đề thi và phương án chính xác trong cơ sở dữ liệu Supabase.
+                    </p>
+
+                    <div class="d-flex flex-wrap align-items-center gap-4">
+                        <div>
+                            <div class="small text-white-50">Điểm đạt được</div>
+                            <div class="fs-2 fw-bold text-white">
+                                <span th:text="${result.score}">0</span>
+                                <span th:if="${result.totalPossibleScore != null}"> / <span th:text="${result.totalPossibleScore}">0</span></span>
+                                <span th:if="${result.totalPossibleScore == null}" class="fs-4 text-white-50"> điểm</span>
+                            </div>
+                        </div>
+                        <div class="border-start border-white border-opacity-25 ps-4" th:if="${result.percentage != null}">
+                            <div class="small text-white-50">Tỷ lệ chính xác</div>
+                            <div class="fs-2 fw-bold text-warning" th:text="${result.percentage} + '%'">0%</div>
+                        </div>
+                        <div class="border-start border-white border-opacity-25 ps-4" th:if="${result.examType != 'PLACEMENT_TEST' and result.passingScore != null}">
+                            <div class="small text-white-50">Điểm sàn yêu cầu</div>
+                            <div class="fs-2 fw-bold text-white" th:text="${result.passingScore} + ' điểm'">35 điểm</div>
+                        </div>
+                        <div class="border-start border-white border-opacity-25 ps-4" th:if="${result.completionDate != null}">
+                            <div class="small text-white-50">Thời gian nộp bài</div>
+                            <div class="fs-5 fw-bold text-white-50 mt-1" th:text="${result.completionDate}">01/01/2026 12:00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Big Percentage Badge -->
+                <div class="col-lg-4 text-center text-lg-end" th:if="${result.percentage != null}">
+                    <div class="d-inline-block p-4 rounded-circle bg-white bg-opacity-10 border border-white border-opacity-25 shadow-sm text-center" style="width: 150px; height: 150px;">
+                        <div class="fs-1 fw-bold text-white mb-0 mt-2" th:text="${result.percentage} + '%'">0%</div>
+                        <div class="small text-white-50">Độ chính xác</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric Counters Row (If questions breakdown is available) -->
+        <div class="row g-3 mb-4" th:if="${result.totalQuestions > 0}">
+            <div class="col-sm-6 col-md-3">
+                <div class="card p-3 kotoba-card border-0 shadow-sm text-center">
+                    <span class="small text-muted d-block mb-1">Số câu đúng</span>
+                    <h3 class="fw-bold text-success mb-0">
+                        <i class="bi bi-check-circle-fill me-1"></i> <span th:text="${result.correctCount}">0</span>
+                    </h3>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card p-3 kotoba-card border-0 shadow-sm text-center">
+                    <span class="small text-muted d-block mb-1">Số câu sai</span>
+                    <h3 class="fw-bold text-danger mb-0">
+                        <i class="bi bi-x-circle-fill me-1"></i> <span th:text="${result.incorrectCount}">0</span>
+                    </h3>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card p-3 kotoba-card border-0 shadow-sm text-center">
+                    <span class="small text-muted d-block mb-1">Chưa trả lời</span>
+                    <h3 class="fw-bold text-secondary mb-0">
+                        <i class="bi bi-dash-circle-fill me-1"></i> <span th:text="${result.unansweredCount}">0</span>
+                    </h3>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card p-3 kotoba-card border-0 shadow-sm text-center">
+                    <span class="small text-muted d-block mb-1">Thời gian làm bài</span>
+                    <h3 class="fw-bold text-dark mb-0 font-monospace">
+                        <i class="bi bi-clock-history me-1 text-primary"></i> <span th:text="${result.formattedTimeSpent}">00:00</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Skill Breakdown Card (if skills exist) -->
+            <div class="col-lg-6" th:if="${result.skillBreakdown != null and !#lists.isEmpty(result.skillBreakdown)}">
+                <div class="card h-100 p-4 kotoba-card border-0 shadow-sm">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center text-dark">
+                        <i class="bi bi-bar-chart-fill text-primary me-2"></i> Phân tích theo nhóm kỹ năng
+                    </h5>
+
+                    <div class="mb-4" th:each="skill : ${result.skillBreakdown}">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold text-dark" th:text="${skill.skillName}">Kỹ năng</span>
+                            <span class="small text-muted">
+                                <strong th:text="${skill.earnedPoints}">0</strong>/<span th:text="${skill.totalPoints}">0</span> điểm 
+                                (<span th:text="${skill.percentage} + '%'">0%</span>)
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 10px; border-radius: 6px;">
+                            <div class="progress-bar"
+                                 role="progressbar"
+                                 th:style="'width: ' + ${skill.percentage} + '%; background-color: var(--steel-blue);'"
+                                 th:aria-valuenow="${skill.percentage}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-3 border-top d-flex justify-content-between flex-wrap gap-2">
+                        <div th:if="${result.strongestSkill != null}">
+                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill">
+                                <i class="bi bi-star-fill me-1"></i> Kỹ năng tốt nhất
+                            </span>
+                            <div class="fw-bold mt-1 text-dark" th:text="${result.strongestSkill}">Từ vựng</div>
+                        </div>
+                        <div th:if="${result.weakestSkill != null}" class="text-end">
+                            <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-1 rounded-pill">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Cần cải thiện
+                            </span>
+                            <div class="fw-bold mt-1 text-dark" th:text="${result.weakestSkill}">Đọc hiểu</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback & Database Notice Card -->
+            <div th:class="${result.skillBreakdown != null and !#lists.isEmpty(result.skillBreakdown)} ? 'col-lg-6' : 'col-12'">
+                <div class="card h-100 p-4 kotoba-card border-0 shadow-sm d-flex flex-column justify-content-between" style="background-color: #FAF8F5;">
+                    <div>
+                        <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: var(--accent-red)">
+                            <i class="bi bi-award-fill me-2"></i> Nhận xét & Đánh giá năng lực
+                        </h5>
+                        <div class="p-3 bg-white rounded-3 border border-light shadow-sm mb-3">
+                            <p class="text-secondary mb-0" style="line-height: 1.7;" th:text="${result.aiFeedback != null ? result.aiFeedback : 'Kết quả bài làm đã được ghi nhận vào hệ thống.'}">
+                                Nhận xét đánh giá kết quả làm bài của học viên...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Schema Transparency & Persistence Notice -->
+                    <div class="alert alert-info py-2 px-3 small mb-0 rounded-3 border-0 bg-white shadow-sm">
+                        <i class="bi bi-info-circle-fill text-info me-1"></i>
+                        <span th:text="${result.statusNotice != null ? result.statusNotice : 'Kết quả bài thi đã được xử lý từ cơ sở dữ liệu Supabase.'}">
+                            Thông báo trạng thái lưu trữ...
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historical View Alert when Question Details are Unavailable -->
+        <div th:if="${result.questions == null or #lists.isEmpty(result.questions)}" class="card p-4 text-center border-0 shadow-sm mb-5 bg-white" style="border-radius: 16px;">
+            <div class="my-3">
+                <i class="bi bi-info-circle text-primary fs-1 mb-2"></i>
+                <h5 class="fw-bold text-dark mt-2">Thông tin bài thi</h5>
+                <p class="text-secondary mx-auto mb-0" style="max-width: 650px; line-height: 1.6;">
+                    Điểm số tổng quan và thời gian hoàn thành đã được lưu trữ vĩnh viễn trong hệ thống Supabase.
+                    Nội dung câu hỏi của bài thi này hiện đang được cập nhật.
+                </p>
+            </div>
+        </div>
+
+        <!-- Review Answers & Detailed Solutions Section (When questions exist) -->
+        <div th:if="${result.questions != null and !#lists.isEmpty(result.questions)}" class="card p-4 p-lg-4 kotoba-card border-0 shadow-sm mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">
+                        <i class="bi bi-file-earmark-check-fill text-success me-2"></i> Xem lại bài thi & Lời giải chi tiết
+                    </h4>
+                    <p class="text-muted small mb-0">Đối chiếu từng câu hỏi với đáp án bạn đã chọn và lời giải chính xác từ hệ thống.</p>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i> In kết quả
+                </button>
+            </div>
+
+            <!-- Question Review List -->
+            <div th:each="q, stat : ${result.questions}">
+                <div th:replace="~{fragments/components/question-item :: questionItem(
+                    q=${q},
+                    index=${stat.count},
+                    showSolution=true
+                )}"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Actions (Tailored by Exam Type) -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pb-5">
+            <a th:if="${result.examType == 'PLACEMENT_TEST'}" th:href="@{/courses}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+                <i class="bi bi-book me-1"></i> Xem các khóa học đề xuất
+            </a>
+            <a th:if="${result.examType == 'MILESTONE'}" th:href="@{/courses}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Quay về khóa học
+            </a>
+            <a th:if="${result.examType != 'PLACEMENT_TEST' and result.examType != 'MILESTONE'}" th:href="@{/exams}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Quay về danh sách đề thi
+            </a>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <a th:if="${result.examType == 'PLACEMENT_TEST'}" th:href="@{/exams/placement}" class="btn btn-steel rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-arrow-repeat me-1"></i> Làm lại bài test đầu vào
+                </a>
+                <a th:if="${result.examType == 'MILESTONE'}" th:href="@{/exams/milestone/{id}(id=${result.examId})}" class="btn btn-steel rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-arrow-repeat me-1"></i> Làm lại bài kiểm tra cột mốc
+                </a>
+                <a th:if="${result.examType != 'PLACEMENT_TEST' and result.examType != 'MILESTONE'}" th:href="@{/exams/{id}/start(id=${result.examId})}" class="btn btn-steel rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-arrow-repeat me-1"></i> Làm lại đề thi này
+                </a>
+                <a th:href="@{/exams/history}" class="btn btn-light border rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-clock-history me-1"></i> Lịch sử thi
+                </a>
+            </div>
         </div>
     </div>
 </div>
+

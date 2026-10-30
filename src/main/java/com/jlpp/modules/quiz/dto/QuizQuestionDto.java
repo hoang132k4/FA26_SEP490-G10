@@ -1,0 +1,23 @@
+package com.jlpp.modules.quiz.dto;
+
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class QuizQuestionDto {
+    private Long questionId;
+    private Integer orderIndex;
+    private String content;
+    private String explanation;
+    private String category;
+    private String jlptLevel;
+    private String audioUrl;
+    @Builder.Default
+    private List<QuestionOptionDto> options = new ArrayList<>();
+    private String selectedLabel;
+}

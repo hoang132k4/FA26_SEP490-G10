@@ -1,13 +1,343 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Há»c bÃ i - JLPP',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle=${lesson.title + ' - Học bài - JEPS'},
     activeMenu='my-courses',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">Ná»™i dung bÃ i há»c</h3>
-        <div class="card p-4 jlpp-card mb-4">
-            <p>Ná»™i dung lÃ½ thuyáº¿t, video vÃ  ngá»¯ phÃ¡p cá»§a bÃ i há»c.</p>
+        <!-- Breadcrumb & Back to Syllabus -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Tổng quan</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}" class="text-decoration-none" th:text="${course.title}">Khóa học</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${lesson.title}">Bài học</li>
+                </ol>
+            </nav>
+
+            <a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5">
+                <i class="bi bi-list-ul"></i>
+                <span>Xem toàn bộ giáo trình</span>
+            </a>
         </div>
-        <a th:href="@{/quiz/do(lessonId=1)}" class="btn btn-success">LÃ m bÃ i táº­p tráº¯c nghiá»‡m</a>
+
+        <div class="row g-4">
+            <!-- Left Main Learning Area (8 Columns) -->
+            <div class="col-lg-8">
+                <!-- Lesson Header Card -->
+                <div class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge" th:classappend="${lesson.typeBadgeClass}" th:text="${lesson.typeDisplayName}">VIDEO</span>
+                            <span class="badge px-2.5 py-1" style="background-color: var(--navy-dark); color: white;" th:text="${course.level}">N4</span>
+                            <span class="text-muted small"><i class="bi bi-clock me-1"></i><span th:text="${lesson.durationMinutes != null ? lesson.durationMinutes : 20}">20</span> phút</span>
+                        </div>
+                        <span class="text-muted small fw-semibold">
+                            Bài <span th:text="${currentLessonIndex}">1</span> / <span th:text="${totalLessonsCount}">12</span>
+                        </span>
+                    </div>
+
+                    <h3 class="fw-bold text-dark mb-2" th:text="${lesson.title}">Bài 1: Giới thiệu tổng quan lộ trình JLPT N4</h3>
+                    <p class="text-muted small mb-0" th:text="${lesson.sectionName}">Chương 1: Kiến thức nền tảng & Định hướng học tập</p>
+                </div>
+
+                <!-- Main Lesson Content Card -->
+                <div class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
+                    <!-- Markdown Formatted Lesson Content -->
+                    <div class="lesson-content-body" th:if="${lesson.content != null && !lesson.content.isBlank()}">
+                        <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
+                        <div id="renderedContent" class="markdown-body"></div>
+                    </div>
+
+                    <!-- Dynamic Content when lesson.content is empty -->
+                    <div th:unless="${lesson.content != null && !lesson.content.isBlank()}">
+                        <!-- Description if present in DB -->
+                        <div th:if="${lesson.description != null && !lesson.description.isBlank()}" class="mb-4">
+                            <h5 class="fw-bold text-dark mb-2">
+                                <i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học
+                            </h5>
+                            <p class="text-muted" style="line-height: 1.8;" th:text="${lesson.description}">
+                                Mô tả bài học.
+                            </p>
+                        </div>
+
+                        <!-- Lesson Flashcards if available in DB -->
+                        <div th:if="${lessonFlashcards != null && !lessonFlashcards.isEmpty()}" class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold text-dark mb-0">
+                                    <i class="bi bi-card-text text-primary me-2"></i>Từ vựng trọng tâm bài học (<span th:text="${lessonFlashcards.size()}">0</span> từ)
+                                </h5>
+                                <a th:href="@{/flashcards/practice(lessonId=${lesson.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="bi bi-play-circle me-1"></i>Ôn tập Flashcard
+                                </a>
+                            </div>
+
+                            <div class="table-responsive rounded-3 border">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr class="small text-muted">
+                                            <th style="width: 20%;">Từ vựng (Hán tự)</th>
+                                            <th style="width: 25%;">Cách đọc</th>
+                                            <th style="width: 25%;">Ý nghĩa tiếng Việt</th>
+                                            <th style="width: 30%;">Ví dụ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="card : ${lessonFlashcards}">
+                                            <td class="fw-bold fs-6 text-primary" th:text="${card.vocabulary}">克服</td>
+                                            <td class="small text-muted" th:text="${card.reading}">こくふく</td>
+                                            <td class="small text-dark" th:text="${card.meaning}">Khắc phục</td>
+                                            <td class="small text-muted font-monospace" style="font-size: 0.8rem;" th:text="${card.exampleSentence}">どんな困難でも克服できる。</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Neutral empty state if neither description nor flashcards exist -->
+                        <div th:if="${(lesson.description == null || lesson.description.isBlank()) && (lessonFlashcards == null || lessonFlashcards.isEmpty())}" 
+                             class="text-center py-4 text-muted">
+                            <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                            <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi tài liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
+                        </div>
+                    </div>
+
+                    <!-- Attached Study Materials for this lesson -->
+                    <div th:if="${attachedMaterials != null && !attachedMaterials.isEmpty()}" class="mt-4 pt-4 border-top">
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-paperclip me-1 text-primary"></i>Tài liệu & Audio đính kèm bài học này
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6" th:each="mat : ${attachedMaterials}">
+                                <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i th:class="'bi ' + ${mat.typeIcon} + ' fs-4'"></i>
+                                        <span class="badge" th:classappend="'bg-' + ${mat.skillBadgeColor}" th:text="${mat.skillDisplayName}">Ngữ pháp</span>
+                                        <span class="badge bg-white text-muted border small" th:text="${mat.formattedTypeBadge}">PDF</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1 small text-truncate" th:text="${mat.materialTitle}">Tên tài liệu</h6>
+                                    <p class="text-muted small mb-3 flex-grow-1" style="font-size: 0.78rem;" th:text="${mat.description}">Mô tả</p>
+                                    
+                                    <!-- Audio Player if audio -->
+                                    <div th:if="${mat.materialType == 'AUDIO' && mat.audioUrl != null}" class="mb-2">
+                                        <audio controls class="w-100" style="height: 32px;">
+                                            <source th:src="${mat.audioUrl}" type="audio/mpeg">
+                                        </audio>
+                                    </div>
+
+                                    <div class="mt-auto text-end">
+                                        <a th:if="${mat.fileUrl != null}" th:href="${mat.fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 small">
+                                            <i class="bi bi-download me-1"></i>Tải tài liệu
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Action Buttons Card (Coursera-style: Next button integrates lesson completion) -->
+                <div class="card p-3 kotoba-card bg-white shadow-sm border mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <!-- Previous button -->
+                        <div>
+                            <a th:if="${prevLesson != null}" th:href="@{/learning/lessons/{id}(id=${prevLesson.id})}" 
+                               class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                                <i class="bi bi-arrow-left"></i>
+                                <span>Bài trước</span>
+                            </a>
+                            <button th:unless="${prevLesson != null}" class="btn btn-outline-secondary disabled" disabled>
+                                <i class="bi bi-arrow-left me-1"></i>Bài trước
+                            </button>
+                        </div>
+
+                        <!-- Quiz Button -->
+                        <div>
+                            <a th:href="@{/quiz/do(lessonId=${lesson.id})}" class="btn btn-outline-primary d-flex align-items-center gap-1.5 px-3">
+                                <i class="bi bi-pencil-square"></i>
+                                <span>Làm bài trắc nghiệm</span>
+                            </a>
+                        </div>
+
+                        <!-- Next button (Integrates Complete & Proceed like Coursera) -->
+                        <div>
+                            <form method="post" th:action="@{/learning/lessons/{id}/complete(id=${lesson.id})}" class="d-inline">
+                                <button type="submit" class="btn btn-steel d-flex align-items-center gap-2 px-4 shadow-sm">
+                                    <span th:text="${nextLesson != null ? 'Bài tiếp theo' : 'Hoàn tất khóa học'}">Bài tiếp theo</span>
+                                    <i th:class="${nextLesson != null ? 'bi bi-arrow-right' : 'bi bi-check2-all'}"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Course Curriculum & Sibling Lessons Sidebar (4 Columns) -->
+            <div class="col-lg-4">
+                <div class="card p-4 kotoba-card bg-white shadow-sm border sticky-top" style="top: 85px;">
+                    <!-- Course Header in Sidebar -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold small text-muted text-uppercase">Nội dung khóa học</span>
+                        <span class="badge px-2 py-0.5" style="background-color: var(--navy-dark); color: white;" th:text="${course.level}">N4</span>
+                    </div>
+
+                    <h6 class="fw-bold text-dark mb-2 text-truncate" th:text="${course.title}">Khóa học N4</h6>
+
+                    <!-- Progress bar -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Tiến độ:</span>
+                            <b class="text-primary" th:text="${registration != null ? registration.progressPercent : 0} + '%'">0%</b>
+                        </div>
+                        <div class="progress progress-kotoba" style="height: 6px;">
+                            <div class="progress-bar bg-primary" 
+                                 th:style="'width: ' + (${registration != null ? registration.progressPercent : 0}) + '%;'"></div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3 opacity-25">
+
+                    <!-- Scrollable list of lessons grouped by section -->
+                    <div class="overflow-auto pe-1" style="max-height: 520px;">
+                        <div th:each="entry, sStat : ${groupedLessons}" class="mb-3">
+                            <div class="fw-bold text-muted small mb-2 d-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-folder2 text-primary"></i>
+                                <span class="text-truncate" th:text="${entry.key}">Chương 1</span>
+                            </div>
+
+                            <div class="d-flex flex-column gap-1.5">
+                                <a th:each="sLesson : ${entry.value}" 
+                                   th:href="@{/learning/lessons/{id}(id=${sLesson.id})}" 
+                                   class="p-2.5 rounded-2 d-flex align-items-center justify-content-between text-decoration-none transition"
+                                   th:style="${sLesson.id == lesson.id} ? 'background-color: var(--pastel-blue); border-left: 3px solid var(--steel-blue);' : 'background-color: #F8FAFC; border: 1px solid #F1F5F9;'">
+                                    
+                                    <div class="d-flex align-items-center gap-2 min-w-0">
+                                        <i th:class="${sLesson.id == lesson.id} ? 'bi bi-book-half text-primary' : 'bi bi-circle text-muted small'"></i>
+                                        <span class="small text-truncate" 
+                                              th:classappend="${sLesson.id == lesson.id} ? 'fw-bold text-primary' : 'text-dark'" 
+                                              style="font-size: 0.8rem; max-width: 195px;" 
+                                              th:text="${sLesson.title}">
+                                            Tên bài học
+                                        </span>
+                                    </div>
+
+                                    <span class="badge border" 
+                                          th:classappend="${sLesson.id == lesson.id} ? 'bg-primary text-white' : 'bg-light text-muted'" 
+                                          style="font-size: 0.68rem;" 
+                                          th:text="${sLesson.typeDisplayName}">
+                                        Bài học
+                                    </span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KaTeX CSS & JS for LaTeX Math & Symbol rendering -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+        <!-- Markdown Parser Library (marked.js) for rendering formatted lesson contents -->
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <script>
+            function replaceLatexSymbols(text) {
+                if (!text) return '';
+                return text
+                    // LaTeX arrows and transformations
+                    .replace(/\$?\\(?:rightarrow|to)\b\$?/g, '→')
+                    .replace(/\$?\\leftarrow\b\$?/g, '←')
+                    .replace(/\$?\\Rightarrow\b\$?/g, '⇒')
+                    .replace(/\$?\\Leftarrow\b\$?/g, '⇐')
+                    .replace(/\$?\\leftrightarrow\b\$?/g, '↔')
+                    .replace(/\$?\\Leftrightarrow\b\$?/g, '⇔')
+                    .replace(/\$?\\uparrow\b\$?/g, '↑')
+                    .replace(/\$?\\downarrow\b\$?/g, '↓')
+                    // Comparison & math operators
+                    .replace(/\$?\\(?:leq|le)\b\$?/g, '≤')
+                    .replace(/\$?\\(?:geq|ge)\b\$?/g, '≥')
+                    .replace(/\$?\\neq\b\$?/g, '≠')
+                    .replace(/\$?\\approx\b\$?/g, '≈')
+                    .replace(/\$?\\times\b\$?/g, '×')
+                    .replace(/\$?\\div\b\$?/g, '÷')
+                    .replace(/\$?\\pm\b\$?/g, '±')
+                    .replace(/\$?\\(?:cdots|ldots|dots)\b\$?/g, '…');
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const rawMarkdownEl = document.getElementById('rawMarkdown');
+                const renderedEl = document.getElementById('renderedContent');
+                if (rawMarkdownEl && renderedEl) {
+                    let rawText = rawMarkdownEl.textContent;
+                    if (rawText && rawText.trim().length > 0) {
+                        // Pre-process common LaTeX arrows/symbols before markdown parsing
+                        let preprocessed = replaceLatexSymbols(rawText);
+                        renderedEl.innerHTML = marked.parse(preprocessed);
+                        
+                        // Post-process to ensure no escaped symbols remain
+                        renderedEl.innerHTML = replaceLatexSymbols(renderedEl.innerHTML);
+
+                        // If KaTeX auto-render is loaded, render any complex math expressions
+                        if (window.renderMathInElement) {
+                            try {
+                                renderMathInElement(renderedEl, {
+                                    delimiters: [
+                                        {left: '$$', right: '$$', display: true},
+                                        {left: '$', right: '$', display: false}
+                                    ],
+                                    throwOnError: false
+                                });
+                            } catch (e) {
+                                console.warn('KaTeX rendering error:', e);
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
+        <style>
+            .markdown-body {
+                line-height: 1.8;
+                color: #334155;
+            }
+            .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+                color: var(--navy-dark);
+                font-weight: 700;
+                margin-top: 1.5rem;
+                margin-bottom: 0.8rem;
+            }
+            .markdown-body table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1.2rem 0;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .markdown-body th, .markdown-body td {
+                padding: 10px 14px;
+                border: 1px solid #E2E8F0;
+            }
+            .markdown-body th {
+                background-color: #F8FAFC;
+                color: var(--navy-dark);
+                font-weight: 600;
+            }
+            .markdown-body blockquote {
+                border-left: 4px solid var(--steel-blue);
+                background-color: #F8FAFC;
+                padding: 12px 18px;
+                margin: 1rem 0;
+                border-radius: 0 8px 8px 0;
+                font-style: italic;
+            }
+            .markdown-body ul, .markdown-body ol {
+                padding-left: 1.5rem;
+                margin-bottom: 1rem;
+            }
+            .markdown-body li {
+                margin-bottom: 0.4rem;
+            }
+        </style>
     </div>
 </div>

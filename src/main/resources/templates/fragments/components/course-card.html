@@ -39,7 +39,8 @@
                 
                 <!-- Title -->
                 <h5 class="card-title fw-bold text-dark mb-2" style="line-height: 1.4;">
-                    <a th:href="@{/courses/{id}(id=${course.id})}" class="text-decoration-none text-dark hover-primary" th:text="${course.title}">
+                    <a th:href="${isLearner} ? @{/learning/courses/{id}(id=${course.id})} : @{/courses/{id}(id=${course.id})}" 
+                       class="text-decoration-none text-dark hover-primary" th:text="${course.title}">
                         Khóa học Nhập môn Tiếng Nhật JLPT
                     </a>
                 </h5>
@@ -80,8 +81,9 @@
 
                     <!-- CTA Buttons -->
                     <div class="d-flex gap-2">
-                        <a th:href="@{/courses/{id}(id=${course.id})}" class="btn btn-steel-outline btn-sm px-3">
-                            Course preview
+                        <a th:href="${isLearner} ? @{/learning/courses/{id}(id=${course.id})} : @{/courses/{id}(id=${course.id})}" 
+                           class="btn btn-steel-outline btn-sm px-3">
+                            <i class="bi bi-eye me-1"></i> Xem chi tiết
                         </a>
                     </div>
                 </div>

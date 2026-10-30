@@ -25,4 +25,5 @@ public class ProfileResponse {
     private String dashboardUrl;
     private boolean isLearner;
     private String createdAtFormatted;
+    private String avatarUrl;
 }

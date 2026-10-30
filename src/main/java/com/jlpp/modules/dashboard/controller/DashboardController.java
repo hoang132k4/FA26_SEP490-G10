@@ -10,9 +10,4 @@ public class DashboardController {
     public String managerDashboard() {
         return "pages/manager/dashboard/manager-dashboard";
     }
-
-    @GetMapping("/learning/dashboard")
-    public String learnerDashboard() {
-        return "pages/learning/dashboard";
-    }
 }

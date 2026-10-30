@@ -1,48 +1,1207 @@
 <div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Luyện tập Flashcard - Kotoba',
+    pageTitle='Luyện tập Flashcard phong cách Quizlet - JLPP',
     activeMenu='flashcards',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <!-- Header & Top Navigation -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
             <div>
-                <span class="text-uppercase fw-bold small text-muted">Luyện trí nhớ dài hạn</span>
-                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Thẻ Từ Vựng & Hán Tự (Spaced Repetition)</h3>
+                <a th:href="@{/flashcards}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-1">
+                    <i class="bi bi-chevron-left me-1"></i> Trở về danh mục gói thẻ
+                </a>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">
+                    <i class="bi bi-collection-play-fill text-danger me-2"></i>Bộ luyện tập từ vựng
+                </h3>
             </div>
-            <div class="text-end">
-                <span class="small text-muted">Tiến độ hôm nay:</span>
-                <span class="fw-bold fs-5 ms-1" style="color: var(--steel-blue)">12 / 20 từ</span>
+            
+            <!-- Quick Level & Lesson Filter -->
+            <form th:action="@{/flashcards/practice}" method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="mode" id="filterModeInput" th:value="${currentMode != null ? currentMode : 'flashcard'}" />
+                <select name="level" class="form-select form-select-sm bg-white" onchange="this.form.submit()">
+                    <option value="ALL" th:selected="${selectedLevel == 'ALL'}">Tất cả cấp độ</option>
+                    <option value="N5" th:selected="${selectedLevel == 'N5'}">JLPT N5</option>
+                    <option value="N4" th:selected="${selectedLevel == 'N4'}">JLPT N4</option>
+                    <option value="N3" th:selected="${selectedLevel == 'N3'}">JLPT N3</option>
+                    <option value="N2" th:selected="${selectedLevel == 'N2'}">JLPT N2</option>
+                    <option value="N1" th:selected="${selectedLevel == 'N1'}">JLPT N1</option>
+                </select>
+
+                <select name="lessonId" class="form-select form-select-sm bg-white" onchange="this.form.submit()" style="max-width: 220px;">
+                    <option value="" th:selected="${selectedLessonId == null}">Tất cả bài học</option>
+                    <option th:each="l : ${lessons}"
+                            th:value="${l.id}"
+                            th:text="${l.title}"
+                            th:selected="${selectedLessonId == l.id}">Bài học</option>
+                </select>
+            </form>
+        </div>
+
+        <!-- Quizlet Study Mode Switcher Bar -->
+        <div class="card border-0 shadow-sm rounded-4 p-2 bg-white mb-4">
+            <div class="nav nav-pills nav-fill gap-2" id="quizletModeTabs" role="tablist">
+                <button class="nav-link py-2.5 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2 active" 
+                        id="tab-flashcard-btn" onclick="switchQuizletMode('flashcard')">
+                    <i class="bi bi-card-text fs-5"></i>
+                    <span>Thẻ ghi nhớ (Flashcards)</span>
+                </button>
+                <button class="nav-link py-2.5 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2" 
+                        id="tab-match-btn" onclick="switchQuizletMode('match')">
+                    <i class="bi bi-puzzle fs-5 text-warning"></i>
+                    <span>Ghép thẻ (Match Game)</span>
+                </button>
+                <button class="nav-link py-2.5 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2" 
+                        id="tab-test-btn" onclick="switchQuizletMode('test')">
+                    <i class="bi bi-patch-question fs-5 text-success"></i>
+                    <span>Kiểm tra trắc nghiệm (Test)</span>
+                </button>
             </div>
         </div>
 
-        <!-- Progress Bar -->
-        <div class="progress progress-kotoba mb-4">
-            <div class="progress-bar" role="progressbar" style="width: 60%"></div>
+        <!-- Check if cards available -->
+        <div th:if="${cards != null and !cards.isEmpty()}">
+
+            <!-- ========================================================================= -->
+            <!-- 1. FLASHCARDS STUDY MODE (QUIZLET STYLE) -->
+            <!-- ========================================================================= -->
+            <div id="flashcardModeSection" class="mode-section">
+                <!-- Top Mini Progress Bar & Stats -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1.5 fw-semibold">
+                                <i class="bi bi-x-circle me-1"></i>Chưa nhớ: <span id="statNewCount">0</span>
+                            </span>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1.5 fw-semibold">
+                                <i class="bi bi-check-circle me-1"></i>Đã nhớ: <span id="statMasteredCount">0</span>
+                            </span>
+                        </div>
+                        <div class="text-muted small fw-medium">
+                            Thẻ <span id="currentCardIndexText" class="fw-bold text-dark">1</span> / <span id="totalCardsText" class="fw-bold text-dark" th:text="${totalCards}">10</span>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 6px; border-radius: 9999px;">
+                        <div id="practiceProgressBar" class="progress-bar bg-primary" role="progressbar" style="width: 10%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+
+                <!-- 3D Flashcard Presentation Stage -->
+                <div id="flashcardStageWrapper" class="col-lg-8 col-md-10 mx-auto my-3">
+                    <div class="quizlet-card-wrapper" onclick="handleCardClick(event)">
+                        <div class="quizlet-card-inner" id="interactiveCardInner">
+                            
+                            <!-- Card FRONT -->
+                            <div class="quizlet-card-face quizlet-card-front">
+                                <!-- Top Bar in Front -->
+                                <div class="w-100 d-flex justify-content-between align-items-center mb-auto">
+                                    <span class="badge bg-light text-muted border px-2.5 py-1 small rounded-pill">
+                                        <i class="bi bi-eye me-1"></i>Mặt trước (Tiếng Nhật)
+                                    </span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-light border-0 rounded-circle text-muted p-2" 
+                                                title="Phát âm tiếng Nhật (R)" 
+                                                onclick="event.stopPropagation(); playCurrentTTS();">
+                                            <i class="bi bi-volume-up-fill fs-5 text-primary"></i>
+                                        </button>
+                                        <span id="cardLevelBadge" class="badge rounded-pill px-3 py-1.5 bg-primary text-white">N4</span>
+                                    </div>
+                                </div>
+
+                                <!-- Center Vocabulary Content -->
+                                <div class="my-auto py-3 text-center">
+                                    <h1 id="cardVocab" class="quizlet-vocab display-3 fw-bold mb-3" style="font-family: 'Noto Sans JP', sans-serif; color: var(--navy-dark)">桜</h1>
+                                    <p id="cardReading" class="fs-4 text-muted fw-normal mb-2">さくら</p>
+                                    <p id="cardFrontHint" class="text-secondary small fst-italic mb-0" style="display: none;"></p>
+                                </div>
+
+                                <!-- Bottom Flip Hint -->
+                                <div class="w-100 mt-auto text-center text-muted small d-flex justify-content-center align-items-center gap-1 opacity-75">
+                                    <i class="bi bi-arrow-repeat text-danger"></i>
+                                    <span>Bấm chuột vào thẻ hoặc nhấn <kbd class="bg-light text-dark border">Space</kbd> để lật</span>
+                                </div>
+                            </div>
+
+                            <!-- Card BACK -->
+                            <div class="quizlet-card-face quizlet-card-back">
+                                <!-- Top Bar in Back -->
+                                <div class="w-100 d-flex justify-content-between align-items-center mb-auto">
+                                    <span class="badge bg-white bg-opacity-25 text-white border-0 px-2.5 py-1 small rounded-pill">
+                                        <i class="bi bi-check2-circle me-1"></i>Mặt sau (Giải nghĩa)
+                                    </span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-light bg-opacity-20 border-0 rounded-circle text-white p-2" 
+                                                title="Phát âm tiếng Nhật (R)" 
+                                                onclick="event.stopPropagation(); playCurrentTTS();">
+                                            <i class="bi bi-volume-up-fill fs-5"></i>
+                                        </button>
+                                        <span id="cardStatusBadge" class="badge bg-white text-dark rounded-pill px-3 py-1.5 small fw-semibold">Đang học</span>
+                                    </div>
+                                </div>
+
+                                <!-- Center Meaning Content -->
+                                <div class="my-auto py-2 text-center w-100 px-3">
+                                    <h2 id="cardMeaning" class="display-6 fw-bold mb-3 text-white">Hoa anh đào</h2>
+                                    
+                                    <!-- Context Example Box -->
+                                    <div id="cardExampleBox" class="quizlet-example-box p-3 rounded-3 text-start w-100 my-2">
+                                        <span class="text-white-50 small d-block mb-1"><i class="bi bi-chat-quote me-1"></i>Ví dụ thực tế:</span>
+                                        <p id="cardExample" class="mb-0 fw-semibold text-white small" style="font-family: 'Noto Sans JP', sans-serif; line-height: 1.6;">日本の春は桜の花がとても美しいです。</p>
+                                    </div>
+
+                                    <!-- Extra Back note / Mnemonic -->
+                                    <p id="cardBackHint" class="text-white-50 small mt-2 mb-0" style="display: none;"></p>
+                                </div>
+
+                                <!-- Bottom Flip Back Hint -->
+                                <div class="w-100 mt-auto text-center text-white-50 small d-flex justify-content-center align-items-center gap-1">
+                                    <i class="bi bi-arrow-repeat me-1"></i>
+                                    <span>Bấm thẻ hoặc nhấn <kbd class="bg-white text-dark border-0">Space</kbd> để lật lại</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FIXED ALWAYS-VISIBLE MEMORY ACTION BUTTONS (NO "TẠM NHỚ", QUIZLET STYLE) -->
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mt-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <!-- Left: Secondary Tools (Shuffle, Auto-play, Fullscreen) -->
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="shuffleBtn" onclick="shuffleCards()" title="Xáo trộn thứ tự các thẻ">
+                                    <i class="bi bi-shuffle me-1"></i>Trộn thẻ
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="autoPlayBtn" onclick="toggleAutoPlay()" title="Tự động lật và chuyển thẻ">
+                                    <i class="bi bi-play-circle me-1" id="autoPlayIcon"></i><span id="autoPlayText">Tự chạy</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle p-2" onclick="toggleFullScreen()" title="Toàn màn hình">
+                                    <i class="bi bi-arrows-fullscreen"></i>
+                                </button>
+                            </div>
+
+                            <!-- Center/Right: Core 2 Memory Buttons: CHƯA NHỚ vs ĐÃ NHỚ -->
+                            <div class="d-flex align-items-center gap-3">
+                                <!-- Previous Card -->
+                                <button type="button" class="btn btn-light border rounded-circle p-2.5" onclick="goToPrevCard()" title="Thẻ trước [Phím Mũi tên Lên]">
+                                    <i class="bi bi-chevron-left fs-5"></i>
+                                </button>
+
+                                <!-- Button CHƯA NHỚ (Still Learning) -->
+                                <button type="button" class="btn btn-quizlet-unlearned rounded-pill px-4 py-2.5 fw-bold d-flex align-items-center gap-2 shadow-sm" 
+                                        onclick="submitReview('NEW')" title="Chưa nhớ (Phím 1 hoặc Mũi tên Trái)">
+                                    <i class="bi bi-x-circle-fill fs-5 text-danger"></i>
+                                    <span>Chưa nhớ <span class="badge bg-danger text-white rounded-pill ms-1 px-2 py-0.5" style="font-size: 0.72rem;">1 / ←</span></span>
+                                </button>
+
+                                <!-- Button ĐÃ NHỚ (Know) -->
+                                <button type="button" class="btn btn-quizlet-mastered rounded-pill px-4 py-2.5 fw-bold d-flex align-items-center gap-2 shadow-sm" 
+                                        onclick="submitReview('MASTERED')" title="Đã nhớ (Phím 2 hoặc Mũi tên Phải)">
+                                    <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+                                    <span>Đã nhớ <span class="badge bg-success text-white rounded-pill ms-1 px-2 py-0.5" style="font-size: 0.72rem;">2 / →</span></span>
+                                </button>
+
+                                <!-- Next Card -->
+                                <button type="button" class="btn btn-light border rounded-circle p-2.5" onclick="goToNextCard()" title="Thẻ tiếp theo">
+                                    <i class="bi bi-chevron-right fs-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms In This Set List (Quizlet-style Table below card) -->
+                <div class="col-lg-8 col-md-10 mx-auto mt-5">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-list-stars me-2 text-primary"></i>Danh sách từ vựng trong bộ này (<span th:text="${totalCards}">10</span>)
+                        </h5>
+                        <span class="text-muted small">Nhấp loa để nghe cách phát âm</span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2 mb-5">
+                        <div th:each="c, cStat : ${cards}" class="card border-0 shadow-sm rounded-4 p-3 bg-white hover-shadow transition-all">
+                            <div class="row align-items-center g-2">
+                                <div class="col-md-4 d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-sm btn-light rounded-circle text-muted" th:data-word="${c.vocabulary}" onclick="playWordTTS(this.getAttribute('data-word'))">
+                                        <i class="bi bi-volume-up-fill text-primary"></i>
+                                    </button>
+                                    <div>
+                                        <h5 class="fw-bold mb-0 text-dark" style="font-family: 'Noto Sans JP', sans-serif;" th:text="${c.vocabulary}">桜</h5>
+                                        <span class="text-muted small" th:text="${c.reading}">さくら</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <p class="mb-0 text-dark fw-medium" th:text="${c.meaning}">Hoa anh đào</p>
+                                    <small class="text-muted fst-italic" th:if="${c.exampleSentence != null}" th:text="${c.exampleSentence}">Ví dụ</small>
+                                </div>
+                                <div class="col-md-3 text-md-end">
+                                    <span class="badge rounded-pill px-3 py-1.5" 
+                                          th:classappend="${c.reviewStatus == 'MASTERED' ? 'bg-success text-white' : 'bg-light text-muted border'}"
+                                          th:text="${c.reviewStatus == 'MASTERED' ? 'Đã thuộc' : 'Cần ôn'}">
+                                        Mới
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- 2. MATCH GAME MODE (QUIZLET STYLE TRÒ CHƠI GHÉP THẺ) -->
+            <!-- ========================================================================= -->
+            <div id="matchModeSection" class="mode-section" style="display: none;">
+                <!-- Match Game Header & Stopwatch -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-warning bg-opacity-10 text-dark rounded-pill px-3 py-2 fw-bold">
+                                <i class="bi bi-puzzle-fill text-warning me-1"></i>Trò chơi Ghép thẻ
+                            </span>
+                            <span class="small text-muted d-none d-md-inline">Ghép nối từ tiếng Nhật với nghĩa tiếng Việt tương ứng càng nhanh càng tốt!</span>
+                        </div>
+
+                        <!-- Stopwatch Timer Display -->
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="match-timer-box px-3 py-1.5 rounded-pill bg-light border fw-bold text-primary font-monospace fs-5">
+                                <i class="bi bi-stopwatch text-danger me-1"></i><span id="matchStopwatch">0.0s</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="initMatchGame()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Chơi lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match Game Grid Stage -->
+                <div class="col-lg-10 mx-auto">
+                    <div id="matchGrid" class="row g-3">
+                        <!-- Tiles dynamically injected by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Match Game Win Celebration Modal / Overlay -->
+                <div id="matchVictoryModal" class="card border-0 shadow-lg rounded-5 p-5 text-center bg-white my-4 mx-auto col-lg-7" style="display: none;">
+                    <div class="mb-3">
+                        <div class="d-inline-flex p-4 rounded-circle bg-warning bg-opacity-15 text-warning mb-2 animate-bounce">
+                            <i class="bi bi-trophy-fill display-2"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="color: var(--navy-dark)">Xuất sắc! Bạn đã dọn sạch bảng</h2>
+                    <p class="text-muted mb-4">Tất cả các cặp từ vựng đã được ghép nối chính xác hoàn toàn.</p>
+
+                    <div class="p-4 bg-light rounded-4 mb-4 d-inline-block mx-auto min-w-250">
+                        <span class="small text-muted text-uppercase fw-semibold d-block mb-1">Thời gian hoàn thành</span>
+                        <h1 class="display-4 fw-bold text-primary mb-0 font-monospace" id="matchFinalTime">12.4s</h1>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3">
+                        <button type="button" class="btn btn-sakura rounded-pill px-4 py-2.5 fw-semibold" onclick="initMatchGame()">
+                            <i class="bi bi-play-fill fs-5 me-1"></i>Chơi ván mới
+                        </button>
+                        <button type="button" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-semibold" onclick="switchQuizletMode('flashcard')">
+                            <i class="bi bi-card-text me-1"></i>Về Thẻ ghi nhớ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- 3. TEST / QUIZ MODE (QUIZLET STYLE KIỂM TRA TRẮC NGHIỆM) -->
+            <!-- ========================================================================= -->
+            <div id="testModeSection" class="mode-section" style="display: none;">
+                <div class="col-lg-8 mx-auto">
+                    <!-- Test Header -->
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">
+                                    <i class="bi bi-patch-question-fill text-success me-2"></i>Kiểm tra kiến thức trắc nghiệm
+                                </h5>
+                                <span class="small text-muted">Chọn định nghĩa chính xác cho từ vựng hiển thị</span>
+                            </div>
+                            <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold">
+                                Câu hỏi <span id="quizCurrentIndex">1</span> / <span id="quizTotalCount">10</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Question Container -->
+                    <div id="quizQuestionCard" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4 text-center">
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 small fw-semibold mx-auto mb-3">
+                            Từ vựng JLPT
+                        </span>
+                        <h1 id="quizVocabPrompt" class="display-3 fw-bold mb-2" style="font-family: 'Noto Sans JP', sans-serif; color: var(--navy-dark)">桜</h1>
+                        <p id="quizReadingPrompt" class="fs-4 text-muted mb-4">さくら</p>
+
+                        <!-- 4 Options Grid -->
+                        <div class="row g-3 text-start" id="quizOptionsContainer">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Quiz Result Card -->
+                    <div id="quizResultCard" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white" style="display: none;">
+                        <i class="bi bi-award-fill display-1 text-success mb-3"></i>
+                        <h3 class="fw-bold mb-2" style="color: var(--navy-dark)">Hoàn thành bài kiểm tra!</h3>
+                        <p class="text-muted mb-4">Kết quả mức độ thông thạo của bạn với bộ từ vựng này:</p>
+                        
+                        <div class="p-3 bg-light rounded-4 d-inline-block mx-auto mb-4 px-5">
+                            <span class="text-muted small d-block">Điểm số chính xác</span>
+                            <h2 class="display-4 fw-bold text-success mb-0" id="quizScoreText">10/10</h2>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="button" class="btn btn-sakura rounded-pill px-4" onclick="initQuizMode()">
+                                <i class="bi bi-arrow-repeat me-1"></i>Làm lại bài test
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="switchQuizletMode('flashcard')">
+                                <i class="bi bi-card-text me-1"></i>Về Thẻ ghi nhớ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- SESSION FINISHED SCREEN (Dành cho Flashcard khi học hết một vòng) -->
+            <!-- ========================================================================= -->
+            <div id="flashcardFinishedScreen" class="card border-0 shadow-sm rounded-5 p-5 text-center bg-white my-4 mx-auto col-lg-8" style="display: none;">
+                <div class="mb-3">
+                    <i class="bi bi-trophy-fill display-1 text-warning"></i>
+                </div>
+                <h3 class="fw-bold mb-2" style="color: var(--navy-dark)">Tuyệt vời! Bạn đã xem hết tất cả các thẻ</h3>
+                <p class="text-muted mb-4">Kết quả ghi nhớ đã được cập nhật trực tiếp vào hệ thống.</p>
+
+                <div class="row g-3 justify-content-center mb-4">
+                    <div class="col-6 col-sm-4">
+                        <div class="p-3 bg-success bg-opacity-10 border border-success-subtle rounded-4">
+                            <span class="small text-muted d-block">Đã thuộc</span>
+                            <h3 id="finishedMasteredCount" class="fw-bold text-success mb-0">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <div class="p-3 bg-danger bg-opacity-10 border border-danger-subtle rounded-4">
+                            <span class="small text-muted d-block">Cần ôn lại</span>
+                            <h3 id="finishedNewCount" class="fw-bold text-danger mb-0">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center flex-wrap gap-3">
+                    <button type="button" class="btn btn-danger rounded-pill px-4 shadow-sm fw-semibold" id="btnPracticeUnlearned" onclick="practiceUnlearnedCards()" style="display: none;">
+                        <i class="bi bi-arrow-repeat me-1"></i> Ôn tập riêng <span id="unlearnedBadgeCount">0</span> từ chưa nhớ
+                    </button>
+                    <button type="button" class="btn btn-sakura rounded-pill px-4" onclick="restartFlashcards()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Ôn lại toàn bộ gói
+                    </button>
+                    <button type="button" class="btn btn-warning rounded-pill px-4 text-dark fw-semibold" onclick="switchQuizletMode('match')">
+                        <i class="bi bi-puzzle me-1"></i> Thử thách Ghép thẻ
+                    </button>
+                    <a th:href="@{/flashcards}" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="bi bi-collection me-1"></i> Danh mục gói thẻ
+                    </a>
+                </div>
+            </div>
+
         </div>
 
-        <!-- 3D Flashcard Component -->
-        <div th:replace="~{fragments/components/flashcard-flip :: flashcard(
-            card=${ {
-                level: 'N4',
-                frontText: '桜',
-                reading: 'さくら (sakura)',
-                backText: 'Hoa anh đào',
-                exampleJp: '日本の春は桜の花がとても美しいです。',
-                exampleVi: 'Mùa xuân ở Nhật Bản, hoa anh đào nở rất đẹp.'
-            } }
-        )}"></div>
-
-        <!-- Rating Buttons for Spaced Repetition -->
-        <div class="d-flex justify-content-center gap-3 mt-4">
-            <button class="btn btn-outline-danger rounded-pill px-4 py-2">
-                <i class="bi bi-x-circle me-1"></i> Chưa nhớ (Ôn lại ngay)
-            </button>
-            <button class="btn btn-outline-warning rounded-pill px-4 py-2">
-                <i class="bi bi-question-circle me-1"></i> Tạm nhớ (Nhắc lại sau 1 ngày)
-            </button>
-            <button class="btn btn-steel rounded-pill px-5 py-2">
-                <i class="bi bi-check-circle me-1"></i> Đã thuộc (Nhắc lại sau 3 ngày)
-            </button>
+        <!-- No Cards Empty State -->
+        <div th:if="${cards == null or cards.isEmpty()}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+            <div class="mb-3">
+                <i class="bi bi-emoji-smile display-1 text-muted opacity-50"></i>
+            </div>
+            <h5 class="fw-bold text-dark">Chưa có thẻ nào trong bộ lọc này</h5>
+            <p class="text-muted small mx-auto" style="max-width: 420px;">
+                Vui lòng chọn cấp độ hoặc bài học khác để bắt đầu ôn tập.
+            </p>
+            <div class="mt-2 d-flex justify-content-center gap-2">
+                <a th:href="@{/flashcards/practice}" class="btn btn-outline-secondary rounded-pill px-4">Tất cả từ vựng</a>
+                <a th:href="@{/flashcards/create}" class="btn btn-primary rounded-pill px-4">Tạo thẻ mới</a>
+            </div>
         </div>
+        <!-- End of No Cards Empty State -->
+
+        <!-- CSRF Meta -->
+        <input type="hidden" id="csrfToken" th:value="${_csrf != null ? _csrf.token : ''}" />
+        <input type="hidden" id="csrfHeader" th:value="${_csrf != null ? _csrf.headerName : ''}" />
+
+        <!-- Raw JSON Data safe container -->
+        <script id="cardsDataScript" type="application/json" th:utext="${cardsJson}">[]</script>
+
+<!-- QUIZLET ADVANCED INTERACTION SCRIPT -->
+<script>
+function decodeHtml(html) {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+
+let originalCards = [];
+try {
+    let rawData = document.getElementById('cardsDataScript')?.textContent || '[]';
+    if (rawData.includes('&quot;') || rawData.includes('&amp;')) {
+        rawData = decodeHtml(rawData);
+    }
+    originalCards = JSON.parse(rawData);
+    console.log("Successfully loaded " + originalCards.length + " flashcards into Quizlet engine.");
+} catch (e) {
+    console.error('Error parsing cards JSON:', e);
+}
+
+// Check initial requested mode from URL or filter input
+const urlParams = new URLSearchParams(window.location.search);
+const requestedMode = urlParams.get('mode') || document.getElementById('filterModeInput')?.value || 'flashcard';
+
+// Flashcard Mode State
+let cards = [...originalCards];
+let unlearnedCards = [];
+let currentIndex = 0;
+let sessionStats = { MASTERED: 0, NEW: 0 };
+let isFlipped = false;
+let autoPlayInterval = null;
+
+// Match Game Mode State
+let matchTimer = null;
+let matchStartTime = 0;
+let matchSelectedTile = null;
+let matchRemainingPairs = 0;
+
+// Test Mode State
+let quizQuestions = [];
+let quizIndex = 0;
+let quizScore = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize default mode
+    if (requestedMode === 'match') {
+        switchQuizletMode('match');
+    } else if (requestedMode === 'test') {
+        switchQuizletMode('test');
+    } else {
+        switchQuizletMode('flashcard');
+    }
+
+    if (cards && cards.length > 0) {
+        renderCard(currentIndex);
+    }
+
+    // Keyboard Shortcuts (Space, 1, 2, Arrow Left, Arrow Right, Arrow Up/Down, R)
+    document.addEventListener('keydown', (e) => {
+        // Ignore if user is inside an input or select
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        const currentActiveMode = document.querySelector('.mode-section:not([style*="display: none"])')?.id;
+
+        if (currentActiveMode === 'flashcardModeSection') {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                flipCurrentCard();
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                flipCurrentCard();
+            } else if (e.key === '1' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                submitReview('NEW');
+            } else if (e.key === '2' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                submitReview('MASTERED');
+            } else if (e.key === 'r' || e.key === 'R') {
+                playCurrentTTS();
+            }
+        }
+    });
+});
+
+/* ========================================================================= */
+/* MODE SWITCHER */
+/* ========================================================================= */
+function switchQuizletMode(mode) {
+    // Hide all sections
+    document.getElementById('flashcardModeSection').style.display = 'none';
+    document.getElementById('matchModeSection').style.display = 'none';
+    document.getElementById('testModeSection').style.display = 'none';
+    document.getElementById('flashcardFinishedScreen').style.display = 'none';
+
+    // Clear auto play if any
+    stopAutoPlay();
+
+    // Reset active tabs
+    document.getElementById('tab-flashcard-btn').classList.remove('active');
+    document.getElementById('tab-match-btn').classList.remove('active');
+    document.getElementById('tab-test-btn').classList.remove('active');
+
+    const modeInput = document.getElementById('filterModeInput');
+    if (modeInput) modeInput.value = mode;
+
+    if (mode === 'match') {
+        document.getElementById('matchModeSection').style.display = 'block';
+        document.getElementById('tab-match-btn').classList.add('active');
+        initMatchGame();
+    } else if (mode === 'test') {
+        document.getElementById('testModeSection').style.display = 'block';
+        document.getElementById('tab-test-btn').classList.add('active');
+        initQuizMode();
+    } else {
+        document.getElementById('flashcardModeSection').style.display = 'block';
+        document.getElementById('tab-flashcard-btn').classList.add('active');
+    }
+}
+
+/* ========================================================================= */
+/* 1. FLASHCARDS ENGINE (IN-PLACE FLIP, CONTINUOUS BUTTONS, AUDIO) */
+/* ========================================================================= */
+function handleCardClick(event) {
+    // Avoid flipping if user clicked a button inside the card
+    if (event.target.closest('button')) return;
+    flipCurrentCard();
+}
+
+function flipCurrentCard() {
+    const inner = document.getElementById('interactiveCardInner');
+    if (inner) {
+        inner.classList.toggle('is-flipped');
+        isFlipped = inner.classList.contains('is-flipped');
+    }
+}
+
+function renderCard(index) {
+    if (index >= cards.length) {
+        showFlashcardFinishedScreen();
+        return;
+    }
+
+    const card = cards[index];
+    const inner = document.getElementById('interactiveCardInner');
+    if (inner) {
+        inner.classList.remove('is-flipped');
+        isFlipped = false;
+    }
+
+    // Update Counter & Progress
+    document.getElementById('currentCardIndexText').innerText = (index + 1);
+    document.getElementById('totalCardsText').innerText = cards.length;
+    const pct = Math.round(((index + 1) / cards.length) * 100);
+    document.getElementById('practiceProgressBar').style.width = pct + '%';
+
+    // Front details
+    document.getElementById('cardVocab').innerText = card.vocabulary || '';
+    document.getElementById('cardReading').innerText = card.reading || '';
+    
+    const frontHintEl = document.getElementById('cardFrontHint');
+    if (card.frontContent) {
+        frontHintEl.innerText = card.frontContent;
+        frontHintEl.style.display = 'block';
+    } else {
+        frontHintEl.style.display = 'none';
+    }
+
+    document.getElementById('cardLevelBadge').innerText = card.jlptLevel || 'N4';
+
+    // Back details
+    document.getElementById('cardMeaning').innerText = card.meaning || '';
+    
+    const exampleEl = document.getElementById('cardExample');
+    const exampleBox = document.getElementById('cardExampleBox');
+    if (card.exampleSentence) {
+        exampleEl.innerText = card.exampleSentence;
+        exampleBox.style.display = 'block';
+    } else {
+        exampleBox.style.display = 'none';
+    }
+
+    const backHintEl = document.getElementById('cardBackHint');
+    if (card.backContent) {
+        backHintEl.innerText = card.backContent;
+        backHintEl.style.display = 'block';
+    } else {
+        backHintEl.style.display = 'none';
+    }
+
+    const statusBadge = document.getElementById('cardStatusBadge');
+    if (statusBadge) {
+        statusBadge.innerText = (card.reviewStatus === 'MASTERED') ? 'Đã thuộc' : 'Đang học';
+    }
+}
+
+function goToPrevCard() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        renderCard(currentIndex);
+    }
+}
+
+function goToNextCard() {
+    if (currentIndex < cards.length - 1) {
+        currentIndex++;
+        renderCard(currentIndex);
+    } else {
+        showFlashcardFinishedScreen();
+    }
+}
+
+function submitReview(status) {
+    if (currentIndex >= cards.length) return;
+
+    const currentCard = cards[currentIndex];
+    sessionStats[status] = (sessionStats[status] || 0) + 1;
+
+    // Track unlearned cards separately
+    if (status === 'NEW') {
+        if (!unlearnedCards.some(c => c.flashcardId === currentCard.flashcardId)) {
+            unlearnedCards.push(currentCard);
+        }
+    } else if (status === 'MASTERED') {
+        // If learner marked it mastered, remove from unlearned list if it was previously there
+        unlearnedCards = unlearnedCards.filter(c => c.flashcardId !== currentCard.flashcardId);
+    }
+
+    // Update session stat badges
+    document.getElementById('statNewCount').innerText = unlearnedCards.length;
+    document.getElementById('statMasteredCount').innerText = sessionStats.MASTERED;
+
+    // Sync to backend via AJAX
+    const csrfToken = document.getElementById('csrfToken')?.value;
+    const csrfHeader = document.getElementById('csrfHeader')?.value;
+    const headers = { 'Content-Type': 'application/json' };
+    if (csrfToken && csrfHeader) {
+        headers[csrfHeader] = csrfToken;
+    }
+
+    fetch('/flashcards/practice/review', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+            flashcardId: currentCard.flashcardId,
+            status: status
+        })
+    }).catch(err => console.warn('Sync review status failed:', err));
+
+    // Move to next card without altering total cards count
+    currentIndex++;
+    renderCard(currentIndex);
+}
+
+function shuffleCards() {
+    for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    currentIndex = 0;
+    renderCard(currentIndex);
+}
+
+function toggleAutoPlay() {
+    if (autoPlayInterval) {
+        stopAutoPlay();
+    } else {
+        startAutoPlay();
+    }
+}
+
+function startAutoPlay() {
+    document.getElementById('autoPlayIcon').className = 'bi bi-pause-circle me-1 text-danger';
+    document.getElementById('autoPlayText').innerText = 'Dừng';
+    autoPlayInterval = setInterval(() => {
+        if (!isFlipped) {
+            flipCurrentCard();
+        } else {
+            goToNextCard();
+        }
+    }, 2800);
+}
+
+function stopAutoPlay() {
+    if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+    }
+    const icon = document.getElementById('autoPlayIcon');
+    const text = document.getElementById('autoPlayText');
+    if (icon) icon.className = 'bi bi-play-circle me-1';
+    if (text) text.innerText = 'Tự chạy';
+}
+
+function toggleFullScreen() {
+    const el = document.getElementById('flashcardStageWrapper');
+    if (!document.fullscreenElement) {
+        el.requestFullscreen().catch(err => console.warn(err));
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+function playCurrentTTS() {
+    if (currentIndex < cards.length) {
+        playWordTTS(cards[currentIndex].vocabulary);
+    }
+}
+
+function playWordTTS(word) {
+    if (!word) return;
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'ja-JP';
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+function showFlashcardFinishedScreen() {
+    stopAutoPlay();
+    document.getElementById('flashcardModeSection').style.display = 'none';
+    document.getElementById('finishedMasteredCount').innerText = sessionStats.MASTERED;
+    document.getElementById('finishedNewCount').innerText = unlearnedCards.length;
+
+    // Toggle button for practicing unlearned cards
+    const unlearnedBtn = document.getElementById('btnPracticeUnlearned');
+    const unlearnedBadge = document.getElementById('unlearnedBadgeCount');
+    if (unlearnedBtn && unlearnedBadge) {
+        if (unlearnedCards.length > 0) {
+            unlearnedBadge.innerText = unlearnedCards.length;
+            unlearnedBtn.style.display = 'inline-flex';
+        } else {
+            unlearnedBtn.style.display = 'none';
+        }
+    }
+
+    document.getElementById('flashcardFinishedScreen').style.display = 'block';
+}
+
+function practiceUnlearnedCards() {
+    if (!unlearnedCards || unlearnedCards.length === 0) return;
+    cards = [...unlearnedCards];
+    unlearnedCards = [];
+    currentIndex = 0;
+    sessionStats = { MASTERED: 0, NEW: 0 };
+    document.getElementById('statNewCount').innerText = 0;
+    document.getElementById('statMasteredCount').innerText = 0;
+    document.getElementById('flashcardFinishedScreen').style.display = 'none';
+    document.getElementById('flashcardModeSection').style.display = 'block';
+    renderCard(currentIndex);
+}
+
+function restartFlashcards() {
+    cards = [...originalCards];
+    unlearnedCards = [];
+    currentIndex = 0;
+    sessionStats = { MASTERED: 0, NEW: 0 };
+    document.getElementById('statNewCount').innerText = 0;
+    document.getElementById('statMasteredCount').innerText = 0;
+    document.getElementById('flashcardFinishedScreen').style.display = 'none';
+    document.getElementById('flashcardModeSection').style.display = 'block';
+    renderCard(currentIndex);
+}
+
+/* ========================================================================= */
+/* 2. MATCH GAME ENGINE (QUIZLET TRÒ CHƠI GHÉP NỐI THẺ) */
+/* ========================================================================= */
+function initMatchGame() {
+    clearInterval(matchTimer);
+    document.getElementById('matchVictoryModal').style.display = 'none';
+    document.getElementById('matchGrid').style.display = 'flex';
+
+    matchSelectedTile = null;
+
+    // Pick up to 8 cards for a 16-tile match game
+    const sampleCards = [...originalCards].sort(() => 0.5 - Math.random()).slice(0, 8);
+    matchRemainingPairs = sampleCards.length;
+
+    // Create 2 tiles per card: 1 Japanese (Term) & 1 Vietnamese (Definition)
+    let tiles = [];
+    sampleCards.forEach(card => {
+        tiles.push({
+            id: card.flashcardId,
+            type: 'TERM',
+            text: card.vocabulary,
+            subtext: card.reading,
+            card: card
+        });
+        tiles.push({
+            id: card.flashcardId,
+            type: 'DEF',
+            text: card.meaning,
+            subtext: '',
+            card: card
+        });
+    });
+
+    // Shuffle tiles randomly
+    tiles.sort(() => 0.5 - Math.random());
+
+    // Render tiles into grid
+    const gridEl = document.getElementById('matchGrid');
+    gridEl.innerHTML = '';
+
+    tiles.forEach((tile, idx) => {
+        const col = document.createElement('div');
+        col.className = 'col-6 col-md-3';
+        col.innerHTML = `
+            <div class="match-tile p-3 rounded-4 bg-white border shadow-sm text-center d-flex flex-column justify-content-center align-items-center transition-all"
+                 data-id="${tile.id}" data-type="${tile.type}" data-idx="${idx}" onclick="handleMatchTileClick(this)">
+                <h5 class="fw-bold mb-1 text-dark" style="font-family: 'Noto Sans JP', sans-serif;">${tile.text}</h5>
+                ${tile.subtext ? `<small class="text-muted">${tile.subtext}</small>` : ''}
+            </div>
+        `;
+        gridEl.appendChild(col);
+    });
+
+    // Start stopwatch
+    matchStartTime = Date.now();
+    document.getElementById('matchStopwatch').innerText = '0.0s';
+    matchTimer = setInterval(() => {
+        const elapsed = ((Date.now() - matchStartTime) / 1000).toFixed(1);
+        document.getElementById('matchStopwatch').innerText = elapsed + 's';
+    }, 100);
+}
+
+function handleMatchTileClick(tileEl) {
+    if (tileEl.classList.contains('matched') || tileEl.classList.contains('selected')) return;
+
+    // Play TTS if term clicked
+    if (tileEl.getAttribute('data-type') === 'TERM') {
+        const h5 = tileEl.querySelector('h5');
+        if (h5) playWordTTS(h5.innerText);
+    }
+
+    if (!matchSelectedTile) {
+        // Select first tile
+        matchSelectedTile = tileEl;
+        tileEl.classList.add('selected');
+    } else {
+        // Select second tile -> compare
+        const firstId = matchSelectedTile.getAttribute('data-id');
+        const firstType = matchSelectedTile.getAttribute('data-type');
+        const secondId = tileEl.getAttribute('data-id');
+        const secondType = tileEl.getAttribute('data-type');
+
+        if (firstId === secondId && firstType !== secondType) {
+            // MATCH SUCCESS!
+            tileEl.classList.add('matched');
+            matchSelectedTile.classList.add('matched');
+            matchSelectedTile.classList.remove('selected');
+            
+            // Vanish tiles with nice fade out
+            setTimeout(() => {
+                tileEl.style.visibility = 'hidden';
+                matchSelectedTile.style.visibility = 'hidden';
+                matchSelectedTile = null;
+            }, 300);
+
+            matchRemainingPairs--;
+
+            if (matchRemainingPairs === 0) {
+                // GAME WON!
+                clearInterval(matchTimer);
+                const finalTime = ((Date.now() - matchStartTime) / 1000).toFixed(1) + 's';
+                setTimeout(() => {
+                    document.getElementById('matchGrid').style.display = 'none';
+                    document.getElementById('matchFinalTime').innerText = finalTime;
+                    document.getElementById('matchVictoryModal').style.display = 'block';
+                }, 500);
+            }
+        } else {
+            // MISMATCH!
+            tileEl.classList.add('mismatched');
+            matchSelectedTile.classList.add('mismatched');
+
+            // Penalty time +1s like Quizlet
+            matchStartTime -= 1000;
+
+            const prevSelected = matchSelectedTile;
+            matchSelectedTile = null;
+
+            setTimeout(() => {
+                tileEl.classList.remove('mismatched', 'selected');
+                prevSelected.classList.remove('mismatched', 'selected');
+            }, 600);
+        }
+    }
+}
+
+/* ========================================================================= */
+/* 3. TEST / QUIZ ENGINE (QUIZLET TRẮC NGHIỆM) */
+/* ========================================================================= */
+function initQuizMode() {
+    quizQuestions = [...originalCards].sort(() => 0.5 - Math.random()).slice(0, 10);
+    quizIndex = 0;
+    quizScore = 0;
+
+    document.getElementById('quizResultCard').style.display = 'none';
+    document.getElementById('quizQuestionCard').style.display = 'block';
+    document.getElementById('quizTotalCount').innerText = quizQuestions.length;
+
+    renderQuizQuestion(quizIndex);
+}
+
+function renderQuizQuestion(index) {
+    if (index >= quizQuestions.length) {
+        showQuizResults();
+        return;
+    }
+
+    const q = quizQuestions[index];
+    document.getElementById('quizCurrentIndex').innerText = (index + 1);
+    document.getElementById('quizVocabPrompt').innerText = q.vocabulary;
+    document.getElementById('quizReadingPrompt').innerText = q.reading || '';
+
+    // Generate 4 options (1 correct + 3 random distractors)
+    const otherMeanings = originalCards
+        .filter(c => c.flashcardId !== q.flashcardId)
+        .map(c => c.meaning);
+    
+    otherMeanings.sort(() => 0.5 - Math.random());
+    const distractors = otherMeanings.slice(0, 3);
+    const options = [q.meaning, ...distractors].sort(() => 0.5 - Math.random());
+
+    const container = document.getElementById('quizOptionsContainer');
+    container.innerHTML = '';
+
+    options.forEach(opt => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6';
+        col.innerHTML = `
+            <button type="button" class="btn btn-outline-secondary w-100 p-3 rounded-4 text-start fw-medium quiz-option-btn transition-all"
+                    onclick="handleQuizAnswer(this, '${opt.replace(/'/g, "\\'")}', '${q.meaning.replace(/'/g, "\\'")}')">
+                <i class="bi bi-circle me-2 text-muted"></i>${opt}
+            </button>
+        `;
+        container.appendChild(col);
+    });
+}
+
+function handleQuizAnswer(btnEl, selected, correct) {
+    const allBtns = document.querySelectorAll('.quiz-option-btn');
+    allBtns.forEach(b => b.disabled = true);
+
+    if (selected === correct) {
+        btnEl.classList.remove('btn-outline-secondary');
+        btnEl.classList.add('btn-success', 'text-white');
+        quizScore++;
+    } else {
+        btnEl.classList.remove('btn-outline-secondary');
+        btnEl.classList.add('btn-danger', 'text-white');
+
+        // Highlight correct option
+        allBtns.forEach(b => {
+            if (b.innerText.trim() === correct) {
+                b.classList.remove('btn-outline-secondary');
+                b.classList.add('btn-success', 'text-white');
+            }
+        });
+    }
+
+    setTimeout(() => {
+        quizIndex++;
+        renderQuizQuestion(quizIndex);
+    }, 1100);
+}
+
+function showQuizResults() {
+    document.getElementById('quizQuestionCard').style.display = 'none';
+    document.getElementById('quizScoreText').innerText = quizScore + ' / ' + quizQuestions.length;
+    document.getElementById('quizResultCard').style.display = 'block';
+}
+
+// Bind all handler functions to window object for bulletproof global accessibility
+window.handleCardClick = handleCardClick;
+window.flipCurrentCard = flipCurrentCard;
+window.submitReview = submitReview;
+window.switchQuizletMode = switchQuizletMode;
+window.initMatchGame = initMatchGame;
+window.initQuizMode = initQuizMode;
+window.playCurrentTTS = playCurrentTTS;
+window.playWordTTS = playWordTTS;
+window.goToPrevCard = goToPrevCard;
+window.goToNextCard = goToNextCard;
+window.shuffleCards = shuffleCards;
+window.toggleAutoPlay = toggleAutoPlay;
+window.toggleFullScreen = toggleFullScreen;
+window.restartFlashcards = restartFlashcards;
+window.practiceUnlearnedCards = practiceUnlearnedCards;
+window.handleMatchTileClick = handleMatchTileClick;
+window.handleQuizAnswer = handleQuizAnswer;
+</script>
+
+<!-- QUIZLET BEAUTIFUL VANILLA CSS STYLES -->
+<style>
+/* 3D Quizlet Card Container */
+.quizlet-card-wrapper {
+    perspective: 1000px;
+    height: 400px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.quizlet-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    border-radius: 24px;
+}
+
+.quizlet-card-inner.is-flipped {
+    transform: rotateY(180deg);
+}
+
+.quizlet-card-face {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    display: flex;
+    flex-direction: column;
+    border-radius: 24px;
+    padding: 28px 36px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s ease;
+}
+
+.quizlet-card-wrapper:hover .quizlet-card-face {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* Front Face */
+.quizlet-card-front {
+    background: #FFFFFF;
+    border: 2px solid #E2E8F0;
+    transform: rotateY(0deg);
+    z-index: 2;
+}
+
+/* Back Face */
+.quizlet-card-back {
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+    color: #FFFFFF;
+    transform: rotateY(180deg);
+    border: 2px solid #334155;
+    z-index: 1;
+}
+
+.quizlet-card-inner.is-flipped .quizlet-card-front {
+    z-index: 1;
+    pointer-events: none;
+}
+
+.quizlet-card-inner.is-flipped .quizlet-card-back {
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.quizlet-example-box {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Action Memory Buttons (Quizlet Red/Green Theme) */
+.btn-quizlet-unlearned {
+    background-color: #FFF1F2;
+    color: #E11D48;
+    border: 2px solid #FECDD3;
+    transition: all 0.2s ease;
+}
+
+.btn-quizlet-unlearned:hover {
+    background-color: #FFE4E6;
+    border-color: #E11D48;
+    transform: translateY(-2px);
+}
+
+.btn-quizlet-mastered {
+    background-color: #F0FDF4;
+    color: #16A34A;
+    border: 2px solid #BBF7D0;
+    transition: all 0.2s ease;
+}
+
+.btn-quizlet-mastered:hover {
+    background-color: #DCFCE7;
+    border-color: #16A34A;
+    transform: translateY(-2px);
+}
+
+/* Match Game Tiles */
+.match-tile {
+    min-height: 125px;
+    cursor: pointer;
+    border-width: 2px !important;
+    border-color: #E2E8F0 !important;
+    user-select: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.match-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08) !important;
+    border-color: #CBD5E1 !important;
+}
+
+.match-tile.selected {
+    border-color: #3B82F6 !important;
+    background-color: #EFF6FF !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25) !important;
+    transform: scale(1.03);
+}
+
+.match-tile.matched {
+    border-color: #22C55E !important;
+    background-color: #F0FDF4 !important;
+    animation: matchSuccess 0.4s ease forwards;
+}
+
+.match-tile.mismatched {
+    border-color: #EF4444 !important;
+    background-color: #FEF2F2 !important;
+    animation: matchShake 0.4s ease;
+}
+
+@keyframes matchSuccess {
+    0% { transform: scale(1.05); }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(0.9); opacity: 0; }
+}
+
+@keyframes matchShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+
+.animate-bounce {
+    animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Tab Active Styles */
+#quizletModeTabs .nav-link {
+    color: #64748B;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    transition: all 0.2s ease;
+}
+
+#quizletModeTabs .nav-link.active {
+    color: #FFFFFF !important;
+    background: var(--navy-dark) !important;
+    border-color: var(--navy-dark) !important;
+    box-shadow: 0 4px 12px rgba(23, 59, 87, 0.25);
+}
+</style>
     </div>
 </div>

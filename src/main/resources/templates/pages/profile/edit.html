@@ -19,17 +19,46 @@
             </div>
         </div>
 
-        <!-- Global Error Alert -->
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <span th:text="${errorMessage}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
         <div class="row justify-content-center">
             <div class="col-lg-8 col-md-10">
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                    <form th:action="@{/profile/edit}" th:object="${editProfileRequest}" method="post">
+                    <form th:action="@{/profile/edit}" th:object="${editProfileRequest}" method="post" enctype="multipart/form-data">
+                        <!-- Ảnh đại diện (Avatar) -->
+                        <div class="mb-4 text-center">
+                            <label class="form-label small fw-semibold d-block mb-2" style="color: var(--text-main)">
+                                Ảnh đại diện
+                            </label>
+                            <div class="d-flex flex-column align-items-center">
+                                <div class="position-relative mb-2">
+                                    <div id="avatarPreviewContainer"
+                                         class="rounded-circle overflow-hidden shadow-sm d-flex align-items-center justify-content-center border"
+                                         style="width: 100px; height: 100px; background-color: #F8FAFC;">
+                                        <img id="avatarPreview"
+                                             th:if="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
+                                             th:src="${profile.avatarUrl}" alt="Avatar"
+                                             style="width: 100%; height: 100%; object-fit: cover;">
+                                        <div id="avatarPlaceholder"
+                                             th:unless="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
+                                             class="d-flex align-items-center justify-content-center w-100 h-100 text-white"
+                                             style="background: linear-gradient(135deg, #173B57 0%, #244F70 100%); font-size: 40px; font-weight: bold;">
+                                            <span th:text="${profile.fullName != null and !profile.fullName.isEmpty() ? profile.fullName.substring(0, 1).toUpperCase() : 'U'}">U</span>
+                                        </div>
+                                    </div>
+                                    <label for="avatarFile"
+                                           class="btn btn-sm btn-dark rounded-circle position-absolute bottom-0 end-0 shadow-sm"
+                                           style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+                                           title="Chọn ảnh từ máy">
+                                        <i class="bi bi-camera-fill" style="font-size: 14px;"></i>
+                                    </label>
+                                </div>
+                                <input type="file" id="avatarFile" name="avatarFile"
+                                       class="form-control form-control-sm" style="max-width: 320px;"
+                                       accept="image/png, image/jpeg, image/jpg, image/webp"
+                                       onchange="previewAvatar(this)">
+                                <div class="form-text small text-muted mt-1">Định dạng hỗ trợ: JPG, PNG, WebP (Tối đa 5MB).</div>
+                            </div>
+                        </div>
+
                         <!-- Họ và Tên -->
                         <div class="mb-3">
                             <label class="form-label small fw-semibold" style="color: var(--text-main)" for="fullName">
@@ -114,7 +143,7 @@
                             <div class="col-sm-6" th:if="${profile.learner}">
                                 <div class="p-3 bg-light rounded-3">
                                     <span class="text-muted small d-block mb-1">Mục tiêu JLPT</span>
-                                    <span class="badge" style="background-color: var(--sunset-coral); color: white;" th:text="${profile.targetJlptLevel}">N3</span>
+                                    <span class="badge bg-secondary" th:text="${profile.targetJlptLevel != null and !profile.targetJlptLevel.isBlank() ? profile.targetJlptLevel : 'Chưa thiết lập'}">N3</span>
                                 </div>
                             </div>
                         </div>
@@ -124,11 +153,23 @@
                             <a th:href="@{/profile}" class="btn btn-outline-secondary px-4 py-2">
                                 <i class="bi bi-x-circle me-1"></i> Hủy bỏ
                             </a>
-                            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold shadow-sm">
+                            <button type="submit" class="btn btn-sakura px-4 py-2 fw-semibold shadow-sm">
                                 <i class="bi bi-check-circle me-1"></i> Lưu thay đổi
                             </button>
                         </div>
                     </form>
+                    <script>
+                        function previewAvatar(input) {
+                            if (input.files && input.files[0]) {
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    const container = document.getElementById('avatarPreviewContainer');
+                                    container.innerHTML = '<img id="avatarPreview" src="' + e.target.result + '" alt="Avatar Preview" style="width: 100%; height: 100%; object-fit: cover;">';
+                                };
+                                reader.readAsDataURL(input.files[0]);
+                            }
+                        }
+                    </script>
                 </div>
             </div>
         </div>

@@ -1,0 +1,186 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Đánh giá năng lực - Kotoba JEPS',
+    activeMenu='exams',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- 1. Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item">
+                    <a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--medium-blue);">
+                        <i class="bi bi-house-door me-1"></i>Trang chủ
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Đánh giá năng lực</li>
+            </ol>
+        </nav>
+
+        <!-- 2. Header Banner: Title "Đánh giá năng lực" & Button "Lịch sử làm bài" -->
+        <section class="card kotoba-card p-4 p-lg-5 mb-5 border-0 shadow-sm"
+                 style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <span class="badge px-3 py-2 rounded-pill mb-2"
+                          style="background-color: rgba(255,255,255,0.15); color: #FFF; font-weight: 500;">
+                        <i class="bi bi-award-fill me-1 text-warning"></i> Trung tâm bài thi
+                    </span>
+                    <h1 class="fw-bold mb-2 text-white">Đánh giá năng lực</h1>
+                    <p class="text-white-50 mb-0" style="max-width: 680px; line-height: 1.6;">
+                        Hệ thống đánh giá toàn diện dành cho học viên JEPS: Khảo sát định vị năng lực đầu vào, kiểm tra cột mốc tiến độ theo khóa học và luyện thi thử JLPT theo format chuẩn Nhật Bản.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <!-- Button Lịch sử làm bài riêng biệt tại góc trên bên phải khu vực tiêu đề -->
+                    <a th:href="@{/exams/history}"
+                       class="btn btn-outline-light rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Lịch sử làm bài</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Ba nhóm bài thi chính (CHỈ HIỂN THỊ 3 NHÓM NÀY) -->
+        <div class="row g-4 mb-5">
+            <!-- Nhóm 1: Đánh giá đầu vào -> Button "Làm bài" -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card kotoba-card h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between position-relative"
+                     style="border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width: 56px; height: 56px; background-color: #EBF4FA; color: var(--navy-dark);">
+                                <i class="bi bi-compass fs-3"></i>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill fw-semibold">
+                                Khảo sát &amp; Xếp lớp
+                            </span>
+                        </div>
+
+                        <h3 class="fw-bold mb-2 text-dark">Đánh giá đầu vào</h3>
+                        <p class="text-secondary small mb-4" style="line-height: 1.6;">
+                            Khảo sát mục tiêu học tập và làm bài kiểm tra trắc nghiệm chẩn đoán năng lực ban đầu. Hệ thống tự động đề xuất lộ trình và khóa học JLPT phù hợp nhất.
+                        </p>
+
+                        <ul class="list-unstyled small mb-4" style="color: var(--text-muted);">
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="bi bi-bullseye text-primary me-2 fs-6"></i>
+                                <span>Khảo sát mục tiêu N5 &ndash; N1</span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="bi bi-clock text-secondary me-2 fs-6"></i>
+                                <span>Thời lượng chẩn đoán: ~30 phút</span>
+                            </li>
+                            <li class="d-flex align-items-center">
+                                <i class="bi bi-shield-check text-success me-2 fs-6"></i>
+                                <span>Tự động phân lớp theo kết quả</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-2">
+                        <a th:href="@{/exams/placement}"
+                           class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <span>Làm bài</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nhóm 2: Đánh giá cột mốc -> Button "Chọn bài thi" -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card kotoba-card h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between position-relative"
+                     style="border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width: 56px; height: 56px; background-color: #FEF3C7; color: #D97706;">
+                                <i class="bi bi-flag-fill fs-3"></i>
+                            </div>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1 rounded-pill fw-semibold">
+                                Tiến độ khóa học
+                            </span>
+                        </div>
+
+                        <h3 class="fw-bold mb-2 text-dark">Đánh giá cột mốc</h3>
+                        <p class="text-secondary small mb-4" style="line-height: 1.6;">
+                            Kiểm tra định kỳ giữa khóa và cuối khóa để đo lường mức độ tiếp thu kiến thức, bảo đảm chuẩn đầu ra và đánh giá mức độ sẵn sàng cho các giai đoạn tiếp theo.
+                        </p>
+
+                        <ul class="list-unstyled small mb-4" style="color: var(--text-muted);">
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="bi bi-journal-bookmark text-warning me-2 fs-6"></i>
+                                <span>Kiểm tra giữa khóa &amp; cuối khóa</span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="bi bi-check2-circle text-success me-2 fs-6"></i>
+                                <span>Dữ liệu bài thi thật theo khóa học</span>
+                            </li>
+                            <li class="d-flex align-items-center">
+                                <i class="bi bi-award text-secondary me-2 fs-6"></i>
+                                <span>Đánh giá hoàn thành mục tiêu</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-2">
+                        <a th:href="@{/exams/milestones}"
+                           class="btn rounded-pill w-100 py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 text-white"
+                           style="background-color: #F59E0B; border: none;">
+                            <span>Chọn bài thi</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nhóm 3: Thi thử JLPT -> Button "Thi thử" -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card kotoba-card h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between position-relative"
+                     style="border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width: 56px; height: 56px; background-color: #E0F2FE; color: var(--navy-dark);">
+                                <i class="bi bi-trophy-fill fs-3"></i>
+                            </div>
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-1 rounded-pill fw-semibold">
+                                Chuẩn format JLPT
+                            </span>
+                        </div>
+
+                        <h3 class="fw-bold mb-2 text-dark">Thi thử JLPT</h3>
+                        <p class="text-secondary small mb-4" style="line-height: 1.6;">
+                            Trải nghiệm đề thi mô phỏng phòng thi thật theo chuẩn Nhật Bản từ N5 đến N1. Đồng hồ đếm ngược tự động, chấm điểm tức thì và phân tích chi tiết.
+                        </p>
+
+                        <ul class="list-unstyled small mb-4" style="color: var(--text-muted);">
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="bi bi-layers text-primary me-2 fs-6"></i>
+                                <span>Đầy đủ 5 cấp độ N5, N4, N3, N2, N1</span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="bi bi-stopwatch text-danger me-2 fs-6"></i>
+                                <span>Bấm giờ tự động chuẩn phòng thi</span>
+                            </li>
+                            <li class="d-flex align-items-center">
+                                <i class="bi bi-graph-up-arrow text-success me-2 fs-6"></i>
+                                <span>Chấm điểm tức thì &amp; xem giải thích</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-2">
+                        <a th:href="@{/exams/mock}"
+                           class="btn btn-steel w-100 rounded-pill py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <span>Thi thử</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

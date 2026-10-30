@@ -77,6 +77,7 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
+                                "/uploads/**",
                                 "/favicon.ico",
                                 "/h2-console/**"
                         ).permitAll()
@@ -162,7 +163,10 @@ public class SecurityConfig {
                         })
                 )
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(new AntPathRequestMatcher("/h2-console/**"))
+.ignoringRequestMatchers(
+                                new AntPathRequestMatcher("/h2-console/**"),
+                                new AntPathRequestMatcher("/quiz/submit")
+                        )
                 )
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())

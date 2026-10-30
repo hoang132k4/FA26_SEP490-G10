@@ -67,7 +67,15 @@ public class PublicCourseController {
     }
 
     @GetMapping("/courses/{id}")
-    public String courseDetail(@PathVariable Long id, Model model) {
+    public String courseDetail(@PathVariable Long id,
+                               org.springframework.security.core.Authentication authentication,
+                               HttpSession session,
+                               Model model) {
+        if ((authentication != null && authentication.isAuthenticated() && !(authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken))
+                || currentUserSession.isAuthenticated(session)) {
+            return "redirect:/learning/courses/" + id;
+        }
+
         Course course = catalogService.findCourse(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Không tìm thấy khóa học"));
         List<LessonPreview> lessons = catalogService.findLessonPreviews(id);

@@ -4,47 +4,158 @@
     content=~{::#mainContent}
 )}">
 <div id="mainContent">
-    <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
             <h2 class="fw-bold mb-1" style="color: var(--navy-dark); font-size:1.65rem;">Quản lý Khóa học</h2>
             <p class="mb-0" style="color: var(--text-muted); font-size:0.9rem;">Danh sách khóa học được đọc trực tiếp từ database</p>
         </div>
-        <div class="kotoba-card px-4 py-2 d-flex align-items-center gap-2">
-            <i class="bi bi-collection" style="color:var(--steel-blue);"></i>
-            <span style="font-size:0.85rem;">Tổng: <strong th:text="${courseCount}">0</strong> khóa học</span>
+        <div class="d-flex align-items-center gap-3">
+            <div class="kotoba-card px-4 py-2 d-flex align-items-center gap-2">
+                <i class="bi bi-collection" style="color:var(--steel-blue);"></i>
+                <span style="font-size:0.85rem;">Tổng: <strong th:text="${courseCount}">0</strong> khóa học</span>
+            </div>
+            <div class="btn-group" role="group" aria-label="Kiểu hiển thị khóa học">
+                <button id="courseGridViewButton" type="button" class="btn btn-outline-primary active" aria-pressed="true" title="Dạng thẻ" aria-label="Dạng thẻ">
+                    <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                </button>
+                <button id="courseListViewButton" type="button" class="btn btn-outline-primary" aria-pressed="false" title="Dạng danh sách" aria-label="Dạng danh sách">
+                    <i class="bi bi-list-ul" aria-hidden="true"></i>
+                </button>
+            </div>
+            <a class="btn btn-primary" th:href="@{/manager/courses/new}"><i class="bi bi-plus-lg me-1"></i>Thêm khóa học</a>
         </div>
-        <a class="btn btn-primary ms-3" th:href="@{/manager/courses/new}"><i class="bi bi-plus-lg me-1"></i>Thêm khóa học</a>
     </div>
 
     <div class="alert alert-danger" role="alert" th:if="${courseError}" th:text="${courseError}"></div>
     <div class="alert alert-success" role="alert" th:if="${courseSuccess}" th:text="${courseSuccess}"></div>
 
+    <style th:if="${courseForm != null}">
+        #courseModal .course-modal-dialog { height: calc(100vh - 2rem); max-height: calc(100vh - 2rem); }
+        #courseModal .modal-content { height: 100%; max-height: 100%; }
+        #courseModal form { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+        #courseModal .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+        #courseModal .modal-header, #courseModal .modal-footer { flex: 0 0 auto; }
+    </style>
     <div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalTitle" aria-hidden="true" th:if="${courseForm != null}">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable course-modal-dialog">
             <div class="modal-content border-0 rounded-4 shadow">
-                <form method="post" th:action="${courseForm['id'] == '' ? '/manager/courses' : '/manager/courses/' + courseForm['id']}">
+                <form method="post" enctype="multipart/form-data" th:action="${courseForm['id'] == '' ? '/manager/courses' : '/manager/courses/' + courseForm['id']}">
+                    <input type="hidden" id="courseImageMode" name="imageMode" th:value="${courseForm['imageMode']}">
                     <div class="modal-header">
                         <h2 class="modal-title fs-5 fw-bold" id="courseModalTitle" th:text="${courseForm['id'] == '' ? 'Thêm khóa học' : 'Sửa khóa học'}">Thêm khóa học</h2>
                         <a class="btn-close" th:href="@{/manager/courses}" aria-label="Đóng"></a>
                     </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label" for="courseName">Tên khóa học</label>
-                            <input class="form-control" id="courseName" name="name" required maxlength="255" th:value="${courseForm['name']}">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="courseLevel">Cấp độ</label>
-                            <select class="form-select" id="courseLevel" name="level" required>
-                                <option th:each="level : ${ {'N5','N4','N3','N2','N1'} }" th:value="${level}" th:text="${level}" th:selected="${courseForm['level'] == level}">N5</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label" for="courseStatus">Trạng thái</label>
-                            <select class="form-select" id="courseStatus" name="status" required>
-                                <option value="PUBLISHED" th:selected="${courseForm['status'] == 'PUBLISHED'}">Published</option>
-                                <option value="DRAFT" th:selected="${courseForm['status'] == 'DRAFT'}">Unpublished</option>
-                                <option value="ARCHIVED" th:selected="${courseForm['status'] == 'ARCHIVED'}">Archived</option>
-                            </select>
+                        <div class="row g-4 align-items-start">
+                            <div class="col-12 col-lg-4">
+                                <section class="border rounded-3 p-3">
+                                    <h3 class="h6 fw-bold mb-3" style="color:var(--navy-dark);">Ảnh khóa học</h3>
+                                    <div class="course-image-preview mb-3">
+                                        <img id="courseImagePreview" th:if="${courseForm['thumbnailUrl'] != null and !#strings.isEmpty(courseForm['thumbnailUrl'])}"
+                                             th:src="${courseForm['thumbnailUrl']}" alt="Xem trước ảnh khóa học">
+                                        <img id="courseImagePreview" th:unless="${courseForm['thumbnailUrl'] != null and !#strings.isEmpty(courseForm['thumbnailUrl'])}"
+                                             alt="Xem trước ảnh khóa học" hidden>
+                                        <div id="courseImagePlaceholder" class="course-image-placeholder"
+                                             th:hidden="${courseForm['thumbnailUrl'] != null and !#strings.isEmpty(courseForm['thumbnailUrl'])}">
+                                            <i class="bi bi-image d-block mb-2" style="font-size:2rem;"></i>Chưa có ảnh
+                                        </div>
+                                    </div>
+                                    <div class="btn-group w-100 mb-3" role="group" aria-label="Chọn cách thêm ảnh">
+                                        <button type="button" class="btn btn-outline-primary course-image-mode-button"
+                                                data-image-mode="file" th:classappend="${courseForm['imageMode'] == 'file' ? ' active' : ''}"
+                                                th:attr="aria-pressed=${courseForm['imageMode'] == 'file'}">
+                                            <i class="bi bi-upload me-1" aria-hidden="true"></i>Chọn file
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary course-image-mode-button"
+                                                data-image-mode="url" th:classappend="${courseForm['imageMode'] == 'url' ? ' active' : ''}"
+                                                th:attr="aria-pressed=${courseForm['imageMode'] == 'url'}">
+                                            <i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Dùng URL
+                                        </button>
+                                    </div>
+                                    <div id="courseImageFilePanel" th:hidden="${courseForm['imageMode'] != 'file'}">
+                                        <label class="form-label" for="courseImageFile">Ảnh từ máy của bạn</label>
+                                        <input class="form-control" id="courseImageFile" name="imageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
+                                               th:disabled="${courseForm['imageMode'] != 'file'}"
+                                               th:classappend="${courseErrors != null and courseErrors['imageFile'] != null ? ' is-invalid' : ''}">
+                                        <div class="form-text">PNG, JPG, WEBP hoặc GIF. Tối đa 5 MB.</div>
+                                        <div class="invalid-feedback d-block" th:if="${courseErrors != null and courseErrors['imageFile'] != null}" th:text="${courseErrors['imageFile']}"></div>
+                                    </div>
+                                    <div id="courseImageUrlPanel" th:hidden="${courseForm['imageMode'] != 'url'}">
+                                        <label class="form-label" for="courseThumbnailUrl">Đường dẫn ảnh</label>
+                                        <input class="form-control" id="courseThumbnailUrl" name="thumbnailUrl" type="text" maxlength="500"
+                                               placeholder="https://example.com/course-image.jpg" th:value="${courseForm['thumbnailUrl']}"
+                                               th:disabled="${courseForm['imageMode'] != 'url'}"
+                                               th:classappend="${courseErrors != null and courseErrors['thumbnailUrl'] != null ? ' is-invalid' : ''}">
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['thumbnailUrl'] != null}" th:text="${courseErrors['thumbnailUrl']}"></div>
+                                    </div>
+                                </section>
+                            </div>
+                            <div class="col-12 col-lg-8">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-8">
+                                        <label class="form-label" for="courseName">Tên khóa học</label>
+                                        <input class="form-control" id="courseName" name="name" required maxlength="255" th:value="${courseForm['name']}"
+                                               th:classappend="${courseErrors != null and courseErrors['name'] != null ? ' is-invalid' : ''}">
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['name'] != null}" th:text="${courseErrors['name']}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label" for="courseLevel">Cấp độ JLPT</label>
+                                        <select class="form-select" id="courseLevel" name="level" required
+                                                th:classappend="${courseErrors != null and courseErrors['level'] != null ? ' is-invalid' : ''}">
+                                            <option th:each="level : ${ {'N5','N4','N3','N2','N1'} }" th:value="${level}" th:text="${level}" th:selected="${courseForm['level'] == level}">N5</option>
+                                        </select>
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['level'] != null}" th:text="${courseErrors['level']}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="courseCode">Mã khóa học</label>
+                                        <input class="form-control" id="courseCode" name="code" required maxlength="50" th:value="${courseForm['code']}"
+                                               th:classappend="${courseErrors != null and courseErrors['code'] != null ? ' is-invalid' : ''}">
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['code'] != null}" th:text="${courseErrors['code']}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="coursePrice">Giá khóa học (VND)</label>
+                                        <input class="form-control" id="coursePrice" name="price" type="number" min="0" step="1000" required th:value="${courseForm['price']}"
+                                               th:classappend="${courseErrors != null and courseErrors['price'] != null ? ' is-invalid' : ''}">
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['price'] != null}" th:text="${courseErrors['price']}"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label" for="courseDiscountPrice">Giá ưu đãi (VND)</label>
+                                        <input class="form-control" id="courseDiscountPrice" name="discountPrice" type="number" min="0" step="1000" th:value="${courseForm['discountPrice']}"
+                                               th:classappend="${courseErrors != null and courseErrors['discountPrice'] != null ? ' is-invalid' : ''}">
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['discountPrice'] != null}" th:text="${courseErrors['discountPrice']}"></div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="courseShortDescription">Mô tả ngắn</label>
+                                        <textarea class="form-control" id="courseShortDescription" name="shortDescription" rows="2" maxlength="500" th:text="${courseForm['shortDescription']}"
+                                                  th:classappend="${courseErrors != null and courseErrors['shortDescription'] != null ? ' is-invalid' : ''}"></textarea>
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['shortDescription'] != null}" th:text="${courseErrors['shortDescription']}"></div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="courseDescription">Mô tả chi tiết</label>
+                                        <textarea class="form-control" id="courseDescription" name="description" rows="3" maxlength="2000" th:text="${courseForm['description']}"
+                                                  th:classappend="${courseErrors != null and courseErrors['description'] != null ? ' is-invalid' : ''}"></textarea>
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['description'] != null}" th:text="${courseErrors['description']}"></div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="courseObjectives">Mục tiêu khóa học</label>
+                                        <textarea class="form-control" id="courseObjectives" name="objectives" rows="3" maxlength="5000" th:text="${courseForm['objectives']}"
+                                                  th:classappend="${courseErrors != null and courseErrors['objectives'] != null ? ' is-invalid' : ''}"></textarea>
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['objectives'] != null}" th:text="${courseErrors['objectives']}"></div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="coursePrerequisites">Điều kiện tiên quyết</label>
+                                        <textarea class="form-control" id="coursePrerequisites" name="prerequisites" rows="3" maxlength="2000" th:text="${courseForm['prerequisites']}"
+                                                  th:classappend="${courseErrors != null and courseErrors['prerequisites'] != null ? ' is-invalid' : ''}"></textarea>
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['prerequisites'] != null}" th:text="${courseErrors['prerequisites']}"></div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="courseTargetAudience">Đối tượng học viên</label>
+                                        <textarea class="form-control" id="courseTargetAudience" name="targetAudience" rows="3" maxlength="2000" th:text="${courseForm['targetAudience']}"
+                                                  th:classappend="${courseErrors != null and courseErrors['targetAudience'] != null ? ' is-invalid' : ''}"></textarea>
+                                        <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['targetAudience'] != null}" th:text="${courseErrors['targetAudience']}"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -59,8 +170,61 @@
         document.addEventListener('DOMContentLoaded', function () {
             const modalElement = document.getElementById('courseModal');
             if (modalElement && window.bootstrap) bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            const fileInput = document.getElementById('courseImageFile');
+            const urlInput = document.getElementById('courseThumbnailUrl');
+            const imageModeInput = document.getElementById('courseImageMode');
+            const filePanel = document.getElementById('courseImageFilePanel');
+            const urlPanel = document.getElementById('courseImageUrlPanel');
+            const modeButtons = document.querySelectorAll('.course-image-mode-button');
+            const preview = document.getElementById('courseImagePreview');
+            const placeholder = document.getElementById('courseImagePlaceholder');
+            let selectedFileUrl = null;
+            function setImageMode(mode) {
+                const fileMode = mode === 'file';
+                imageModeInput.value = mode;
+                filePanel.hidden = !fileMode;
+                urlPanel.hidden = fileMode;
+                fileInput.disabled = !fileMode;
+                urlInput.disabled = fileMode;
+                modeButtons.forEach(function (button) {
+                    const selected = button.dataset.imageMode === mode;
+                    button.classList.toggle('active', selected);
+                    button.setAttribute('aria-pressed', String(selected));
+                });
+                showPreview(fileMode ? selectedFileUrl : urlInput.value.trim());
+            }
+            function showPreview(source) {
+                if (source) {
+                    preview.src = source;
+                    preview.hidden = false;
+                    placeholder.hidden = true;
+                } else {
+                    preview.removeAttribute('src');
+                    preview.hidden = true;
+                    placeholder.hidden = false;
+                }
+            }
+            fileInput.addEventListener('change', function () {
+                if (selectedFileUrl) URL.revokeObjectURL(selectedFileUrl);
+                selectedFileUrl = fileInput.files && fileInput.files[0] ? URL.createObjectURL(fileInput.files[0]) : null;
+                showPreview(selectedFileUrl);
+            });
+            urlInput.addEventListener('input', function () {
+                if (!urlInput.disabled) showPreview(urlInput.value.trim());
+            });
+            modeButtons.forEach(function (button) {
+                button.addEventListener('click', function () { setImageMode(button.dataset.imageMode); });
+            });
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                if (selectedFileUrl) URL.revokeObjectURL(selectedFileUrl);
+            });
         });
     </script>
+    <style th:if="${courseForm != null}">
+        .course-image-preview { height: 210px; border-radius: .75rem; overflow: hidden; background: #f3f5f7; }
+        .course-image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .course-image-placeholder { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #6c757d; text-align: center; }
+    </style>
 
     <div class="kotoba-card p-3 mb-3">
         <div class="row g-2 align-items-center">
@@ -94,7 +258,7 @@
         </div>
     </div>
 
-    <div class="kotoba-card overflow-hidden">
+    <div id="managerCourseListView" class="course-view-panel kotoba-card overflow-hidden" hidden>
         <div class="table-responsive">
             <table class="table table-hover mb-0" style="font-size:0.9rem;">
                 <thead>
@@ -115,8 +279,21 @@
                         <td class="py-3 fw-semibold" style="color:var(--text-main);" th:text="${course['name']}">Tên khóa học</td>
                         <td class="py-3"><span class="badge rounded-pill" style="background:var(--steel-blue);color:#fff;" th:text="${course['level']}">N5</span></td>
                         <td class="py-3" th:text="${course['lessonCount']}">—</td>
-                        <td class="py-3" th:text="${course['statusLabel']}">Status</td>
-                        <td class="pe-4 py-3"><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}"><i class="bi bi-pencil"></i> Sửa</a></td>
+                        <td class="py-3">
+                            <span class="badge rounded-pill"
+                                  th:classappend="${course['statusFilterValue'] == 'PUBLISHED' or course['statusFilterValue'] == 'published' ? ' bg-success' : (course['statusFilterValue'] == 'ARCHIVED' ? ' bg-secondary' : ' bg-warning text-dark')}"
+                                  th:text="${course['statusLabel']}">Status</span>
+                        </td>
+                        <td class="pe-4 py-3">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <a class="btn btn-sm btn-outline-secondary" th:href="@{/manager/courses/{id}/view(id=${course['id']})}" title="Xem chi tiết" aria-label="Xem chi tiết">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </a>
+                                <a class="btn btn-sm btn-outline-primary" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}" title="Sửa khóa học" aria-label="Sửa khóa học">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </td>
                     </tr>
                     <tr id="courseEmptyState" th:hidden="${!#lists.isEmpty(courses)}">
                         <td colspan="6" class="text-center py-5 text-muted">
@@ -128,22 +305,93 @@
                 </tbody>
             </table>
         </div>
-        <div class="px-4 py-3" style="border-top:1px solid var(--border-subtle);background:var(--bg-page);">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <span style="font-size:0.82rem;color:var(--text-muted);">Đang hiển thị <strong id="courseVisibleCount" th:text="${courseCount}">0</strong>/<strong th:text="${courseCount}">0</strong> khóa học</span>
-                <div class="d-flex align-items-center gap-2">
-                    <label for="coursePageSize" class="small text-muted">Mỗi trang</label>
-                    <select id="coursePageSize" class="form-select form-select-sm" style="width:auto">
-                        <option value="5">5</option><option value="10" selected>10</option><option value="20">20</option>
-                    </select>
-                    <nav aria-label="Phân trang khóa học"><ul id="coursePagination" class="pagination pagination-sm mb-0"></ul></nav>
-                </div>
+    </div>
+    <div class="kotoba-card px-4 py-3 mt-3" style="background:var(--bg-page);">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <span style="font-size:0.82rem;color:var(--text-muted);">Đang hiển thị <strong id="courseVisibleCount" th:text="${courseCount}">0</strong>/<strong th:text="${courseCount}">0</strong> khóa học</span>
+            <div class="d-flex align-items-center gap-2">
+                <label for="coursePageSize" class="small text-muted">Mỗi trang</label>
+                <select id="coursePageSize" class="form-select form-select-sm" style="width:auto">
+                    <option value="5">5</option><option value="10" selected>10</option><option value="20">20</option>
+                </select>
+                <nav aria-label="Phân trang khóa học"><ul id="coursePagination" class="pagination pagination-sm mb-0"></ul></nav>
             </div>
         </div>
     </div>
+    <div id="managerCourseGridView" class="course-view-panel row g-4">
+        <div th:each="course : ${courses}" class="col-12 col-md-6 col-xl-4 course-data-card"
+             th:attr="data-id=${course['id']},data-name=${course['name']},data-level=${course['level']},data-status=${course['statusFilterValue']}">
+            <article class="card h-100 kotoba-card overflow-hidden d-flex flex-column">
+                <div class="position-relative course-manager-cover">
+                    <img th:if="${course['thumbnailUrl'] != null and !#strings.isEmpty(course['thumbnailUrl'])}"
+                         th:src="${course['thumbnailUrl']}" class="w-100" th:alt="${course['name']}" loading="lazy">
+                    <img th:unless="${course['thumbnailUrl'] != null and !#strings.isEmpty(course['thumbnailUrl'])}"
+                         src="https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=1000&auto=format&fit=crop"
+                         class="w-100" th:alt="${course['name']}" loading="lazy">
+                    <span class="position-absolute top-0 start-0 m-3 badge rounded-pill px-3 py-2 course-manager-level" th:text="${course['level']}">N5</span>
+                    <span th:if="${course['featured'] == true}" class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-danger">
+                        <i class="bi bi-fire me-1"></i>Nổi bật
+                    </span>
+                    <span class="position-absolute top-0 end-0 m-3 badge rounded-pill"
+                          th:style="${course['featured'] == true ? 'top: 2rem' : ''}"
+                          th:classappend="${course['statusFilterValue'] == 'PUBLISHED' or course['statusFilterValue'] == 'published' ? ' bg-success' : (course['statusFilterValue'] == 'ARCHIVED' ? ' bg-secondary' : ' bg-warning text-dark')}"
+                          th:text="${course['statusLabel']}">Trạng thái</span>
+                </div>
+                <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small text-muted"><i class="bi bi-clock me-1 text-primary"></i><span th:text="${course['durationLabel']}">0 phút</span></span>
+                        <span class="small text-muted"><i class="bi bi-journal-bookmark me-1 text-primary"></i><span th:text="|${course['lessonCount']} bài học|">0 bài học</span></span>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2 course-manager-title" th:text="${course['name']}">Tên khóa học</h5>
+                    <p class="text-muted small mb-3 course-manager-description"
+                       th:text="${course['description'] != null and !#strings.isEmpty(course['description']) ? #strings.abbreviate(course['description'], 110) : 'Chương trình học tiếng Nhật cấp độ ' + course['level'] + ', được thiết kế theo lộ trình JLPT.'}">
+                        Mô tả khóa học
+                    </p>
+                    <div class="mb-3" th:if="${course['coveredSkills'] != null and !#strings.isEmpty(course['coveredSkills'])}">
+                        <span th:each="skill : ${#strings.arraySplit(course['coveredSkills'], ',')}"
+                              class="badge bg-light text-secondary border small me-1 mb-1" th:text="${#strings.trim(skill)}">Kỹ năng</span>
+                    </div>
+                    <div class="mb-3">
+                        <div th:if="${course['discountPrice'] != null}">
+                            <span class="fw-bold fs-5 text-danger" th:text="${course['discountPrice'] == 0 ? 'Miễn phí' : #numbers.formatDecimal(course['discountPrice'], 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</span>
+                            <small class="text-muted text-decoration-line-through ms-1" th:if="${course['price'] != null}" th:text="${#numbers.formatDecimal(course['price'], 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</small>
+                        </div>
+                        <span th:if="${course['discountPrice'] == null}"
+                              class="fw-bold fs-5" style="color:var(--steel-blue)"
+                              th:text="${course['price'] != null and course['price'] > 0 ? #numbers.formatDecimal(course['price'], 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">Miễn phí</span>
+                    </div>
+                    <div class="d-flex gap-2 mt-auto pt-3 border-top">
+                        <a class="btn btn-dark flex-grow-1 course-manager-compose"
+                           th:href="@{/manager/lessons(courseId=${course['id']})}">
+                            <i class="bi bi-sliders me-2" aria-hidden="true"></i>Soạn giáo trình
+                        </a>
+                        <a class="btn btn-outline-secondary course-manager-icon-btn" th:href="@{/manager/courses/{id}/view(id=${course['id']})}"
+                           title="Xem chi tiết" aria-label="Xem chi tiết"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                        <a class="btn btn-outline-primary course-manager-icon-btn" th:href="@{/manager/courses/{id}/edit(id=${course['id']})}"
+                           title="Sửa khóa học" aria-label="Sửa khóa học"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div id="courseGridEmptyState" class="col-12 text-center py-5 text-muted" hidden>
+            <i class="bi bi-inbox d-block mb-2" style="font-size:1.6rem;"></i>Không tìm thấy khóa học phù hợp.
+        </div>
+    </div>
+    <style>
+        .course-view-panel[hidden] { display: none !important; }
+        .course-manager-cover { height: 190px; overflow: hidden; background: linear-gradient(135deg, #173d5b, #cf7850); }
+        .course-manager-cover img { height: 100%; object-fit: cover; }
+        .course-manager-level { background: var(--navy-dark); color: #fff; }
+        .course-manager-title { color: var(--navy-dark); line-height: 1.4; }
+        .course-manager-compose { background: #111827; border-color: #111827; border-radius: 0.75rem; min-height: 42px; font-weight: 600; }
+        .course-manager-compose:hover { background: #202b40; border-color: #202b40; }
+        .course-manager-icon-btn { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 42px; }
+        @media (max-width: 767.98px) { .course-manager-cover { height: 170px; } }
+    </style>
     <script>
         (function () {
             const rows = Array.from(document.querySelectorAll('.course-data-row'));
+            const cards = Array.from(document.querySelectorAll('.course-data-card'));
             const search = document.getElementById('courseSearch');
             if (!search) return;
             const levelFilter = document.getElementById('courseLevelFilter');
@@ -151,8 +399,26 @@
             const pageSize = document.getElementById('coursePageSize');
             const pager = document.getElementById('coursePagination');
             const emptyState = document.getElementById('courseEmptyState');
+            const gridEmptyState = document.getElementById('courseGridEmptyState');
+            const listView = document.getElementById('managerCourseListView');
+            const gridView = document.getElementById('managerCourseGridView');
+            const listButton = document.getElementById('courseListViewButton');
+            const gridButton = document.getElementById('courseGridViewButton');
             let currentPage = 1;
+            const savedView = localStorage.getItem('managerCourseView');
+            const initialView = savedView === 'list' ? 'list' : 'grid';
             const normalize = value => (value || '').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+            function setView(view) {
+                const isGrid = view === 'grid';
+                listView.hidden = isGrid;
+                gridView.hidden = !isGrid;
+                listButton.classList.toggle('active', !isGrid);
+                gridButton.classList.toggle('active', isGrid);
+                listButton.setAttribute('aria-pressed', String(!isGrid));
+                gridButton.setAttribute('aria-pressed', String(isGrid));
+                localStorage.setItem('managerCourseView', view);
+            }
 
             function render() {
                 const query = normalize(search.value.trim());
@@ -167,8 +433,12 @@
                 currentPage = Math.min(currentPage, pages);
                 const start = (currentPage - 1) * size;
                 rows.forEach(row => { row.hidden = true; });
+                cards.forEach(card => { card.hidden = true; });
+                const visibleIds = new Set(matches.slice(start, start + size).map(row => row.dataset.id));
                 matches.slice(start, start + size).forEach(row => { row.hidden = false; });
+                cards.forEach(card => { card.hidden = !visibleIds.has(card.dataset.id); });
                 if (emptyState) emptyState.hidden = matches.length > 0;
+                if (gridEmptyState) gridEmptyState.hidden = matches.length > 0;
                 document.getElementById('courseVisibleCount').textContent = matches.length;
                 pager.replaceChildren();
                 const addPageButton = (label, page, disabled, active) => {
@@ -189,6 +459,9 @@
             document.getElementById('courseFilterReset').addEventListener('click', () => {
                 search.value = ''; levelFilter.value = ''; statusFilter.value = ''; currentPage = 1; render();
             });
+            listButton.addEventListener('click', () => setView('list'));
+            gridButton.addEventListener('click', () => setView('grid'));
+            setView(initialView);
             render();
         })();
     </script>

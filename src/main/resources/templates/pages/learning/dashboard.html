@@ -15,8 +15,13 @@
                             <h1 class="fw-bold mb-1" style="font-family: 'Noto Sans JP', sans-serif; font-size: 2.2rem; color: var(--navy-dark);">
                                 おかえりなさい！
                             </h1>
-                            <h4 class="fw-bold mb-2" style="color: var(--text-main);">Chào mừng bạn quay lại</h4>
-                            <p class="text-muted small mb-0">Tiếp tục hành trình chinh phục tiếng Nhật của bạn 🌸</p>
+                            <h4 class="fw-bold mb-2" style="color: var(--text-main);">
+                                Chào mừng <span th:text="${learner != null ? learner.fullName : 'bạn'}">Nguyễn Văn Học Viên</span> quay lại
+                            </h4>
+                            <p class="text-muted small mb-0">
+                                Mục tiêu hiện tại: <span class="badge bg-danger text-white px-2 py-1" th:text="${learner != null ? learner.targetJlptLevel : 'N4'}">N4</span> 
+                                &bull; Tiếp tục hành trình chinh phục tiếng Nhật của bạn 🌸
+                            </p>
                         </div>
                         <div class="col-md-5 text-end d-none d-md-block">
                             <!-- Artistic Mount Fuji with Red Sun Illustration -->
@@ -44,10 +49,13 @@
                                 <i class="bi bi-fire"></i>
                             </div>
                             <div>
-                                <span class="text-muted small d-block">Chuỗi học tập</span>
-                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">7 <span class="fs-6 fw-normal text-muted">ngày</span></h3>
-                                <a href="#" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
-                                    Cố lên! Bạn đang đi rất tốt! &rarr;
+                                <span class="text-muted small d-block">Khóa học đã đăng ký</span>
+                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">
+                                    <span th:text="${totalRegisteredCourses != null ? totalRegisteredCourses : 3}">3</span> 
+                                    <span class="fs-6 fw-normal text-muted">khóa</span>
+                                </h3>
+                                <a th:href="@{/learning/my-courses}" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
+                                    Đã hoàn thành: <b th:text="${completedCourses != null ? completedCourses : 1}">1</b> khóa &rarr;
                                 </a>
                             </div>
                         </div>
@@ -60,10 +68,10 @@
                                 <i class="bi bi-book"></i>
                             </div>
                             <div>
-                                <span class="text-muted small d-block">Từ vựng đã học</span>
-                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">248 <span class="fs-6 fw-normal text-muted">từ</span></h3>
-                                <a href="#" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
-                                    Mục tiêu hôm nay: 10 từ &rarr;
+                                <span class="text-muted small d-block">Tài liệu học tập</span>
+                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">10 <span class="fs-6 fw-normal text-muted">bộ</span></h3>
+                                <a th:href="@{/learning/materials}" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
+                                    Xem PDF & Audio mới &rarr;
                                 </a>
                             </div>
                         </div>
@@ -76,13 +84,15 @@
                                 <i class="bi bi-bar-chart-fill"></i>
                             </div>
                             <div class="w-100">
-                                <span class="text-muted small d-block">Tiến độ JLPT N4</span>
-                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">68%</h3>
+                                <span class="text-muted small d-block" th:text="'Tiến độ ' + (${activeCourse != null ? activeCourse.title : 'Khóa học N4'})">Tiến độ JLPT N4</span>
+                                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)" 
+                                    th:text="(${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 50}) + '%'">50%</h3>
                                 <div class="progress progress-kotoba mb-1" style="height: 6px;">
-                                    <div class="progress-bar" style="width: 68%; background-color: var(--medium-blue);"></div>
+                                    <div class="progress-bar" 
+                                         th:style="'width: ' + (${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 50}) + '%; background-color: var(--medium-blue);'"></div>
                                 </div>
-                                <a href="#" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
-                                    Còn 32% để đạt mục tiêu! &rarr;
+                                <a th:if="${activeCourse != null}" th:href="@{/learning/courses/{id}/lessons(id=${activeCourse.id})}" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
+                                    Xem chi tiết tiến độ &rarr;
                                 </a>
                             </div>
                         </div>
@@ -96,30 +106,39 @@
                         <div class="card p-3 kotoba-card h-100">
                             <div class="d-flex align-items-center gap-2 mb-3">
                                 <i class="bi bi-play-circle-fill text-muted"></i>
-                                <span class="fw-bold small text-muted text-uppercase">Tiếp tục học</span>
+                                <span class="fw-bold small text-muted text-uppercase">Tiếp tục học bài gần nhất</span>
                             </div>
 
                             <div class="p-3 rounded-3 border d-flex gap-3 align-items-center" style="background-color: #FBFBF9;">
                                 <!-- Torii Gate Art Thumbnail -->
-                                <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-2 text-white" style="width: 85px; height: 85px; background: linear-gradient(135deg, #B9D1E1 0%, #62829D 100%);">
+                                <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-2 text-white shadow-sm" style="width: 85px; height: 85px; background: linear-gradient(135deg, #B9D1E1 0%, #62829D 100%);">
                                     <i class="bi bi-building fs-3 text-white"></i>
                                     <span class="small" style="font-size: 0.7rem; font-family: 'Noto Sans JP';">ことば</span>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <span class="badge mb-1 px-2 py-0.5 small" style="background-color: var(--navy-dark); color: white;">N4</span>
-                                    <h6 class="fw-bold mb-1 text-dark">Từ vựng N4 &bull; Bài 12</h6>
-                                    <p class="small text-muted mb-2">Chủ đề: 生活 (Cuộc sống hàng ngày)</p>
+                                    <span class="badge mb-1 px-2 py-0.5 small" style="background-color: var(--navy-dark); color: white;" 
+                                          th:text="${activeCourse != null ? activeCourse.level : 'N4'}">N4</span>
+                                    <h6 class="fw-bold mb-1 text-dark" 
+                                        th:text="${nextLesson != null ? nextLesson.title : (activeCourse != null ? activeCourse.title : 'Bài học N4')}">Bài 6: Cấu trúc ngữ pháp trọng tâm</h6>
+                                    <p class="small text-muted mb-2" 
+                                       th:text="${nextLesson != null ? nextLesson.sectionName : 'Chương 3: Cú pháp & Ngữ pháp trọng tâm'}">Chương 3: Cú pháp & Ngữ pháp trọng tâm</p>
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <div class="progress progress-kotoba w-75" style="height: 5px;">
-                                            <div class="progress-bar" style="width: 60%; background-color: var(--steel-blue);"></div>
+                                            <div class="progress-bar" 
+                                                 th:style="'width: ' + (${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 50}) + '%; background-color: var(--steel-blue);'"></div>
                                         </div>
-                                        <span class="small text-muted" style="font-size: 0.75rem;">6/10</span>
+                                        <span class="small text-muted" style="font-size: 0.75rem;" 
+                                              th:text="${activeCourseCompletedLessons} + '/' + ${activeCourseLessonCount}">6/12</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <a th:href="@{/courses}" class="btn btn-steel w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
-                                <span>Học tiếp</span>
+                            <a th:if="${nextLesson != null}" th:href="@{/learning/lessons/{id}(id=${nextLesson.id})}" class="btn btn-steel w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                                <span>Vào học tiếp ngay</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                            <a th:unless="${nextLesson != null}" th:href="@{/learning/courses}" class="btn btn-steel w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                                <span>Khám phá khóa học</span>
                                 <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
@@ -142,11 +161,11 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-check-circle-fill" style="color: var(--steel-blue);"></i>
                                         <div>
-                                            <div class="fw-semibold small text-dark">10 từ vựng</div>
-                                            <div class="text-muted" style="font-size: 0.72rem;">Đã học 6/10</div>
+                                            <div class="fw-semibold small text-dark">Ôn tập từ vựng N4</div>
+                                            <div class="text-muted" style="font-size: 0.72rem;">Đã học 15 từ mới</div>
                                         </div>
                                     </div>
-                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                    <a th:href="@{/flashcards}" class="text-decoration-none"><i class="bi bi-chevron-right text-muted small"></i></a>
                                 </div>
 
                                 <!-- Goal 2: Listening (Done) -->
@@ -154,11 +173,11 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-check-circle-fill" style="color: var(--steel-blue);"></i>
                                         <div>
-                                            <div class="fw-semibold small text-dark">1 bài nghe</div>
-                                            <div class="text-muted" style="font-size: 0.72rem;">Đã hoàn thành</div>
+                                            <div class="fw-semibold small text-dark">Nghe hội thoại cuộc sống</div>
+                                            <div class="text-muted" style="font-size: 0.72rem;">Đã hoàn thành 1 bài nghe</div>
                                         </div>
                                     </div>
-                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                    <a th:href="@{/learning/materials(type='AUDIO')}" class="text-decoration-none"><i class="bi bi-chevron-right text-muted small"></i></a>
                                 </div>
 
                                 <!-- Goal 3: Reading (Pending) -->
@@ -166,88 +185,53 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-circle text-muted"></i>
                                         <div>
-                                            <div class="fw-semibold small text-dark">1 bài đọc</div>
+                                            <div class="fw-semibold small text-dark">Luyện đọc hiểu N4</div>
                                             <div class="text-muted" style="font-size: 0.72rem;">Chưa bắt đầu</div>
                                         </div>
                                     </div>
-                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                    <a th:if="${activeCourse != null}" th:href="@{/learning/courses/{id}/lessons(id=${activeCourse.id})}" class="text-decoration-none"><i class="bi bi-chevron-right text-muted small"></i></a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. Explore Lessons (Khám phá bài học) -->
+                <!-- 4. Explore Lessons (Khám phá bài học thực tế từ Supabase) -->
                 <div class="card p-4 kotoba-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-grid text-muted"></i>
-                            <h5 class="fw-bold mb-0 text-dark">Khám phá bài học</h5>
+                            <h5 class="fw-bold mb-0 text-dark">Danh sách bài học khóa đang học</h5>
                         </div>
-                        <a th:href="@{/courses}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue);">
-                            Xem tất cả &rarr;
+                        <a th:if="${activeCourse != null}" th:href="@{/learning/courses/{id}/lessons(id=${activeCourse.id})}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue);">
+                            Xem toàn bộ giáo trình &rarr;
                         </a>
                     </div>
 
                     <div class="row g-3">
-                        <!-- Lesson 1: Vocabulary -->
-                        <div class="col-md-4">
-                            <div class="card p-3 h-100 rounded-3 border" style="background-color: #FDFDFD;">
+                        <!-- Iterates exploreLessons -->
+                        <div class="col-md-4" th:each="l : ${exploreLessons}">
+                            <div class="card p-3 h-100 rounded-3 border d-flex flex-column" style="background-color: #FDFDFD;">
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark); font-family: 'Noto Sans JP';">
-                                        あ
+                                        <i th:class="'bi ' + ${l.typeIcon}"></i>
                                     </div>
-                                    <h6 class="fw-bold mb-0 text-dark">Từ vựng</h6>
+                                    <h6 class="fw-bold mb-0 text-dark text-truncate" th:text="${l.title}" style="max-width: 170px;">Bài học</h6>
                                 </div>
-                                <p class="text-muted small mb-3" style="font-size: 0.8rem; line-height: 1.4;">
-                                    Học từ mới theo chủ đề, có hình ảnh và ví dụ minh họa.
+                                <p class="text-muted small mb-3 flex-grow-1" style="font-size: 0.8rem; line-height: 1.4;" th:text="${l.sectionName}">
+                                    Chương mục bài học
                                 </p>
                                 <div class="d-flex justify-content-between align-items-center mt-auto">
-                                    <span class="badge" style="background-color: var(--steel-blue); color: white;">N4</span>
-                                    <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>10 phút</span>
-                                    <i class="bi bi-arrow-right text-muted small"></i>
+                                    <span class="badge" th:classappend="${l.typeBadgeClass}" th:text="${l.typeDisplayName}">VIDEO</span>
+                                    <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i><span th:text="${l.durationMinutes != null ? l.durationMinutes : 20}">20</span> ph</span>
+                                    <a th:href="@{/learning/lessons/{id}(id=${l.id})}" class="text-decoration-none text-muted"><i class="bi bi-arrow-right small"></i></a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Lesson 2: Listening -->
-                        <div class="col-md-4">
-                            <div class="card p-3 h-100 rounded-3 border" style="background-color: #FDFDFD;">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark);">
-                                        <i class="bi bi-headphones"></i>
-                                    </div>
-                                    <h6 class="fw-bold mb-0 text-dark">Luyện nghe</h6>
-                                </div>
-                                <p class="text-muted small mb-3" style="font-size: 0.8rem; line-height: 1.4;">
-                                    Nghe và trả lời câu hỏi, cải thiện khả năng nghe hiểu.
-                                </p>
-                                <div class="d-flex justify-content-between align-items-center mt-auto">
-                                    <span class="badge" style="background-color: var(--steel-blue); color: white;">N4</span>
-                                    <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>10 phút</span>
-                                    <i class="bi bi-arrow-right text-muted small"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Lesson 3: Reading -->
-                        <div class="col-md-4">
-                            <div class="card p-3 h-100 rounded-3 border" style="background-color: #FDFDFD;">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark);">
-                                        <i class="bi bi-book"></i>
-                                    </div>
-                                    <h6 class="fw-bold mb-0 text-dark">Luyện đọc</h6>
-                                </div>
-                                <p class="text-muted small mb-3" style="font-size: 0.8rem; line-height: 1.4;">
-                                    Đọc hiểu các đoạn văn ngắn với nhiều chủ đề khác nhau.
-                                </p>
-                                <div class="d-flex justify-content-between align-items-center mt-auto">
-                                    <span class="badge" style="background-color: var(--steel-blue); color: white;">N4</span>
-                                    <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>10 phút</span>
-                                    <i class="bi bi-arrow-right text-muted small"></i>
-                                </div>
-                            </div>
+                        <!-- Fallback if exploreLessons is empty -->
+                        <div class="col-12" th:if="${exploreLessons == null || exploreLessons.isEmpty()}">
+                            <p class="text-muted small mb-0 text-center py-3">Chưa có bài học hiển thị. Vui lòng chọn một khóa học để bắt đầu.</p>
                         </div>
                     </div>
                 </div>

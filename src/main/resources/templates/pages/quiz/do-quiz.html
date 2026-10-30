@@ -1,10 +1,343 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='LÃ m bÃ i táº­p Quiz - JLPP',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle=${exercise.exerciseTitle + ' - JLPP'},
     activeMenu='my-courses',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">BÃ i táº­p luyá»‡n táº­p</h3>
-        <!-- Render questions -->
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2 small">
+                <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Học tập</a></li>
+                <li class="breadcrumb-item" th:if="${course != null}">
+                    <a th:href="@{/courses/{id}(id=${course.id})}" class="text-decoration-none" th:text="${course.title}">Khóa học</a>
+                </li>
+                <li class="breadcrumb-item" th:if="${lesson != null}">
+                    <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}" class="text-decoration-none" th:text="${lesson.title}">Bài học</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Làm bài trắc nghiệm</li>
+            </ol>
+        </nav>
+
+        <!-- Top Header Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle p-3 bg-primary bg-opacity-10 text-primary flex-shrink-0">
+                        <i class="bi bi-pencil-square fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 small">Bài tập trắc nghiệm</span>
+                            <span class="badge rounded-pill px-2 py-1 small"
+                                  style="background-color: var(--navy-dark); color: white;"
+                                  th:text="${course != null ? course.level : 'N4'}">N4</span>
+                            <span class="text-muted small" th:text="${totalQuestions} + ' câu hỏi'">5 câu hỏi</span>
+                        </div>
+                        <h4 class="fw-bold mb-0 text-dark" th:text="${exercise.exerciseTitle}">Bài tập trắc nghiệm củng cố kiến thức</h4>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <a th:if="${lesson != null}" th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                       class="btn btn-outline-secondary rounded-pill px-3 py-1.5 small">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại bài giảng
+                    </a>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-4 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-1 small text-muted">
+                    <span>Tiến độ hoàn thành: <strong id="answeredCountText" class="text-primary">0</strong>/<span th:text="${totalQuestions}">5</span> câu</span>
+                    <span id="progressPercentText" class="fw-bold text-primary">0%</span>
+                </div>
+                <div class="progress rounded-pill" style="height: 8px;">
+                    <div id="quizProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                         role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+
+        <form id="quizForm" th:action="@{/quiz/submit}" method="post">
+            <input type="hidden" name="exerciseId" th:value="${exercise.exerciseId}">
+
+            <div class="row g-4">
+                <!-- Left Column: Questions List -->
+                <div class="col-lg-8">
+                    <div th:each="q, qStat : ${questions}" 
+                         class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white question-card"
+                         th:id="'question-card-' + ${q.questionId}">
+                        
+                        <!-- Question Header -->
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                                      style="width: 32px; height: 32px; font-size: 0.95rem; font-weight: 700;"
+                                      th:text="${qStat.index + 1}">1</span>
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small"
+                                      th:if="${q.category != null}" th:text="${q.category}">Từ vựng (Goi)</span>
+                            </div>
+                            <span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill px-2.5 py-1 small">
+                                <i class="bi bi-star-fill text-warning me-1"></i>10 điểm
+                            </span>
+                        </div>
+
+                        <!-- Question Content -->
+                        <div class="mb-4">
+                            <h5 class="fw-semibold text-dark lh-base question-content" 
+                                style="font-family: 'Noto Sans JP', sans-serif;" 
+                                th:utext="${q.content}">
+                                わたしは 毎朝 パンと 卵を ____。
+                            </h5>
+                        </div>
+
+                        <!-- Question Options -->
+                        <div class="row g-2.5">
+                            <div class="col-12" th:each="opt : ${q.options}">
+                                <label class="option-label w-100 p-3 rounded-3 border d-flex align-items-center gap-3 cursor-pointer transition-all"
+                                       th:for="'opt_' + ${q.questionId} + '_' + ${opt.id}">
+                                    <input type="radio" 
+                                           class="form-check-input mt-0 option-radio flex-shrink-0" 
+                                           th:id="'opt_' + ${q.questionId} + '_' + ${opt.id}"
+                                           th:name="'answer_' + ${q.questionId}" 
+                                           th:value="${opt.label}"
+                                           th:data-qid="${q.questionId}"
+                                           onchange="onAnswerSelected(this)">
+                                    
+                                    <span class="option-badge badge rounded-circle bg-light text-dark border d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                                          style="width: 28px; height: 28px; font-weight: 700;"
+                                          th:text="${opt.label}">A</span>
+                                    
+                                    <span class="option-text fw-medium text-dark flex-grow-1"
+                                          style="font-family: 'Noto Sans JP', sans-serif;"
+                                          th:text="${opt.optionText}">たべます</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Submit Card -->
+                    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white text-center">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div class="text-start">
+                                <h6 class="fw-bold mb-1 text-dark">Bạn đã sẵn sàng hoàn thành bài làm?</h6>
+                                <p class="text-muted small mb-0">Hệ thống sẽ tự động chấm điểm và hiển thị giải thích chi tiết từng câu.</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="scrollToUnanswered()">
+                                    <i class="bi bi-search me-1"></i> Tìm câu chưa làm
+                                </button>
+                                <button type="button" class="btn btn-sakura rounded-pill px-5 fw-bold shadow-sm" onclick="confirmSubmit()">
+                                    <i class="bi bi-send-check-fill me-1"></i> Nộp bài làm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Sticky Question Navigator -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-top" style="top: 85px;">
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Bảng câu hỏi
+                        </h6>
+
+                        <!-- Question Numbers Grid -->
+                        <div class="d-flex flex-wrap gap-2 mb-4">
+                            <button type="button" 
+                                    th:each="q, qStat : ${questions}"
+                                    th:id="'palette-btn-' + ${q.questionId}"
+                                    class="palette-btn btn btn-outline-secondary rounded-3 d-flex align-items-center justify-content-center fw-bold"
+                                    style="width: 44px; height: 44px;"
+                                    th:onclick="'scrollToQuestion(' + ${q.questionId} + ')'"
+                                    th:text="${qStat.index + 1}">1</button>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="small border-top pt-3 text-muted">
+                            <div class="d-flex align-items-center gap-2 mb-1.5">
+                                <span class="d-inline-block rounded-2 bg-primary" style="width: 14px; height: 14px;"></span>
+                                <span>Đã trả lời</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="d-inline-block rounded-2 border bg-light" style="width: 14px; height: 14px;"></span>
+                                <span>Chưa trả lời</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-sakura w-100 rounded-pill py-2.5 fw-bold shadow-sm" onclick="confirmSubmit()">
+                                <i class="bi bi-send-check-fill me-1"></i> Nộp bài ngay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <style>
+            .cursor-pointer { cursor: pointer; }
+            .transition-all { transition: all 0.2s ease-in-out; }
+            .option-label:hover {
+                background-color: #F8FAFC;
+                border-color: var(--steel-blue) !important;
+            }
+            .option-label.active {
+                background-color: #EFF6FF !important;
+                border-color: #3B82F6 !important;
+                box-shadow: 0 0 0 1px #3B82F6;
+            }
+            .option-label.active .option-badge {
+                background-color: #3B82F6 !important;
+                color: #FFFFFF !important;
+                border-color: #3B82F6 !important;
+            }
+            .palette-btn.answered {
+                background-color: #3B82F6 !important;
+                color: #FFFFFF !important;
+                border-color: #3B82F6 !important;
+            }
+        </style>
+
+        <script>
+            const totalQ = /*[[${totalQuestions}]]*/ 5;
+            const answeredMap = {};
+
+            function onAnswerSelected(radio) {
+                const qId = radio.getAttribute('data-qid');
+                answeredMap[qId] = radio.value;
+
+                // Highlight active option card
+                const card = document.getElementById('question-card-' + qId);
+                if (card) {
+                    card.querySelectorAll('.option-label').forEach(lbl => lbl.classList.remove('active'));
+                    const parentLabel = radio.closest('.option-label');
+                    if (parentLabel) parentLabel.classList.add('active');
+                }
+
+                // Update palette button
+                const palBtn = document.getElementById('palette-btn-' + qId);
+                if (palBtn) palBtn.classList.add('answered');
+
+                // Update progress bar
+                updateProgress();
+            }
+
+            function updateProgress() {
+                const answeredCount = Object.keys(answeredMap).length;
+                const total = document.querySelectorAll('.question-card').length || totalQ;
+                const pct = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+
+                const countEl = document.getElementById('answeredCountText');
+                const pctEl = document.getElementById('progressPercentText');
+                const bar = document.getElementById('quizProgressBar');
+
+                if (countEl) countEl.textContent = answeredCount;
+                if (pctEl) pctEl.textContent = pct + '%';
+                if (bar) bar.style.width = pct + '%';
+            }
+
+            function scrollToQuestion(qId) {
+                const el = document.getElementById('question-card-' + qId);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('border-primary');
+                    setTimeout(() => el.classList.remove('border-primary'), 1000);
+                }
+            }
+
+            function scrollToUnanswered() {
+                const cards = document.querySelectorAll('.question-card');
+                for (let card of cards) {
+                    const id = card.id.replace('question-card-', '');
+                    if (!answeredMap[id]) {
+                        scrollToQuestion(id);
+                        return;
+                    }
+                }
+                alert('Tuyệt vời! Bạn đã trả lời tất cả các câu hỏi.');
+            }
+
+            function confirmSubmit() {
+                const total = document.querySelectorAll('.question-card').length || totalQ;
+                const answered = Object.keys(answeredMap).length;
+                const unanswered = total - answered;
+
+                const progressEl = document.getElementById('modalAnswerProgress');
+                const warnBox = document.getElementById('modalWarningBox');
+                const warnText = document.getElementById('modalWarningText');
+                const successBox = document.getElementById('modalSuccessBox');
+
+                if (progressEl) progressEl.textContent = answered + ' / ' + total + ' câu đã chọn';
+
+                if (unanswered > 0) {
+                    if (warnBox) warnBox.classList.remove('d-none');
+                    if (warnText) warnText.textContent = 'Bạn còn ' + unanswered + ' câu hỏi chưa trả lời. Các câu chưa chọn sẽ không được tính điểm. Bạn có chắc chắn muốn nộp bài?';
+                    if (successBox) successBox.classList.add('d-none');
+                } else {
+                    if (warnBox) warnBox.classList.add('d-none');
+                    if (successBox) successBox.classList.remove('d-none');
+                }
+
+                // Show modal if bootstrap is available, otherwise submit
+                const modalEl = document.getElementById('submitConfirmModal');
+                if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                } else {
+                    doFinalSubmit();
+                }
+            }
+
+            function doFinalSubmit() {
+                const btn = document.getElementById('confirmSubmitBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nộp bài...';
+                }
+                const form = document.getElementById('quizForm');
+                if (form) {
+                    form.submit();
+                }
+            }
+        </script>
+
+        <!-- Submit Confirmation Modal -->
+        <div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold text-dark" id="submitModalLabel">
+                            <i class="bi bi-question-circle-fill text-primary me-2"></i>Xác nhận nộp bài làm
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body py-4">
+                        <div class="d-flex align-items-center justify-content-between p-3 rounded-3 bg-light border mb-3">
+                            <span class="text-muted small">Tiến độ làm bài:</span>
+                            <span class="fw-bold text-primary fs-6" id="modalAnswerProgress">0 / 5 câu</span>
+                        </div>
+                        <div id="modalWarningBox" class="alert alert-warning small mb-0 d-none">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <span id="modalWarningText">Bạn vẫn còn câu hỏi chưa trả lời. Bạn có chắc chắn muốn nộp bài?</span>
+                        </div>
+                        <div id="modalSuccessBox" class="alert alert-success small mb-0 d-none">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            Tuyệt vời! Bạn đã hoàn thành tất cả câu hỏi. Hệ thống sẽ chấm điểm và hiển thị đáp án đúng/sai cùng lời giải chi tiết.
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                            Làm tiếp
+                        </button>
+                        <button type="button" id="confirmSubmitBtn" class="btn btn-sakura rounded-pill px-4 fw-bold shadow-sm" onclick="doFinalSubmit()">
+                            <i class="bi bi-send-check-fill me-1"></i> Xác nhận nộp bài
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>

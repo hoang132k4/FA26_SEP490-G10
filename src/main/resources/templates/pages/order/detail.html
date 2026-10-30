@@ -1,0 +1,141 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Chi tiết đơn hàng - JEPS',
+    activeMenu='orders',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- Back to Order History Link (Mockup element 1) -->
+        <div class="mb-3 mt-2">
+            <a th:href="@{/orders}" class="text-decoration-none fw-semibold" style="color: var(--fuji-blue)">
+                <i class="bi bi-arrow-left me-1"></i> Back to Order History
+            </a>
+        </div>
+
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Chi tiết đơn hàng (Order Detail)</h3>
+                <span class="text-muted small">Mã đơn: <strong th:text="${order.orderNumber}">ORD-20261009-001</strong></span>
+            </div>
+            <div>
+                <span th:if="${order.orderStatus.name() == 'COMPLETED'}" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold fs-6">
+                    <i class="bi bi-check-circle-fill me-1"></i> Completed
+                </span>
+                <span th:if="${order.orderStatus.name() == 'PROCESSING'}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-semibold fs-6">
+                    <i class="bi bi-clock-history me-1"></i> Processing
+                </span>
+                <span th:if="${order.orderStatus.name() == 'CANCELLED'}" class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold fs-6">
+                    <i class="bi bi-x-circle-fill me-1"></i> Cancelled
+                </span>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Box 1: Order Information Card (Mockup element 2) -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: var(--navy-dark)">
+                        <i class="bi bi-info-circle me-2 text-primary"></i> Thông tin đơn hàng (Order Information)
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 bg-light rounded-3">
+                                <span class="text-muted small d-block mb-1">Order No. :</span>
+                                <strong class="fs-6" style="color: var(--navy-dark)" th:text="${order.orderNumber}">ORD-20261009-001</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 bg-light rounded-3">
+                                <span class="text-muted small d-block mb-1">Order Date :</span>
+                                <strong class="fs-6" style="color: var(--text-main)" th:text="${order.orderDateFormatted}">2026/10/09 14:25</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 bg-light rounded-3">
+                                <span class="text-muted small d-block mb-1">Payment Method :</span>
+                                <strong class="fs-6 text-primary" th:text="${order.paymentMethod}">VNPay QR</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 bg-light rounded-3">
+                                <span class="text-muted small d-block mb-1">Status :</span>
+                                <strong class="fs-6"
+                                        th:classappend="${order.orderStatus.name() == 'COMPLETED'} ? 'text-success' : (${order.orderStatus.name() == 'CANCELLED'} ? 'text-danger' : 'text-warning-emphasis')"
+                                        th:text="${order.statusEnglish}">
+                                    Completed
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 2: Order Items Card (Mockup element 3) -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+                    <div class="p-4 border-bottom">
+                        <h5 class="fw-bold mb-0" style="color: var(--navy-dark)">
+                            <i class="bi bi-box-seam me-2 text-primary"></i> Danh sách mục đã đặt (Order Items)
+                        </h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light text-secondary small text-uppercase fw-semibold" style="border-bottom: 2px solid var(--border-subtle);">
+                                <tr>
+                                    <th scope="col" class="ps-4 py-3">Item</th>
+                                    <th scope="col" class="py-3">Price</th>
+                                    <th scope="col" class="py-3 text-center">Quantity</th>
+                                    <th scope="col" class="text-end pe-4 py-3">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="item : ${order.items}" class="border-bottom">
+                                    <!-- Item Name -->
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="rounded-3 d-flex align-items-center justify-content-center bg-light text-primary" style="width: 44px; height: 44px;">
+                                                <i class="bi bi-journal-bookmark fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <strong class="d-block" style="color: var(--navy-dark)" th:text="${item.itemName}">JLPT N4 Full Course</strong>
+                                                <span class="text-muted small" th:if="${item.courseId != null}">Mã khóa học: #<span th:text="${item.courseId}">1</span></span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Price -->
+                                    <td class="py-3 text-muted fw-semibold" th:text="${item.priceFormatted}">
+                                        2,500,000 VND
+                                    </td>
+
+                                    <!-- Quantity -->
+                                    <td class="py-3 text-center fw-semibold" th:text="${item.quantity}">
+                                        1
+                                    </td>
+
+                                    <!-- Subtotal -->
+                                    <td class="text-end pe-4 py-3 fw-bold" style="color: var(--navy-dark)" th:text="${item.subtotalFormatted}">
+                                        2,500,000 VND
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Bottom Summary Area (Mockup element 3 Total in red/coral) -->
+                    <div class="p-4 bg-light d-flex justify-content-between align-items-center border-top">
+                        <a th:href="@{/orders}" class="btn btn-outline-secondary px-4 py-2 rounded-3">
+                            <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                        </a>
+                        <div class="text-end">
+                            <span class="text-muted small d-block">Tổng giá trị đơn hàng (Total Amount)</span>
+                            <span class="fs-4 fw-bold" style="color: var(--sunset-coral);" th:text="'Total: ' + ${order.totalAmountFormatted}">
+                                Total: 2,500,000 VND
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
