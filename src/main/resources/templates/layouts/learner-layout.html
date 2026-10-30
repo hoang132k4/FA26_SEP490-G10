@@ -12,13 +12,19 @@
         <!-- Top Bar with Search & Profile -->
         <header class="kotoba-topbar">
             <!-- Search Pill -->
-            <div class="kotoba-search-pill">
+            <div class="kotoba-search-pill"
+                 th:if="${hideTopSearch != true
+                         and activeMenu != 'learner-dashboard' and activeMenu != 'dashboard'
+                         and activeMenu != 'exams' and activeMenu != 'placement' and activeMenu != 'history' and activeMenu != 'exam-history'
+                         and activeMenu != 'learning-path'
+                         and activeMenu != 'profile'
+                         and activeMenu != 'orders' and activeMenu != 'order'}">
                 <i class="bi bi-search text-muted"></i>
                 <input type="text" placeholder="Tìm kiếm từ vựng, bài học, ngữ pháp...">
             </div>
 
             <!-- Right Controls: Notification & User Profile -->
-            <div class="d-flex align-items-center gap-4">
+            <div class="d-flex align-items-center gap-4 ms-auto">
                 <!-- Notification Bell with Red Badge -->
                 <button class="btn btn-link position-relative p-1 text-muted" type="button" style="text-decoration: none;">
                     <i class="bi bi-bell fs-5" style="color: var(--navy-dark)"></i>
@@ -28,10 +34,21 @@
                 <!-- User Dropdown Profile -->
                 <div class="dropdown">
                     <button class="btn d-flex align-items-center gap-2 p-1 border-0" type="button" data-bs-toggle="dropdown">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: var(--navy-dark); color: white;">
-                            <i class="bi bi-person-fill fs-5"></i>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center overflow-hidden shadow-sm" style="width: 38px; height: 38px; background-color: var(--navy-dark); color: white;">
+                            <img th:if="${(currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty())}"
+                                 th:src="${currentUserAvatar != null and !currentUserAvatar.isBlank() ? currentUserAvatar : (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty() ? currentUser.avatarUrl : profile.avatarUrl)}"
+                                 alt="Avatar" class="w-100 h-100 object-fit-cover" />
+                            <span th:if="${!((currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty())) and ((currentUserFullName != null and !currentUserFullName.isBlank()) or (currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null))}"
+                                  class="fw-bold"
+                                  th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? #strings.substring(currentUserFullName, 0, 1).toUpperCase() : (currentUser != null and currentUser.fullName != null ? #strings.substring(currentUser.fullName, 0, 1).toUpperCase() : #strings.substring(profile.fullName, 0, 1).toUpperCase())}">
+                                U
+                            </span>
+                            <i th:unless="${(currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty()) or (currentUserFullName != null and !currentUserFullName.isBlank()) or (currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null)}" class="bi bi-person-fill fs-5"></i>
                         </div>
-                        <span class="fw-semibold small" style="color: var(--text-main);">Nguyễn Văn A</span>
+                        <span class="fw-semibold small" style="color: var(--text-main);"
+                              th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : (profile != null and profile.fullName != null ? profile.fullName : (userName != null ? userName : 'Học viên')))}">
+                            Nguyễn Văn A
+                        </span>
                         <i class="bi bi-chevron-down small text-muted"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">

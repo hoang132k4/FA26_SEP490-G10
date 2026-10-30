@@ -1,24 +1,347 @@
 <div th:replace="~{layouts/learner-layout :: html(
-    pageTitle=${exam.examTitle},
-    activeMenu='exams',
+    pageTitle=${exam.examTitle + ' - Kotoba JEPS'},
+    activeMenu=${activeMenu != null ? activeMenu : (exam.examType == 'PLACEMENT_TEST' ? 'placement' : 'exams')},
     content=~{::#mainContent}
 )}">
+
     <div id="mainContent">
-        <section class="card kotoba-card p-4 p-lg-5">
-            <span class="text-uppercase fw-bold small text-muted">JLPT Mock Exam</span>
-            <h1 class="h3 fw-bold mt-2" th:text="${exam.examTitle}">Exam title</h1>
-            <div class="d-flex flex-wrap gap-3 text-muted mb-4">
-                <span th:if="${exam.jlptLevel != null}" th:text="${exam.jlptLevel}">N5</span>
-                <span th:if="${exam.durationMinutes != null}" th:text="${exam.durationMinutes + ' minutes'}">60 minutes</span>
-                <span th:if="${exam.totalQuestions != null}" th:text="${exam.totalQuestions + ' questions'}">0 questions</span>
+        <!-- Top Focus Mode Exam Banner -->
+        <div class="card p-4 p-lg-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                        <span th:if="${exam.examType == 'PLACEMENT_TEST'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                            <i class="bi bi-compass me-1"></i> Đánh giá năng lực đầu vào
+                        </span>
+                        <span th:if="${exam.examType == 'MILESTONE'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                            <i class="bi bi-flag-fill me-1"></i> Kiểm tra cột mốc <span th:if="${exam.jlptLevel != null}" th:text="'(' + ${exam.jlptLevel} + ')'"></span>
+                        </span>
+                        <span th:if="${exam.examType != 'PLACEMENT_TEST' and exam.examType != 'MILESTONE'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
+                            <i class="bi bi-award me-1"></i> <span th:text="${exam.jlptLevel != null ? exam.jlptLevel : 'JLPT'}">N4</span>
+                        </span>
+
+                        <span class="badge bg-white bg-opacity-15 text-white rounded-pill px-3 py-1">
+                            <i class="bi bi-shield-check text-success me-1"></i> Chế độ thi tập trung (Focus Mode)
+                        </span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-white" th:text="${exam.examTitle}">Đề thi</h2>
+                    <p class="text-white-50 mb-0 small" th:text="${exam.description}">Mô tả đề thi...</p>
+                </div>
+
+
+                <!-- Live Timer Card -->
+                <div th:if="${exam.totalQuestions > 0 and !#lists.isEmpty(exam.questions)}" class="d-flex align-items-center gap-3 bg-white bg-opacity-10 p-3 rounded-4 border border-white border-opacity-20 shadow-sm">
+                    <i class="bi bi-stopwatch-fill fs-2 text-warning"></i>
+                    <div>
+                        <div class="small text-white-50">Thời gian còn lại</div>
+                        <div class="fs-3 fw-bold text-white font-monospace" id="examTimerDisplay" th:data-duration="${exam.durationMinutes * 60}">--:--</div>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Empty State Alert when exam has no questions in database -->
+        <div th:if="${exam.totalQuestions == 0 or #lists.isEmpty(exam.questions)}" class="card p-4 p-lg-5 text-center border-0 shadow-sm" style="border-radius: 16px;">
+            <div class="mb-3">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-1"></i>
+            </div>
+            <h4 class="fw-bold text-dark">Chưa có bảng câu hỏi cho đề thi này</h4>
             <div class="alert alert-warning mb-4" role="alert">
-                Chưa có bảng câu hỏi trong schema Supabase được cung cấp nên chưa thể bắt đầu đề thi này.
-                Hệ thống không hiển thị câu hỏi mẫu.
+                Chưa có bảng câu hỏi trong schema Supabase được cung cấp nên chưa thể bắt đầu đề thi này. Đề thi này hiện chưa có câu hỏi. Hệ thống không hiển thị câu hỏi mẫu.
             </div>
-            <a th:href="@{/mock-exam/{id}(id=${exam.examId})}" class="btn btn-steel-outline align-self-start">
-                Quay lại chi tiết đề thi
-            </a>
-        </section>
+            <div>
+                <a th:href="@{/exams}" class="btn btn-steel rounded-pill px-4 py-2 fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách đề thi
+                </a>
+            </div>
+        </div>
+
+        <!-- Active Exam Content (Only when questions exist) -->
+        <div th:if="${exam.totalQuestions > 0 and !#lists.isEmpty(exam.questions)}">
+            <!-- Skill Group Switcher Tabs -->
+            <div class="card p-2 mb-4 border-0 shadow-sm bg-white" style="border-radius: 12px;">
+                <ul class="nav nav-pills gap-2" id="skillGroupTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active rounded-pill px-4 py-2 fw-semibold" id="tab-all" data-filter="ALL" type="button">
+                            <i class="bi bi-collection me-1"></i> Tất cả (<span th:text="${exam.totalQuestions}">0</span>)
+                        </button>
+                    </li>
+                <li class="nav-item" th:if="${!exam.vocabGrammarQuestions.isEmpty()}">
+                    <button class="nav-link rounded-pill px-4 py-2 fw-semibold" id="tab-vocab" data-filter="VOCAB_GRAMMAR" type="button">
+                        <i class="bi bi-translate me-1"></i> Từ vựng • Ngữ pháp (<span th:text="${exam.vocabGrammarQuestions.size()}">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item" th:if="${!exam.readingQuestions.isEmpty()}">
+                    <button class="nav-link rounded-pill px-4 py-2 fw-semibold" id="tab-reading" data-filter="READING" type="button">
+                        <i class="bi bi-book me-1"></i> Đọc hiểu (<span th:text="${exam.readingQuestions.size()}">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item" th:if="${!exam.listeningQuestions.isEmpty()}">
+                    <button class="nav-link rounded-pill px-4 py-2 fw-semibold" id="tab-listening" data-filter="LISTENING" type="button">
+                        <i class="bi bi-headphones me-1"></i> Nghe hiểu (<span th:text="${exam.listeningQuestions.size()}">0</span>)
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Column: Questions List -->
+            <div class="col-lg-8 col-xl-9">
+                <form id="examForm" th:action="@{/exams/{id}/submit(id=${exam.examId})}" method="post">
+                    <input type="hidden" name="timeSpentSeconds" id="timeSpentSeconds" value="0" />
+
+                    <!-- Questions List rendered from database -->
+                    <div id="questionsContainer">
+                        <div th:each="q, stat : ${exam.questions}" class="question-wrapper" th:data-skill="${q.skillGroup}">
+                            <div th:replace="~{fragments/components/question-item :: questionItem(
+                                q=${q},
+                                index=${stat.count},
+                                showSolution=false
+                            )}"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Bar -->
+                    <div class="card p-3 mb-5 border-0 shadow-sm d-flex flex-row justify-content-between align-items-center bg-white rounded-4">
+                        <div class="text-muted small">
+                            <i class="bi bi-cloud-check text-success me-1"></i> Đáp án tự động lưu tạm trên trình duyệt của bạn.
+                        </div>
+                        <button type="button" class="btn btn-steel rounded-pill px-5 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                            <i class="bi bi-check2-circle me-1"></i> Nộp bài thi
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Question Palette & Navigation Status -->
+            <div class="col-lg-4 col-xl-3">
+                <div class="card p-4 kotoba-card border-0 shadow-sm sticky-top" style="top: 90px; z-index: 10; border-radius: 16px;">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i> Lưới câu hỏi
+                        </h6>
+                        <span class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill fw-bold" id="answeredCountBadge">
+                            0 / <span th:text="${exam.totalQuestions}">0</span>
+                        </span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-3" style="height: 8px; border-radius: 6px;">
+                        <div class="progress-bar bg-success" id="examProgressBar" role="progressbar" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Question Jump Grid -->
+                    <div class="d-flex flex-wrap gap-2 mb-4 p-2 bg-light rounded-3" id="questionGrid" style="max-height: 280px; overflow-y: auto;">
+                        <a th:each="q, stat : ${exam.questions}" 
+                           th:href="'#question-' + ${q.id}"
+                           th:id="'palette-btn-' + ${q.id}"
+                           class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center question-palette-item shadow-sm"
+                           style="width: 38px; height: 38px; font-weight: 600; text-decoration: none;"
+                           th:text="${stat.count}">1</a>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="border-top pt-3 small text-muted mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="d-inline-block rounded-circle bg-success shadow-sm" style="width: 14px; height: 14px;"></span>
+                            <span>Đã chọn đáp án</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="d-inline-block rounded-circle border border-secondary bg-white" style="width: 14px; height: 14px;"></span>
+                            <span>Chưa chọn</span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-steel w-100 rounded-pill py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                        <i class="bi bi-send-check me-1"></i> Nộp bài thi
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Confirmation Modal -->
+        <div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="bi bi-question-circle-fill text-primary me-2"></i> Xác nhận nộp bài thi
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-4">
+                        <div class="p-3 rounded-3 mb-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Số câu đã hoàn thành:</span>
+                                <strong class="text-success" id="modalAnsweredText">0 câu</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Số câu chưa trả lời:</span>
+                                <strong class="text-danger" id="modalUnansweredText">0 câu</strong>
+                            </div>
+                        </div>
+                        <p class="mb-0 text-secondary small" style="line-height: 1.6;">
+                            Sau khi nộp bài, hệ thống sẽ tiến hành đối chiếu đáp án từ cơ sở dữ liệu và hiển thị chi tiết điểm số cùng lời giải của đề thi.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Làm bài tiếp</button>
+                        <button type="button" class="btn btn-steel rounded-pill px-4 fw-bold" id="confirmSubmitBtn">
+                            <i class="bi bi-check-lg me-1"></i> Nộp bài ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Client JavaScript: Timer, LocalStorage Persistence, Palette, Skill Tabs -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function () {
+                const examId = /*[[${exam.examId}]]*/ 0;
+                const storageKey = 'jeps_exam_' + examId + '_answers';
+                const timerStorageKey = 'jeps_exam_' + examId + '_time_left';
+                const form = document.getElementById('examForm');
+                const timeSpentInput = document.getElementById('timeSpentSeconds');
+                const timerEl = document.getElementById('examTimerDisplay');
+                const answeredBadge = document.getElementById('answeredCountBadge');
+                const progressBar = document.getElementById('examProgressBar');
+                const modalAnsweredText = document.getElementById('modalAnsweredText');
+                const modalUnansweredText = document.getElementById('modalUnansweredText');
+                const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+                const totalQuestions = document.querySelectorAll('.question-box').length;
+
+                let secondsPassed = 0;
+                let isSubmitted = false;
+
+                // 1. Countdown Timer with SessionStorage Persistence
+                const originalDuration = parseInt(timerEl.getAttribute('data-duration')) || 3000;
+                let savedTimeLeft = sessionStorage.getItem(timerStorageKey);
+                let timeLeft = savedTimeLeft !== null ? parseInt(savedTimeLeft) : originalDuration;
+
+                const timerInterval = setInterval(() => {
+                    secondsPassed++;
+                    if (timeSpentInput) timeSpentInput.value = secondsPassed;
+
+                    timeLeft--;
+                    sessionStorage.setItem(timerStorageKey, timeLeft);
+
+                    const minutes = Math.floor(Math.max(0, timeLeft) / 60);
+                    const seconds = Math.max(0, timeLeft) % 60;
+                    if (timerEl) {
+                        timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        if (!isSubmitted) {
+                            isSubmitted = true;
+                            alert('Hết giờ làm bài! Hệ thống tự động nộp bài thi của bạn.');
+                            localStorage.removeItem(storageKey);
+                            sessionStorage.removeItem(timerStorageKey);
+                            if (form) form.submit();
+                        }
+                    }
+                }, 1000);
+
+                // Initial timer display
+                const initMin = Math.floor(Math.max(0, timeLeft) / 60);
+                const initSec = Math.max(0, timeLeft) % 60;
+                if (timerEl) {
+                    timerEl.textContent = `${initMin.toString().padStart(2, '0')}:${initSec.toString().padStart(2, '0')}`;
+                }
+
+                // 2. Restore Answers from LocalStorage
+                try {
+                    const savedAnswers = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                    for (const [qId, optId] of Object.entries(savedAnswers)) {
+                        const radio = document.querySelector(`input[name="answer_${qId}"][value="${optId}"]`);
+                        if (radio) radio.checked = true;
+                    }
+                } catch (e) {
+                    console.warn('Cannot read localStorage', e);
+                }
+
+                // 3. Update Progress & Palette
+                function updateProgress() {
+                    const checkedInputs = document.querySelectorAll('input[type="radio"][name^="answer_"]:checked');
+                    const answered = checkedInputs.length;
+                    const unanswered = totalQuestions - answered;
+
+                    if (answeredBadge) {
+                        answeredBadge.innerHTML = answered + ' / ' + totalQuestions;
+                    }
+                    if (modalAnsweredText) modalAnsweredText.textContent = answered + ' câu';
+                    if (modalUnansweredText) modalUnansweredText.textContent = unanswered + ' câu';
+
+                    if (progressBar && totalQuestions > 0) {
+                        const pct = Math.round((answered / totalQuestions) * 100);
+                        progressBar.style.width = pct + '%';
+                    }
+
+                    // Reset palette
+                    document.querySelectorAll('.question-palette-item').forEach(btn => {
+                        btn.classList.remove('btn-success', 'text-white');
+                        btn.classList.add('btn-outline-secondary');
+                    });
+
+                    // Save answers map and highlight palette
+                    const currentAnswers = {};
+                    checkedInputs.forEach(input => {
+                        const qId = input.name.replace('answer_', '');
+                        currentAnswers[qId] = input.value;
+                        const paletteBtn = document.getElementById('palette-btn-' + qId);
+                        if (paletteBtn) {
+                            paletteBtn.classList.remove('btn-outline-secondary');
+                            paletteBtn.classList.add('btn-success', 'text-white');
+                        }
+                    });
+
+                    try {
+                        localStorage.setItem(storageKey, JSON.stringify(currentAnswers));
+                    } catch (e) {}
+                }
+
+                document.querySelectorAll('input[type="radio"][name^="answer_"]').forEach(radio => {
+                    radio.addEventListener('change', updateProgress);
+                });
+
+                // Initial progress update
+                updateProgress();
+
+                // 4. Modal Submit Handler with Double-Submit Prevention
+                if (confirmSubmitBtn) {
+                    confirmSubmitBtn.addEventListener('click', function () {
+                        if (isSubmitted) return;
+                        isSubmitted = true;
+                        confirmSubmitBtn.disabled = true;
+                        confirmSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang chấm điểm...';
+                        localStorage.removeItem(storageKey);
+                        sessionStorage.removeItem(timerStorageKey);
+                        if (form) form.submit();
+                    });
+                }
+
+                // 5. Skill Group Filter Tabs
+                const tabButtons = document.querySelectorAll('#skillGroupTabs button');
+                const questionWrappers = document.querySelectorAll('.question-wrapper');
+
+                tabButtons.forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        tabButtons.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+
+                        const filter = this.getAttribute('data-filter');
+                        questionWrappers.forEach(wrap => {
+                            if (filter === 'ALL' || wrap.getAttribute('data-skill') === filter) {
+                                wrap.style.display = '';
+                            } else {
+                                wrap.style.display = 'none';
+                            }
+                        });
+                    });
+                });
+            });
+        </script>
+        </div>
     </div>
 </div>

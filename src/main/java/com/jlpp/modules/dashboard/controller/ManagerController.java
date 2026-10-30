@@ -1,38 +1,41 @@
 package com.jlpp.modules.dashboard.controller;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.dao.DataAccessException;
+import com.jlpp.modules.manager.reports.dto.ManagerReportData;
+import com.jlpp.modules.manager.reports.dto.ManagerReportType;
+import com.jlpp.modules.manager.reports.service.ManagerReportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.TransactionException;
+import org.springframework.dao.DataAccessException;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
-import com.jlpp.modules.manager.courses.dto.CourseOption;
-import com.jlpp.modules.manager.courses.service.CourseService;
 
 /**
- * Manager area pages. Lesson management lives in
- * {@link com.jlpp.modules.manager.lessons.controller.ManagerLessonController}.
+ * Manager dashboard and report pages. Feature pages live in their module controllers.
  */
 @Controller
 @RequestMapping("/manager")
 public class ManagerController {
 
     private static final Logger log = LoggerFactory.getLogger(ManagerController.class);
+    private final ManagerReportService reportService;
 
-    private final CourseService courseService;
-
-    public ManagerController(CourseService courseService) {
-        this.courseService = courseService;
+    public ManagerController(ManagerReportService reportService) {
+        this.reportService = reportService;
     }
 
     @GetMapping
@@ -40,143 +43,102 @@ public class ManagerController {
         return "redirect:/manager/dashboard";
     }
 
-    @GetMapping("/courses")
-    public String courses(Model model) {
-        List<Map<String, Object>> courses;
-        try {
-            courses = courseService.findCourses().stream()
-                    .map(this::toCourseView)
-                    .toList();
-        } catch (DataAccessException | TransactionException exception) {
-            courses = List.of();
-            model.addAttribute("courseError",
-                    "Không kết nối được Supabase. Kiểm tra file .env và thông tin Session Pooler rồi tải lại.");
-        }
-        model.addAttribute("courses", courses);
-        model.addAttribute("courseCount", courses.size());
-        model.addAttribute("courseForm", model.containsAttribute("courseForm")
-                ? model.getAttribute("courseForm") : null);
-        return "pages/manager/course/manager-courses";
-    }
-
-    @GetMapping("/courses/new")
-    public String newCourse(Model model) {
-        model.addAttribute("courseForm", Map.of("id", "", "name", "", "level", "N5", "status", "PUBLISHED"));
-        return courses(model);
-    }
-
-    @GetMapping("/courses/{courseId}/edit")
-    public String editCourse(@PathVariable long courseId, Model model, RedirectAttributes redirectAttributes) {
-        return courseService.findCourse(courseId).map(course -> {
-            model.addAttribute("courseForm", Map.of("id", course.id(), "name", course.title(),
-                    "level", course.level(), "status", normalizedCourseStatus(course.status())));
-            return courses(model);
-        }).orElseGet(() -> {
-            redirectAttributes.addFlashAttribute("courseError", "Không tìm thấy khóa học cần sửa.");
-            return "redirect:/manager/courses";
-        });
-    }
-
-    @PostMapping("/courses")
-    public String createCourse(@RequestParam String name, @RequestParam String level,
-                               @RequestParam String status, RedirectAttributes redirectAttributes) {
-        try {
-            courseService.createCourse(clean(name), validLevel(level), validStatus(status));
-            redirectAttributes.addFlashAttribute("courseSuccess", "Đã thêm khóa học.");
-        } catch (IllegalArgumentException exception) {
-            redirectAttributes.addFlashAttribute("courseError", exception.getMessage());
-        } catch (DataAccessException exception) {
-            log.error("Could not create course", exception);
-            redirectAttributes.addFlashAttribute("courseError", "Không thể hoàn tất thao tác thêm khóa học. Kiểm tra log ứng dụng để biết chi tiết.");
-        }
-        return "redirect:/manager/courses";
-    }
-
-    @PostMapping("/courses/{courseId}")
-    public String updateCourse(@PathVariable long courseId, @RequestParam String name,
-                               @RequestParam String level, @RequestParam String status,
-                               RedirectAttributes redirectAttributes) {
-        try {
-            courseService.updateCourse(courseId, clean(name), validLevel(level), validStatus(status));
-            redirectAttributes.addFlashAttribute("courseSuccess", "Đã cập nhật khóa học.");
-        } catch (IllegalArgumentException exception) {
-            redirectAttributes.addFlashAttribute("courseError", exception.getMessage());
-        } catch (DataAccessException exception) {
-            log.error("Could not update course {}", courseId, exception);
-            redirectAttributes.addFlashAttribute("courseError", "Không thể hoàn tất thao tác cập nhật khóa học. Kiểm tra log ứng dụng để biết chi tiết.");
-        }
-        return "redirect:/manager/courses";
-    }
-
-    private String clean(String name) {
-        String value = name == null ? "" : name.trim();
-        if (value.isBlank() || value.length() > 255) {
-            throw new IllegalArgumentException("Tên khóa học không được để trống và tối đa 255 ký tự.");
-        }
-        return value;
-    }
-
-    private String validLevel(String level) {
-        String value = level == null ? "" : level.trim().toUpperCase();
-        if (!List.of("N5", "N4", "N3", "N2", "N1").contains(value)) {
-            throw new IllegalArgumentException("Vui lòng chọn cấp độ JLPT hợp lệ.");
-        }
-        return value;
-    }
-
-    private String validStatus(String status) {
-        String value = status == null ? "" : status.trim().toUpperCase();
-        if (!List.of("DRAFT", "PUBLISHED", "ARCHIVED").contains(value)) {
-            throw new IllegalArgumentException("Vui lòng chọn trạng thái hợp lệ.");
-        }
-        return value;
-    }
-
     @GetMapping("/reports")
-    public String reports() {
+    public String reports(@RequestParam(required = false) String type,
+                          @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                          @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                          Model model) {
+        ManagerReportType selectedType;
+        try {
+            selectedType = ManagerReportType.from(type);
+        } catch (IllegalArgumentException exception) {
+            selectedType = ManagerReportType.EXAM_RESULTS;
+            model.addAttribute("reportError", exception.getMessage());
+        }
+        model.addAttribute("reportTypes", ManagerReportType.values());
+        model.addAttribute("selectedType", selectedType.value());
+        model.addAttribute("from", from == null ? "" : from);
+        model.addAttribute("to", to == null ? "" : to);
+
+        if (from != null && to != null && from.isAfter(to)) {
+            model.addAttribute("reportError", "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
+            model.addAttribute("report", emptyReport(selectedType));
+            return "pages/manager/report/manager-reports";
+        }
+        try {
+            model.addAttribute("report", reportService.getReport(selectedType.value(), from, to));
+        } catch (DataAccessException exception) {
+            log.error("Could not load manager report type {}", selectedType.value(), exception);
+            model.addAttribute("reportError", "Không thể tải báo cáo từ cơ sở dữ liệu. Vui lòng thử lại sau.");
+            model.addAttribute("report", emptyReport(selectedType));
+        }
         return "pages/manager/report/manager-reports";
     }
 
-    private Map<String, Object> toCourseView(CourseOption row) {
-        Map<String, Object> course = new LinkedHashMap<>();
-        course.put("id", row.id());
-        course.put("name", row.title());
-        course.put("level", row.level());
-        course.put("description", "-");
-        course.put("status", row.status());
-        course.put("statusLabel", courseStatusLabel(row.status()));
-        course.put("statusFilterValue", normalizedCourseStatus(row.status()));
-        course.put("lessonCount", row.lessonCount());
-        course.put("createdAt", "-");
-        return course;
+    @GetMapping("/reports/export")
+    public ResponseEntity<byte[]> exportReport(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        ManagerReportType selectedType;
+        try {
+            selectedType = ManagerReportType.from(type);
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().contentType(MediaType.TEXT_PLAIN)
+                    .body(exception.getMessage().getBytes(StandardCharsets.UTF_8));
+        }
+        if (from != null && to != null && from.isAfter(to)) {
+            return ResponseEntity.badRequest().contentType(MediaType.TEXT_PLAIN)
+                    .body("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.".getBytes(StandardCharsets.UTF_8));
+        }
+        try {
+            ManagerReportData report = reportService.getReport(selectedType.value(), from, to);
+            byte[] csv = toCsv(report).getBytes(StandardCharsets.UTF_8);
+            String filename = "manager-report-" + selectedType.value() + ".csv";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                    .body(csv);
+        } catch (DataAccessException exception) {
+            log.error("Could not export manager report type {}", selectedType.value(), exception);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).contentType(MediaType.TEXT_PLAIN)
+                    .body("Không thể xuất báo cáo từ cơ sở dữ liệu. Vui lòng thử lại sau.".getBytes(StandardCharsets.UTF_8));
+        }
     }
 
-    private String courseStatusLabel(String status) {
-        if ("PUBLISHED".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status)) {
-            return "Published";
-        }
-        if ("UNPUBLISHED".equalsIgnoreCase(status) || "INACTIVE".equalsIgnoreCase(status)) {
-            return "Unpublished";
-        }
-        if ("DRAFT".equalsIgnoreCase(status)) {
-            return "Unpublished";
-        }
-        if ("ARCHIVED".equalsIgnoreCase(status)) {
-            return "Archived";
-        }
-        return status;
+    private ManagerReportData emptyReport(ManagerReportType type) {
+        return new ManagerReportData(type.value(), type.label(), type.headers(), List.of());
     }
 
-    private String normalizedCourseStatus(String status) {
-        if ("ACTIVE".equalsIgnoreCase(status)) {
-            return "published";
+    private String toCsv(ManagerReportData report) {
+        List<String> records = new ArrayList<>();
+        records.add(report.headers().stream().map(this::csvValue).collect(java.util.stream.Collectors.joining(",")));
+        for (List<String> row : report.rows()) {
+            records.add(row.stream().map(this::csvValue).collect(java.util.stream.Collectors.joining(",")));
         }
-        if ("INACTIVE".equalsIgnoreCase(status)) {
-            return "DRAFT";
+        return "﻿" + String.join("\r\n", records) + "\r\n";
+    }
+
+    private String csvValue(String value) {
+        String safeValue = value == null ? "" : value;
+        if (safeValue.stripLeading().matches("^[=+@-].*")) {
+            safeValue = "'" + safeValue;
         }
-        if ("UNPUBLISHED".equalsIgnoreCase(status)) {
-            return "DRAFT";
-        }
-        return status == null ? null : status.toUpperCase();
+        return "\"" + safeValue.replace("\"", "\"\"") + "\"";
+    }
+
+    @GetMapping("/questions")
+    public String questions() {
+        return "pages/manager/question/list";
+    }
+
+    @GetMapping("/quizzes")
+    public String quizzes() {
+        return "pages/manager/quiz/list";
+    }
+
+    @GetMapping("/exams")
+    public String exams() {
+        return "pages/manager/exam/list";
     }
 }

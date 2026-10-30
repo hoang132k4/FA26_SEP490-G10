@@ -1,0 +1,148 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Đánh giá cột mốc - Đánh giá năng lực - Kotoba JEPS',
+    activeMenu='exams',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <!-- 1. Breadcrumb: Trang chủ / Đánh giá năng lực / Đánh giá cột mốc -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item">
+                    <a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--medium-blue);">
+                        <i class="bi bi-house-door me-1"></i>Trang chủ
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a th:href="@{/exams}" class="text-decoration-none" style="color: var(--medium-blue);">
+                        Đánh giá năng lực
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Đánh giá cột mốc</li>
+            </ol>
+        </nav>
+
+        <!-- 2. Header Banner -->
+        <section class="card kotoba-card p-4 p-lg-5 mb-4 border-0 shadow-sm"
+                 style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <span class="badge px-3 py-2 rounded-pill mb-2"
+                          style="background-color: rgba(255,255,255,0.15); color: #FFF; font-weight: 500;">
+                        <i class="bi bi-flag-fill me-1 text-warning"></i> Kiểm tra cột mốc tiến độ
+                    </span>
+                    <h1 class="fw-bold mb-2 text-white">Đánh giá cột mốc</h1>
+                    <p class="text-white-50 mb-0" style="max-width: 650px; line-height: 1.6;">
+                        Danh sách các bài kiểm tra đánh giá định kỳ giữa khóa và cuối khóa. Giúp đo lường chính xác mức độ tiếp thu kiến thức và mức độ sẵn sàng cho các giai đoạn học tập tiếp theo.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end d-flex justify-content-lg-end gap-2 flex-wrap">
+                    <a th:href="@{/exams}" class="btn btn-outline-light rounded-pill px-4 py-2">
+                        <i class="bi bi-arrow-left me-1"></i> Đánh giá năng lực
+                    </a>
+                    <a th:href="@{/exams/history}" class="btn btn-outline-light rounded-pill px-3 py-2">
+                        <i class="bi bi-clock-history me-1"></i> Lịch sử làm bài
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Sub-header info -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-journal-bookmark-fill text-warning me-2"></i> Danh sách bài kiểm tra cột mốc
+            </h5>
+            <div class="text-muted small">
+                Hiển thị <strong th:text="${exams != null ? exams.size() : 0}">0</strong> bài kiểm tra từ cơ sở dữ liệu Supabase
+            </div>
+        </div>
+
+        <!-- 4. Milestone Exam Cards Grid (Dữ liệu thật từ Supabase) -->
+        <div th:if="${exams != null and !exams.isEmpty()}" class="row g-4 mb-5">
+            <div th:each="exam : ${exams}" class="col-md-6 col-xl-6">
+                <div class="card kotoba-card h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between position-relative" style="border-radius: 16px;">
+                    <div>
+                        <!-- Header: Level Badge & Status -->
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span th:if="${exam.jlptLevel != null}"
+                                      class="badge rounded-pill px-3 py-2 fw-bold fs-6"
+                                      style="background-color: #FEF3C7; color: #92400E;"
+                                      th:text="${exam.jlptLevel}">N4</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-1">
+                                    <i class="bi bi-flag-fill me-1"></i> Bài kiểm tra cột mốc
+                                </span>
+                                <span th:if="${exam.ready}" class="badge bg-success-subtle text-success rounded-pill px-3 py-1">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Sẵn sàng
+                                </span>
+                                <span th:unless="${exam.ready}" class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">
+                                    <i class="bi bi-hourglass-split me-1"></i> Chưa có câu hỏi
+                                </span>
+                            </div>
+                            <i class="bi bi-journal-check fs-3 text-warning"></i>
+                        </div>
+
+                        <!-- Title & Description (Dữ liệu thật từ Supabase) -->
+                        <h4 class="fw-bold mb-2 text-dark" th:text="${exam.examTitle}">Tên bài kiểm tra cột mốc</h4>
+                        <p class="text-secondary small mb-4" style="line-height: 1.6;"
+                           th:text="${exam.description != null ? exam.description : 'Bài kiểm tra cột mốc theo sát chương trình học nhằm đánh giá kiến thức đã học.'}">
+                            Mô tả bài kiểm tra...
+                        </p>
+
+                        <!-- Key Metrics Row -->
+                        <div class="row g-2 p-3 rounded-3 mb-4" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                            <div class="col-4 text-center border-end">
+                                <span class="d-block small text-muted">Thời lượng</span>
+                                <strong class="fs-6 text-dark" th:text="${exam.durationMinutes != null ? exam.durationMinutes + ' phút' : '--'}">60 phút</strong>
+                            </div>
+                            <div class="col-4 text-center border-end">
+                                <span class="d-block small text-muted">Số câu hỏi</span>
+                                <strong class="fs-6 text-dark" th:text="${exam.totalQuestions + ' câu'}">20 câu</strong>
+                            </div>
+                            <div class="col-4 text-center">
+                                <span class="d-block small text-muted">Điểm chuẩn</span>
+                                <strong class="fs-6 text-dark" th:text="${exam.passingScore != null ? exam.passingScore + ' điểm' : '--'}">50 điểm</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Footer Action: Button "Làm bài" -->
+                    <div class="pt-2">
+                        <a th:if="${exam.ready}"
+                           th:href="@{/exams/milestone/{id}(id=${exam.examId})}"
+                           class="btn rounded-pill w-100 py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 text-white"
+                           style="background-color: #F59E0B; border: none;">
+                            <span>Làm bài</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                        <button th:unless="${exam.ready}"
+                                class="btn btn-secondary w-100 rounded-pill py-2 fw-semibold opacity-75"
+                                disabled>
+                            <i class="bi bi-lock me-1"></i> Chưa có nội dung thi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Empty State (Khi chưa có bài thi cột mốc trong DB) -->
+        <div th:if="${exams == null or exams.isEmpty()}" class="card kotoba-card text-center p-5 border-0 shadow-sm my-4" style="border-radius: 16px;">
+            <div class="my-4">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-journal-x fs-1 text-muted"></i>
+                </div>
+                <h3 class="fw-bold mt-3 text-dark">Hiện chưa có bài kiểm tra cột mốc nào</h3>
+                <p class="text-secondary mx-auto mb-4" style="max-width: 600px; line-height: 1.6;">
+                    Các bài kiểm tra cột mốc giữa khóa và cuối khóa sẽ hiển thị tại đây khi bạn đăng ký và tham gia các khóa học tương ứng.
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a th:href="@{/exams}" class="btn btn-steel-outline rounded-pill px-4 py-2">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại Đánh giá năng lực
+                    </a>
+                    <a th:href="@{/learning/courses}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-collection-play me-1"></i> Xem danh sách khóa học
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

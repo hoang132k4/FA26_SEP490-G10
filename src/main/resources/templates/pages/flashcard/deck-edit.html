@@ -1,0 +1,81 @@
+﻿<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Chỉnh sửa thông tin gói Flashcard - JLPP',
+    activeMenu='flashcards',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2 small">
+                <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Học tập</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/flashcards(tab='user')}" class="text-decoration-none">Flashcard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Sửa thông tin gói</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa thông tin gói Flashcard
+                </h3>
+                <p class="text-muted small mb-0">Thay đổi tên gói hoặc cấp độ JLPT sẽ được áp dụng cho toàn bộ thẻ trong gói.</p>
+            </div>
+            <a th:href="@{/flashcards(tab='user')}" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-x me-1"></i> Huỷ bỏ
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mx-auto col-lg-8">
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                <div class="rounded-circle p-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-collection-fill fs-4"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">Gói hiện tại</h5>
+                    <p class="text-muted small mb-0" th:text="${deckName}">Tên gói cũ</p>
+                </div>
+            </div>
+
+            <form th:action="@{/flashcards/deck-edit}" method="post">
+                <input type="hidden" name="oldDeckName" th:value="${deckName}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="newDeckName" class="form-label fw-semibold text-dark">
+                            Tên gói mới <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="newDeckName" name="newDeckName"
+                               class="form-control form-control-lg"
+                               th:value="${deckName}"
+                               placeholder="Nhập tên gói mới..." required>
+                        <div class="form-text small">Tên mới sẽ được áp dụng cho tất cả các thẻ trong gói này.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="jlptLevel" class="form-label fw-semibold text-dark">Cấp độ JLPT</label>
+                        <select id="jlptLevel" name="jlptLevel" class="form-select form-select-lg">
+                            <option value="N5" th:selected="${jlptLevel == 'N5'}">N5 (Sơ cấp)</option>
+                            <option value="N4" th:selected="${jlptLevel == 'N4'}">N4 (Sơ trung cấp)</option>
+                            <option value="N3" th:selected="${jlptLevel == 'N3'}">N3 (Trung cấp)</option>
+                            <option value="N2" th:selected="${jlptLevel == 'N2'}">N2 (Trung cao cấp)</option>
+                            <option value="N1" th:selected="${jlptLevel == 'N1'}">N1 (Cao cấp)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 rounded-3 mt-3 py-2 px-3 small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Thay đổi tên gói sẽ cập nhật <strong>toàn bộ thẻ</strong> trong gói này. Không thể hoàn tác.
+                </div>
+
+                <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                    <a th:href="@{/flashcards(tab='user')}" class="btn btn-light rounded-pill px-4">Huỷ</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold">
+                        <i class="bi bi-check-circle-fill me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
