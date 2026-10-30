@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <body>
     <div th:fragment="sidebar(activeMenu)" class="kotoba-sidebar">
         <!-- Logo & Brand Header -->
@@ -25,31 +26,36 @@
         <!-- Main Navigation Links -->
         <ul class="kotoba-nav">
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'learner-dashboard'} ? 'active' : ''" th:href="@{/learning/dashboard}">
+                <a class="nav-link" th:classappend="${activeMenu == 'learner-dashboard'} ? 'active' : ''"
+                    th:href="@{/learning/dashboard}">
                     <i class="bi bi-house-door"></i>
                     <span>Tổng quan</span>
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'courses'} ? 'active' : ''" th:href="@{/learning/courses}">
+                <a class="nav-link" th:classappend="${activeMenu == 'courses'} ? 'active' : ''"
+                    th:href="@{/learning/courses}">
                     <i class="bi bi-collection-play"></i>
                     <span>Khóa học JLPT</span>
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'recommended'} ? 'active' : ''" th:href="@{/learning/courses/recommended}">
+                <a class="nav-link" th:classappend="${activeMenu == 'recommended'} ? 'active' : ''"
+                    th:href="@{/learning/courses/recommended}">
                     <i class="bi bi-stars text-warning"></i>
                     <span>Gợi ý cho bạn</span>
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'my-courses'} ? 'active' : ''" th:href="@{/learning/my-courses}">
+                <a class="nav-link" th:classappend="${activeMenu == 'my-courses'} ? 'active' : ''"
+                    th:href="@{/learning/my-courses}">
                     <i class="bi bi-bookmark-check"></i>
                     <span>Khóa học của tôi</span>
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'flashcards'} ? 'active' : ''" th:href="@{/flashcards}">
+                <a class="nav-link" th:classappend="${activeMenu == 'flashcards'} ? 'active' : ''"
+                    th:href="@{/flashcards}">
                     <i class="bi bi-book"></i>
                     <span>Từ vựng</span>
                 </a>
@@ -61,9 +67,10 @@
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'listening' || activeMenu == 'materials'} ? 'active' : ''" th:href="@{/learning/materials}">
+                <a class="nav-link" th:classappend="${activeMenu == 'listening' || activeMenu == 'materials'} ? 'active' : ''"
+                    th:href="@{/learning/materials}">
                     <i class="bi bi-folder2-open"></i>
-                    <span>Tài liệu & Audio</span>
+                    <span>Tài liệu & Luyện nghe</span>
                 </a>
             </li>
             <li>
@@ -73,21 +80,29 @@
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'exams'} ? 'active' : ''" th:href="@{/exams}">
-                    <i class="bi bi-trophy"></i>
-                    <span>Luyện JLPT</span>
+                <a class="nav-link" th:classappend="${activeMenu == 'exams' or activeMenu == 'placement' or activeMenu == 'history' or activeMenu == 'exam-history'} ? 'active' : ''" th:href="@{/exams}">
+                    <i class="bi bi-award"></i>
+                    <span>Đánh giá năng lực</span>
                 </a>
             </li>
             <li>
-                <a class="nav-link" th:classappend="${activeMenu == 'learning-path'} ? 'active' : ''" th:href="@{/learning-path}">
+                <a class="nav-link" th:classappend="${activeMenu == 'learning-path'} ? 'active' : ''"
+                    th:href="@{/learning-path}">
                     <i class="bi bi-bar-chart"></i>
-                    <span>Tiến độ học</span>
+                    <span>Lộ trình học</span>
                 </a>
             </li>
+
             <li>
                 <a class="nav-link" th:classappend="${activeMenu == 'profile'} ? 'active' : ''" th:href="@{/profile}">
                     <i class="bi bi-person-badge"></i>
                     <span>Hồ sơ cá nhân</span>
+                </a>
+            </li>
+            <li>
+                <a class="nav-link" th:classappend="${activeMenu == 'orders'} ? 'active' : ''" th:href="@{/orders}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Lịch sử đơn hàng</span>
                 </a>
             </li>
         </ul>
@@ -97,8 +112,10 @@
             <div class="sidebar-fuji-quote">一歩ずつ前へ</div>
             <svg viewBox="0 0 200 120" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
                 <!-- Clouds -->
-                <path d="M 20 50 Q 40 40 60 50 T 100 50" stroke="#B9D1E1" stroke-width="1.5" fill="none" opacity="0.6" />
-                <path d="M 120 30 Q 140 20 160 30 T 190 30" stroke="#B9D1E1" stroke-width="1.5" fill="none" opacity="0.6" />
+                <path d="M 20 50 Q 40 40 60 50 T 100 50" stroke="#B9D1E1" stroke-width="1.5" fill="none"
+                    opacity="0.6" />
+                <path d="M 120 30 Q 140 20 160 30 T 190 30" stroke="#B9D1E1" stroke-width="1.5" fill="none"
+                    opacity="0.6" />
                 <!-- Mountain -->
                 <path d="M 20 120 L 90 40 L 110 40 L 180 120 Z" fill="#244F70" />
                 <path d="M 90 40 L 110 40 L 120 62 L 108 56 L 100 64 L 92 56 L 80 62 Z" fill="#FFFFFF" opacity="0.9" />
@@ -106,4 +123,5 @@
         </div>
     </div>
 </body>
+
 </html>

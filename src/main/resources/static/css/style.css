@@ -22,6 +22,7 @@
   /* Accent & Status Colors */
   --accent-red: #D94B3F;     /* Màu mặt trời đỏ & hoa anh đào điểm xuyết */
   --sakura-accent: #E06D53;  /* Sắc cam hồng anh đào Nhật Bản */
+  --sunset-coral: #E06D53;   /* Cam hồng san hô hoàng hôn */
   --sakura-light: #FFEDEA;
   --status-success: #2ECC71;
   --status-warning: #F39C12;
@@ -44,6 +45,37 @@ body {
   min-height: 100vh;
   margin: 0;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Manager pages keep navigation in place while the page content scrolls. */
+.manager-layout {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.manager-sidebar {
+  flex: 0 0 250px;
+  width: 250px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.manager-sidebar .kotoba-sidebar {
+  min-height: 100%;
+  height: 100%;
+}
+
+.manager-workspace {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.manager-main {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 h1, h2, h3, h4, h5, h6 {

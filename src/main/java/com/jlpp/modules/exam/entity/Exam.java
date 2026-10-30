@@ -37,11 +37,19 @@ public class Exam {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "course_id")
+    private Long courseId;
+
     protected Exam() {
     }
 
     public Exam(Long examId, String examTitle, String examType, String jlptLevel, Integer durationMinutes,
                 Integer totalQuestions, Integer passingScore, String status, String description) {
+        this(examId, examTitle, examType, jlptLevel, durationMinutes, totalQuestions, passingScore, status, description, null);
+    }
+
+    public Exam(Long examId, String examTitle, String examType, String jlptLevel, Integer durationMinutes,
+                Integer totalQuestions, Integer passingScore, String status, String description, Long courseId) {
         this.examId = examId;
         this.examTitle = examTitle;
         this.examType = examType;
@@ -51,6 +59,7 @@ public class Exam {
         this.passingScore = passingScore;
         this.status = status;
         this.description = description;
+        this.courseId = courseId;
     }
 
     public Long getExamId() { return examId; }
@@ -65,4 +74,5 @@ public class Exam {
     public Integer getPassingScore() { return passingScore; }
     public String getStatus() { return status; }
     public String getDescription() { return description; }
+    public Long getCourseId() { return courseId; }
 }
