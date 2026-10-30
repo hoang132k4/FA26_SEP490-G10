@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class QuizServiceImpl implements QuizService {
 
     private final ExerciseRepository exerciseRepository;
-    private final QuestionRepository questionRepository;
+    private final QuizQuestionRepository questionRepository;
     private final QuestionOptionRepository questionOptionRepository;
     private final ExerciseQuestionRepository exerciseQuestionRepository;
     private final ExerciseResultRepository exerciseResultRepository;
