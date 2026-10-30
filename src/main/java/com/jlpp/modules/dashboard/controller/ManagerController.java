@@ -23,8 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manager area pages. Lesson management lives in
- * {@link com.jlpp.modules.manager.lessons.controller.ManagerLessonController}.
+ * Manager dashboard and report pages. Feature pages live in their module controllers.
  */
 @Controller
 @RequestMapping("/manager")
@@ -72,11 +71,6 @@ public class ManagerController {
             model.addAttribute("report", emptyReport(selectedType));
         }
         return "pages/manager/report/manager-reports";
-    }
-
-    @GetMapping("/lessons")
-    public String lessons() {
-        return "pages/manager/lesson/list";
     }
 
     @GetMapping("/reports/export")
@@ -147,8 +141,4 @@ public class ManagerController {
         return "pages/manager/exam/list";
     }
 
-    @GetMapping("/flashcards")
-    public String flashcards() {
-        return "pages/manager/flashcard/list";
-    }
 }
