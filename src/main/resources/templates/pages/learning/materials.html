@@ -1,9 +1,216 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='TÃ i liá»‡u há»c táº­p - JLPP',
-    activeMenu='my-courses',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Kho Tài liệu & Giáo trình - JEPS',
+    activeMenu='listening',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">TÃ i liá»‡u vÃ  GiÃ¡o trÃ¬nh</h3>
+        <!-- Header Hero Banner -->
+        <div class="card p-4 kotoba-card mb-4" style="background: linear-gradient(135deg, #173B57 0%, #244F70 100%); color: white;">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-1 text-white" style="background-color: rgba(255,255,255,0.2);">TÀI LIỆU HỌC TẬP</span>
+                        <span class="small opacity-75">Nguồn tài liệu chính khóa & Luyện thi JLPT N5 - N1</span>
+                    </div>
+                    <h2 class="fw-bold mb-2 text-white">Kho Tài liệu, Giáo trình & Audio Luyện Nghe</h2>
+                    <p class="mb-3 opacity-80" style="line-height: 1.6; max-width: 650px;">
+                        Tất cả giáo trình Minna no Nihongo, Shinkanzen Master, file audio luyện nghe giọng bản xứ, bảng tra cứu ngữ pháp và flashcard từ vựng đều được đồng bộ từ hệ thống.
+                    </p>
+
+                    <!-- Quick Counters -->
+                    <div class="d-flex flex-wrap gap-4 pt-1">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-collection fs-4 text-warning"></i>
+                            <div>
+                                <div class="fw-bold fs-5" th:text="${totalCount}">10</div>
+                                <div class="small opacity-75" style="font-size: 0.75rem;">Tổng tài liệu</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-music fs-4 text-info"></i>
+                            <div>
+                                <div class="fw-bold fs-5" th:text="${audioCount}">4</div>
+                                <div class="small opacity-75" style="font-size: 0.75rem;">Audio luyện nghe</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
+                            <div>
+                                <div class="fw-bold fs-5" th:text="${pdfCount}">3</div>
+                                <div class="small opacity-75" style="font-size: 0.75rem;">Giáo trình PDF</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-journal-bookmark fs-4 text-success"></i>
+                            <div>
+                                <div class="fw-bold fs-5" th:text="${docCount}">3</div>
+                                <div class="small opacity-75" style="font-size: 0.75rem;">Sổ tay & Slide</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 text-end d-none d-lg-block">
+                    <!-- Japanese Wave & Book Motif Illustration -->
+                    <svg viewBox="0 0 200 160" width="180" height="144" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="80" r="70" fill="rgba(255,255,255,0.08)" />
+                        <!-- Stacked Books -->
+                        <rect x="50" y="90" width="100" height="18" rx="3" fill="#E2E8F0" opacity="0.9" />
+                        <rect x="60" y="70" width="85" height="18" rx="3" fill="#93C5FD" opacity="0.9" />
+                        <rect x="55" y="50" width="90" height="18" rx="3" fill="#FCA5A5" opacity="0.9" />
+                        <!-- Cherry blossom -->
+                        <circle cx="150" cy="40" r="10" fill="#FFB7C5" opacity="0.8" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter & Search Toolbar Card -->
+        <div class="card p-3 kotoba-card mb-4 bg-white shadow-sm">
+            <form method="get" th:action="@{/learning/materials}" class="row g-3 align-items-center">
+                <!-- Search input -->
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="keyword" class="form-control border-start-0 bg-light" 
+                               placeholder="Tìm tên giáo trình, tài liệu, ngữ pháp..." 
+                               th:value="${keyword}">
+                    </div>
+                </div>
+
+                <!-- Level Dropdown -->
+                <div class="col-md-2 col-6">
+                    <select name="level" class="form-select bg-light">
+                        <option value="ALL" th:selected="${selectedLevel == 'ALL'}">Mọi cấp độ (All)</option>
+                        <option value="N5" th:selected="${selectedLevel == 'N5'}">Cấp độ N5</option>
+                        <option value="N4" th:selected="${selectedLevel == 'N4'}">Cấp độ N4</option>
+                        <option value="N3" th:selected="${selectedLevel == 'N3'}">Cấp độ N3</option>
+                        <option value="N2" th:selected="${selectedLevel == 'N2'}">Cấp độ N2</option>
+                        <option value="N1" th:selected="${selectedLevel == 'N1'}">Cấp độ N1</option>
+                    </select>
+                </div>
+
+                <!-- Skill Dropdown -->
+                <div class="col-md-2 col-6">
+                    <select name="skill" class="form-select bg-light">
+                        <option value="ALL" th:selected="${selectedSkill == 'ALL'}">Mọi kỹ năng</option>
+                        <option value="GRAMMAR" th:selected="${selectedSkill == 'GRAMMAR'}">Ngữ pháp</option>
+                        <option value="VOCABULARY" th:selected="${selectedSkill == 'VOCABULARY'}">Từ vựng</option>
+                        <option value="LISTENING" th:selected="${selectedSkill == 'LISTENING'}">Nghe hiểu</option>
+                        <option value="READING" th:selected="${selectedSkill == 'READING'}">Đọc hiểu</option>
+                        <option value="KANJI" th:selected="${selectedSkill == 'KANJI'}">Hán tự (Kanji)</option>
+                    </select>
+                </div>
+
+                <!-- Type Dropdown -->
+                <div class="col-md-2 col-6">
+                    <select name="type" class="form-select bg-light">
+                        <option value="ALL" th:selected="${selectedType == 'ALL'}">Mọi định dạng</option>
+                        <option value="PDF" th:selected="${selectedType == 'PDF'}">Tài liệu PDF</option>
+                        <option value="AUDIO" th:selected="${selectedType == 'AUDIO'}">File Audio Mp3</option>
+                        <option value="DOCS" th:selected="${selectedType == 'DOCS'}">Sổ tay tra cứu</option>
+                        <option value="SLIDE" th:selected="${selectedType == 'SLIDE'}">Slide bài giảng</option>
+                    </select>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="col-md-2 col-6 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-1.5">
+                        <i class="bi bi-funnel"></i>
+                        <span>Lọc</span>
+                    </button>
+                    <a th:href="@{/learning/materials}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Materials Grid (Dynamic from Supabase) -->
+        <div class="row g-4" th:if="${materials != null && !materials.isEmpty()}">
+            <div class="col-lg-6" th:each="m : ${materials}">
+                <div class="card p-4 kotoba-card h-100 d-flex flex-column border bg-white shadow-sm hover-shadow transition">
+                    <!-- Card Header: Badges & Type Icon -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Type Icon Wrapper -->
+                            <div class="rounded-3 p-2.5 d-flex align-items-center justify-content-center" 
+                                 style="background-color: #F1F5F9; width: 44px; height: 44px;">
+                                <i th:class="'bi ' + ${m.typeIcon} + ' fs-4'"></i>
+                            </div>
+                            <div>
+                                <span class="badge" th:classappend="'bg-' + ${m.skillBadgeColor}" th:text="${m.skillDisplayName}">Ngữ pháp</span>
+                                <span class="badge px-2 py-0.5" style="background-color: var(--navy-dark); color: white;" th:text="${m.jlptLevel}">N4</span>
+                            </div>
+                        </div>
+
+                        <span class="badge bg-light text-muted border small" th:text="${m.formattedTypeBadge}">Tài liệu PDF</span>
+                    </div>
+
+                    <!-- Material Title & Description -->
+                    <h5 class="fw-bold mb-2 text-dark" th:text="${m.materialTitle}">
+                        Giáo trình Minna no Nihongo I - Giải thích Ngữ pháp & Từ vựng N5
+                    </h5>
+                    <p class="text-muted small mb-3 flex-grow-1" style="line-height: 1.6;" th:text="${m.description}">
+                        Mô tả tài liệu học tập chuẩn format kỳ thi.
+                    </p>
+
+                    <!-- Embedded Audio Player if Type is AUDIO -->
+                    <div th:if="${m.materialType == 'AUDIO' && m.audioUrl != null}" class="p-3 rounded-3 mb-3 border bg-light">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-primary small fw-semibold">
+                            <i class="bi bi-soundwave fs-5"></i>
+                            <span>Trình phát nghe trực tuyến (Giọng đọc chuẩn Tokyo)</span>
+                        </div>
+                        <audio controls class="w-100" style="height: 38px;">
+                            <source th:src="${m.audioUrl}" type="audio/mpeg">
+                            Trình duyệt của bạn không hỗ trợ phát audio.
+                        </audio>
+                    </div>
+
+                    <!-- Body Content Note if present -->
+                    <div th:if="${m.bodyContent != null && !m.bodyContent.isBlank()}" 
+                         class="p-2.5 rounded-2 bg-light border-start border-3 border-primary small text-muted mb-3" 
+                         style="font-size: 0.8rem;">
+                        <i class="bi bi-info-circle me-1 text-primary"></i>
+                        <span th:text="${m.bodyContent}">Hướng dẫn sử dụng tài liệu</span>
+                    </div>
+
+                    <!-- Card Actions -->
+                    <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-auto">
+                        <span class="text-muted small" style="font-size: 0.75rem;">
+                            <i class="bi bi-shield-check text-success me-1"></i>Đã kiểm duyệt bởi JEPS
+                        </span>
+
+                        <div class="d-flex gap-2">
+                            <!-- View/Download button -->
+                            <a th:if="${m.fileUrl != null}" th:href="${m.fileUrl}" target="_blank" 
+                               class="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                                <span>Xem tài liệu</span>
+                            </a>
+                            <a th:if="${m.fileUrl != null}" th:href="${m.fileUrl}" download 
+                               class="btn btn-sm btn-primary rounded-pill px-3 d-flex align-items-center gap-1.5">
+                                <i class="bi bi-download"></i>
+                                <span>Tải về</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State if no materials found -->
+        <div th:if="${materials == null || materials.isEmpty()}" class="card p-5 kotoba-card text-center my-4 bg-white">
+            <div class="mb-3">
+                <i class="bi bi-folder-x fs-1 text-muted opacity-50"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">Không tìm thấy tài liệu phù hợp</h5>
+            <p class="text-muted small mb-3">Vui lòng thử chọn bộ lọc khác hoặc nhập từ khóa tìm kiếm chung hơn.</p>
+            <div>
+                <a th:href="@{/learning/materials}" class="btn btn-outline-secondary btn-sm px-4">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Đặt lại bộ lọc
+                </a>
+            </div>
+        </div>
     </div>
 </div>

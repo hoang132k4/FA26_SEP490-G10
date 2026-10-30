@@ -69,7 +69,7 @@
                                 </div>
                             </div>
 
-                            <a th:href="@{/learning/materials}" class="btn btn-sakura w-100 py-2 fw-semibold">
+                            <a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}" class="btn btn-sakura w-100 py-2 fw-semibold">
                                 <i class="bi bi-play-circle-fill me-1"></i> Tiếp tục bài học
                             </a>
                         </div>
@@ -145,13 +145,14 @@
                              th:each="lesson : ${lessons}">
                             <div class="d-flex align-items-center gap-3">
                                 <span class="badge bg-light text-muted border rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                    <i class="bi bi-play-circle" th:if="${lesson.lessonType == 'VIDEO'}"></i>
-                                    <i class="bi bi-book" th:if="${lesson.lessonType == 'READING'}"></i>
-                                    <i class="bi bi-pencil" th:if="${lesson.lessonType == 'PRACTICE'}"></i>
-                                    <i class="bi bi-question-circle" th:if="${lesson.lessonType == 'QUIZ'}"></i>
+                                    <i th:class="'bi ' + ${lesson.typeIcon}"></i>
                                 </span>
                                 <div>
-                                    <h6 class="mb-0 fw-semibold text-dark" th:text="${lesson.title}">Tên bài giảng</h6>
+                                    <h6 class="mb-0 fw-semibold">
+                                        <a th:if="${isEnrolled || lesson.isFreePreview}" th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                                           class="text-decoration-none text-dark hover-primary" th:text="${lesson.title}">Tên bài giảng</a>
+                                        <span th:unless="${isEnrolled || lesson.isFreePreview}" class="text-dark" th:text="${lesson.title}">Tên bài giảng</span>
+                                    </h6>
                                     <small class="text-muted" th:text="${lesson.sectionName}">Chương 1</small>
                                 </div>
                             </div>
@@ -163,7 +164,10 @@
                                 <span th:if="${isEnrolled}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">
                                     Đã mở khóa
                                 </span>
-                                <span class="small text-muted" th:text="${lesson.durationMinutes + ' phút'}">30 phút</span>
+                                <span class="small text-muted me-2" th:text="${lesson.durationMinutes + ' phút'}">30 phút</span>
+                                <a th:if="${isEnrolled || lesson.isFreePreview}" th:href="@{/learning/lessons/{id}(id=${lesson.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 small">
+                                    Học ngay
+                                </a>
                             </div>
                         </div>
                     </div>

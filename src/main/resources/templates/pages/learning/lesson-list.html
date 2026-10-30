@@ -1,10 +1,187 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Danh sÃ¡ch BÃ i há»c - JLPP',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle=${course != null ? (course.title + ' - Giáo trình bài học') : 'Danh sách Bài học - JEPS'},
     activeMenu='my-courses',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <h3 class="fw-bold mb-3">Danh sÃ¡ch BÃ i há»c</h3>
-        <!-- List of lessons -->
+        <!-- Breadcrumb & Back navigation -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Tổng quan</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/learning/my-courses}" class="text-decoration-none">Khóa học của tôi</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${course.title}">Khóa học</li>
+            </ol>
+        </nav>
+
+        <!-- Course Overview Hero Card -->
+        <div class="card p-4 kotoba-card mb-4" style="background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-1.5 fw-bold" style="background-color: var(--navy-dark); color: white; font-size: 0.85rem;" 
+                              th:text="${course.level}">N4</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 small" 
+                              th:if="${registration != null}" th:text="${registration.status == 'COMPLETED' ? 'Đã hoàn thành' : 'Đang học'}">Đang học</span>
+                        <span class="text-muted small">&bull; Giảng viên chuyên gia &bull; Giáo trình chuẩn format JLPT</span>
+                    </div>
+                    <h2 class="fw-bold mb-2 text-dark" th:text="${course.title}">Khóa học Tiếng Nhật Sơ Trung Cấp JLPT N4</h2>
+                    <p class="text-muted mb-3" style="line-height: 1.6;" th:text="${course.shortDescription}">
+                        Khóa học bám sát chương trình thi năng lực tiếng Nhật quốc tế, tối ưu hóa kỹ năng từ vựng, ngữ pháp, đọc hiểu và nghe hiểu.
+                    </p>
+
+                    <!-- Quick tags -->
+                    <div class="d-flex flex-wrap gap-3 text-muted small">
+                        <div><i class="bi bi-book-half me-1 text-primary"></i> <b class="text-dark" th:text="${totalCount}">12</b> bài học</div>
+                        <div><i class="bi bi-clock me-1 text-warning"></i> <b class="text-dark" th:text="${course.duration}">40 giờ</b> đào tạo</div>
+                        <div><i class="bi bi-star-fill me-1 text-warning"></i> <b class="text-dark" th:text="${course.rating != null ? course.rating + '/5.0' : '5.0/5.0'}">5.0/5.0</b> đánh giá</div>
+                    </div>
+                </div>
+
+                <!-- Progress Column -->
+                <div class="col-lg-4">
+                    <div class="p-3.5 rounded-3 border bg-white shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold small text-muted text-uppercase">Tiến độ khóa học</span>
+                            <span class="fw-bold fs-5 text-primary" th:text="${progressPercent} + '%'">50%</span>
+                        </div>
+                        <div class="progress progress-kotoba mb-2" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                 th:style="'width: ' + ${progressPercent} + '%;'"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mb-3">
+                            <span>Đã học: <b class="text-dark" th:text="${completedCount}">6</b>/<span th:text="${totalCount}">12</span> bài</span>
+                            <span th:text="'Còn ' + (${totalCount - completedCount}) + ' bài'">Còn 6 bài</span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a th:if="${lessons != null && !lessons.isEmpty()}" 
+                               th:href="@{/learning/lessons/{id}(id=${lessons[completedCount < totalCount ? completedCount : totalCount - 1].id})}" 
+                               class="btn btn-steel d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-play-circle-fill"></i>
+                                <span>Tiếp tục học ngay</span>
+                            </a>
+                            <a th:href="@{/learning/courses/{id}/materials(id=${course.id})}" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-folder2-open"></i>
+                                <span>Kho tài liệu khóa học</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter bar for lessons -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h4 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-journal-text me-2 text-primary"></i>Nội dung chương trình đào tạo
+            </h4>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active filter-btn" data-filter="all">Tất cả bài học</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="VIDEO">Lý thuyết</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="READING">Đọc hiểu</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="PRACTICE">Thực hành</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="QUIZ">Trắc nghiệm</button>
+            </div>
+        </div>
+
+        <!-- Grouped Lessons Accordion by Section -->
+        <div class="d-flex flex-column gap-4" id="syllabusAccordion">
+            <div th:each="entry, sectionStat : ${groupedLessons}" class="card kotoba-card border-0 shadow-sm overflow-hidden section-card">
+                <!-- Section Header Banner -->
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center" 
+                     style="background: #FDFDFD; cursor: pointer;" 
+                     data-bs-toggle="collapse" 
+                     th:data-bs-target="'#collapseSection' + ${sectionStat.index}">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" 
+                             style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark); font-size: 0.85rem;">
+                            <span th:text="${sectionStat.index + 1}">1</span>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark" th:text="${entry.key}">Chương 1: Kiến thức nền tảng</h5>
+                            <span class="text-muted small" th:text="${entry.value.size()} + ' bài học'">3 bài học</span>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-down text-muted transition-transform"></i>
+                </div>
+
+                <!-- Lessons inside Section -->
+                <div th:id="'collapseSection' + ${sectionStat.index}" class="collapse show">
+                    <div class="list-group list-group-flush">
+                        <div th:each="lesson, itemStat : ${entry.value}" 
+                             class="list-group-item p-3.5 px-4 d-flex align-items-center justify-content-between gap-3 lesson-row"
+                             th:data-type="${lesson.lessonType}">
+                            
+                            <!-- Left: Status Icon & Title -->
+                            <div class="d-flex align-items-center gap-3 flex-grow-1 min-w-0">
+                                <!-- Order badge -->
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-muted border small" 
+                                     style="width: 28px; height: 28px; flex-shrink: 0; font-size: 0.75rem;" 
+                                     th:text="${lesson.orderIndex != null ? lesson.orderIndex : (itemStat.index + 1)}">
+                                    1
+                                </div>
+
+                                <!-- Status Icon -->
+                                <div class="flex-shrink-0">
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) <= completedCount}" 
+                                       class="bi bi-check-circle-fill text-success fs-5" title="Đã hoàn thành"></i>
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) == completedCount + 1}" 
+                                       class="bi bi-play-circle-fill text-primary fs-5" title="Đang học"></i>
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) > completedCount + 1}" 
+                                       class="bi bi-circle text-muted fs-5 opacity-50" title="Chưa học"></i>
+                                </div>
+
+                                <!-- Lesson Details -->
+                                <div class="min-w-0 flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                        <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                                           class="fw-semibold text-dark text-decoration-none hover-primary text-truncate d-inline-block" 
+                                           style="max-width: 580px;"
+                                           th:text="${lesson.title}">
+                                            Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
+                                        </a>
+                                        <span th:if="${lesson.isFreePreview}" class="badge bg-info-subtle text-info border border-info-subtle small px-2">Học thử miễn phí</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3 text-muted small" style="font-size: 0.78rem;">
+                                        <span class="badge" th:classappend="${lesson.typeBadgeClass}" th:text="${lesson.typeDisplayName}">VIDEO</span>
+                                        <span><i class="bi bi-clock me-1"></i><span th:text="${lesson.durationMinutes != null ? lesson.durationMinutes : 20}">20</span> phút</span>
+                                        <span th:if="${lesson.description != null && !lesson.description.isBlank()}" 
+                                              class="text-truncate d-none d-md-inline" style="max-width: 250px;" 
+                                              th:text="${lesson.description}">Ghi chú bài học</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Actions -->
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}" class="btn btn-sm btn-outline-primary px-3 rounded-pill d-flex align-items-center gap-1.5">
+                                    <span>Vào học</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter JS script -->
+        <script>
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const filter = this.getAttribute('data-filter');
+
+                    document.querySelectorAll('.lesson-row').forEach(row => {
+                        if (filter === 'all' || row.getAttribute('data-type') === filter) {
+                            row.style.display = 'flex';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        </script>
     </div>
 </div>
