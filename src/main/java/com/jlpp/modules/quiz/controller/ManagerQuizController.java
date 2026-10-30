@@ -1,9 +1,13 @@
 package com.jlpp.modules.quiz.controller;
 
+import com.jlpp.modules.question.controller.ManagerQuestionController;
+import com.jlpp.modules.question.dto.QuestionImportException;
+import com.jlpp.modules.quiz.dto.ExerciseQuestionForm;
 import com.jlpp.modules.quiz.dto.ManagerQuizForm;
 import com.jlpp.modules.quiz.service.ManagerQuizService;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -50,6 +55,7 @@ public class ManagerQuizController {
             model.addAttribute("quizForm", managerQuizService.toForm(managerQuizService.findById(id)));
             addOptions(model);
             model.addAttribute("isEdit", true);
+            model.addAttribute("linkedCount", managerQuizService.countQuizQuestions(id));
             return "pages/manager/quiz/form";
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
@@ -91,6 +97,78 @@ public class ManagerQuizController {
         model.addAttribute("isEdit", isEdit);
         return "pages/manager/quiz/form";
     }
+
+    // ── Quiz-Question Management ──
+
+    @GetMapping("/{id}/questions")
+    public String questionsPage(@PathVariable long id,
+                                @RequestParam(defaultValue = "") String jlptLevel,
+                                @RequestParam(defaultValue = "") String skillType,
+                                Model model, RedirectAttributes redirectAttributes) {
+        try {
+            var quiz = managerQuizService.findById(id);
+            var filterOptions = managerQuizService.questionFilterOptions();
+            model.addAttribute("quiz", quiz);
+            model.addAttribute("quizQuestions", managerQuizService.getQuizQuestions(id));
+            model.addAttribute("availableQuestions", managerQuizService.findAvailableQuestions(id, jlptLevel, skillType));
+            model.addAttribute("addForm", new ExerciseQuestionForm());
+            model.addAttribute("jlptLevels", filterOptions.jlptLevels());
+            model.addAttribute("skillTypes", filterOptions.skillTypes());
+            model.addAttribute("filterJlptLevel", jlptLevel);
+            model.addAttribute("filterSkillType", skillType);
+            return "pages/manager/quiz/questions";
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
+            return "redirect:/manager/quizzes";
+        }
+    }
+
+    @PostMapping("/{id}/questions/add")
+    public String addQuestions(@PathVariable long id,
+                               @ModelAttribute("addForm") ExerciseQuestionForm form,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            managerQuizService.addQuestionsToQuiz(id, form);
+            redirectAttributes.addFlashAttribute("quizSuccess", "Đã thêm câu hỏi vào quiz.");
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
+        }
+        return "redirect:/manager/quizzes/" + id + "/questions";
+    }
+
+    @PostMapping("/{id}/questions/{questionId}/remove")
+    public String removeQuestion(@PathVariable long id, @PathVariable long questionId,
+                                  RedirectAttributes redirectAttributes) {
+        try {
+            managerQuizService.removeQuestionFromQuiz(id, questionId);
+            redirectAttributes.addFlashAttribute("quizSuccess", "Đã gỡ câu hỏi khỏi quiz.");
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
+        }
+        return "redirect:/manager/quizzes/" + id + "/questions";
+    }
+
+    @GetMapping("/import/template")
+    public ResponseEntity<byte[]> importTemplate() {
+        return ManagerQuestionController.excelResponse(managerQuizService.importTemplate(), "mau-import-quiz.xlsx");
+    }
+
+    @PostMapping("/{id}/import")
+    public String importQuestions(@PathVariable long id, @RequestParam("file") MultipartFile file,
+                                  RedirectAttributes redirectAttributes) {
+        try {
+            int count = managerQuizService.importQuestions(id, file);
+            redirectAttributes.addFlashAttribute("quizSuccess", "Đã import và gắn " + count + " câu hỏi vào quiz.");
+        } catch (QuestionImportException exception) {
+            redirectAttributes.addFlashAttribute("quizError", "Import thất bại, chưa có dữ liệu nào được lưu. Sửa các lỗi sau rồi thử lại:");
+            redirectAttributes.addFlashAttribute("importErrors", exception.getErrors());
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
+        }
+        return "redirect:/manager/quizzes/" + id + "/questions";
+    }
+
+    // ── Helpers ──
 
     private void addOptions(Model model) {
         model.addAttribute("lessons", managerQuizService.lessons());

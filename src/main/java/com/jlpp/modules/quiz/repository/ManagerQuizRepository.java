@@ -1,5 +1,6 @@
 package com.jlpp.modules.quiz.repository;
 
+import com.jlpp.modules.quiz.dto.ExerciseQuestionRow;
 import com.jlpp.modules.quiz.dto.LessonOption;
 import com.jlpp.modules.quiz.dto.QuizOption;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -93,6 +94,70 @@ public class ManagerQuizRepository {
                 UPDATE exercises SET lesson_id = ?, exercise_title = ?, total_questions = ?, passing_score = ?, status = ?
                 WHERE exercise_id = ?
                 """, lessonId, title, totalQuestions, passingScore, status, id);
+    }
+
+    // ── Exercise-Question linkage ──
+
+    public List<ExerciseQuestionRow> findExerciseQuestions(long exerciseId) {
+        return jdbcTemplate.query("""
+                SELECT q.id, q.content, q.question_type, q.jlpt_level, q.skill_type, q.difficulty
+                FROM exercise_questions eq
+                JOIN questions q ON q.id = eq.question_id
+                WHERE eq.exercise_id = ?
+                ORDER BY eq.question_id
+                """, (rs, row) -> new ExerciseQuestionRow(
+                        rs.getLong("id"), rs.getString("content"), rs.getString("question_type"),
+                        rs.getString("jlpt_level"), rs.getString("skill_type"), rs.getString("difficulty")),
+                exerciseId);
+    }
+
+    public long countExerciseQuestions(long exerciseId) {
+        Long c = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM exercise_questions WHERE exercise_id = ?", Long.class, exerciseId);
+        return c != null ? c : 0;
+    }
+
+    public List<ExerciseQuestionRow> findAvailableQuestions(long exerciseId, String jlptLevel, String skillType) {
+        return jdbcTemplate.query("""
+                SELECT q.id, q.content, q.question_type, q.jlpt_level, q.skill_type, q.difficulty
+                FROM questions q
+                WHERE q.status = 'ACTIVE'
+                  AND q.parent_id IS NULL
+                  AND q.id NOT IN (SELECT eq.question_id FROM exercise_questions eq WHERE eq.exercise_id = ?)
+                  AND (? = '' OR q.jlpt_level = ?)
+                  AND (? = '' OR q.skill_type = ?)
+                ORDER BY q.id DESC
+                """, (rs, row) -> new ExerciseQuestionRow(
+                        rs.getLong("id"), rs.getString("content"), rs.getString("question_type"),
+                        rs.getString("jlpt_level"), rs.getString("skill_type"), rs.getString("difficulty")),
+                exerciseId, jlptLevel, jlptLevel, skillType, skillType);
+    }
+
+    public boolean exerciseQuestionExists(long exerciseId, long questionId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM exercise_questions WHERE exercise_id = ? AND question_id = ?)",
+                Boolean.class, exerciseId, questionId));
+    }
+
+    public void insertExerciseQuestion(long exerciseId, long questionId) {
+        jdbcTemplate.update("INSERT INTO exercise_questions (exercise_id, question_id) VALUES (?, ?)",
+                exerciseId, questionId);
+    }
+
+    public int deleteExerciseQuestion(long exerciseId, long questionId) {
+        return jdbcTemplate.update("DELETE FROM exercise_questions WHERE exercise_id = ? AND question_id = ?",
+                exerciseId, questionId);
+    }
+
+    public boolean questionIsActive(long questionId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ? AND status = 'ACTIVE')",
+                Boolean.class, questionId));
+    }
+
+    public boolean questionExists(long questionId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ?)", Boolean.class, questionId));
     }
 
     private QuizOption mapQuiz(long id, long lessonId, String lessonTitle, String title,
