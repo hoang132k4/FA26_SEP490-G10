@@ -1,0 +1,148 @@
+<div th:replace="~{layouts/manager-layout :: html(pageTitle='Câu hỏi đề thi - Manager', activeMenu='manager-exams', content=~{::#mainContent})}">
+<div id="mainContent">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="color:var(--navy-dark);">Câu hỏi trong đề thi</h2>
+            <p class="mb-0 text-muted">
+                <span th:text="${exam.examTitle}"></span>
+                <span class="badge bg-info ms-2" th:text="${exam.jlptLevel}"></span>
+                <span class="badge bg-secondary ms-1" th:text="${exam.examType}"></span>
+            </p>
+        </div>
+        <a class="btn btn-outline-secondary" th:href="@{/manager/exams}">Quay lại danh sách</a>
+    </div>
+
+    <div class="alert alert-danger" th:if="${examError}">
+        <span th:text="${examError}"></span>
+        <ul class="mb-0 mt-2" th:if="${importErrors != null}">
+            <li th:each="err : ${importErrors}" th:text="${err}"></li>
+        </ul>
+    </div>
+    <div class="alert alert-success" th:if="${examSuccess}" th:text="${examSuccess}"></div>
+
+    <!-- Câu hỏi đã gắn vào đề -->
+    <div class="kotoba-card overflow-hidden mb-4">
+        <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-bold" style="color:var(--navy-dark);">Câu hỏi trong đề (<span th:text="${#lists.size(examQuestions)}">0</span>)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead><tr><th class="ps-4">#</th><th>Nội dung</th><th>Loại</th><th>Section</th><th>Điểm</th><th class="pe-4">Thao tác</th></tr></thead>
+                <tbody>
+                <tr th:each="row : ${examQuestions}">
+                    <td class="ps-4" th:text="${row.orderIndex}"></td>
+                    <td style="min-width:250px;max-width:400px;">
+                        <div class="text-truncate" style="max-width:400px;" th:text="${row.content}"></div>
+                        <small class="text-muted" th:text="${(row.jlptLevel ?: '') + ' ' + (row.skillType ?: '') + ' ' + (row.difficulty ?: '')}"></small>
+                    </td>
+                    <td><span class="badge bg-primary" th:text="${row.questionType}"></span></td>
+                    <td><span class="badge bg-dark" th:text="${row.section}"></span></td>
+                    <td th:text="${row.points}"></td>
+                    <td class="pe-4">
+                        <div class="btn-group btn-group-sm">
+                            <form method="post" th:action="@{/manager/exams/{eid}/questions/{qid}/move-up(eid=${exam.examId}, qid=${row.questionId})}" style="display:inline;">
+                                <button class="btn btn-outline-secondary" type="submit" title="Di chuyển lên"><i class="bi bi-arrow-up"></i></button>
+                            </form>
+                            <form method="post" th:action="@{/manager/exams/{eid}/questions/{qid}/move-down(eid=${exam.examId}, qid=${row.questionId})}" style="display:inline;">
+                                <button class="btn btn-outline-secondary" type="submit" title="Di chuyển xuống"><i class="bi bi-arrow-down"></i></button>
+                            </form>
+                            <form method="post" th:action="@{/manager/exams/{eid}/questions/{qid}/remove(eid=${exam.examId}, qid=${row.questionId})}"
+                                  onsubmit="return confirm('Gỡ câu hỏi này khỏi đề thi?');" style="display:inline;">
+                                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${examQuestions == null || #lists.isEmpty(examQuestions)}">
+                    <td colspan="6" class="text-center text-muted py-4">Chưa có câu hỏi nào trong đề thi này.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Import câu hỏi từ Excel -->
+    <div class="kotoba-card p-4 mb-4">
+        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Import câu hỏi từ Excel</h5>
+        <form class="row g-2 align-items-center" method="post" enctype="multipart/form-data"
+              th:action="@{/manager/exams/{id}/import(id=${exam.examId})}">
+            <div class="col-md-6"><input class="form-control" type="file" name="file" accept=".xlsx" required></div>
+            <div class="col-md-3"><button class="btn btn-success w-100" type="submit"><i class="bi bi-upload me-1"></i>Import vào đề</button></div>
+            <div class="col-md-3"><a class="btn btn-outline-secondary w-100" th:href="@{/manager/exams/import/template}"><i class="bi bi-download me-1"></i>Tải file mẫu</a></div>
+        </form>
+        <small class="text-muted d-block mt-2">File mẫu đề thi có thêm cột section và points. Câu hỏi được lưu vào ngân hàng (ACTIVE) và gắn luôn vào đề theo đúng thứ tự trong file.</small>
+    </div>
+
+    <!-- Thêm câu hỏi từ ngân hàng -->
+    <div class="kotoba-card p-4">
+        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Thêm câu hỏi từ ngân hàng</h5>
+
+        <!-- Bộ lọc câu hỏi khả dụng -->
+        <form class="row g-2 mb-3" method="get" th:action="@{/manager/exams/{id}/questions(id=${exam.examId})}">
+            <div class="col-md-3">
+                <select class="form-select" name="jlptLevel">
+                    <option value="">Tất cả Level</option>
+                    <option th:each="item : ${jlptLevels}" th:value="${item}" th:text="${item}" th:selected="${item == filterJlptLevel}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="skillType">
+                    <option value="">Tất cả Kỹ năng</option>
+                    <option th:each="item : ${skillTypes}" th:value="${item}" th:text="${item}" th:selected="${item == filterSkillType}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" type="submit">Lọc</button>
+            </div>
+        </form>
+
+        <!-- Form thêm câu hỏi -->
+        <form method="post" th:action="@{/manager/exams/{id}/questions/add(id=${exam.examId})}">
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <select class="form-select" name="section">
+                        <option th:each="item : ${sections}" th:value="${item}" th:text="${item}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text">Điểm</span>
+                        <input class="form-control" type="number" name="points" value="1" min="1">
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-lg me-1"></i>Thêm câu đã chọn vào đề</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead><tr><th class="ps-4"><input type="checkbox" id="selectAll"></th><th>ID</th><th>Nội dung</th><th>Loại</th><th>Level</th><th>Kỹ năng</th><th>Độ khó</th></tr></thead>
+                    <tbody>
+                    <tr th:each="q : ${availableQuestions}">
+                        <td class="ps-4"><input type="checkbox" name="questionIds" th:value="${q.id}"></td>
+                        <td th:text="${q.id}"></td>
+                        <td style="min-width:200px;max-width:350px;">
+                            <div class="text-truncate" style="max-width:350px;" th:text="${q.content}"></div>
+                        </td>
+                        <td><span class="badge bg-primary" th:text="${q.questionType}"></span></td>
+                        <td th:text="${q.jlptLevel ?: '-'}"></td>
+                        <td th:text="${q.skillType ?: '-'}"></td>
+                        <td th:text="${q.difficulty ?: '-'}"></td>
+                    </tr>
+                    <tr th:if="${availableQuestions == null || #lists.isEmpty(availableQuestions)}">
+                        <td colspan="7" class="text-center text-muted py-4">Không có câu hỏi ACTIVE khả dụng. Hãy tạo và kích hoạt câu hỏi trong Question Bank trước.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('selectAll').addEventListener('change', function() {
+            document.querySelectorAll('input[name="questionIds"]').forEach(cb => cb.checked = this.checked);
+        });
+    </script>
+</div>
+</div>
