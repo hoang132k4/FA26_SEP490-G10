@@ -1,0 +1,207 @@
+<div th:replace="~{layouts/manager-layout :: html(pageTitle=${isEdit ? 'Sửa câu hỏi - Manager' : 'Thêm câu hỏi - Manager'}, activeMenu='manager-questions', content=~{::#mainContent})}">
+<div id="mainContent">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold" style="color:var(--navy-dark);" th:text="${isEdit ? 'Sửa câu hỏi' : 'Thêm câu hỏi'}"></h2>
+            <p class="text-muted mb-0" th:if="${questionForm.parentId != null}">
+                Câu hỏi con thuộc Passage #<span th:text="${questionForm.parentId}"></span>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{/manager/questions}">Quay lại</a>
+            <form th:if="${isEdit}" method="post" th:action="@{/manager/questions/{id}/delete(id=${questionForm.id})}"
+                  onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này? Hành động này không thể hoàn tác.');" style="display:inline;">
+                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash me-1"></i>Xóa</button>
+            </form>
+        </div>
+    </div>
+    <div class="alert alert-danger" th:if="${questionError}" th:text="${questionError}"></div>
+
+    <!-- Thống kê sử dụng (chỉ khi sửa) -->
+    <div th:if="${isEdit && usageStats != null}" class="kotoba-card p-3 mb-3">
+        <div class="d-flex align-items-center gap-4">
+            <span class="text-muted">Đang sử dụng trong:</span>
+            <span>
+                <i class="bi bi-file-earmark-text me-1"></i>
+                <strong th:text="${usageStats.examCount()}">0</strong> đề thi
+                <span th:if="${usageStats.activeExamCount() > 0}" class="badge bg-success ms-1" th:text="${usageStats.activeExamCount() + ' đang hoạt động'}"></span>
+            </span>
+            <span>
+                <i class="bi bi-lightning me-1"></i>
+                <strong th:text="${usageStats.quizCount()}">0</strong> quiz
+                <span th:if="${usageStats.activeQuizCount() > 0}" class="badge bg-success ms-1" th:text="${usageStats.activeQuizCount() + ' đang hoạt động'}"></span>
+            </span>
+            <span th:if="${usageStats.isUsedInActiveExamOrQuiz()}" class="badge bg-warning text-dark">
+                <i class="bi bi-exclamation-triangle me-1"></i>Không thể archive
+            </span>
+        </div>
+    </div>
+
+    <form class="kotoba-card p-4" method="post" th:object="${questionForm}"
+          th:action="${isEdit ? '/manager/questions/' + questionForm.id : '/manager/questions'}">
+
+        <input type="hidden" th:field="*{parentId}">
+
+        <!-- Thông tin cơ bản -->
+        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Thông tin cơ bản</h5>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Loại câu hỏi <span class="text-danger">*</span></label>
+                <select class="form-select" th:field="*{questionType}" required id="questionTypeSelect">
+                    <option th:each="item : ${options.questionTypes}" th:value="${item}" th:text="${item}"></option>
+                </select>
+                <div class="text-danger small" th:errors="*{questionType}"></div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">JLPT Level</label>
+                <select class="form-select" th:field="*{jlptLevel}">
+                    <option value="">--</option>
+                    <option th:each="item : ${options.jlptLevels}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Kỹ năng</label>
+                <select class="form-select" th:field="*{skillType}">
+                    <option value="">--</option>
+                    <option th:each="item : ${options.skillTypes}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Độ khó</label>
+                <select class="form-select" th:field="*{difficulty}">
+                    <option value="">--</option>
+                    <option th:each="item : ${options.difficulties}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+                <select class="form-select" th:field="*{status}" required>
+                    <option th:each="item : ${options.statuses}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Nội dung -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <label class="form-label">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                <textarea class="form-control" rows="4" th:field="*{content}" required></textarea>
+                <div class="text-danger small" th:errors="*{content}"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Category</label>
+                <select class="form-select" th:field="*{category}">
+                    <option value="">-- Chọn --</option>
+                    <option th:each="item : ${options.categories}" th:value="${item}" th:text="${item}"></option>
+                </select>
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Audio URL</label>
+                <input class="form-control" type="url" th:field="*{audioUrl}">
+            </div>
+        </div>
+
+        <!-- Đáp án (ẩn nếu PASSAGE) -->
+        <div id="optionsSection">
+            <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Đáp án</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text fw-bold">A</span>
+                        <input class="form-control" th:field="*{optionA}" placeholder="Nội dung đáp án A">
+                        <div class="input-group-text">
+                            <input class="form-check-input" type="checkbox" name="answerKeys" value="A"
+                                   th:checked="${questionForm.answerKeys != null && questionForm.answerKeys.contains('A')}">
+                            <label class="ms-1 small">Đúng</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text fw-bold">B</span>
+                        <input class="form-control" th:field="*{optionB}" placeholder="Nội dung đáp án B">
+                        <div class="input-group-text">
+                            <input class="form-check-input" type="checkbox" name="answerKeys" value="B"
+                                   th:checked="${questionForm.answerKeys != null && questionForm.answerKeys.contains('B')}">
+                            <label class="ms-1 small">Đúng</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text fw-bold">C</span>
+                        <input class="form-control" th:field="*{optionC}" placeholder="Nội dung đáp án C">
+                        <div class="input-group-text">
+                            <input class="form-check-input" type="checkbox" name="answerKeys" value="C"
+                                   th:checked="${questionForm.answerKeys != null && questionForm.answerKeys.contains('C')}">
+                            <label class="ms-1 small">Đúng</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text fw-bold">D</span>
+                        <input class="form-control" th:field="*{optionD}" placeholder="Nội dung đáp án D">
+                        <div class="input-group-text">
+                            <input class="form-check-input" type="checkbox" name="answerKeys" value="D"
+                                   th:checked="${questionForm.answerKeys != null && questionForm.answerKeys.contains('D')}">
+                            <label class="ms-1 small">Đúng</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Giải thích -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <label class="form-label">Giải thích đáp án</label>
+                <textarea class="form-control" rows="3" th:field="*{explanation}"></textarea>
+            </div>
+        </div>
+
+        <!-- Nút bấm -->
+        <div class="d-flex justify-content-end gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{/manager/questions}">Huỷ</a>
+            <button class="btn btn-primary" type="submit">Lưu câu hỏi</button>
+        </div>
+    </form>
+
+    <!-- Danh sách câu con (chỉ hiện khi sửa PASSAGE) -->
+    <div th:if="${isEdit && questionForm.questionType == 'PASSAGE'}" class="kotoba-card p-4 mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0" style="color:var(--navy-dark);">Câu hỏi con</h5>
+            <a class="btn btn-sm btn-primary" th:href="@{/manager/questions/new(parentId=${questionForm.id})}">
+                <i class="bi bi-plus-lg me-1"></i>Thêm câu con
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead><tr><th>ID</th><th>Nội dung</th><th>Loại</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                <tbody>
+                <tr th:each="child : ${children}">
+                    <td th:text="${child.id}"></td>
+                    <td><div class="text-truncate" style="max-width:350px;" th:text="${child.content}"></div></td>
+                    <td><span class="badge bg-primary" th:text="${child.questionType}"></span></td>
+                    <td><span class="badge" th:classappend="${child.status == 'ACTIVE' ? 'bg-success' : 'bg-warning text-dark'}" th:text="${child.status}"></span></td>
+                    <td><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/questions/{id}/edit(id=${child.id})}"><i class="bi bi-pencil"></i></a></td>
+                </tr>
+                <tr th:if="${children == null || #lists.isEmpty(children)}">
+                    <td colspan="5" class="text-center text-muted py-3">Chưa có câu hỏi con.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        document.getElementById('questionTypeSelect').addEventListener('change', function() {
+            document.getElementById('optionsSection').style.display = this.value === 'PASSAGE' ? 'none' : 'block';
+        });
+        // Ẩn ngay khi load nếu đang là PASSAGE
+        if (document.getElementById('questionTypeSelect').value === 'PASSAGE') {
+            document.getElementById('optionsSection').style.display = 'none';
+        }
+    </script>
+</div>
+</div>

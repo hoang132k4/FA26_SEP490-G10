@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Manager dashboard and report pages. Feature pages live in their module controllers.
@@ -114,7 +116,7 @@ public class ManagerController {
         for (List<String> row : report.rows()) {
             records.add(row.stream().map(this::csvValue).collect(java.util.stream.Collectors.joining(",")));
         }
-        return "\uFEFF" + String.join("\r\n", records) + "\r\n";
+        return "﻿" + String.join("\r\n", records) + "\r\n";
     }
 
     private String csvValue(String value) {
@@ -124,7 +126,6 @@ public class ManagerController {
         }
         return "\"" + safeValue.replace("\"", "\"\"") + "\"";
     }
-
 
     @GetMapping("/questions")
     public String questions() {
@@ -140,5 +141,4 @@ public class ManagerController {
     public String exams() {
         return "pages/manager/exam/list";
     }
-
 }
