@@ -163,7 +163,7 @@ public class SecurityConfig {
                         })
                 )
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(
+.ignoringRequestMatchers(
                                 new AntPathRequestMatcher("/h2-console/**"),
                                 new AntPathRequestMatcher("/quiz/submit")
                         )
