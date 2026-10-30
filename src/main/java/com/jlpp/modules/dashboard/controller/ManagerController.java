@@ -27,6 +27,7 @@ public class ManagerController {
         return "pages/manager/lesson/list";
     }
 
+
     @GetMapping("/questions")
     public String questions() {
         return "pages/manager/question/list";
