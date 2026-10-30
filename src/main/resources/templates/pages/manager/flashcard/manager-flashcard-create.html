@@ -1,0 +1,287 @@
+<div th:replace="~{layouts/manager-layout :: html(
+    pageTitle='Tạo bộ Flashcard - Manager',
+    activeMenu='manager-flashcards',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <form method="post" th:action="@{/manager/flashcards/sets}" th:object="${flashcardSetForm}" id="flashcardSetForm">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div>
+                    <a class="text-decoration-none small" th:href="@{/manager/flashcards}">
+                        <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+                    </a>
+                    <h1 class="h3 fw-bold mt-2 mb-1" style="color:var(--navy-dark);">Tạo bộ Flashcard</h1>
+                    <p class="mb-0 text-muted">Tạo bộ thẻ theo cách học thuật ngữ và định nghĩa như Quizlet.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-outline-secondary" th:href="@{/manager/flashcards}">Huỷ</a>
+                    <button class="btn btn-primary px-4" type="submit">
+                        <i class="bi bi-check2 me-1"></i>Tạo bộ thẻ
+                    </button>
+                </div>
+            </div>
+
+            <div class="alert alert-danger" role="alert" th:if="${#fields.hasGlobalErrors()}">
+                <div th:each="error : ${#fields.globalErrors()}" th:text="${error}"></div>
+            </div>
+            <div class="alert alert-danger" role="alert" th:if="${#fields.hasErrors('cards')}" th:errors="*{cards}"></div>
+            <div class="alert alert-danger" role="alert" th:if="${lessonsError}" th:text="${lessonsError}"></div>
+
+            <section class="kotoba-card p-4 mb-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-collection text-primary"></i>
+                    <h2 class="h5 fw-bold mb-0">Thông tin bộ thẻ</h2>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <label class="form-label fw-semibold" for="deckName">Tên bộ thẻ <span class="text-danger">*</span></label>
+                        <input class="form-control form-control-lg" id="deckName" th:field="*{deckName}"
+                               maxlength="150" placeholder="Ví dụ: Từ vựng N5 - Bài 1" required>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('deckName')}" th:errors="*{deckName}"></div>
+                    </div>
+                    <div class="col-lg-3">
+                        <label class="form-label fw-semibold" for="deckLesson">Bài học <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-lg" id="deckLesson" th:field="*{lessonId}" required>
+                            <option value="">-- Chọn bài học --</option>
+                            <option th:each="lesson : ${lessons}" th:value="${lesson.id}" th:text="${lesson.title}">Bài học</option>
+                        </select>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('lessonId')}" th:errors="*{lessonId}"></div>
+                    </div>
+                    <div class="col-lg-3">
+                        <label class="form-label fw-semibold" for="deckLevel">Cấp độ JLPT</label>
+                        <select class="form-select form-select-lg" id="deckLevel" th:field="*{jlptLevel}">
+                            <option value="">-- Không chọn --</option>
+                            <option th:each="level : ${ {'N5','N4','N3','N2','N1'} }" th:value="${level}" th:text="${level}">N5</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="kotoba-card p-4 mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-file-earmark-code text-primary"></i>
+                            <h2 class="h5 fw-bold mb-0">Nhập nhanh bằng văn bản</h2>
+                        </div>
+                        <p class="small text-muted mb-0">
+                            Dán danh sách theo định dạng Quizlet: mỗi dòng là một thẻ,
+                            thuật ngữ và định nghĩa được ngăn cách bằng dấu phân cách đã chọn.
+                        </p>
+                    </div>
+                    <select class="form-select form-select-sm" id="importDelimiter" aria-label="Ký tự phân cách"
+                            style="max-width:180px;">
+                        <option value="tab">Phân cách bằng Tab</option>
+                        <option value=",">Phân cách bằng dấu phẩy</option>
+                        <option value=";">Phân cách bằng dấu chấm phẩy</option>
+                    </select>
+                </div>
+                <label class="form-label fw-semibold mt-3" for="flashcardImportText">Danh sách thuật ngữ và định nghĩa</label>
+                <textarea class="form-control font-monospace" id="flashcardImportText" rows="6"
+                          placeholder="学生&#9;học sinh
+先生&#9;giáo viên
+日本語&#9;tiếng Nhật"
+                          aria-describedby="flashcardImportHelp"></textarea>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                    <small class="text-muted" id="flashcardImportHelp">
+                        Ví dụ: <code>学生 [Tab] học sinh</code>. Dòng không đúng định dạng sẽ được báo rõ để bạn kiểm tra.
+                    </small>
+                    <button class="btn btn-outline-primary" type="button" id="importFlashcardsButton">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i>Dùng danh sách này
+                    </button>
+                </div>
+                <div class="small mt-2" id="flashcardImportStatus" role="status" aria-live="polite"></div>
+            </section>
+
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Thẻ trong bộ</h2>
+                    <p class="small text-muted mb-0">Mỗi thẻ gồm thuật ngữ và định nghĩa. Có thể thêm hoặc bỏ thẻ trước khi lưu.</p>
+                </div>
+                <span class="badge rounded-pill text-bg-light border text-dark" id="cardCount"
+                      th:text="${#lists.size(flashcardSetForm.cards)} + ' thẻ'">2 thẻ</span>
+            </div>
+
+            <div id="cardList" class="d-flex flex-column gap-3">
+                <section class="kotoba-card p-0 overflow-hidden manager-flashcard-editor"
+                         th:each="card, state : *{cards}" data-card-item>
+                    <div class="d-flex justify-content-between align-items-center px-4 py-3 bg-light border-bottom">
+                        <h3 class="h6 fw-bold mb-0">
+                            <span class="text-muted me-2" th:text="${state.count}">1</span>Thẻ
+                        </h3>
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-remove-card
+                                th:disabled="${#lists.size(flashcardSetForm.cards) == 1}">
+                            <i class="bi bi-trash3 me-1"></i>Bỏ thẻ
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Thuật ngữ <span class="text-danger">*</span></label>
+                                <textarea class="form-control" rows="3" placeholder="Nhập từ hoặc cụm từ"
+                                          th:field="*{cards[__${state.index}__].vocabulary}" required></textarea>
+                                <div class="text-danger small"
+                                     th:if="${#fields.hasErrors('cards[__${state.index}__].vocabulary')}"
+                                     th:errors="*{cards[__${state.index}__].vocabulary}"></div>
+                                <label class="form-label small text-muted mt-2">Cách đọc</label>
+                                <input class="form-control" placeholder="Cách đọc (không bắt buộc)"
+                                       th:field="*{cards[__${state.index}__].reading}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Định nghĩa <span class="text-danger">*</span></label>
+                                <textarea class="form-control" rows="3" placeholder="Nhập nghĩa hoặc lời giải thích"
+                                          th:field="*{cards[__${state.index}__].meaning}" required></textarea>
+                                <div class="text-danger small"
+                                     th:if="${#fields.hasErrors('cards[__${state.index}__].meaning')}"
+                                     th:errors="*{cards[__${state.index}__].meaning}"></div>
+                                <label class="form-label small text-muted mt-2">Ví dụ</label>
+                                <input class="form-control" placeholder="Câu ví dụ (không bắt buộc)"
+                                       th:field="*{cards[__${state.index}__].exampleSentence}">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <button class="btn btn-outline-primary w-100 py-3 mt-3" type="button" id="addCardButton">
+                <i class="bi bi-plus-circle me-1"></i>Thêm thẻ
+            </button>
+        </form>
+
+        <template id="newCardTemplate">
+            <section class="kotoba-card p-0 overflow-hidden manager-flashcard-editor" data-card-item>
+                <div class="d-flex justify-content-between align-items-center px-4 py-3 bg-light border-bottom">
+                    <h3 class="h6 fw-bold mb-0"><span class="text-muted me-2" data-card-number></span>Thẻ</h3>
+                    <button class="btn btn-sm btn-outline-danger" type="button" data-remove-card>
+                        <i class="bi bi-trash3 me-1"></i>Bỏ thẻ
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Thuật ngữ <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="cards[__INDEX__].vocabulary" rows="3"
+                                      placeholder="Nhập từ hoặc cụm từ" required></textarea>
+                            <label class="form-label small text-muted mt-2">Cách đọc</label>
+                            <input class="form-control" name="cards[__INDEX__].reading"
+                                   placeholder="Cách đọc (không bắt buộc)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Định nghĩa <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="cards[__INDEX__].meaning" rows="3"
+                                      placeholder="Nhập nghĩa hoặc lời giải thích" required></textarea>
+                            <label class="form-label small text-muted mt-2">Ví dụ</label>
+                            <input class="form-control" name="cards[__INDEX__].exampleSentence"
+                                   placeholder="Câu ví dụ (không bắt buộc)">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </template>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const cardList = document.getElementById('cardList');
+                const template = document.getElementById('newCardTemplate');
+                const countLabel = document.getElementById('cardCount');
+
+                function refreshCards() {
+                    const cards = cardList.querySelectorAll('[data-card-item]');
+                    countLabel.textContent = cards.length + ' thẻ';
+                    document.getElementById('addCardButton').disabled = cards.length >= 200;
+                    cards.forEach(function (card, index) {
+                        card.querySelectorAll('[name]').forEach(function (field) {
+                            field.name = field.name.replace(/cards\[\d+]/, 'cards[' + index + ']');
+                        });
+                        const number = card.querySelector('[data-card-number]');
+                        const headingNumber = number || card.querySelector('h3 .text-muted');
+                        if (headingNumber) headingNumber.textContent = index + 1;
+                        const removeButton = card.querySelector('[data-remove-card]');
+                        if (removeButton) removeButton.disabled = cards.length === 1;
+                    });
+                }
+
+                document.getElementById('addCardButton').addEventListener('click', function () {
+                    if (cardList.querySelectorAll('[data-card-item]').length >= 200) return;
+                    const markup = template.innerHTML
+                        .split('__INDEX__')
+                        .join(String(cardList.querySelectorAll('[data-card-item]').length));
+                    cardList.insertAdjacentHTML('beforeend', markup);
+                    refreshCards();
+                    cardList.lastElementChild.querySelector('textarea').focus();
+                });
+
+                document.getElementById('importFlashcardsButton').addEventListener('click', function () {
+                    const input = document.getElementById('flashcardImportText').value;
+                    const delimiterChoice = document.getElementById('importDelimiter').value;
+                    const delimiter = delimiterChoice === 'tab' ? '\t' : delimiterChoice;
+                    const lines = input.replace(/\r\n?/g, '\n').split('\n');
+                    const imported = [];
+                    const invalidLines = [];
+
+                    lines.forEach(function (line, index) {
+                        if (!line.trim()) return;
+                        const separatorIndex = line.indexOf(delimiter);
+                        if (separatorIndex < 0) {
+                            invalidLines.push(index + 1);
+                            return;
+                        }
+                        const vocabulary = line.slice(0, separatorIndex).trim();
+                        const meaning = line.slice(separatorIndex + delimiter.length).trim();
+                        if (!vocabulary || !meaning) {
+                            invalidLines.push(index + 1);
+                            return;
+                        }
+                        imported.push({vocabulary: vocabulary, meaning: meaning});
+                    });
+
+                    const status = document.getElementById('flashcardImportStatus');
+                    if (imported.length === 0) {
+                        status.className = 'small mt-2 text-danger';
+                        status.textContent = input.trim()
+                            ? 'Không tìm thấy dòng hợp lệ. Mỗi dòng cần có thuật ngữ và định nghĩa, ngăn cách bằng ký tự đã chọn.'
+                            : 'Hãy dán danh sách trước khi nhập.';
+                        return;
+                    }
+                    if (imported.length > 200) {
+                        status.className = 'small mt-2 text-danger';
+                        status.textContent = 'Một bộ thẻ tối đa 200 flashcard. Danh sách này có '
+                            + imported.length + ' thẻ; hãy chia thành nhiều bộ.';
+                        return;
+                    }
+
+                    cardList.replaceChildren();
+                    imported.forEach(function (item, index) {
+                        const markup = template.innerHTML.split('__INDEX__').join(String(index));
+                        cardList.insertAdjacentHTML('beforeend', markup);
+                        const card = cardList.lastElementChild;
+                        card.querySelector('[name$=".vocabulary"]').value = item.vocabulary;
+                        card.querySelector('[name$=".meaning"]').value = item.meaning;
+                    });
+                    refreshCards();
+
+                    status.className = 'small mt-2 ' + (invalidLines.length ? 'text-warning' : 'text-success');
+                    status.textContent = 'Đã nhập ' + imported.length + ' thẻ.'
+                        + (invalidLines.length
+                            ? ' Không nhập được dòng ' + invalidLines.join(', ') + ' vì thiếu thuật ngữ hoặc định nghĩa.'
+                            : ' Bạn có thể tiếp tục chỉnh sửa từng thẻ bên dưới.');
+                    cardList.scrollIntoView({behavior: 'smooth', block: 'start'});
+                });
+
+                cardList.addEventListener('click', function (event) {
+                    const removeButton = event.target.closest('[data-remove-card]');
+                    if (removeButton && cardList.querySelectorAll('[data-card-item]').length > 1) {
+                        removeButton.closest('[data-card-item]').remove();
+                        refreshCards();
+                    }
+                });
+
+                refreshCards();
+            });
+        </script>
+        <style>
+            .manager-flashcard-editor { border: 0; border-radius: 1rem; }
+            .manager-flashcard-editor textarea { resize: vertical; min-height: 7rem; }
+        </style>
+    </div>
+</div>

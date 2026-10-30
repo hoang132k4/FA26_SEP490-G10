@@ -1,18 +1,20 @@
 package com.jlpp.modules.question.dto;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
 public class ManagerQuestionForm {
 
     private Long id;
+
+    @NotBlank(message = "Loại câu hỏi không được để trống.")
+    private String questionType = "SINGLE_CHOICE";
 
     @NotBlank(message = "Nội dung câu hỏi không được để trống.")
     @Size(max = 10000, message = "Nội dung câu hỏi không được vượt quá 10000 ký tự.")
@@ -27,14 +29,17 @@ public class ManagerQuestionForm {
     @Size(max = 10000, message = "Giải thích không được vượt quá 10000 ký tự.")
     private String explanation;
 
-    @NotNull(message = "Thứ tự câu hỏi không được để trống.")
-    @Min(value = 1, message = "Thứ tự phải lớn hơn 0.")
-    private Integer orderIndex;
+    private String jlptLevel;
+    private String skillType;
+    private String difficulty;
+    private String status = "DRAFT";
 
-    @NotNull(message = "Điểm câu hỏi không được để trống.")
-    @Min(value = 0, message = "Điểm không được âm.")
-    @Max(value = 1000, message = "Điểm không được vượt quá 1000.")
-    private Integer points;
+    private String optionA;
+    private String optionB;
+    private String optionC;
+    private String optionD;
 
-    private Long examId;
+    private List<String> answerKeys;
+
+    private Long parentId;
 }

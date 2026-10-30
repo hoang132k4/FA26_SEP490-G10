@@ -36,6 +36,9 @@ target/
 .classpath
 
 # Uploads & Temp files
-uploads/
+uploads/**
+!uploads/.gitkeep
+application-local.yml
 *.bak
+
 
