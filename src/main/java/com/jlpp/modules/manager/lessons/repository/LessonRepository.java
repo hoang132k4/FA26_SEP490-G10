@@ -145,4 +145,14 @@ public class LessonRepository {
                 "UPDATE lessons SET order_index = ?, lesson_order = ?, updated_at = NOW() WHERE lesson_id = ?",
                 orderIndex, orderIndex, lessonId);
     }
+
+    public int renameSection(long courseId, String oldName, String newName) {
+        return jdbcTemplate.update("UPDATE lessons SET section_name = ?, updated_at = NOW() " +
+                        "WHERE course_id = ? AND section_name = ?", newName, courseId, oldName);
+    }
+
+    public int clearSection(long courseId, String sectionName) {
+        return jdbcTemplate.update("UPDATE lessons SET section_name = NULL, updated_at = NOW() " +
+                        "WHERE course_id = ? AND section_name = ?", courseId, sectionName);
+    }
 }

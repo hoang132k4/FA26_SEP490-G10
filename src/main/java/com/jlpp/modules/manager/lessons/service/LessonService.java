@@ -51,7 +51,7 @@ public class LessonService {
 
     @Transactional
     public long create(long courseId, LessonInput rawInput) {
-        LessonInput input = validate(rawInput);
+        LessonInput input = validate(rawInput, false);
         courseService.findCourse(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
 
@@ -64,9 +64,20 @@ public class LessonService {
     }
 
     @Transactional
+    public long createOther(long courseId, LessonInput rawInput) {
+        LessonInput input = validate(rawInput, true);
+        courseService.findCourse(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
+        int orderIndex = lessonRepository.nextOrderIndex(courseId, null);
+        long lessonId = lessonRepository.insert(courseId, input, orderIndex);
+        normalizeOrders(courseId, null);
+        return lessonId;
+    }
+
+    @Transactional
     public void update(long lessonId, LessonInput rawInput) {
         LessonRow existing = requireLesson(lessonId);
-        LessonInput input = validate(rawInput);
+        LessonInput input = validate(rawInput, false);
 
         int orderIndex = input.orderIndex() == null || input.orderIndex() < 1
                 ? existing.order()
@@ -79,10 +90,35 @@ public class LessonService {
     }
 
     @Transactional
+    public void updateOther(long lessonId, LessonInput rawInput) {
+        LessonRow existing = requireLesson(lessonId);
+        if (SkillTypeEnum.fromParam(existing.skillValue()) != null) {
+            throw new IllegalArgumentException("Bài học này không thuộc cột Khác.");
+        }
+        LessonInput input = validate(rawInput, true);
+        lessonRepository.update(lessonId, input, existing.order());
+        normalizeOrders(existing.courseId(), null);
+    }
+
+    @Transactional
     public void delete(long lessonId) {
         LessonRow existing = requireLesson(lessonId);
         lessonRepository.delete(lessonId);
         normalizeOrders(existing.courseId(), existing.skillValue());
+    }
+
+    @Transactional
+    public void renameSection(long courseId, String oldName, String newName) {
+        courseService.findCourse(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
+        lessonRepository.renameSection(courseId, oldName, newName);
+    }
+
+    @Transactional
+    public void deleteSection(long courseId, String sectionName) {
+        courseService.findCourse(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
+        lessonRepository.clearSection(courseId, sectionName);
     }
 
     /**
@@ -162,7 +198,7 @@ public class LessonService {
     }
 
     private void normalizeOrders(long courseId, String skill) {
-        String skillValue = resolveSkillValue(skill);
+        String skillValue = skill == null ? null : resolveSkillValue(skill);
         applyOrder(lessonRepository.findIdsInOrder(courseId, skillValue));
     }
 
@@ -186,7 +222,7 @@ public class LessonService {
         return base.substring(0, MAX_TITLE_LENGTH - suffix.length()).trim() + suffix;
     }
 
-    private LessonInput validate(LessonInput rawInput) {
+    private LessonInput validate(LessonInput rawInput, boolean allowOtherSkill) {
         if (rawInput == null) {
             throw new IllegalArgumentException("Không nhận được dữ liệu bài học.");
         }
@@ -199,7 +235,8 @@ public class LessonService {
         }
 
         SkillTypeEnum skill = SkillTypeEnum.fromParam(rawInput.skill());
-        if (skill == null) {
+        boolean explicitOther = rawInput.skill() == null || "OTHER".equalsIgnoreCase(rawInput.skill().trim());
+        if (skill == null && (!allowOtherSkill || !explicitOther)) {
             throw new IllegalArgumentException("Vui lòng chọn kỹ năng cho bài học.");
         }
 
@@ -239,7 +276,7 @@ public class LessonService {
                 sectionName,
                 description,
                 content,
-                skill.getValue(),
+                skill == null ? null : skill.getValue(),
                 status.name(),
                 order,
                 duration,
