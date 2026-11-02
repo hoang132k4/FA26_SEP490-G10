@@ -24,12 +24,16 @@ import com.jlpp.modules.manager.lessons.service.LessonDetailService;
 import com.jlpp.modules.manager.lessons.service.LessonAudioStorageService;
 import com.jlpp.modules.manager.lessons.service.LessonService;
 import com.jlpp.modules.manager.courses.service.CourseService;
+import com.jlpp.modules.quiz.dto.ManagerQuizForm;
 import com.jlpp.modules.quiz.entity.Exercise;
 import com.jlpp.modules.quiz.repository.ExerciseRepository;
+import com.jlpp.modules.quiz.service.ManagerQuizService;
 import com.jlpp.modules.quiz.service.QuizService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.TransactionException;
 import org.springframework.ui.Model;
@@ -74,6 +78,7 @@ public class ManagerLessonController {
     private final ExerciseRepository exerciseRepository;
     private final QuizService quizService;
     private final ManagerFlashcardService managerFlashcardService;
+    private final ManagerQuizService managerQuizService;
 
     public ManagerLessonController(LessonService lessonService, CourseService courseService,
                                    LessonDetailService lessonDetailService,
@@ -82,7 +87,8 @@ public class ManagerLessonController {
                                    FlashcardRepository flashcardRepository,
                                    ExerciseRepository exerciseRepository,
                                    QuizService quizService,
-                                   ManagerFlashcardService managerFlashcardService) {
+                                   ManagerFlashcardService managerFlashcardService,
+                                   ManagerQuizService managerQuizService) {
         this.lessonService = lessonService;
         this.courseService = courseService;
         this.lessonDetailService = lessonDetailService;
@@ -92,6 +98,7 @@ public class ManagerLessonController {
         this.exerciseRepository = exerciseRepository;
         this.quizService = quizService;
         this.managerFlashcardService = managerFlashcardService;
+        this.managerQuizService = managerQuizService;
     }
 
     @ModelAttribute("draftChapterNames")
@@ -110,6 +117,7 @@ public class ManagerLessonController {
                             @RequestParam(name = "detailId", required = false) Long detailId,
                             @RequestParam(name = "sort", required = false, defaultValue = "false") boolean sortMode,
                             Model model,
+                            HttpServletRequest request,
                             @ModelAttribute("draftChapterNames") Map<Long, List<String>> draftChapterNames) {
 
         List<CourseOption> courses;
@@ -148,56 +156,28 @@ public class ManagerLessonController {
             }
         }
         final List<LessonRow> allLessons = courseLessons;
-        List<LessonStudyView> lessonStudyViews = new ArrayList<>();
+        List<Long> lessonIds = allLessons.stream().map(LessonRow::id).toList();
+        java.util.Set<Long> flashcardLessonIds = lessonService.findLessonIdsWithFlashcards(lessonIds);
+        java.util.Set<Long> practiceLessonIds = lessonService.findLessonIdsWithExercises(lessonIds);
+
         Map<Long, List<String>> lessonTags = new java.util.LinkedHashMap<>();
         for (LessonRow lesson : allLessons) {
-            List<StudyMaterial> materials = List.of();
-            List<Flashcard> flashcards = List.of();
-            List<PracticeQuizView> practiceQuizzes = new ArrayList<>();
-            try {
-                materials = studyMaterialService.getMaterialsByLessonId(lesson.id());
-            } catch (Exception exception) {
-                log.warn("Could not read study materials for manager lesson {}", lesson.id(), exception);
-            }
-            try {
-                flashcards = flashcardRepository.findByLessonId(lesson.id());
-            } catch (Exception exception) {
-                log.warn("Could not read flashcards for manager lesson {}", lesson.id(), exception);
-            }
-            try {
-                for (Exercise exercise : exerciseRepository.findAllByLessonId(lesson.id())) {
-                    practiceQuizzes.add(new PracticeQuizView(exercise,
-                            quizService.getQuestionsForExercise(exercise.getExerciseId())));
-                }
-            } catch (Exception exception) {
-                log.warn("Could not read practice quizzes for manager lesson {}", lesson.id(), exception);
-            }
             SkillTypeEnum skillType = SkillTypeEnum.fromParam(lesson.skillValue());
             List<String> tags = new ArrayList<>();
             if (skillType != null) tags.add(skillType.getValue());
-            if (!flashcards.isEmpty()) tags.add("FLASHCARD");
-            if (!practiceQuizzes.isEmpty()) tags.add("PRACTICE");
+            if (flashcardLessonIds.contains(lesson.id())) tags.add("FLASHCARD");
+            if (practiceLessonIds.contains(lesson.id())) tags.add("PRACTICE");
             lessonTags.put(lesson.id(), List.copyOf(tags));
-            List<Map<String, Object>> listeningQuestions = List.of();
-            List<Map<String, Object>> readingQuestions = List.of();
-            String readingPassage = "";
-            if (skillType == SkillTypeEnum.LISTENING) {
-                try {
-                    listeningQuestions = lessonDetailService.findListeningQuestions(lesson.id());
-                } catch (DataAccessException exception) {
-                    log.warn("Could not read listening questions for manager lesson {}", lesson.id(), exception);
-                }
-            } else if (skillType == SkillTypeEnum.READING) {
-                try {
-                    readingQuestions = lessonDetailService.findReadingQuestions(lesson.id());
-                    readingPassage = lessonDetailService.findReadingPassage(lesson.id());
-                } catch (DataAccessException exception) {
-                    log.warn("Could not read reading content for manager lesson {}", lesson.id(), exception);
-                }
-            }
-            lessonStudyViews.add(new LessonStudyView(lesson,
-                    skillType == null ? "Khác" : skillType.getLabel(), materials, flashcards,
-                    listeningQuestions, readingPassage, readingQuestions, practiceQuizzes));
+        }
+
+        // Lazy load: chi nap LessonStudyView khi co detailId duoc yeu cau
+        List<LessonStudyView> lessonStudyViews = new ArrayList<>();
+        if (detailId != null) {
+            allLessons.stream()
+                    .filter(l -> l.id() == detailId)
+                    .findFirst()
+                    .or(() -> lessonService.findLesson(detailId))
+                    .ifPresent(lesson -> lessonStudyViews.add(buildLessonStudyView(lesson)));
         }
         model.addAttribute("lessonStudyViews", lessonStudyViews);
         model.addAttribute("lessonTags", lessonTags);
@@ -323,6 +303,10 @@ public class ManagerLessonController {
             form.put("sectionName", requestedSectionName);
         }
         model.addAttribute("form", form);
+
+        if (detailId != null && request != null && "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"))) {
+            return "pages/manager/lesson/manager-lessons :: lessonDetailContainer";
+        }
 
         return VIEW;
     }
@@ -604,31 +588,67 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/{lessonId}/move")
-    public String move(@PathVariable long lessonId,
+    public Object move(@PathVariable long lessonId,
                        @RequestParam(defaultValue = "up") String direction,
                        @RequestParam(required = false) Long courseId,
                        @RequestParam(required = false) String skill,
+                       @RequestParam(required = false) String chapter,
+                       @RequestParam(required = false) String column,
+                       HttpServletRequest request,
                        RedirectAttributes redirectAttributes) {
+        boolean isAjax = isAjaxRequest(request);
         try {
-            boolean moved = lessonService.move(lessonId, "down".equalsIgnoreCase(direction) ? 1 : -1);
+            boolean moved = lessonService.moveInColumn(lessonId,
+                    "down".equalsIgnoreCase(direction) ? 1 : -1, chapter, column);
             if (!moved) {
+                if (isAjax) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "success", false,
+                            "message", "Bài học đã ở vị trí đầu hoặc cuối của cột kỹ năng nên không thể di chuyển thêm."));
+                }
                 redirectAttributes.addFlashAttribute("lessonError",
-                        "Bài học đã ở vị trí đầu hoặc cuối của kỹ năng nên không thể di chuyển thêm.");
+                        "Bài học đã ở vị trí đầu hoặc cuối của cột kỹ năng nên không thể di chuyển thêm.");
+            } else {
+                if (isAjax) {
+                    return ResponseEntity.ok(Map.of(
+                            "success", true,
+                            "message", "Đã thay đổi thứ tự bài học thành công."));
+                }
+                redirectAttributes.addFlashAttribute("lessonSuccess", "Đã thay đổi thứ tự bài học.");
             }
         } catch (IllegalArgumentException exception) {
+            if (isAjax) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", exception.getMessage()));
+            }
             redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
         } catch (DataAccessException exception) {
+            if (isAjax) {
+                return ResponseEntity.internalServerError().body(Map.of(
+                        "success", false,
+                        "message", "Không đổi được thứ tự: " + describe(exception)));
+            }
             redirectAttributes.addFlashAttribute("lessonError", "Không đổi được thứ tự: " + describe(exception));
         }
         return redirectToWorkspace(courseId, skill, redirectAttributes);
     }
 
     @PostMapping("/reorder")
-    public String reorder(@RequestParam(required = false) Long courseId,
+    public Object reorder(@RequestParam(required = false) Long courseId,
                           @RequestParam(required = false) String skill,
+                          @RequestParam(required = false) String chapter,
+                          @RequestParam(required = false) String column,
                           @RequestParam(required = false) String ids,
+                          HttpServletRequest request,
                           RedirectAttributes redirectAttributes) {
+        boolean isAjax = isAjaxRequest(request);
         if (courseId == null || ids == null || ids.isBlank()) {
+            if (isAjax) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Không nhận được thứ tự mới của bài học."));
+            }
             redirectAttributes.addFlashAttribute("lessonError", "Không nhận được thứ tự mới của bài học.");
             return redirectToWorkspace(courseId, skill, redirectAttributes);
         }
@@ -640,17 +660,51 @@ public class ManagerLessonController {
                     orderedIds.add(Long.parseLong(candidate));
                 }
             }
-            lessonService.saveOrder(courseId, skill, orderedIds);
+            if (chapter != null && !chapter.isBlank() && column != null && !column.isBlank()) {
+                lessonService.reorderInColumn(courseId, chapter, column, orderedIds);
+            } else {
+                lessonService.saveOrder(courseId, skill, orderedIds);
+            }
+            if (isAjax) {
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Đã lưu thứ tự bài học thành công."));
+            }
             redirectAttributes.addFlashAttribute("lessonSuccess",
                     "Đã lưu thứ tự bài học trong kỹ năng " + labelOf(skill) + ".");
         } catch (NumberFormatException exception) {
+            if (isAjax) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Thứ tự bài học gửi lên không hợp lệ."));
+            }
             redirectAttributes.addFlashAttribute("lessonError", "Thứ tự bài học gửi lên không hợp lệ.");
         } catch (IllegalArgumentException exception) {
+            if (isAjax) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", exception.getMessage()));
+            }
             redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
         } catch (DataAccessException exception) {
+            if (isAjax) {
+                return ResponseEntity.internalServerError().body(Map.of(
+                        "success", false,
+                        "message", "Không lưu được thứ tự: " + describe(exception)));
+            }
             redirectAttributes.addFlashAttribute("lessonError", "Không lưu được thứ tự: " + describe(exception));
         }
         return redirectToWorkspace(courseId, skill, redirectAttributes);
+    }
+
+    private boolean isAjaxRequest(HttpServletRequest request) {
+        if (request == null) return false;
+        String requestedWith = request.getHeader("X-Requested-With");
+        String accept = request.getHeader("Accept");
+        String contentType = request.getContentType();
+        return "XMLHttpRequest".equalsIgnoreCase(requestedWith)
+                || (accept != null && accept.contains("application/json"))
+                || (contentType != null && contentType.contains("application/json"));
     }
 
     /**
@@ -877,6 +931,117 @@ public class ManagerLessonController {
             model.addAttribute("lessonsError", "Không tải được danh sách bài học.");
         }
         return "pages/manager/flashcard/manager-flashcard-create";
+    }
+
+    /**
+     * Hiển thị trang tạo bài luyện tập (quiz) với thông tin bài học đã được chọn sẵn từ lesson workspace.
+     */
+    @GetMapping({"/quiz/new", "/quizzes/new"})
+    public String newQuizFromLesson(@RequestParam(required = false) Long lessonId, Model model) {
+        ManagerQuizForm form = new ManagerQuizForm();
+        if (lessonId != null) {
+            form.setLessonId(lessonId);
+            try {
+                lessonService.findLesson(lessonId).ifPresent(lesson -> {
+                    String title = lesson.title();
+                    if (title != null && !title.isBlank()) {
+                        form.setTitle("Luyện tập: " + title.trim());
+                    }
+                });
+            } catch (DataAccessException | TransactionException exception) {
+                log.warn("Could not pre-fill lesson data for quiz form (lessonId={})", lessonId, exception);
+            }
+            form.setStatus("PUBLISHED");
+            form.setTotalQuestions(10);
+            form.setPassingScore(80);
+        }
+        model.addAttribute("quizForm", form);
+        try {
+            model.addAttribute("lessons", managerQuizService.lessons());
+            model.addAttribute("statuses", managerQuizService.statuses());
+        } catch (DataAccessException | TransactionException exception) {
+            log.error("Could not load options for quiz prefill form", exception);
+            model.addAttribute("lessons", List.of());
+            model.addAttribute("statuses", List.of("DRAFT", "PUBLISHED", "ARCHIVED"));
+        }
+        model.addAttribute("isEdit", false);
+        return "pages/manager/quiz/form";
+    }
+
+    /**
+     * Endpoint AJAX fragment: nạp LessonStudyView và render duy nhất modal chi tiết của 1 bài học.
+     */
+    @GetMapping({"/{lessonId}/detail-modal", "/detail-modal"})
+    public String detailModalFragment(@PathVariable(required = false) Long lessonId,
+                                      @RequestParam(required = false) Long id,
+                                      @RequestParam(required = false) Long courseId,
+                                      Model model) {
+        Long targetId = lessonId != null ? lessonId : id;
+        if (targetId == null) {
+            model.addAttribute("lessonStudyViews", List.of());
+            return "pages/manager/lesson/manager-lessons :: lessonDetailContainer";
+        }
+        LessonRow lesson = lessonService.findLesson(targetId).orElse(null);
+        if (lesson != null) {
+            LessonStudyView studyView = buildLessonStudyView(lesson);
+            model.addAttribute("lessonStudyViews", List.of(studyView));
+            Long actualCourseId = courseId != null ? courseId : lesson.courseId();
+            model.addAttribute("selectedCourseId", actualCourseId);
+            model.addAttribute("courseLevel", courseLevelOf(actualCourseId));
+            model.addAttribute("openDetailId", targetId);
+        } else {
+            model.addAttribute("lessonStudyViews", List.of());
+        }
+        return "pages/manager/lesson/manager-lessons :: lessonDetailContainer";
+    }
+
+    /**
+     * Nạp dữ liệu chi tiết (materials, flashcards, quizzes, listening/reading questions)
+     * cho đúng 1 bài học khi được yêu cầu.
+     */
+    private LessonStudyView buildLessonStudyView(LessonRow lesson) {
+        List<StudyMaterial> materials = List.of();
+        List<Flashcard> flashcards = List.of();
+        List<PracticeQuizView> practiceQuizzes = new ArrayList<>();
+        try {
+            materials = studyMaterialService.getMaterialsByLessonId(lesson.id());
+        } catch (Exception exception) {
+            log.warn("Could not read study materials for manager lesson {}", lesson.id(), exception);
+        }
+        try {
+            flashcards = flashcardRepository.findByLessonId(lesson.id());
+        } catch (Exception exception) {
+            log.warn("Could not read flashcards for manager lesson {}", lesson.id(), exception);
+        }
+        try {
+            for (Exercise exercise : exerciseRepository.findAllByLessonId(lesson.id())) {
+                practiceQuizzes.add(new PracticeQuizView(exercise,
+                        quizService.getQuestionsForExercise(exercise.getExerciseId())));
+            }
+        } catch (Exception exception) {
+            log.warn("Could not read practice quizzes for manager lesson {}", lesson.id(), exception);
+        }
+        SkillTypeEnum skillType = SkillTypeEnum.fromParam(lesson.skillValue());
+        List<Map<String, Object>> listeningQuestions = List.of();
+        List<Map<String, Object>> readingQuestions = List.of();
+        String readingPassage = "";
+        if (skillType == SkillTypeEnum.LISTENING) {
+            try {
+                listeningQuestions = lessonDetailService.findListeningQuestions(lesson.id());
+            } catch (DataAccessException exception) {
+                log.warn("Could not read listening questions for manager lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.READING) {
+            try {
+                readingQuestions = lessonDetailService.findReadingQuestions(lesson.id());
+                readingPassage = lessonDetailService.findReadingPassage(lesson.id());
+            } catch (DataAccessException exception) {
+                log.warn("Could not read reading content for manager lesson {}", lesson.id(), exception);
+            }
+        }
+        return new LessonStudyView(lesson,
+                skillType == null ? "Khác" : skillType.getLabel(), materials, flashcards,
+                listeningQuestions, readingPassage, readingQuestions, practiceQuizzes);
     }
 
     /** Trích xuất thẻ flashcard từ bài học (từ vựng, kanji, hoặc ngữ pháp). */

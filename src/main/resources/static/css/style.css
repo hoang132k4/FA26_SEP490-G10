@@ -22,6 +22,7 @@
   /* Accent & Status Colors */
   --accent-red: #D94B3F;     /* Màu mặt trời đỏ & hoa anh đào điểm xuyết */
   --sakura-accent: #E06D53;  /* Sắc cam hồng anh đào Nhật Bản */
+  --sunset-coral: #E06D53;   /* Cam hồng san hô hoàng hôn */
   --sakura-light: #FFEDEA;
   --status-success: #2ECC71;
   --status-warning: #F39C12;
@@ -44,6 +45,37 @@ body {
   min-height: 100vh;
   margin: 0;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Manager pages keep navigation in place while the page content scrolls. */
+.manager-layout {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.manager-sidebar {
+  flex: 0 0 250px;
+  width: 250px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.manager-sidebar .kotoba-sidebar {
+  min-height: 100%;
+  height: 100%;
+}
+
+.manager-workspace {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.manager-main {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -1916,20 +1948,28 @@ textarea.lesson-field {
 .manager-skill-card>header small { font-size:.7rem; opacity:.75; }
 .manager-skill-card>header b { margin-left:auto; border-radius:50%; background:#ffffffc9; padding:.2rem .5rem; font-size:.75rem; }
 .manager-skill-lessons { display:grid; align-content:start; gap:.5rem; min-height:7rem; flex:1; padding:.75rem; }
-.manager-skill-lesson { display:flex; align-items:center; justify-content:space-between; gap:.65rem; border:1px solid #e2e8f0; border-radius:.65rem; padding:.7rem; color:#10263f; }
+.manager-skill-lesson { position:relative; display:flex; align-items:center; justify-content:space-between; gap:.5rem; border:1px solid #e2e8f0; border-radius:.65rem; padding:.65rem; color:#10263f; background:#fff; transition:border-color .15s ease, background-color .15s ease, box-shadow .15s ease; }
 .manager-skill-lesson:hover { border-color:#10b981; background:#f0fdf4; }
-.manager-skill-lesson-content { display:grid; gap:.35rem; min-width:0; }
+.manager-skill-lesson.is-dragging { opacity:.45; background:#f8fafc; border:1px dashed #3b82f6 !important; }
+.manager-skill-lesson.drag-over-top { border-top:2px solid #2563eb !important; }
+.manager-skill-lesson.drag-over-bottom { border-bottom:2px solid #2563eb !important; }
+.manager-lesson-drag-handle { display:inline-flex; align-items:center; justify-content:center; color:#94a3b8; cursor:grab; padding:.15rem .05rem; font-size:1.05rem; line-height:1; border-radius:.25rem; transition:color .15s ease, background-color .15s ease; user-select:none; flex-shrink:0; }
+.manager-lesson-drag-handle:hover { color:#1e293b; background-color:#e2e8f0; }
+.manager-lesson-drag-handle:active { cursor:grabbing; }
+.manager-lesson-order-badge { display:inline-flex; align-items:center; justify-content:center; min-width:1.3rem; height:1.3rem; padding:0 .25rem; border-radius:.3rem; background-color:#f1f5f9; color:#475569; font-size:.7rem; font-weight:700; line-height:1; flex-shrink:0; }
+.manager-skill-lesson-content { display:grid; gap:.35rem; min-width:0; flex:1; }
 .manager-skill-lesson-content strong { font-size:.85rem; }
 .manager-skill-tags { display:flex; flex-wrap:wrap; gap:.3rem; }
 .manager-skill-lesson-meta { display:flex; align-items:center; flex-wrap:wrap; gap:.45rem; min-width:0; }
 .manager-skill-lesson-duration { display:inline-flex; align-items:center; gap:.25rem; color:#718096; font-size:.72rem; white-space:nowrap; }
 .manager-skill-lesson-content small { color:#64748b; font-size:.75rem; }
 .manager-skill-lesson-content span { color:#64748b; font-size:.72rem; }
-.manager-skill-lesson-actions { display:flex; align-items:center; gap:.4rem; flex:none; }
+.manager-skill-lesson-actions { display:flex; align-items:center; gap:.25rem; flex:none; }
 .manager-skill-lesson-actions form { margin:0; }
-.manager-lesson-icon-btn { display:inline-grid; place-items:center; width:1.7rem; height:1.7rem; padding:0; border:0; border-radius:.35rem; background:transparent; color:#94a3b8; text-decoration:none; }
-.manager-lesson-icon-btn:hover { background:#e2e8f0; color:#334155; }
-.manager-lesson-icon-btn.is-danger:hover { background:#fee2e2; color:#dc2626; }
+.manager-lesson-icon-btn { display:inline-grid; place-items:center; width:1.65rem; height:1.65rem; padding:0; border:0; border-radius:.35rem; background:transparent; color:#94a3b8; text-decoration:none; font-size:.85rem; cursor:pointer; }
+.manager-lesson-icon-btn:hover:not(:disabled) { background:#e2e8f0; color:#334155; }
+.manager-lesson-icon-btn:disabled { opacity:.3; cursor:not-allowed; pointer-events:none; }
+.manager-lesson-icon-btn.is-danger:hover:not(:disabled) { background:#fee2e2; color:#dc2626; }
 .manager-skill-lesson.is-hidden { background:#f8fafc; }
 .manager-free-preview { width:max-content; border-radius:.35rem; background:#ecfdf5; color:#059669 !important; padding:.12rem .4rem; font-size:.7rem !important; font-weight:700; }
 .manager-detail-meta { display:flex; align-items:center; gap:.55rem; flex-wrap:wrap; margin-bottom:.85rem; color:#64748b; font-size:.85rem; }

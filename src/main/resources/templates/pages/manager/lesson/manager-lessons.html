@@ -105,11 +105,20 @@
             <div class="manager-skill-columns">
                 <section class="manager-skill-card" th:each="column : ${chapter.columns}">
                     <header><span class="manager-skill-icon" th:text="${column.glyph}">語</span><div><strong th:text="${column.label}">Từ vựng</strong></div><b th:text="${#lists.size(column.lessons)}">0</b></header>
-                    <div class="manager-skill-lessons">
-                        <article class="manager-skill-lesson" th:each="item : ${column.lessons}"
-                                 th:classappend="${!item.visible} ? ' is-hidden'">
+                    <div class="manager-skill-lessons"
+                         th:attr="data-chapter=${chapter.name}, data-column=${column.value}, data-course-id=${selectedCourseId}">
+                        <article class="manager-skill-lesson" th:each="item, itemStat : ${column.lessons}"
+                                 th:classappend="${!item.visible} ? ' is-hidden'"
+                                 th:attr="data-lesson-id=${item.id}, data-chapter=${chapter.name}, data-column=${column.value}, data-order=${itemStat.index + 1}"
+                                 draggable="true">
+                            <span class="manager-lesson-drag-handle" title="Kéo thả sắp xếp thứ tự bài học" aria-label="Kéo thả sắp xếp">
+                                <i class="bi bi-grip-vertical"></i>
+                            </span>
                             <div class="manager-skill-lesson-content">
-                                <strong th:text="${item.title}">Tên bài học</strong>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="manager-lesson-order-badge" th:text="${itemStat.index + 1}">1</span>
+                                    <strong th:text="${item.title}">Tên bài học</strong>
+                                </div>
                                 <div class="manager-skill-lesson-meta">
                                     <div class="manager-skill-tags" th:if="${lessonTags[item.id] != null and !#lists.isEmpty(lessonTags[item.id])}">
                                         <span class="lesson-type-tag" th:each="tag : ${lessonTags[item.id]}"
@@ -121,9 +130,10 @@
                                 <small th:if="${item.description != null and !item.description.isBlank()}" th:text="${item.description}">Mô tả bài học</small>
                             </div>
                             <div class="manager-skill-lesson-actions">
-                                <button type="button" class="manager-lesson-icon-btn" data-bs-toggle="modal"
-                                        th:attr="data-bs-target=|#lessonDetail${item.id}|, aria-label=|Xem chi tiết ${item.title}|"
-                                        title="Xem chi tiết"><i class="bi bi-eye-fill"></i></button>
+                                <a class="manager-lesson-icon-btn js-lesson-detail-btn"
+                                   th:href="@{/manager/lessons(courseId=${selectedCourseId}, detailId=${item.id})}"
+                                   th:attr="data-lesson-id=${item.id}, data-course-id=${selectedCourseId}, aria-label=|Xem chi tiết ${item.title}|"
+                                   title="Xem chi tiết"><i class="bi bi-eye-fill"></i></a>
                                 <a class="manager-lesson-icon-btn" th:href="@{/manager/lessons(courseId=${selectedCourseId}, skill=${item.skillValue}, edit=${item.id})}"
                                    th:attr="aria-label=|Sửa bài học ${item.title}|" title="Sửa bài học"><i class="bi bi-pencil-fill"></i></a>
                                 <form method="post" th:action="@{/manager/lessons/{id}/delete(id=${item.id})}"
@@ -162,7 +172,7 @@
                                 <ul class="dropdown-menu shadow-sm border-0 rounded-3">
                                     <li><span class="dropdown-header">Chọn bài học</span></li>
                                     <li th:each="targetLesson : ${column.lessons}">
-                                        <a class="dropdown-item text-truncate" th:href="@{/manager/quizzes/new(lessonId=${targetLesson.id})}" th:text="${targetLesson.title}">Tên bài học</a>
+                                        <a class="dropdown-item text-truncate" th:href="@{/manager/lessons/quiz/new(lessonId=${targetLesson.id})}" th:text="${targetLesson.title}">Tên bài học</a>
                                     </li>
                                 </ul>
                             </div>
@@ -174,8 +184,9 @@
         </article>
     </section>
 
-    <th:block th:each="studyView : ${lessonStudyViews}" th:with="detailLesson=${studyView.lesson}">
-        <div class="modal fade manager-lesson-detail-modal" th:id="|lessonDetail${detailLesson.id}|" tabindex="-1" aria-hidden="true">
+    <div id="lessonDetailModalContainer" th:fragment="lessonDetailContainer">
+        <th:block th:each="studyView : ${lessonStudyViews}" th:with="detailLesson=${studyView.lesson}">
+            <div class="modal fade manager-lesson-detail-modal" th:id="|lessonDetail${detailLesson.id}|" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
                 <div class="modal-content manager-lesson-detail-shell">
                     <div class="manager-lesson-detail-header">
@@ -216,7 +227,7 @@
                                         <h4 th:text="|Câu ${questionStat.count}|">Câu 1</h4>
                                     </header>
                                     <div class="manager-listening-passage">
-                                        <audio class="manager-listening-audio" controls preload="metadata"
+                                        <audio class="manager-listening-audio" controls preload="none"
                                                th:if="${question['questionAudioUrl'] != null and !#strings.isEmpty(question['questionAudioUrl'])}">
                                             <source th:src="${question['questionAudioUrl']}">
                                         </audio>
@@ -301,7 +312,7 @@
                             </section>
 
                             <section class="manager-lesson-related-data" th:if="${studyView.practiceQuizzes != null and !studyView.practiceQuizzes.isEmpty()}">
-                                <h5><i class="bi bi-ui-checks-grid"></i>Bài quiz (Practice)</h5>
+                                <h5><i class="bi bi-ui-checks-grid me-2"></i>Bài quiz (Practice) (<span th:text="${#lists.size(studyView.practiceQuizzes)}">0</span>)</h5>
                                 <article class="manager-practice-quiz" th:each="practice : ${studyView.practiceQuizzes}">
                                     <header class="manager-practice-quiz-heading">
                                         <div>
@@ -336,7 +347,7 @@
                                             </div>
                                             <h6 class="fw-bold text-dark mb-1 small" th:text="${mat.materialTitle}">Tên tài liệu</h6>
                                             <p class="text-muted small mb-3 flex-grow-1" th:text="${mat.description}">Mô tả</p>
-                                            <audio th:if="${mat.materialType == 'AUDIO' and mat.audioUrl != null}" controls class="w-100 mb-2" style="height:32px"><source th:src="${mat.audioUrl}" type="audio/mpeg"></audio>
+                                            <audio th:if="${mat.materialType == 'AUDIO' and mat.audioUrl != null}" controls preload="none" class="w-100 mb-2" style="height:32px"><source th:src="${mat.audioUrl}" type="audio/mpeg"></audio>
                                             <div class="mt-auto text-end"><a th:if="${mat.fileUrl != null}" th:href="${mat.fileUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">Tải tài liệu</a></div>
                                         </div>
                                     </div>
@@ -347,9 +358,11 @@
                 </div>
             </div>
         </div>
-    </th:block>
+        </th:block>
+    </div>
     <span id="managerOpenLessonDetail" th:if="${openDetailId != null}" th:attr="data-detail-id=${openDetailId}" hidden></span>
 
+    <!--/* Legacy skill strip & lesson pane (disabled to save server rendering CPU)
     <nav class="lesson-skill-strip" aria-label="Kỹ năng của khóa học" style="display:none">
     <a th:each="tab : ${skillTabs}"
        class="lesson-skill"
@@ -512,8 +525,7 @@
         </div>
     </section>
 
-    <!-- One confirmation dialog per lesson, rendered outside the list. -->
-<th:block>
+    <th:block>
     <th:block th:each="lesson : ${lessons}">
         <div th:replace="~{fragments/components/modal-confirm :: confirmModal(
                 ${'deleteLesson' + lesson.id},
@@ -523,6 +535,7 @@
                 'Xoá bài học')}"></div>
     </th:block>
 </th:block>
+    */-->
 
     <th:block th:if="${modalOpen and !otherMode}">
 <div class="modal lesson-modal"
@@ -1076,18 +1089,27 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.marked) {
-                document.querySelectorAll('.manager-markdown-source').forEach(function (source) {
+        // Lắng nghe sự kiện show.bs.modal của Bootstrap để chỉ parse Markdown khi modal bài đó được mở ra
+        document.addEventListener('show.bs.modal', function (event) {
+            var modal = event.target;
+            if (!modal || !modal.classList || !modal.classList.contains('manager-lesson-detail-modal')) return;
+            if (window.renderLessonDetailContent) {
+                window.renderLessonDetailContent(modal);
+            } else if (window.marked) {
+                modal.querySelectorAll('.manager-markdown-source').forEach(function (source) {
                     var target = source.parentElement.querySelector('.manager-markdown-rendered');
-                    if (!target || !source.textContent.trim()) return;
+                    if (!target || !source.textContent.trim() || target.dataset.rendered === 'true') return;
                     var markdown = source.textContent.replace(/\\(?:rightarrow|to)\b/g, '→').replace(/\\(?:leftarrow)\b/g, '←');
                     target.innerHTML = window.marked.parse(markdown);
                     if (window.renderMathInElement) {
                         window.renderMathInElement(target, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
                     }
+                    target.dataset.rendered = 'true';
                 });
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
             var openDetail = document.getElementById('managerOpenLessonDetail');
             if (openDetail && window.bootstrap) {
                 var modal = document.getElementById('lessonDetail' + openDetail.dataset.detailId);
@@ -1095,6 +1117,16 @@
             }
         });
     </script>
+    <div id="lessonToast" class="toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-3"
+         role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1080;">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill"></i>
+                <span id="lessonToastMessage">Đã lưu thứ tự bài học thành công.</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Đóng"></button>
+        </div>
+    </div>
     <script th:src="@{/js/manager-lessons.js}"></script>
 </div>
 </div>

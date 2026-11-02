@@ -60,6 +60,183 @@
         });
     }
 
+    /* ---------------------------------------------------- chapter column reordering */
+    function getCsrfToken() {
+        var meta = document.querySelector('meta[name="_csrf"]');
+        if (meta && meta.content) return meta.content;
+        var input = document.querySelector('input[name="_csrf"]');
+        return input ? input.value : '';
+    }
+
+    function getCsrfHeader() {
+        var meta = document.querySelector('meta[name="_csrf_header"]');
+        return (meta && meta.content) ? meta.content : 'X-CSRF-TOKEN';
+    }
+
+    function showLessonToast(message, isError) {
+        var toastEl = document.getElementById('lessonToast');
+        if (!toastEl) return;
+        var msgEl = document.getElementById('lessonToastMessage');
+        if (msgEl) msgEl.textContent = message;
+        if (isError) {
+            toastEl.classList.remove('text-bg-success');
+            toastEl.classList.add('text-bg-danger');
+        } else {
+            toastEl.classList.remove('text-bg-danger');
+            toastEl.classList.add('text-bg-success');
+        }
+        if (window.bootstrap && window.bootstrap.Toast) {
+            var toast = bootstrap.Toast.getInstance(toastEl) || new bootstrap.Toast(toastEl, { delay: 2500 });
+            toast.show();
+        } else {
+            toastEl.classList.add('show');
+            setTimeout(function () { toastEl.classList.remove('show'); }, 2500);
+        }
+    }
+
+    function updateColumnDomState(container) {
+        if (!container) return;
+        var lessons = Array.prototype.slice.call(container.querySelectorAll('.manager-skill-lesson'));
+        lessons.forEach(function (card, index) {
+            card.setAttribute('data-order', String(index + 1));
+            var badge = card.querySelector('.manager-lesson-order-badge');
+            if (badge) badge.textContent = String(index + 1);
+        });
+    }
+
+    function saveColumnOrder(container) {
+        if (!container) return;
+        var courseId = container.getAttribute('data-course-id');
+        var chapter = container.getAttribute('data-chapter');
+        var column = container.getAttribute('data-column');
+        var lessons = Array.prototype.slice.call(container.querySelectorAll('.manager-skill-lesson'));
+        var ids = lessons.map(function (card) {
+            return card.getAttribute('data-lesson-id');
+        }).filter(Boolean);
+
+        if (!courseId || ids.length === 0) return;
+
+        var formData = new URLSearchParams();
+        formData.append('courseId', courseId);
+        formData.append('chapter', chapter || '');
+        formData.append('column', column || '');
+        formData.append('ids', ids.join(','));
+
+        var headers = {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        };
+        var csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers[getCsrfHeader()] = csrfToken;
+        }
+
+        fetch('/manager/lessons/reorder', {
+            method: 'POST',
+            headers: headers,
+            body: formData.toString()
+        }).then(function (response) {
+            return response.json();
+        }).then(function (data) {
+            if (data && data.success) {
+                showLessonToast(data.message || 'Đã lưu thứ tự bài học thành công.', false);
+            } else {
+                showLessonToast((data && data.message) || 'Không thể lưu thứ tự bài học.', true);
+            }
+        }).catch(function (error) {
+            console.error('Error saving lesson order:', error);
+            showLessonToast('Lỗi khi lưu thứ tự bài học. Vui lòng thử lại.', true);
+        });
+    }
+
+    function initChapterLessonOrdering() {
+        var containers = document.querySelectorAll('.manager-skill-lessons');
+        containers.forEach(function (container) {
+            updateColumnDomState(container);
+
+            var draggedCard = null;
+
+            // Drag and drop events
+            container.addEventListener('dragstart', function (event) {
+                if (event.target.closest('button, a, input, form')) {
+                    event.preventDefault();
+                    return;
+                }
+                var card = event.target.closest('.manager-skill-lesson');
+                if (!card) return;
+                draggedCard = card;
+                card.classList.add('is-dragging');
+                if (event.dataTransfer) {
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', card.getAttribute('data-lesson-id') || '');
+                }
+            });
+
+            container.addEventListener('dragend', function () {
+                if (draggedCard) draggedCard.classList.remove('is-dragging');
+                container.querySelectorAll('.manager-skill-lesson').forEach(function (c) {
+                    c.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+                draggedCard = null;
+            });
+
+            container.addEventListener('dragover', function (event) {
+                if (!draggedCard || draggedCard.parentNode !== container) return;
+                event.preventDefault();
+                if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+
+                var targetCard = event.target.closest('.manager-skill-lesson');
+                if (!targetCard || targetCard === draggedCard || targetCard.parentNode !== container) return;
+
+                var rect = targetCard.getBoundingClientRect();
+                var midY = rect.top + rect.height / 2;
+                if (event.clientY < midY) {
+                    targetCard.classList.add('drag-over-top');
+                    targetCard.classList.remove('drag-over-bottom');
+                } else {
+                    targetCard.classList.add('drag-over-bottom');
+                    targetCard.classList.remove('drag-over-top');
+                }
+            });
+
+            container.addEventListener('dragleave', function (event) {
+                var targetCard = event.target.closest('.manager-skill-lesson');
+                if (targetCard) {
+                    targetCard.classList.remove('drag-over-top', 'drag-over-bottom');
+                }
+            });
+
+            container.addEventListener('drop', function (event) {
+                if (!draggedCard || draggedCard.parentNode !== container) return;
+                event.preventDefault();
+
+                var targetCard = event.target.closest('.manager-skill-lesson');
+                if (targetCard && targetCard !== draggedCard && targetCard.parentNode === container) {
+                    var rect = targetCard.getBoundingClientRect();
+                    var midY = rect.top + rect.height / 2;
+                    if (event.clientY < midY) {
+                        container.insertBefore(draggedCard, targetCard);
+                    } else {
+                        container.insertBefore(draggedCard, targetCard.nextSibling);
+                    }
+                }
+
+                container.querySelectorAll('.manager-skill-lesson').forEach(function (c) {
+                    c.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+
+                updateColumnDomState(container);
+                saveColumnOrder(container);
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChapterLessonOrdering);
+    } else {
+        initChapterLessonOrdering();
+    }
+
     /* ------------------------------------------------------------ lesson popup */
     var REPEAT_TARGETS = {
         exampleRowTemplate: 'examples',
@@ -220,12 +397,100 @@
 
     initializeReadingRichEditor();
 
+    function renderLessonDetailContent(container) {
+        if (!container) return;
+        if (window.marked) {
+            container.querySelectorAll('.manager-markdown-source').forEach(function (source) {
+                var target = source.parentElement.querySelector('.manager-markdown-rendered');
+                if (!target || !source.textContent.trim() || target.dataset.rendered === 'true') return;
+                var markdown = source.textContent.replace(/\\(?:rightarrow|to)\b/g, '→').replace(/\\(?:leftarrow)\b/g, '←');
+                target.innerHTML = window.marked.parse(markdown);
+                if (window.renderMathInElement) {
+                    window.renderMathInElement(target, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+                }
+                target.dataset.rendered = 'true';
+            });
+        }
+        container.querySelectorAll('.manager-reading-passage-source').forEach(function (source) {
+            var target = source.parentElement.querySelector('[data-rich-rendered]');
+            if (target && target.dataset.rendered !== 'true' && typeof sanitizeRichHtml === 'function') {
+                target.innerHTML = sanitizeRichHtml(source.textContent);
+                target.classList.add('markdown-body');
+                target.dataset.rendered = 'true';
+            }
+        });
+    }
+    window.renderLessonDetailContent = renderLessonDetailContent;
+
+    // Chi parse Markdown khi modal duoc mo ra qua su kien show.bs.modal
+    document.addEventListener('show.bs.modal', function (event) {
+        var modal = event.target;
+        if (modal && modal.classList && modal.classList.contains('manager-lesson-detail-modal')) {
+            renderLessonDetailContent(modal);
+        }
+    });
+
     document.querySelectorAll('.listening-question-card').forEach(function (card) {
         var mode = card.querySelector('[name="questionAudioMode"]');
         setQuestionAudioMode(card, mode && mode.value === 'file' ? 'file' : 'url', false);
     });
 
     document.addEventListener('click', function (event) {
+        var detailBtn = event.target.closest('.js-lesson-detail-btn');
+        if (detailBtn) {
+            if (event.ctrlKey || event.metaKey || event.shiftKey || event.which === 2) return;
+            event.preventDefault();
+            var lessonId = detailBtn.getAttribute('data-lesson-id');
+            var courseId = detailBtn.getAttribute('data-course-id');
+            if (!lessonId) return;
+
+            var existingModal = document.getElementById('lessonDetail' + lessonId);
+            if (existingModal && window.bootstrap && window.bootstrap.Modal) {
+                renderLessonDetailContent(existingModal);
+                bootstrap.Modal.getOrCreateInstance(existingModal).show();
+                return;
+            }
+
+            var icon = detailBtn.querySelector('i');
+            var originalClass = icon ? icon.className : '';
+            if (icon) {
+                icon.className = 'spinner-border spinner-border-sm';
+            }
+
+            var url = '/manager/lessons/' + encodeURIComponent(lessonId) + '/detail-modal?courseId=' + encodeURIComponent(courseId || '');
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.text();
+            })
+            .then(function (html) {
+                var container = document.getElementById('lessonDetailModalContainer');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'lessonDetailModalContainer';
+                    document.body.appendChild(container);
+                }
+                container.innerHTML = html;
+                renderLessonDetailContent(container);
+
+                var modalEl = document.getElementById('lessonDetail' + lessonId);
+                if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+            })
+            .catch(function (error) {
+                console.error('Failed to load lesson detail modal via AJAX, navigating directly:', error);
+                window.location.href = detailBtn.getAttribute('href') || ('/manager/lessons?courseId=' + courseId + '&detailId=' + lessonId);
+            })
+            .finally(function () {
+                if (icon) {
+                    icon.className = originalClass;
+                }
+            });
+            return;
+        }
         var audioModeButton = event.target.closest('.lesson-audio-mode-button');
         if (audioModeButton) {
             setQuestionAudioMode(audioModeButton.closest('.listening-question-card'), audioModeButton.dataset.audioMode, true);
