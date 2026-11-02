@@ -64,26 +64,92 @@ public class LessonDetailService {
         return detailRepository.findByLessonId(lessonId);
     }
 
+    public List<Map<String, Object>> findListeningQuestions(long lessonId) {
+        LessonDetail detail = findDetail(lessonId).orElse(null);
+        if (detail == null) return List.of();
+        List<Map<String, Object>> questions = findQuestionRows(detail);
+        if (!questions.isEmpty()) return questions;
+        if (detail.audioUrl() == null || detail.audioUrl().isBlank()) return List.of();
+        Map<String, Object> legacyQuestion = new LinkedHashMap<>();
+        legacyQuestion.put("questionAudioUrl", detail.audioUrl());
+        return List.of(legacyQuestion);
+    }
+
+    public List<Map<String, Object>> findReadingQuestions(long lessonId) {
+        LessonDetail detail = findDetail(lessonId).orElse(null);
+        return detail == null ? List.of() : findQuestionRows(detail);
+    }
+
+    public String findReadingPassage(long lessonId) {
+        return findDetail(lessonId).map(LessonDetail::body).orElse("");
+    }
+
+    private List<Map<String, Object>> findQuestionRows(LessonDetail detail) {
+        if (detail.payload() != null && !detail.payload().isBlank()) {
+            try {
+                Map<String, Object> payload = objectMapper.readValue(detail.payload(), MAP_TYPE);
+                Object rawQuestions = payload.get("questions");
+                if (rawQuestions instanceof List<?> questions) {
+                    List<Map<String, Object>> result = new ArrayList<>();
+                    for (Object question : questions) {
+                        if (question instanceof Map<?, ?> values) {
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            values.forEach((key, value) -> {
+                                if (key instanceof String textKey) row.put(textKey, value);
+                            });
+                            result.add(row);
+                        }
+                    }
+                    if (!result.isEmpty()) return List.copyOf(result);
+                }
+            } catch (Exception ignored) { /* Fall back to legacy audio_url/body fields below. */ }
+        }
+        return List.of();
+    }
+
     public Map<String, Object> buildForm(SkillTypeEnum skill, Long entryId,
                                          LessonRow lesson, LessonDetail detail) {
         Map<String, Object> form = new LinkedHashMap<>();
         form.put("title", lesson == null ? "" : lesson.title());
+        form.put("sectionName", lesson == null ? "" : value(lesson.sectionName()));
         form.put("description", lesson == null ? "" : value(lesson.description()));
+        form.put("passage", lesson == null ? "" : value(lesson.content()));
         form.put("durationMinutes", lesson == null ? "" : lesson.durationMinutes());
         form.put("freePreview", lesson != null && lesson.freePreview());
         form.put("status", lesson == null ? "ACTIVE" : lesson.status().name());
         form.put("examples", List.of(Map.of("exampleJp", "", "exampleVi", "")));
         form.put("words", List.of(Map.of("word", "", "wordReading", "", "wordMeaning", "", "wordExample", "")));
         form.put("compounds", List.of(Map.of("compoundWord", "", "compoundMeaning", "")));
-        form.put("questions", List.of(Map.of("questionText", "", "optionA", "", "optionB", "", "optionC", "", "optionD", "", "correct", "A")));
+        form.put("questions", List.of(Map.of("questionText", "", "optionA", "", "optionB", "", "optionC", "", "optionD", "", "correct", "0",
+                "questionAudioUrl", "")));
 
         if (entryId != null) findEntry(skill, entryId).ifPresent(row -> applyEntry(form, skill, row));
+        boolean hasListeningQuestions = false;
         if (detail != null) {
             form.put("audioUrl", value(detail.audioUrl()));
             form.put("body", value(detail.body()));
+            if (skill == SkillTypeEnum.READING && detail.body() != null && !detail.body().isBlank()) {
+                form.put("passage", detail.body());
+            }
             if (detail.payload() != null && !detail.payload().isBlank()) {
-                try { form.putAll(objectMapper.readValue(detail.payload(), MAP_TYPE)); }
+                try {
+                    Map<String, Object> savedPayload = objectMapper.readValue(detail.payload(), MAP_TYPE);
+                    form.putAll(savedPayload);
+                    hasListeningQuestions = skill == SkillTypeEnum.LISTENING
+                            && savedPayload.get("questions") instanceof List<?> questions && !questions.isEmpty();
+                }
                 catch (Exception ignored) { /* Keep the safe defaults when old payload JSON is malformed. */ }
+            }
+            if (skill == SkillTypeEnum.LISTENING && !hasListeningQuestions) {
+                Map<String, String> legacyQuestion = new LinkedHashMap<>();
+                legacyQuestion.put("questionAudioUrl", value(detail.audioUrl()));
+                legacyQuestion.put("questionText", "");
+                legacyQuestion.put("optionA", "");
+                legacyQuestion.put("optionB", "");
+                legacyQuestion.put("optionC", "");
+                legacyQuestion.put("optionD", "");
+                legacyQuestion.put("correct", "0");
+                form.put("questions", List.of(legacyQuestion));
             }
         }
         return form;
@@ -97,8 +163,10 @@ public class LessonDetailService {
         String json;
         try { json = objectMapper.writeValueAsString(payload); }
         catch (Exception exception) { throw new IllegalArgumentException("Dữ liệu bài học không hợp lệ.", exception); }
-        String audio = first(params, "audioUrl");
-        String body = first(params, skill == SkillTypeEnum.LISTENING ? "transcript" : "passage");
+        String audio = skill == SkillTypeEnum.LISTENING
+                ? first(params, "questionAudioUrl")
+                : first(params, "audioUrl");
+        String body = skill == SkillTypeEnum.LISTENING ? "" : first(params, "passage");
         detailRepository.save(lessonId, skill.getValue(), entryId, audio, body, json);
         return entryId;
     }
@@ -125,6 +193,8 @@ public class LessonDetailService {
         }
         if (skill == SkillTypeEnum.READING) {
             result.put("questions", rows(params, "questionText", "optionA", "optionB", "optionC", "optionD", "correct"));
+        } else if (skill == SkillTypeEnum.LISTENING) {
+            result.put("questions", rows(params, "questionAudioUrl", "questionText", "optionA", "optionB", "optionC", "optionD", "correct"));
         } else if (skill == SkillTypeEnum.GRAMMAR) {
             result.put("examples", rows(params, "exampleJp", "exampleVi"));
         } else if (skill == SkillTypeEnum.VOCABULARY) {

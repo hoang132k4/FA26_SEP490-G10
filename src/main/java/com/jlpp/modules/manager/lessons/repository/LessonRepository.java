@@ -3,12 +3,18 @@ package com.jlpp.modules.manager.lessons.repository;
 import com.jlpp.common.constants.LessonStatusEnum;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonInput;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonRow;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Reads and writes the {@code lessons} table.
@@ -144,5 +150,73 @@ public class LessonRepository {
         jdbcTemplate.update(
                 "UPDATE lessons SET order_index = ?, lesson_order = ?, updated_at = NOW() WHERE lesson_id = ?",
                 orderIndex, orderIndex, lessonId);
+    }
+
+    public void batchUpdateOrders(List<Long> orderedLessonIds) {
+        if (orderedLessonIds == null || orderedLessonIds.isEmpty()) return;
+        String sql = "UPDATE lessons SET order_index = ?, lesson_order = ?, updated_at = NOW() WHERE lesson_id = ?";
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                int order = i + 1;
+                ps.setInt(1, order);
+                ps.setInt(2, order);
+                ps.setLong(3, orderedLessonIds.get(i));
+            }
+
+            @Override
+            public int getBatchSize() {
+                return orderedLessonIds.size();
+            }
+        });
+    }
+
+    public void batchUpdateOrders(List<Long> lessonIds, List<Integer> orders) {
+        if (lessonIds == null || lessonIds.isEmpty()) return;
+        String sql = "UPDATE lessons SET order_index = ?, lesson_order = ?, updated_at = NOW() WHERE lesson_id = ?";
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                int order = orders.get(i);
+                ps.setInt(1, order);
+                ps.setInt(2, order);
+                ps.setLong(3, lessonIds.get(i));
+            }
+
+            @Override
+            public int getBatchSize() {
+                return lessonIds.size();
+            }
+        });
+    }
+
+    public int renameSection(long courseId, String oldName, String newName) {
+        return jdbcTemplate.update("UPDATE lessons SET section_name = ?, updated_at = NOW() " +
+                        "WHERE course_id = ? AND section_name = ?", newName, courseId, oldName);
+    }
+
+    public int clearSection(long courseId, String sectionName) {
+        return jdbcTemplate.update("UPDATE lessons SET section_name = NULL, updated_at = NOW() " +
+                        "WHERE course_id = ? AND section_name = ?", courseId, sectionName);
+    }
+
+    public Set<Long> findLessonIdsWithFlashcards(List<Long> lessonIds) {
+        if (lessonIds == null || lessonIds.isEmpty()) return Set.of();
+        String inSql = String.join(",", Collections.nCopies(lessonIds.size(), "?"));
+        List<Long> ids = jdbcTemplate.query(
+                "SELECT DISTINCT lesson_id FROM flashcards WHERE lesson_id IN (" + inSql + ")",
+                (rs, rowNum) -> rs.getLong("lesson_id"),
+                lessonIds.toArray());
+        return new HashSet<>(ids);
+    }
+
+    public Set<Long> findLessonIdsWithExercises(List<Long> lessonIds) {
+        if (lessonIds == null || lessonIds.isEmpty()) return Set.of();
+        String inSql = String.join(",", Collections.nCopies(lessonIds.size(), "?"));
+        List<Long> ids = jdbcTemplate.query(
+                "SELECT DISTINCT lesson_id FROM exercises WHERE lesson_id IN (" + inSql + ")",
+                (rs, rowNum) -> rs.getLong("lesson_id"),
+                lessonIds.toArray());
+        return new HashSet<>(ids);
     }
 }

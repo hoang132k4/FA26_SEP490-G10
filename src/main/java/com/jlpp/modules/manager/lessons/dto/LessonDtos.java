@@ -1,9 +1,14 @@
 package com.jlpp.modules.manager.lessons.dto;
 
 import com.jlpp.common.constants.LessonStatusEnum;
+import com.jlpp.modules.course.entity.StudyMaterial;
+import com.jlpp.modules.flashcard.entity.Flashcard;
+import com.jlpp.modules.quiz.dto.QuizQuestionDto;
+import com.jlpp.modules.quiz.entity.Exercise;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Shared DTOs used by the manager lessons module. */
 public final class LessonDtos {
@@ -96,4 +101,16 @@ public final class LessonDtos {
             return lessonCount == 0;
         }
     }
+
+    public record SkillColumn(String value, String label, String glyph, List<LessonRow> lessons) { }
+
+    public record ChapterGroup(String name, int lessonCount, List<SkillColumn> columns) { }
+
+    public record LessonStudyView(LessonRow lesson, String skillLabel,
+                                  List<StudyMaterial> materials, List<Flashcard> flashcards,
+                                  List<Map<String, Object>> listeningQuestions,
+                                  String readingPassage, List<Map<String, Object>> readingQuestions,
+                                  List<PracticeQuizView> practiceQuizzes) { }
+
+    public record PracticeQuizView(Exercise exercise, List<QuizQuestionDto> questions) { }
 }
