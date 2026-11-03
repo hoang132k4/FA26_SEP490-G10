@@ -10,18 +10,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
@@ -137,7 +141,7 @@ public class SecurityConfig {
                     oauth
                             .loginPage("/auth/login")
                             .userInfoEndpoint(userInfo -> userInfo
-                                    .oidcUserService(oidcUserService)
+                                     .oidcUserService(oidcUserService)
                                     .userService(oauth2UserService)
                             )
                             .successHandler(successHandler)
@@ -159,11 +163,18 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.sendError(403, "Access Denied: You do not have permission to access this resource.");
+                            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                            boolean isAnonymous = (auth == null || auth instanceof AnonymousAuthenticationToken);
+                            boolean isCsrf = accessDeniedException instanceof CsrfException;
+                            if (isAnonymous || isCsrf) {
+                                response.sendRedirect(request.getContextPath() + "/auth/login?sessionExpired=true");
+                            } else {
+                                response.sendError(403, "Access Denied: You do not have permission to access this resource.");
+                            }
                         })
                 )
                 .csrf(csrf -> csrf
-.ignoringRequestMatchers(
+                        .ignoringRequestMatchers(
                                 new AntPathRequestMatcher("/h2-console/**"),
                                 new AntPathRequestMatcher("/quiz/submit")
                         )
@@ -175,30 +186,30 @@ public class SecurityConfig {
         return http.build();
     }
 
-    private OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver(ClientRegistrationRepository repo) {
+    private OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository) {
         DefaultOAuth2AuthorizationRequestResolver defaultResolver =
-                new DefaultOAuth2AuthorizationRequestResolver(repo, "/oauth2/authorization");
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
 
         return new OAuth2AuthorizationRequestResolver() {
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
-                OAuth2AuthorizationRequest req = defaultResolver.resolve(request);
-                return validate(req);
+                OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request);
+                return customizeAuthorizationRequest(authorizationRequest);
             }
 
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
-                OAuth2AuthorizationRequest req = defaultResolver.resolve(request, clientRegistrationId);
-                return validate(req);
+                OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request, clientRegistrationId);
+                return customizeAuthorizationRequest(authorizationRequest);
             }
 
-            private OAuth2AuthorizationRequest validate(OAuth2AuthorizationRequest req) {
-                if (req == null) return null;
-                String clientId = req.getClientId();
-                if (clientId == null || clientId.isBlank() || "google-client-id-placeholder".equals(clientId)) {
-                    return null; // Fall through to AuthController to redirect with ?error=oauth_config
+            private OAuth2AuthorizationRequest customizeAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest) {
+                if (authorizationRequest == null) {
+                    return null;
                 }
-                return OAuth2AuthorizationRequest.from(req)
+
+                // Append prompt=select_account so users can always choose their Google Account
+                return OAuth2AuthorizationRequest.from(authorizationRequest)
                         .additionalParameters(params -> params.put("prompt", "select_account"))
                         .build();
             }

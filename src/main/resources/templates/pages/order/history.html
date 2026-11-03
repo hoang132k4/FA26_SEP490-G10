@@ -63,7 +63,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="order : ${orders}" class="border-bottom">
+                        <tr th:each="order : ${orders}" class="border-bottom order-row">
                             <!-- Order Number -->
                             <td class="ps-4 py-3 fw-bold" style="color: var(--navy-dark)">
                                 <span th:text="${order.orderNumber}">ORD-20261009-001</span>
@@ -107,6 +107,19 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Pagination Footer -->
+            <div id="ordersPagination" class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-light-subtle" th:if="${hasOrders}">
+                <div class="text-muted small" id="ordersPageInfo">
+                    Hiển thị <strong>1 - 5</strong> trong tổng số <strong>3</strong> đơn hàng
+                </div>
+                <nav aria-label="Phân trang đơn hàng">
+                    <ul class="pagination pagination-sm mb-0" id="ordersPageNav">
+                    </ul>
+                </nav>
+            </div>
+
             </div>
 
             <!-- Empty State -->

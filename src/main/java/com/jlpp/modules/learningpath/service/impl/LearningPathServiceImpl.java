@@ -44,6 +44,7 @@ public class LearningPathServiceImpl implements LearningPathService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Override
+    @Transactional
     public LearningPathResponse getLearningPath(String username) {
         log.info("Fetching learning path for learner={}", username);
         User user = findUserByUsername(username);
@@ -80,13 +81,21 @@ public class LearningPathServiceImpl implements LearningPathService {
                 : 0;
         int remainingLessons = Math.max(0, totalLessons - completedLessons);
 
+        LocalDate pathScheduledDate = lp.getScheduledDate();
+        if (completedLessons > 0 && pathScheduledDate != null && pathScheduledDate.isAfter(LocalDate.now())) {
+            pathScheduledDate = regOpt.map(r -> r.getRegisteredAt().toLocalDate())
+                    .orElse(LocalDate.now().minusDays(1));
+            lp.setScheduledDate(pathScheduledDate);
+            learningPathRepository.save(lp);
+        }
+
         BigDecimal dailyHours = lp.getDailyHoursSetup() != null
                 ? lp.getDailyHoursSetup()
                 : BigDecimal.valueOf(1.5);
         int weeklyHours = Math.max(1, dailyHours.multiply(BigDecimal.valueOf(7)).intValue());
 
         List<LearningPathTimelineItemDto> timelineItems = buildTimelineItems(
-                lessons, completedLessons, lp.getScheduledDate(), dailyHours);
+                lessons, completedLessons, pathScheduledDate, dailyHours);
 
         String projectedEndDate = timelineItems.isEmpty()
                 ? "Chưa xác định"
@@ -106,7 +115,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                 .currentLevel(lp.getCurrentLevel() != null ? lp.getCurrentLevel() : "Chưa xác định")
                 .dailyHours(dailyHours)
                 .weeklyHours(weeklyHours)
-                .startDateFormatted(lp.getScheduledDate() != null ? lp.getScheduledDate().format(DATE_FORMATTER) : "N/A")
+                .startDateFormatted(pathScheduledDate != null ? pathScheduledDate.format(DATE_FORMATTER) : "N/A")
                 .projectedEndDateFormatted(projectedEndDate)
                 .progressPercent(progressPercent)
                 .totalLessons(totalLessons)
@@ -120,8 +129,10 @@ public class LearningPathServiceImpl implements LearningPathService {
     }
 
     @Override
+    @Transactional
     public RecalibratePreviewResponse getRecalibratePreview(String username, RecalibrateRequest request) {
-        log.info("Calculating recalibrate preview for learner={} with weeklyHours={}", username, request.getWeeklyHours());
+        log.info("Calculating recalibrate preview for learner={} with weeklyHours={}",
+                username, request != null ? request.getWeeklyHours() : null);
         User user = findUserByUsername(username);
 
         Optional<LearningPath> lpOpt = learningPathRepository
@@ -151,6 +162,14 @@ public class LearningPathServiceImpl implements LearningPathService {
                 ? (int) Math.round((progressPercent / 100.0) * totalLessons)
                 : 0;
 
+        LocalDate pathScheduledDate = lp.getScheduledDate();
+        if (completedLessons > 0 && pathScheduledDate != null && pathScheduledDate.isAfter(LocalDate.now())) {
+            pathScheduledDate = regOpt.map(r -> r.getRegisteredAt().toLocalDate())
+                    .orElse(LocalDate.now().minusDays(1));
+            lp.setScheduledDate(pathScheduledDate);
+            learningPathRepository.save(lp);
+        }
+
         BigDecimal originalDailyHours = lp.getDailyHoursSetup() != null
                 ? lp.getDailyHoursSetup()
                 : BigDecimal.valueOf(1.5);
@@ -160,21 +179,17 @@ public class LearningPathServiceImpl implements LearningPathService {
                 : originalWeeklyHours;
 
         List<LearningPathTimelineItemDto> originalItems = buildTimelineItems(
-                lessons, completedLessons, lp.getScheduledDate(), originalDailyHours);
+                lessons, completedLessons, pathScheduledDate, originalDailyHours);
 
         LocalDate originalEndDate = originalItems.isEmpty()
                 ? LocalDate.now().plusMonths(2)
                 : originalItems.get(originalItems.size() - 1).getPlannedDate();
 
-        LocalDate simStartDate = (request != null && request.getStartDate() != null)
-                ? request.getStartDate()
-                : LocalDate.now();
-
         List<LearningPathTimelineItemDto> rescheduledItems = rescheduleItems(
-                originalItems, completedLessons, simStartDate, newWeeklyHours);
+                originalItems, completedLessons, newWeeklyHours);
 
         LocalDate newEndDate = rescheduledItems.isEmpty()
-                ? simStartDate
+                ? LocalDate.now()
                 : rescheduledItems.get(rescheduledItems.size() - 1).getPlannedDate();
 
         long daysDiff = ChronoUnit.DAYS.between(originalEndDate, newEndDate);
@@ -219,18 +234,24 @@ public class LearningPathServiceImpl implements LearningPathService {
             return Collections.emptyList();
         }
 
-        LocalDate currentDate = startDate != null ? startDate : LocalDate.now();
+        LocalDate today = LocalDate.now();
+        LocalDate courseStart = startDate != null ? startDate : today;
+
+        LocalDate currentDate = courseStart;
         List<LearningPathTimelineItemDto> items = new ArrayList<>();
         int dailyMinutesLimit = dailyHours.multiply(BigDecimal.valueOf(60)).intValue();
         if (dailyMinutesLimit <= 0) dailyMinutesLimit = 90;
 
         int accumulatedMinutesToday = 0;
-        int targetWeek = 1;
-        LocalDate weekStart = currentDate;
 
         for (int i = 0; i < lessons.size(); i++) {
             Lesson lesson = lessons.get(i);
             int duration = lesson.getDurationMinutes() != null ? lesson.getDurationMinutes() : 30;
+
+            if (i == completedCount && currentDate.isBefore(today)) {
+                currentDate = today;
+                accumulatedMinutesToday = 0;
+            }
 
             accumulatedMinutesToday += duration;
             if (accumulatedMinutesToday > dailyMinutesLimit) {
@@ -238,8 +259,8 @@ public class LearningPathServiceImpl implements LearningPathService {
                 accumulatedMinutesToday = duration;
             }
 
-            long daysFromStart = ChronoUnit.DAYS.between(weekStart, currentDate);
-            targetWeek = (int) (daysFromStart / 7) + 1;
+            long daysFromStart = ChronoUnit.DAYS.between(courseStart, currentDate);
+            int targetWeek = Math.max(1, (int) (daysFromStart / 7) + 1);
 
             String status;
             String statusDisplay;
@@ -290,22 +311,28 @@ public class LearningPathServiceImpl implements LearningPathService {
     }
 
     private List<LearningPathTimelineItemDto> rescheduleItems(
-            List<LearningPathTimelineItemDto> originalItems, int completedCount,
-            LocalDate simStartDate, int newWeeklyHours) {
+            List<LearningPathTimelineItemDto> originalItems, int completedCount, int newWeeklyHours) {
 
         List<LearningPathTimelineItemDto> result = new ArrayList<>();
-        LocalDate runningDate = simStartDate;
+        LocalDate today = LocalDate.now();
+        LocalDate runningDate = today;
+
+        LocalDate courseStartDate = originalItems.isEmpty()
+                ? today
+                : originalItems.get(0).getPlannedDate();
+
         int dailyMinutesBudget = Math.max(30, (newWeeklyHours * 60) / 7);
         int accumulatedMinutesToday = 0;
-        int currentWeek = 1;
-        LocalDate weekStart = runningDate;
 
         for (int i = 0; i < originalItems.size(); i++) {
             LearningPathTimelineItemDto item = originalItems.get(i);
 
             if (i < completedCount) {
-                // Completed items keep their original historical status and date
+                // Completed items keep their original historical status, date and week
                 result.add(item);
+                if (item.getPlannedDate() != null && item.getPlannedDate().isAfter(runningDate)) {
+                    runningDate = item.getPlannedDate();
+                }
             } else {
                 int duration = item.getDurationMinutes() != null ? item.getDurationMinutes() : 30;
                 accumulatedMinutesToday += duration;
@@ -314,8 +341,8 @@ public class LearningPathServiceImpl implements LearningPathService {
                     accumulatedMinutesToday = duration;
                 }
 
-                long daysFromStart = ChronoUnit.DAYS.between(weekStart, runningDate);
-                currentWeek = (int) (daysFromStart / 7) + 1;
+                long daysFromStart = ChronoUnit.DAYS.between(courseStartDate, runningDate);
+                int targetWeek = Math.max(1, (int) (daysFromStart / 7) + 1);
 
                 result.add(LearningPathTimelineItemDto.builder()
                         .id(item.getId())
@@ -323,7 +350,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                         .sectionName(item.getSectionName())
                         .contentType(item.getContentType())
                         .durationMinutes(duration)
-                        .targetWeek(currentWeek)
+                        .targetWeek(targetWeek)
                         .plannedDate(runningDate)
                         .plannedDateFormatted(runningDate.format(DATE_FORMATTER))
                         .status(item.getStatus())
@@ -356,6 +383,38 @@ public class LearningPathServiceImpl implements LearningPathService {
                     .append(" tuần để bạn học tập thong thả, không bị áp lực thời gian.");
         }
         return sb.toString();
+    }
+
+    @Override
+    @Transactional
+    public void applyRecalibratedSchedule(String username, RecalibrateRequest request) {
+        log.info("Applying recalibrated schedule for learner={} with weeklyHours={}",
+                username, request != null ? request.getWeeklyHours() : null);
+        User user = findUserByUsername(username);
+
+        Optional<LearningPath> lpOpt = learningPathRepository
+                .findFirstByUserIdOrderByScheduledDateDescIdDesc(user.getId());
+
+        if (lpOpt.isEmpty()) {
+            throw new IllegalStateException("Không tìm thấy lộ trình học tập để cập nhật.");
+        }
+
+        LearningPath lp = lpOpt.get();
+
+        if (request != null && request.getWeeklyHours() != null && request.getWeeklyHours() > 0) {
+            BigDecimal newDailyHours = BigDecimal.valueOf(request.getWeeklyHours())
+                    .divide(BigDecimal.valueOf(7), 2, java.math.RoundingMode.HALF_UP);
+            lp.setDailyHoursSetup(newDailyHours);
+        }
+
+        // Support optional startDate for backwards compatibility or tests
+        if (request != null && request.getStartDate() != null) {
+            lp.setScheduledDate(request.getStartDate());
+        }
+
+        learningPathRepository.save(lp);
+        log.info("Successfully updated learning path id={} for userId={}: dailyHours={}",
+                lp.getId(), user.getId(), lp.getDailyHoursSetup());
     }
 
     private User findUserByUsername(String username) {
