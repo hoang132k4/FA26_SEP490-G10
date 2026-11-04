@@ -1,81 +1,505 @@
-﻿<div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Chỉnh sửa thông tin gói Flashcard - JLPP',
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Chỉnh sửa gói Flashcard - JLPP',
     activeMenu='flashcards',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
 
+        <!-- Breadcrumb Navigation -->
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-2 small">
                 <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Học tập</a></li>
                 <li class="breadcrumb-item"><a th:href="@{/flashcards(tab='user')}" class="text-decoration-none">Flashcard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Sửa thông tin gói</li>
+                <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa gói thẻ</li>
             </ol>
         </nav>
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Page Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
             <div>
                 <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">
-                    <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa thông tin gói Flashcard
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa gói Flashcard
                 </h3>
-                <p class="text-muted small mb-0">Thay đổi tên gói hoặc cấp độ JLPT sẽ được áp dụng cho toàn bộ thẻ trong gói.</p>
+                <p class="text-muted small mb-0">
+                    Chỉnh sửa tên gói, thay đổi nội dung từ cũ, xóa thẻ hoặc thêm nhiều từ vựng mới vào gói.
+                </p>
             </div>
-            <a th:href="@{/flashcards(tab='user')}" class="btn btn-outline-secondary rounded-pill px-3">
-                <i class="bi bi-x me-1"></i> Huỷ bỏ
-            </a>
+            <div class="d-flex gap-2">
+                <a th:href="@{/flashcards(tab='user')}" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại
+                </a>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="submitDeckEdit()">
+                    <i class="bi bi-check-circle-fill me-1"></i> Lưu toàn bộ thay đổi
+                </button>
+            </div>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mx-auto col-lg-8">
-            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
-                <div class="rounded-circle p-3 bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-collection-fill fs-4"></i>
-                </div>
-                <div>
-                    <h5 class="fw-bold mb-0">Gói hiện tại</h5>
-                    <p class="text-muted small mb-0" th:text="${deckName}">Tên gói cũ</p>
-                </div>
-            </div>
+        <!-- Main Edit Form -->
+        <form id="deckEditForm" th:action="@{/flashcards/deck-edit}" method="post">
+            <input type="hidden" name="oldDeckName" id="oldDeckName" th:value="${deckName}">
+            <input type="hidden" name="cardsPayload" id="cardsPayload">
+            <input type="hidden" name="deletedCardIds" id="deletedCardIds">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-            <form th:action="@{/flashcards/deck-edit}" method="post">
-                <input type="hidden" name="oldDeckName" th:value="${deckName}">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <!-- ======================================================== -->
+            <!-- SECTION 1: DECK METADATA                                -->
+            <!-- ======================================================== -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3 pb-2 border-bottom">
+                    <div class="rounded-circle p-2.5 bg-danger bg-opacity-10 text-danger flex-shrink-0">
+                        <i class="bi bi-collection-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">Thông tin chung của gói</h5>
+                        <p class="text-muted small mb-0">Cập nhật tiêu đề, cấp độ JLPT hoặc liên kết khóa học.</p>
+                    </div>
+                </div>
 
                 <div class="row g-3">
-                    <div class="col-md-8">
+                    <div class="col-md-5">
                         <label for="newDeckName" class="form-label fw-semibold text-dark">
-                            Tên gói mới <span class="text-danger">*</span>
+                            Tên gói từ vựng <span class="text-danger">*</span>
                         </label>
-                        <input type="text" id="newDeckName" name="newDeckName"
-                               class="form-control form-control-lg"
-                               th:value="${deckName}"
-                               placeholder="Nhập tên gói mới..." required>
-                        <div class="form-text small">Tên mới sẽ được áp dụng cho tất cả các thẻ trong gói này.</div>
+                        <input type="text" id="newDeckName" name="newDeckName" class="form-control form-control-lg"
+                               th:value="${deckName}" placeholder="Nhập tên gói từ vựng..." required>
+                        <div class="form-text small">Tên gói sẽ được áp dụng cho toàn bộ các thẻ bên dưới.</div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="jlptLevel" class="form-label fw-semibold text-dark">Cấp độ JLPT</label>
                         <select id="jlptLevel" name="jlptLevel" class="form-select form-select-lg">
                             <option value="N5" th:selected="${jlptLevel == 'N5'}">N5 (Sơ cấp)</option>
-                            <option value="N4" th:selected="${jlptLevel == 'N4'}">N4 (Sơ trung cấp)</option>
+                            <option value="N4" th:selected="${jlptLevel == 'N4' or jlptLevel == null}">N4 (Sơ trung cấp)</option>
                             <option value="N3" th:selected="${jlptLevel == 'N3'}">N3 (Trung cấp)</option>
                             <option value="N2" th:selected="${jlptLevel == 'N2'}">N2 (Trung cao cấp)</option>
                             <option value="N1" th:selected="${jlptLevel == 'N1'}">N1 (Cao cấp)</option>
                         </select>
                     </div>
+                    <div class="col-md-4">
+                        <label for="lessonId" class="form-label fw-semibold text-dark">Bài học liên kết (Tùy chọn)</label>
+                        <select id="lessonId" name="lessonId" class="form-select form-select-lg">
+                            <option value="">-- Không liên kết (Sổ tay tự do) --</option>
+                            <option th:each="les : ${lessons}" th:value="${les.id}" th:text="${les.title}"
+                                    th:selected="${selectedLessonId != null and selectedLessonId == les.id}"></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- SECTION 2: VOCABULARY CARDS IN DECK                     -->
+            <!-- ======================================================== -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 pb-3 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle p-2.5 bg-primary bg-opacity-10 text-primary flex-shrink-0">
+                            <i class="bi bi-card-text fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h5 class="fw-bold mb-0 text-dark">Danh sách thẻ từ vựng trong gói</h5>
+                                <span class="badge bg-primary rounded-pill px-2.5 py-1" id="cardsCountBadge">
+                                    <span th:text="${totalCards != null ? totalCards : 0}">0</span> thẻ
+                                </span>
+                            </div>
+                            <p class="text-muted small mb-0">Bạn có thể chỉnh sửa trực tiếp nội dung từng thẻ, xóa bớt hoặc thêm từ mới.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary rounded-pill px-3 small d-inline-flex align-items-center gap-1.5"
+                                data-bs-toggle="modal" data-bs-target="#bulkAddModal">
+                            <i class="bi bi-table"></i>
+                            <span>Nhập nhanh hàng loạt</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-success rounded-pill px-3 small d-inline-flex align-items-center gap-1.5"
+                                onclick="addNewCardRow()">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>+ Thêm thẻ mới</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="alert alert-warning border-0 rounded-3 mt-3 py-2 px-3 small">
-                    <i class="bi bi-exclamation-triangle me-1"></i>
-                    Thay đổi tên gói sẽ cập nhật <strong>toàn bộ thẻ</strong> trong gói này. Không thể hoàn tác.
+                <!-- Cards Container -->
+                <div id="cardsContainer" class="d-flex flex-column gap-3">
+
+                    <!-- Server-side rendered cards for this deck -->
+                    <div th:each="c, cStat : ${cards}" class="card border rounded-4 p-3 bg-light bg-opacity-25 card-item shadow-none transition-all"
+                         th:data-card-id="${c.flashcardId}">
+                        <input type="hidden" class="card-id-input" th:value="${c.flashcardId}">
+
+                        <!-- Card Top Bar: Index & Delete -->
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary rounded-pill card-index-badge" th:text="'#' + ${cStat.index + 1}">#1</span>
+                                <span class="small text-muted fw-medium">Thẻ hiện có</span>
+                                <span th:if="${c.reviewStatus != null}"
+                                      class="badge rounded-pill small"
+                                      th:classappend="${c.statusBadgeClass}"
+                                      th:text="${c.statusBadgeLabel}">Mới</span>
+                            </div>
+                            <button type="button" class="btn btn-light border text-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center"
+                                    style="width: 32px; height: 32px;"
+                                    onclick="deleteCardRow(this)"
+                                    title="Xóa thẻ này khỏi gói">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+
+                        <!-- Card Fields Grid -->
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold text-dark mb-1">
+                                    Từ vựng / Hán tự <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control card-vocab fw-bold"
+                                       th:value="${c.vocabulary}"
+                                       style="font-family: 'Noto Sans JP', sans-serif;"
+                                       placeholder="Ví dụ: 桜, 準備..." required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold text-dark mb-1">
+                                    Cách đọc (Furigana / Romaji)
+                                </label>
+                                <input type="text" class="form-control card-reading"
+                                       th:value="${c.reading}"
+                                       placeholder="Ví dụ: さくら, じゅんび...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold text-dark mb-1">
+                                    Ý nghĩa tiếng Việt <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control card-meaning"
+                                       th:value="${c.meaning}"
+                                       placeholder="Ví dụ: Hoa anh đào, Chuẩn bị..." required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold text-dark mb-1">
+                                    Ví dụ minh họa (Tùy chọn)
+                                </label>
+                                <input type="text" class="form-control card-example"
+                                       th:value="${c.exampleSentence}"
+                                       placeholder="Ví dụ: 日本の春は桜がきれいです。">
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
-                    <a th:href="@{/flashcards(tab='user')}" class="btn btn-light rounded-pill px-4">Huỷ</a>
-                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold">
-                        <i class="bi bi-check-circle-fill me-1"></i> Lưu thay đổi
+                <!-- Add Card Big Button at bottom of list -->
+                <div class="text-center mt-3 pt-2">
+                    <button type="button" class="btn btn-outline-primary border-dashed rounded-4 py-3 px-4 w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+                            style="border-style: dashed !important; border-width: 2px;"
+                            onclick="addNewCardRow()">
+                        <i class="bi bi-plus-circle-dotted fs-5"></i>
+                        <span>+ Thêm một thẻ từ vựng mới vào gói</span>
                     </button>
                 </div>
-            </form>
+
+            </div>
+
+            <!-- Bottom Sticky Action Bar -->
+            <div class="card border-0 shadow rounded-4 p-3 bg-white sticky-bottom mb-4 d-flex flex-row justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2 ps-2">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    <span class="text-muted small">
+                        Tổng cộng: <strong class="text-dark" id="bottomTotalCount">0 thẻ</strong> trong gói
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a th:href="@{/flashcards(tab='user')}" class="btn btn-light rounded-pill px-4">
+                        Huỷ bỏ
+                    </a>
+                    <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" onclick="submitDeckEdit()">
+                        <i class="bi bi-check-circle-fill me-1"></i> Lưu gói Flashcard
+                    </button>
+                </div>
+            </div>
+
+        </form>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: BULK ADD CARDS TO DECK                            -->
+        <!-- ======================================================== -->
+        <div class="modal fade" id="bulkAddModal" tabindex="-1" aria-labelledby="bulkAddModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle p-2 bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-table"></i>
+                            </div>
+                            <div>
+                                <h5 class="modal-title fw-bold text-dark" id="bulkAddModalLabel">Nhập nhanh nhiều từ vào gói</h5>
+                                <p class="text-muted small mb-0">Dán danh sách từ vựng theo định dạng cột để thêm hàng loạt thẻ cùng lúc.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <!-- Guide banner -->
+                        <div class="rounded-3 p-3 mb-3 small" style="background:#f0f9ff; border:1px solid #bae6fd;">
+                            <p class="fw-bold mb-1" style="color:#0369a1;">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>Định dạng mỗi dòng (phân cách bằng dấu |):
+                            </p>
+                            <code class="d-block p-1.5 rounded bg-white text-primary mb-2 fw-semibold">
+                                Từ vựng | Cách đọc | Ý nghĩa | Ví dụ (tùy chọn)
+                            </code>
+                            <span class="text-muted" style="font-size:0.8rem;">Ví dụ mẫu:</span>
+                            <pre class="mb-0 mt-1 p-2 rounded bg-white text-secondary" style="font-size:0.8rem; line-height: 1.6;">桜 | さくら | Hoa anh đào | 日本の春は桜がきれいです。
+先生 | せんせい | Thầy giáo, cô giáo | 先生は親切です。
+勉強 | べんきょう | Việc học tập | 毎日日本語を勉強します。</pre>
+                        </div>
+
+                        <!-- Textarea -->
+                        <div class="mb-3">
+                            <label for="bulkModalTextarea" class="form-label fw-semibold text-dark small">Dán danh sách từ vào đây:</label>
+                            <textarea id="bulkModalTextarea" class="form-control font-monospace" rows="8"
+                                      placeholder="桜 | さくら | Hoa anh đào | 日本の春は桜がきれいです。&#10;先生 | せんせい | Thầy giáo |"></textarea>
+                            <div class="form-text small text-muted" id="bulkModalCount">0 dòng hợp lệ được nhận diện</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-top px-4 py-3 d-flex justify-content-between">
+                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="appendBulkCards()">
+                            <i class="bi bi-plus-lg me-1"></i> Thêm các từ này vào danh sách
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
 </div>
+
+<!-- Page Scripts -->
+<script>
+    // Track deleted existing card IDs
+    var deletedCardIds = [];
+
+    // Helper to escape HTML in inserted strings
+    function escapeHtml(s) {
+        if (!s) return '';
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // Refresh row numbers and counter badges
+    function refreshCardIndices() {
+        var items = document.querySelectorAll('#cardsContainer .card-item');
+        items.forEach(function(item, idx) {
+            var badge = item.querySelector('.card-index-badge');
+            if (badge) {
+                badge.textContent = '#' + (idx + 1);
+            }
+        });
+        var count = items.length;
+        var badgeCount = document.getElementById('cardsCountBadge');
+        if (badgeCount) badgeCount.textContent = count + ' thẻ';
+        var bottomCount = document.getElementById('bottomTotalCount');
+        if (bottomCount) bottomCount.textContent = count + ' thẻ';
+    }
+
+    // Add a new blank card row
+    function addNewCardRow(vocab, reading, meaning, example) {
+        vocab = vocab || '';
+        reading = reading || '';
+        meaning = meaning || '';
+        example = example || '';
+
+        var container = document.getElementById('cardsContainer');
+        var cardDiv = document.createElement('div');
+        cardDiv.className = 'card border rounded-4 p-3 bg-light bg-opacity-25 card-item shadow-none transition-all';
+        cardDiv.innerHTML =
+            '<input type="hidden" class="card-id-input" value="">' +
+            '<div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">' +
+                '<div class="d-flex align-items-center gap-2">' +
+                    '<span class="badge bg-primary rounded-pill card-index-badge">#</span>' +
+                    '<span class="small text-primary fw-medium"><i class="bi bi-plus-circle me-1"></i>Thẻ mới thêm</span>' +
+                '</div>' +
+                '<button type="button" class="btn btn-light border text-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center" ' +
+                        'style="width: 32px; height: 32px;" onclick="deleteCardRow(this)" title="Xóa thẻ này">' +
+                    '<i class="bi bi-trash"></i>' +
+                '</button>' +
+            '</div>' +
+            '<div class="row g-3">' +
+                '<div class="col-md-3">' +
+                    '<label class="form-label small fw-semibold text-dark mb-1">Từ vựng / Hán tự <span class="text-danger">*</span></label>' +
+                    '<input type="text" class="form-control card-vocab fw-bold" value="' + escapeHtml(vocab) + '" style="font-family: \'Noto Sans JP\', sans-serif;" placeholder="Ví dụ: 桜, 準備..." required>' +
+                '</div>' +
+                '<div class="col-md-3">' +
+                    '<label class="form-label small fw-semibold text-dark mb-1">Cách đọc (Furigana / Romaji)</label>' +
+                    '<input type="text" class="form-control card-reading" value="' + escapeHtml(reading) + '" placeholder="Ví dụ: さくら, じゅんび...">' +
+                '</div>' +
+                '<div class="col-md-3">' +
+                    '<label class="form-label small fw-semibold text-dark mb-1">Ý nghĩa tiếng Việt <span class="text-danger">*</span></label>' +
+                    '<input type="text" class="form-control card-meaning" value="' + escapeHtml(meaning) + '" placeholder="Ví dụ: Hoa anh đào, Chuẩn bị..." required>' +
+                '</div>' +
+                '<div class="col-md-3">' +
+                    '<label class="form-label small fw-semibold text-dark mb-1">Ví dụ minh họa (Tùy chọn)</label>' +
+                    '<input type="text" class="form-control card-example" value="' + escapeHtml(example) + '" placeholder="Ví dụ: 日本の春は桜がきれいです。">' +
+                '</div>' +
+            '</div>';
+
+        container.appendChild(cardDiv);
+        refreshCardIndices();
+
+        // Focus vocab input of the newly added card if it's blank
+        if (!vocab) {
+            var vInput = cardDiv.querySelector('.card-vocab');
+            if (vInput) vInput.focus();
+        }
+    }
+
+    // Delete a card row
+    function deleteCardRow(btn) {
+        var cardItem = btn.closest('.card-item');
+        if (!cardItem) return;
+
+        var idInput = cardItem.querySelector('.card-id-input');
+        if (idInput && idInput.value && idInput.value.trim() !== '') {
+            var cid = parseInt(idInput.value.trim());
+            if (!isNaN(cid) && !deletedCardIds.includes(cid)) {
+                deletedCardIds.push(cid);
+            }
+        }
+
+        cardItem.remove();
+        refreshCardIndices();
+    }
+
+    // Modal Bulk Import logic
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshCardIndices();
+
+        // If no cards exist at all, add one blank row so the user can immediately type
+        var items = document.querySelectorAll('#cardsContainer .card-item');
+        if (items.length === 0) {
+            addNewCardRow();
+        }
+
+        var bulkTa = document.getElementById('bulkModalTextarea');
+        if (bulkTa) {
+            bulkTa.addEventListener('input', function() {
+                var lines = parseBulkText(this.value);
+                document.getElementById('bulkModalCount').textContent = lines.length + ' dòng hợp lệ được nhận diện';
+            });
+        }
+    });
+
+    function parseBulkText(raw) {
+        if (!raw) return [];
+        var res = [];
+        raw.split(/\r?\n/).forEach(function(line) {
+            var t = line.trim();
+            if (!t || t.charAt(0) === '#') return;
+            var parts = t.split('|').map(function(p) { return p.trim(); });
+            if (parts.length >= 2 && parts[0] && (parts[1] || parts[2])) {
+                // If 2 parts: vocab | meaning
+                var vocab = parts[0];
+                var reading = (parts.length >= 3) ? parts[1] : '';
+                var meaning = (parts.length >= 3) ? parts[2] : parts[1];
+                var example = (parts.length >= 4) ? parts[3] : '';
+                res.push({
+                    vocabulary: vocab,
+                    reading: reading,
+                    meaning: meaning,
+                    exampleSentence: example
+                });
+            }
+        });
+        return res;
+    }
+
+    function appendBulkCards() {
+        var ta = document.getElementById('bulkModalTextarea');
+        var parsed = parseBulkText(ta.value);
+        if (parsed.length === 0) {
+            alert('Không tìm thấy dòng hợp lệ nào. Hãy nhập theo định dạng: Từ vựng | Cách đọc | Ý nghĩa.');
+            return;
+        }
+
+        parsed.forEach(function(item) {
+            addNewCardRow(item.vocabulary, item.reading, item.meaning, item.exampleSentence);
+        });
+
+        // Clear and close modal
+        ta.value = '';
+        document.getElementById('bulkModalCount').textContent = '0 dòng hợp lệ được nhận diện';
+
+        var modalEl = document.getElementById('bulkAddModal');
+        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    }
+
+    // Submit Deck Edit Form
+    function submitDeckEdit() {
+        var deckNameInput = document.getElementById('newDeckName');
+        var deckName = deckNameInput ? deckNameInput.value.trim() : '';
+        if (!deckName) {
+            alert('Vui lòng nhập tên gói flashcard trước khi lưu.');
+            if (deckNameInput) deckNameInput.focus();
+            return;
+        }
+
+        var items = document.querySelectorAll('#cardsContainer .card-item');
+        var cardsList = [];
+        var hasInvalid = false;
+
+        items.forEach(function(item) {
+            var vInput = item.querySelector('.card-vocab');
+            var mInput = item.querySelector('.card-meaning');
+            var rInput = item.querySelector('.card-reading');
+            var eInput = item.querySelector('.card-example');
+            var idInput = item.querySelector('.card-id-input');
+
+            var vocab = vInput ? vInput.value.trim() : '';
+            var meaning = mInput ? mInput.value.trim() : '';
+            var reading = rInput ? rInput.value.trim() : '';
+            var example = eInput ? eInput.value.trim() : '';
+            var cardIdVal = (idInput && idInput.value && idInput.value.trim()) ? parseInt(idInput.value.trim()) : null;
+
+            // If empty row, skip
+            if (!vocab && !meaning) {
+                return;
+            }
+
+            // If missing either vocab or meaning
+            if (!vocab || !meaning) {
+                hasInvalid = true;
+                if (!vocab && vInput) vInput.classList.add('is-invalid');
+                if (!meaning && mInput) mInput.classList.add('is-invalid');
+                return;
+            }
+
+            cardsList.push({
+                flashcardId: isNaN(cardIdVal) ? null : cardIdVal,
+                vocabulary: vocab,
+                reading: reading,
+                meaning: meaning,
+                exampleSentence: example
+            });
+        });
+
+        if (hasInvalid) {
+            alert('Một số thẻ còn thiếu Từ vựng hoặc Ý nghĩa. Vui lòng kiểm tra lại các ô viền đỏ.');
+            return;
+        }
+
+        if (cardsList.length === 0) {
+            alert('Gói từ vựng cần có ít nhất 1 thẻ từ vựng (cần điền tối thiểu Từ vựng và Ý nghĩa).');
+            return;
+        }
+
+        document.getElementById('cardsPayload').value = JSON.stringify(cardsList);
+        document.getElementById('deletedCardIds').value = JSON.stringify(deletedCardIds);
+
+        document.getElementById('deckEditForm').submit();
+    }
+</script>
