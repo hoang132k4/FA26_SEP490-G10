@@ -7,7 +7,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
-@Entity
+@Entity(name = "QuizQuestion")
 @Table(name = "questions")
 @Getter
 @Setter

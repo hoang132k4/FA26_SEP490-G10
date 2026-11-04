@@ -270,10 +270,41 @@ public class LearningPathTest {
     void recalibrateSchedule_invalidWeeklyHours_handledGracefully() throws Exception {
         mockMvc.perform(post("/learning-path/recalibrate")
                         .with(csrf())
-                        .param("weeklyHours", "100")) // Exceeds max 40
+                        .param("weeklyHours", "150")) // Exceeds max 105
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/learning-path/recalibrate"))
                 .andExpect(model().hasErrors());
+    }
+
+    @Test
+    @DisplayName("REC-06: POST /learning-path/recalibrate/apply updates DB and redirects to /learning-path")
+    @WithMockUser(username = LEARNER_WITH_PATH, roles = {"LEARNER"})
+    void applyRecalibratedSchedule_updatesDatabaseAndRedirects() throws Exception {
+        mockMvc.perform(post("/learning-path/recalibrate/apply")
+                        .with(csrf())
+                        .param("weeklyHours", "21"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning-path"))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        LearningPath updatedLp = learningPathRepository
+                .findFirstByUserIdOrderByScheduledDateDescIdDesc(userWithPath.getId())
+                .orElseThrow();
+
+        assertThat(updatedLp.getDailyHoursSetup()).isEqualByComparingTo(new BigDecimal("3.00"));
+    }
+
+    @Test
+    @DisplayName("REC-07: POST /learning-path/recalibrate simulates schedule and displays updated pace")
+    @WithMockUser(username = LEARNER_WITH_PATH, roles = {"LEARNER"})
+    void recalibrateSchedule_simulatesAndDisplaysPreview() throws Exception {
+        mockMvc.perform(post("/learning-path/recalibrate")
+                        .with(csrf())
+                        .param("weeklyHours", "28"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/learning-path/recalibrate"))
+                .andExpect(model().attributeExists("request"))
+                .andExpect(content().string(containsString("28 giờ/tuần")));
     }
 
     // ==========================================
@@ -313,7 +344,6 @@ public class LearningPathTest {
     void service_getRecalibratePreview_intensivePace_analysisCorrect() {
         RecalibrateRequest request = RecalibrateRequest.builder()
                 .weeklyHours(20)
-                .startDate(LocalDate.of(2026, 11, 1))
                 .build();
 
         RecalibratePreviewResponse preview = learningPathService.getRecalibratePreview(LEARNER_WITH_PATH, request);
@@ -322,5 +352,25 @@ public class LearningPathTest {
         assertThat(preview.isHasPath()).isTrue();
         assertThat(preview.getNewWeeklyHours()).isEqualTo(20);
         assertThat(preview.getPaceAnalysisText()).contains("Cường độ Tăng tốc (Intensive)");
+    }
+
+    @Test
+    @DisplayName("SRV-04: LearningPathService.getRecalibratePreview correctly reschedules uncompleted lessons")
+    void service_getRecalibratePreview_schedulesCorrectly() {
+        RecalibrateRequest request = RecalibrateRequest.builder()
+                .weeklyHours(28)
+                .build();
+
+        RecalibratePreviewResponse preview = learningPathService.getRecalibratePreview(LEARNER_WITH_PATH, request);
+
+        assertThat(preview).isNotNull();
+        assertThat(preview.getRescheduledItems()).hasSize(4);
+
+        // First 2 lessons are completed - maintain original completed status
+        assertThat(preview.getRescheduledItems().get(0).getStatus()).isEqualTo("COMPLETED");
+        assertThat(preview.getRescheduledItems().get(1).getStatus()).isEqualTo("COMPLETED");
+
+        // Third lesson (first uncompleted) must be in progress
+        assertThat(preview.getRescheduledItems().get(2).getStatus()).isEqualTo("IN_PROGRESS");
     }
 }

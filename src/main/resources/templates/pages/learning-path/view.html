@@ -127,7 +127,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="item : ${path.items}" class="border-bottom">
+                            <tr th:each="item : ${path.items}" class="border-bottom timeline-row">
                                 <!-- Order Index / Icon -->
                                 <td class="ps-4 py-3">
                                     <span class="badge rounded-circle d-inline-flex align-items-center justify-content-center"
@@ -171,6 +171,19 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div id="timelinePagination" class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-light-subtle" th:if="${!#lists.isEmpty(path.items)}">
+                    <div class="text-muted small" id="timelinePageInfo">
+                        Hiển thị <strong>1 - 5</strong> trong tổng số <strong th:text="${path.totalLessons}">12</strong> bài học
+                    </div>
+                    <nav aria-label="Phân trang bài học">
+                        <ul class="pagination pagination-sm mb-0" id="timelinePageNav">
+                        </ul>
+                    </nav>
+                </div>
+
                 </div>
             </div>
         </div>

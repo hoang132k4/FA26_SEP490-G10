@@ -37,19 +37,30 @@ public class CourseService {
         return courseRepository.findDetailsById(courseId);
     }
 
-    @Transactional
-    public long createCourse(String title, String level, Double price, String description,
-                             Integer durationHours, String objectives, String prerequisites, String targetAudience) {
-        return courseRepository.insert(title, level, "DRAFT", price, description, durationHours,
-                objectives, prerequisites, targetAudience);
+    @Transactional(readOnly = true)
+    public boolean isCodeInUse(String code, Long excludedCourseId) {
+        return courseRepository.existsByCode(code, excludedCourseId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isTitleInUse(String title, Long excludedCourseId) {
+        return courseRepository.existsByTitle(title, excludedCourseId);
     }
 
     @Transactional
-    public void updateCourse(long courseId, String title, String level, Double price,
-                             String description, Integer durationHours, String objectives,
+    public long createCourse(String title, String code, String level, Double price, Double discountPrice,
+                             String shortDescription, String description, String thumbnailUrl, String objectives,
                              String prerequisites, String targetAudience) {
-        if (courseRepository.update(courseId, title, level, price, description, durationHours,
-                objectives, prerequisites, targetAudience) == 0) {
+        return courseRepository.insert(title, code, level, "DRAFT", price, discountPrice,
+                shortDescription, description, thumbnailUrl, objectives, prerequisites, targetAudience);
+    }
+
+    @Transactional
+    public void updateCourse(long courseId, String title, String code, String level, Double price, Double discountPrice,
+                             String shortDescription, String description, String thumbnailUrl, String objectives,
+                             String prerequisites, String targetAudience) {
+        if (courseRepository.update(courseId, title, code, level, price, discountPrice,
+                shortDescription, description, thumbnailUrl, objectives, prerequisites, targetAudience) == 0) {
             throw new IllegalArgumentException("Không tìm thấy khóa học cần sửa.");
         }
     }

@@ -2,6 +2,8 @@ package com.jlpp.modules.exam.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -10,6 +12,7 @@ import jakarta.persistence.Table;
 public class Exam {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "exam_id")
     private Long examId;
 
@@ -75,4 +78,13 @@ public class Exam {
     public String getStatus() { return status; }
     public String getDescription() { return description; }
     public Long getCourseId() { return courseId; }
+
+    public void setExamTitle(String examTitle) { this.examTitle = examTitle; }
+    public void setExamType(String examType) { this.examType = examType; }
+    public void setJlptLevel(String jlptLevel) { this.jlptLevel = jlptLevel; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
+    public void setTotalQuestions(Integer totalQuestions) { this.totalQuestions = totalQuestions; }
+    public void setPassingScore(Integer passingScore) { this.passingScore = passingScore; }
+    public void setStatus(String status) { this.status = status; }
+    public void setDescription(String description) { this.description = description; }
 }

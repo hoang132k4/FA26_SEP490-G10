@@ -24,4 +24,13 @@ public interface LearningPathService {
      * @return DTO kết quả mô phỏng điều chỉnh lịch học
      */
     RecalibratePreviewResponse getRecalibratePreview(String username, RecalibrateRequest request);
+
+    /**
+     * Xác nhận áp dụng và lưu lịch trình lộ trình học tập mới vào cơ sở dữ liệu.
+     * Cập nhật số giờ học mỗi ngày (daily_hours_setup) và ngày bắt đầu (scheduled_date).
+     *
+     * @param username Email hoặc username của học viên đã xác thực
+     * @param request Tham số điều chỉnh lịch học mới đã được xác nhận
+     */
+    void applyRecalibratedSchedule(String username, RecalibrateRequest request);
 }

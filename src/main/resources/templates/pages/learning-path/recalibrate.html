@@ -51,7 +51,7 @@
                     <h6 class="fw-bold mb-1 text-dark">Chế độ xem trước & mô phỏng (Simulation Preview Mode)</h6>
                     <p class="mb-0 text-secondary small" style="line-height: 1.6;">
                         Chức năng này giúp bạn thử nghiệm thay đổi cường độ học tập (số giờ học mỗi tuần) để xem trước ngày hoàn thành dự kiến mới và kế hoạch phân bổ bài học.
-                        <strong>Hệ thống hoạt động ở chế độ chỉ đọc và không thực hiện bất kỳ thao tác lưu hay sửa đổi nào vào cơ sở dữ liệu.</strong>
+                        Sau khi xem kết quả mô phỏng, bạn có thể <strong>xác nhận áp dụng</strong> để hệ thống chính thức cập nhật lại lộ trình của bạn.
                     </p>
                 </div>
             </div>
@@ -62,36 +62,28 @@
                     <i class="bi bi-sliders2 me-2 text-primary"></i> Thiết lập tham số điều chỉnh
                 </h5>
                 <form th:action="@{/learning-path/recalibrate}" method="post" class="row g-3 align-items-end">
-                    <div class="col-md-5">
+                    <div class="col-auto" style="min-width: 240px; max-width: 280px;">
                         <label for="weeklyHours" class="form-label fw-semibold small text-secondary">
                             Số giờ có thể học mỗi tuần (Giờ/Tuần) <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="bi bi-clock-history"></i></span>
                             <input type="number" id="weeklyHours" name="weeklyHours" class="form-control"
-                                   min="1" max="40" required
+                                   min="1" max="105" required
                                    th:value="${preview != null ? preview.newWeeklyHours : (request != null ? request.weeklyHours : path.weeklyHours)}"
-                                   placeholder="Ví dụ: 10">
+                                   placeholder="Ví dụ: 14">
                             <span class="input-group-text bg-light">giờ/tuần</span>
                         </div>
-                        <span class="text-muted small">Khuyến nghị từ 7 đến 21 giờ/tuần để đảm bảo tiếp thu tốt nhất.</span>
                     </div>
 
-                    <div class="col-md-4">
-                        <label for="startDate" class="form-label fw-semibold small text-secondary">
-                            Ngày bắt đầu áp dụng điều chỉnh
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-calendar-check"></i></span>
-                            <input type="date" id="startDate" name="startDate" class="form-control"
-                                   th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 shadow-sm fw-semibold">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm fw-semibold">
                             <i class="bi bi-calculator me-1"></i> Tính toán mô phỏng
                         </button>
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <div class="form-text small text-muted">Khuyến nghị một tuần học từ 7 đến 14 giờ để đảm bảo tiếp thu tốt nhất (tối đa 105 giờ/tuần).</div>
                     </div>
                 </form>
             </div>
@@ -122,7 +114,8 @@
                             <div class="text-primary small fw-semibold text-uppercase mb-2">Lịch học đề xuất mô phỏng</div>
                             <div class="d-flex justify-content-between align-items-baseline mb-3">
                                 <span class="fs-4 fw-bold text-primary" th:text="${preview.newWeeklyHours} + ' giờ/tuần'">14 giờ/tuần</span>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill"
+                                <span class="badge px-3 py-1 rounded-pill"
+                                      th:classappend="${#strings.contains(preview.daysDifferenceText, 'sớm') ? 'bg-success-subtle text-success border border-success-subtle' : (#strings.contains(preview.daysDifferenceText, 'Kéo dài') ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle')}"
                                       th:text="${preview.daysDifferenceText}">Hoàn thành sớm hơn 14 ngày</span>
                             </div>
                             <div class="d-flex align-items-center gap-2 text-muted small">
@@ -142,6 +135,28 @@
                     <p class="text-secondary mb-0 small" style="line-height: 1.6;" th:text="${preview.paceAnalysisText}">
                         Cường độ học tập Tiêu chuẩn (Standard): Phân bổ 10 giờ/tuần là nhịp độ cân bằng và bền vững nhất để tiếp thu sâu kiến thức ngữ pháp và luyện nghe đều đặn.
                     </p>
+                </div>
+
+                <!-- Apply Recalibrated Schedule Action Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-4 border-success">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-success">
+                                <i class="bi bi-check-circle-fill me-2"></i> Xác nhận áp dụng lộ trình mới
+                            </h5>
+                            <p class="text-secondary small mb-0">
+                                Bạn có muốn cập nhật lộ trình học tập theo nhịp độ <strong class="text-primary" th:text="${preview.newWeeklyHours} + ' giờ/tuần'">14 giờ/tuần</strong> (dự kiến hoàn thành ngày <strong class="text-dark" th:text="${preview.newCompletionDate}">15/12/2026</strong>) không?
+                            </p>
+                        </div>
+                        <div>
+                            <form th:action="@{/learning-path/recalibrate/apply}" method="post" class="d-inline">
+                                <input type="hidden" name="weeklyHours" th:value="${preview.newWeeklyHours}">
+                                <button type="submit" class="btn btn-success px-4 py-2 rounded-3 shadow-sm fw-semibold text-nowrap">
+                                    <i class="bi bi-calendar-check me-1"></i> Xác nhận áp dụng lộ trình mới
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Proposed Timeline Table -->
@@ -165,7 +180,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:each="item : ${preview.rescheduledItems}" class="border-bottom">
+                                <tr th:each="item : ${preview.rescheduledItems}" class="border-bottom recalibrate-row">
                                     <td class="ps-4 py-3 text-muted" th:text="${item.orderIndex}">1</td>
                                     <td class="py-3">
                                         <strong class="d-block text-dark" th:text="${item.title}">Bài 1: Từ vựng</strong>
@@ -186,8 +201,93 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination Footer -->
+                    <div id="recalibratePagination" class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-light-subtle">
+                        <div class="text-muted small" id="recalibratePageInfo">
+                            Hiển thị <strong>1 - 5</strong> trong tổng số <strong>12</strong> bài học
+                        </div>
+                        <nav aria-label="Phân trang lịch học đề xuất">
+                            <ul class="pagination pagination-sm mb-0" id="recalibratePageNav">
+                            </ul>
+                        </nav>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rowsPerPage = 5;
+    const rows = document.querySelectorAll('.recalibrate-row');
+    const totalRows = rows.length;
+    if (totalRows === 0) return;
+
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    let currentPage = 1;
+
+    const pageInfo = document.getElementById('recalibratePageInfo');
+    const pageNav = document.getElementById('recalibratePageNav');
+
+    function renderPage(page) {
+        currentPage = page;
+        const start = (page - 1) * rowsPerPage;
+        const end = Math.min(start + rowsPerPage, totalRows);
+
+        rows.forEach((row, idx) => {
+            row.style.display = (idx >= start && idx < end) ? '' : 'none';
+        });
+
+        if (pageInfo) {
+            pageInfo.innerHTML = `Hiển thị <strong>${start + 1} - ${end}</strong> trong tổng số <strong>${totalRows}</strong> bài học`;
+        }
+
+        renderNav();
+    }
+
+    function renderNav() {
+        if (!pageNav) return;
+        pageNav.innerHTML = '';
+
+        if (totalPages <= 1) {
+            pageNav.parentElement.style.display = 'none';
+            return;
+        } else {
+            pageNav.parentElement.style.display = '';
+        }
+
+        // Prev button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Previous">&laquo;</a>`;
+        prevLi.addEventListener('click', () => {
+            if (currentPage > 1) renderPage(currentPage - 1);
+        });
+        pageNav.appendChild(prevLi);
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="javascript:void(0)">${i}</a>`;
+            const pageNum = i;
+            li.addEventListener('click', () => renderPage(pageNum));
+            pageNav.appendChild(li);
+        }
+
+        // Next button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Next">&raquo;</a>`;
+        nextLi.addEventListener('click', () => {
+            if (currentPage < totalPages) renderPage(currentPage + 1);
+        });
+        pageNav.appendChild(nextLi);
+    }
+
+    renderPage(1);
+});
+</script>
