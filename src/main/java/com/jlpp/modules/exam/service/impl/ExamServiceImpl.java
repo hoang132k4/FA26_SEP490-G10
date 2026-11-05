@@ -287,7 +287,7 @@ public class ExamServiceImpl implements ExamService {
         boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(exam.getExamType());
         boolean isMilestone = "MILESTONE".equalsIgnoreCase(exam.getExamType());
 
-        int passingScore = exam.getPassingScore() != null ? exam.getPassingScore() : (isMilestone ? 50 : 35);
+        int passingScore = exam.getPassingScore() != null ? exam.getPassingScore() : defaultPassingScore(exam.getJlptLevel(), isMilestone);
         boolean passed = isPlacement || (earnedScore >= passingScore);
 
         int safeTime = timeSpentSeconds != null && timeSpentSeconds >= 0 ? timeSpentSeconds : 0;
@@ -373,7 +373,7 @@ public class ExamServiceImpl implements ExamService {
     public ExamResultResponse evaluateAndSaveSubmission(Long examId, Long userId, Map<String, String> formParams, Integer timeSpentSeconds) {
         String dedupKey = null;
         if (userId != null && examId != null) {
-            dedupKey = userId + "_" + examId + "_" + (formParams != null ? formParams.hashCode() : 0);
+            dedupKey = userId + "_" + examId + "_" + (formParams != null ? new TreeMap<>(formParams).toString().hashCode() : 0);
             SubmissionRecord existing = recentSubmissions.get(dedupKey);
             if (existing != null && (System.currentTimeMillis() - existing.timestamp) < 5000) {
                 log.info("Deduplicated submission for user {} and exam {}", userId, examId);
@@ -409,11 +409,10 @@ public class ExamServiceImpl implements ExamService {
                 result.setStatusNotice("Kết quả bài thi và chi tiết từng câu hỏi đã được lưu trữ vĩnh viễn vào hệ thống Supabase (Mã kết quả: #" + resultId + ").");
 
                 if (dedupKey != null) {
-                    recentSubmissions.put(dedupKey, new SubmissionRecord(System.currentTimeMillis(), result));
-                    if (recentSubmissions.size() > 100) {
-                        long cutoff = System.currentTimeMillis() - 30_000;
-                        recentSubmissions.entrySet().removeIf(e -> e.getValue().timestamp < cutoff);
-                    }
+                    long now = System.currentTimeMillis();
+                    recentSubmissions.put(dedupKey, new SubmissionRecord(now, result));
+                    long cutoff = now - 30_000;
+                    recentSubmissions.entrySet().removeIf(e -> e.getValue().timestamp < cutoff);
                 }
             } catch (Exception ex) {
                 log.error("Failed to persist exam result to Supabase for userId {} and examId {}: {}", userId, examId, ex.getMessage(), ex);
@@ -497,6 +496,18 @@ public class ExamServiceImpl implements ExamService {
                     : "Bạn chưa đạt điểm yêu cầu cho bài kiểm tra cột mốc này. Hãy xem lại kiến thức và ôn tập thêm.";
             case "JLPT_MOCK" -> "Kết quả bài thi thử JLPT đã được tính toán từ dữ liệu đề thi Supabase.";
             default -> "Kết quả bài thi đã được ghi nhận.";
+        };
+    }
+
+    private int defaultPassingScore(String jlptLevel, boolean isMilestone) {
+        if (isMilestone) return 50;
+        return switch (jlptLevel != null ? jlptLevel.toUpperCase() : "") {
+            case "N5" -> 80;
+            case "N4" -> 90;
+            case "N3" -> 95;
+            case "N2" -> 90;
+            case "N1" -> 100;
+            default -> 80;
         };
     }
 

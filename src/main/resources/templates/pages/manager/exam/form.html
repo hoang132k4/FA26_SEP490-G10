@@ -57,19 +57,25 @@
                 <div class="text-danger small" th:errors="*{status}"></div>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Thời lượng (phút) <span class="text-danger">*</span></label>
-                <input class="form-control" type="number" min="1" max="600" th:field="*{durationMinutes}" required>
-                <div class="text-danger small" th:errors="*{durationMinutes}"></div>
-            </div>
-            <div class="col-md-4">
                 <label class="form-label">Tổng số câu hỏi <span class="text-danger">*</span></label>
                 <input class="form-control" type="number" min="1" max="500" th:field="*{totalQuestions}" required>
                 <div class="text-danger small" th:errors="*{totalQuestions}"></div>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Điểm đạt (%) <span class="text-danger">*</span></label>
-                <input class="form-control" type="number" min="0" max="100" th:field="*{passingScore}" required>
-                <div class="text-danger small" th:errors="*{passingScore}"></div>
+                <label class="form-label">Thời lượng</label>
+                <div class="form-control bg-light" id="durationDisplay">
+                    <span th:if="${examForm.jlptLevel != null and !examForm.jlptLevel.isEmpty()}"
+                          th:text="${examForm.jlptLevel == 'N5' ? '105 phút' : examForm.jlptLevel == 'N4' ? '125 phút' : examForm.jlptLevel == 'N3' ? '140 phút' : examForm.jlptLevel == 'N2' ? '155 phút' : examForm.jlptLevel == 'N1' ? '170 phút' : '--'}"></span>
+                    <span th:if="${examForm.jlptLevel == null or examForm.jlptLevel.isEmpty()}" class="text-muted">Chọn cấp độ JLPT</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Điểm đạt</label>
+                <div class="form-control bg-light" id="passingScoreDisplay">
+                    <span th:if="${examForm.jlptLevel != null and !examForm.jlptLevel.isEmpty()}"
+                          th:text="${examForm.jlptLevel == 'N5' ? '80/180 điểm' : examForm.jlptLevel == 'N4' ? '90/180 điểm' : examForm.jlptLevel == 'N3' ? '95/180 điểm' : examForm.jlptLevel == 'N2' ? '90/180 điểm' : examForm.jlptLevel == 'N1' ? '100/180 điểm' : '--'}"></span>
+                    <span th:if="${examForm.jlptLevel == null or examForm.jlptLevel.isEmpty()}" class="text-muted">Chọn cấp độ JLPT</span>
+                </div>
             </div>
             <div class="col-12">
                 <label class="form-label">Mô tả</label>
@@ -83,31 +89,24 @@
         </div>
     </form>
 
-    <!-- Danh sách câu hỏi đã gắn (chỉ khi sửa và có câu hỏi) -->
-    <div th:if="${isEdit && examQuestions != null && !#lists.isEmpty(examQuestions)}" class="kotoba-card overflow-hidden mt-4">
-        <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
-            <span class="fw-bold" style="color:var(--navy-dark);">Câu hỏi trong đề (<span th:text="${examQuestions != null ? #lists.size(examQuestions) : 0}">0</span>)</span>
-            <a class="btn btn-sm btn-outline-success" th:href="@{/manager/exams/{id}/questions(id=${examForm.examId})}">
-                <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa
-            </a>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead><tr><th class="ps-4">#</th><th>Nội dung</th><th>Loại</th><th>Section</th><th>Điểm</th></tr></thead>
-                <tbody>
-                <tr th:each="row : ${examQuestions}">
-                    <td class="ps-4" th:text="${row.orderIndex()}"></td>
-                    <td style="min-width:250px;max-width:400px;">
-                        <div class="text-truncate" style="max-width:400px;" th:text="${row.content()}"></div>
-                        <small class="text-muted" th:text="${(row.jlptLevel() ?: '') + ' ' + (row.skillType() ?: '') + ' ' + (row.difficulty() ?: '')}"></small>
-                    </td>
-                    <td><span class="badge bg-primary" th:text="${row.questionType()}"></span></td>
-                    <td><span class="badge bg-dark" th:text="${row.section()}"></span></td>
-                    <td th:text="${row.points()}"></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+<script>
+(function() {
+    const JLPT = {
+        N5: { duration: 105, passing: 80 },
+        N4: { duration: 125, passing: 90 },
+        N3: { duration: 140, passing: 95 },
+        N2: { duration: 155, passing: 90 },
+        N1: { duration: 170, passing: 100 }
+    };
+    var levelSelect = document.getElementById('jlptLevel');
+    if (levelSelect) {
+        levelSelect.addEventListener('change', function() {
+            var d = JLPT[this.value];
+            document.getElementById('durationDisplay').innerHTML = d ? d.duration + ' phút' : '<span class="text-muted">Chọn cấp độ JLPT</span>';
+            document.getElementById('passingScoreDisplay').innerHTML = d ? d.passing + '/180 điểm' : '<span class="text-muted">Chọn cấp độ JLPT</span>';
+        });
+    }
+})();
+</script>
 </div>
 </div>

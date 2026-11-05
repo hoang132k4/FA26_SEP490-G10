@@ -65,8 +65,8 @@ public class ManagerExamService {
         validateDomainValues(form);
         validatePublishReady(null, form);
         Exam exam = new Exam(null, clean(form.getExamTitle()), form.getExamType(), form.getJlptLevel(),
-                form.getDurationMinutes(), form.getTotalQuestions(), form.getPassingScore(), form.getStatus(),
-                optional(form.getDescription()));
+                jlptDuration(form.getJlptLevel()), form.getTotalQuestions(), jlptPassingScore(form.getJlptLevel()),
+                form.getStatus(), optional(form.getDescription()));
         return examRepository.save(exam);
     }
 
@@ -78,9 +78,9 @@ public class ManagerExamService {
         exam.setExamTitle(clean(form.getExamTitle()));
         exam.setExamType(form.getExamType());
         exam.setJlptLevel(form.getJlptLevel());
-        exam.setDurationMinutes(form.getDurationMinutes());
+        exam.setDurationMinutes(jlptDuration(form.getJlptLevel()));
         exam.setTotalQuestions(form.getTotalQuestions());
-        exam.setPassingScore(form.getPassingScore());
+        exam.setPassingScore(jlptPassingScore(form.getJlptLevel()));
         exam.setStatus(form.getStatus());
         exam.setDescription(optional(form.getDescription()));
         return examRepository.save(exam);
@@ -105,9 +105,7 @@ public class ManagerExamService {
         form.setExamTitle(exam.getExamTitle());
         form.setExamType(exam.getExamType());
         form.setJlptLevel(exam.getJlptLevel());
-        form.setDurationMinutes(exam.getDurationMinutes());
         form.setTotalQuestions(exam.getTotalQuestions());
-        form.setPassingScore(exam.getPassingScore());
         form.setStatus(exam.getStatus());
         form.setDescription(exam.getDescription());
         return form;
@@ -256,6 +254,30 @@ public class ManagerExamService {
             throw new IllegalArgumentException("Câu hỏi này không nằm trong đề thi.");
         }
         examQuestionRepository.deleteById(eqId);
+    }
+
+    // ── JLPT fixed settings ──
+
+    private static int jlptDuration(String level) {
+        return switch (level) {
+            case "N5" -> 105;
+            case "N4" -> 125;
+            case "N3" -> 140;
+            case "N2" -> 155;
+            case "N1" -> 170;
+            default -> 105;
+        };
+    }
+
+    private static int jlptPassingScore(String level) {
+        return switch (level) {
+            case "N5" -> 80;
+            case "N4" -> 90;
+            case "N3" -> 95;
+            case "N2" -> 90;
+            case "N1" -> 100;
+            default -> 80;
+        };
     }
 
     // ── Private helpers ──
