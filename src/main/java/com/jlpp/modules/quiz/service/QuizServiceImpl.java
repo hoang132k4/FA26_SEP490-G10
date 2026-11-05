@@ -214,11 +214,12 @@ public class QuizServiceImpl implements QuizService {
                 ? "Xuất sắc! Bạn đã vượt qua bài trắc nghiệm với điểm số ấn tượng. Hãy tiếp tục phát huy ở các bài học tiếp theo!"
                 : "Bạn chưa đạt điểm chuẩn tối thiểu (" + passingThreshold + "%). Hãy xem lại các câu giải thích bên dưới và thử làm lại nhé!";
 
-        // Save Attempt to exercise_results
+        int attemptNumber = (int) exerciseResultRepository.countByExerciseIdAndUserId(exerciseId, userId) + 1;
+
         ExerciseResult exResult = ExerciseResult.builder()
                 .exerciseId(exerciseId)
-                .userId(userId != null ? userId : 1L)
-                .attemptNumber(1)
+                .userId(userId)
+                .attemptNumber(attemptNumber)
                 .score(score)
                 .percentage(percentage)
                 .resultStatus(status)
@@ -245,6 +246,7 @@ public class QuizServiceImpl implements QuizService {
         return QuizResultDto.builder()
                 .resultId(savedResult.getExerciseResultId())
                 .exerciseId(exerciseId)
+                .userId(userId)
                 .lessonId(exercise.getLessonId())
                 .exerciseTitle(exercise.getExerciseTitle())
                 .lessonTitle(lesson != null ? lesson.getTitle() : "Bài học")
@@ -327,6 +329,7 @@ public class QuizServiceImpl implements QuizService {
         return QuizResultDto.builder()
                 .resultId(result.getExerciseResultId())
                 .exerciseId(result.getExerciseId())
+                .userId(result.getUserId())
                 .lessonId(exercise != null ? exercise.getLessonId() : null)
                 .exerciseTitle(exercise != null ? exercise.getExerciseTitle() : "Bài tập trắc nghiệm")
                 .lessonTitle(lesson != null ? lesson.getTitle() : "Bài học")
@@ -378,7 +381,7 @@ public class QuizServiceImpl implements QuizService {
                     .jlptLevel(level)
                     .questionType("SINGLE_CHOICE")
                     .difficulty("MEDIUM")
-                    .status("DRAFT")
+                    .status("ACTIVE")
                     .options("[{\"key\": \"A\", \"text\": \"\"}, {\"key\": \"B\", \"text\": \"\"}, {\"key\": \"C\", \"text\": \"\"}, {\"key\": \"D\", \"text\": \"\"}]")
                     .answerKey("[\"" + correctKey + "\"]")
                     .createdAt(LocalDateTime.now())

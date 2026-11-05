@@ -15,6 +15,7 @@ public class QuizResultDto {
     private Long resultId;
     private Long exerciseId;
     private Long lessonId;
+    private Long userId;
     private String exerciseTitle;
     private String lessonTitle;
     private int totalQuestions;

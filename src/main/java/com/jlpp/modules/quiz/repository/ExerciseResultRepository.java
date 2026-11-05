@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface ExerciseResultRepository extends JpaRepository<ExerciseResult, Long> {
     List<ExerciseResult> findByUserIdAndExerciseIdOrderBySubmittedDateDesc(Long userId, Long exerciseId);
     Optional<ExerciseResult> findFirstByUserIdAndExerciseIdOrderBySubmittedDateDesc(Long userId, Long exerciseId);
+    long countByExerciseIdAndUserId(Long exerciseId, Long userId);
 }
