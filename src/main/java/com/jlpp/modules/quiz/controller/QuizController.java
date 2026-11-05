@@ -35,6 +35,24 @@ public class QuizController {
     /**
      * Start doing quiz / exercise for a lesson
      */
+    private Long resolveUserId(CustomUserDetails userDetails, Principal principal, HttpSession session) {
+        if (userDetails != null && userDetails.getId() != null) {
+            return userDetails.getId();
+        }
+        if (principal != null) {
+            String name = principal.getName();
+            return userRepository.findByEmailIgnoreCase(name)
+                    .or(() -> userRepository.findByUsername(name))
+                    .map(User::getId)
+                    .orElse(null);
+        }
+        if (session != null) {
+            Object id = session.getAttribute("CURRENT_LEARNER_ID");
+            if (id instanceof Long l) return l;
+        }
+        return null;
+    }
+
     @GetMapping("/do")
     public String doQuiz(
             @RequestParam(required = false) Long lessonId,
@@ -78,21 +96,9 @@ public class QuizController {
             HttpSession session,
             RedirectAttributes redirectAttributes
     ) {
-        Long userId = null;
-        if (userDetails != null && userDetails.getId() != null) {
-            userId = userDetails.getId();
-        } else if (principal != null) {
-            String name = principal.getName();
-            userId = userRepository.findByEmailIgnoreCase(name)
-                    .or(() -> userRepository.findByUsername(name))
-                    .map(User::getId)
-                    .orElse(null);
-        }
-        if (userId == null && session != null) {
-            userId = (Long) session.getAttribute("CURRENT_LEARNER_ID");
-        }
+        Long userId = resolveUserId(userDetails, principal, session);
         if (userId == null) {
-            userId = userRepository.findAll().stream().map(User::getId).findFirst().orElse(1L);
+            return "redirect:/auth/login?continue=/quiz/do?exerciseId=" + exerciseId;
         }
 
         // Parse answers from inputs named: "answer_{questionId}"
@@ -116,8 +122,22 @@ public class QuizController {
      * View quiz result and question review with explanations
      */
     @GetMapping("/result/{resultId}")
-    public String viewResult(@PathVariable Long resultId, Model model) {
+    public String viewResult(@PathVariable Long resultId,
+                             @AuthenticationPrincipal CustomUserDetails userDetails,
+                             Principal principal,
+                             HttpSession session,
+                             Model model) {
+        Long userId = resolveUserId(userDetails, principal, session);
+        if (userId == null) {
+            return "redirect:/auth/login?continue=/quiz/result/" + resultId;
+        }
+
         QuizResultDto result = quizService.getResult(resultId);
+        if (!userId.equals(result.getUserId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Bạn không có quyền xem kết quả này.");
+        }
+
         Lesson lesson = (result.getLessonId() != null) ? lessonRepository.findById(result.getLessonId()).orElse(null) : null;
         Course course = (lesson != null) ? lesson.getCourse() : null;
 
