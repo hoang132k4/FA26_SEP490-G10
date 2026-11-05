@@ -77,4 +77,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query(value = "SELECT EXISTS (SELECT 1 FROM exam_questions WHERE question_id = :questionId UNION SELECT 1 FROM exercise_questions WHERE question_id = :questionId)", nativeQuery = true)
     boolean isUsedAnywhere(@Param("questionId") Long questionId);
+
+    @Query(value = "SELECT question_id, COUNT(*) FROM exam_questions WHERE question_id IN (:ids) GROUP BY question_id", nativeQuery = true)
+    List<Object[]> batchCountExamUsages(@Param("ids") List<Long> ids);
+
+    @Query(value = "SELECT question_id, COUNT(*) FROM exercise_questions WHERE question_id IN (:ids) GROUP BY question_id", nativeQuery = true)
+    List<Object[]> batchCountQuizUsages(@Param("ids") List<Long> ids);
 }

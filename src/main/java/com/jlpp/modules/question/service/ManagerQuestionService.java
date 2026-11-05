@@ -31,11 +31,17 @@ public class ManagerQuestionService {
         List<Question> questions = questionRepository.searchForManager(
                 norm(search), norm(category), norm(questionType),
                 norm(jlptLevel), norm(skillType), norm(difficulty), norm(status));
+        if (questions.isEmpty()) return List.of();
+
+        List<Long> ids = questions.stream().map(Question::getId).toList();
+        Map<Long, Long> examCounts = toBatchMap(questionRepository.batchCountExamUsages(ids));
+        Map<Long, Long> quizCounts = toBatchMap(questionRepository.batchCountQuizUsages(ids));
+
         return questions.stream().map(q -> new QuestionListRow(
                 q.getId(), q.getContent(), q.getQuestionType(),
                 q.getJlptLevel(), q.getSkillType(), q.getDifficulty(), q.getStatus(),
-                questionRepository.countExamUsages(q.getId()),
-                questionRepository.countQuizUsages(q.getId())
+                examCounts.getOrDefault(q.getId(), 0L),
+                quizCounts.getOrDefault(q.getId(), 0L)
         )).toList();
     }
 
@@ -265,6 +271,14 @@ public class ManagerQuestionService {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Lỗi tạo JSON.", e);
         }
+    }
+
+    private Map<Long, Long> toBatchMap(List<Object[]> rows) {
+        Map<Long, Long> map = new HashMap<>();
+        for (Object[] row : rows) {
+            map.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+        }
+        return map;
     }
 
     private String norm(String v) { return v == null ? "" : v.trim(); }
