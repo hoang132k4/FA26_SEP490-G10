@@ -65,7 +65,6 @@ public class ManagerExamController {
             model.addAttribute("options", managerExamService.options());
             model.addAttribute("isEdit", true);
             var examQuestions = managerExamService.getExamQuestions(examId);
-            model.addAttribute("examQuestions", examQuestions);
             model.addAttribute("linkedCount", managerExamService.countExamQuestions(examId));
             model.addAttribute("totalPoints", examQuestions.stream().mapToInt(eq -> eq.points() != null ? eq.points() : 0).sum());
             return "pages/manager/exam/form";

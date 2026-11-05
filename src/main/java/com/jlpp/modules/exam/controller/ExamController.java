@@ -245,13 +245,10 @@ public class ExamController {
         if (result == null) {
             Long userId = getAuthenticatedUserId(session, principal);
             if (resultId != null && userId != null) {
-                try {
-                    result = examService.getHistoricalResult(resultId, userId);
-                } catch (Exception ignored) {
-                    result = examService.evaluateSubmission(id, Map.of(), 0);
-                }
+                result = examService.getHistoricalResult(resultId, userId);
             } else {
-                result = examService.evaluateSubmission(id, Map.of(), 0);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Không tìm thấy kết quả bài thi. Vui lòng kiểm tra lịch sử làm bài.");
             }
         }
 

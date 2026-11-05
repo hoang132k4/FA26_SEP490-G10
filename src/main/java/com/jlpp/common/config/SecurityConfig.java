@@ -70,7 +70,6 @@ public class SecurityConfig {
                                 "/courses/**",
                                 "/mock-exam",
                                 "/mock-exam/**",
-                                "/exams/**",
                                 "/auth/login",
                                 "/auth/register",
                                 "/auth/forgot-password",
