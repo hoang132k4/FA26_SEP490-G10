@@ -3,13 +3,13 @@
 <head th:replace="~{layouts/base :: head(${pageTitle})}"></head>
 <body class="d-flex min-vh-100" style="background-color: var(--bg-page);">
     <!-- Kotoba Deep Navy Sidebar for Admin -->
-    <aside style="width: 260px; flex-shrink: 0;">
+    <aside style="position: fixed; top: 0; left: 0; bottom: 0; width: 260px; height: 100vh; z-index: 1030; background-color: var(--navy-dark);">
         <div th:replace="~{fragments/sidebar-admin :: sidebar(${activeMenu})}"></div>
     </aside>
 
-    <div class="d-flex flex-column flex-grow-1" style="min-width: 0; background-color: var(--bg-page);">
+    <div class="d-flex flex-column flex-grow-1" style="min-width: 0; margin-left: 260px; background-color: var(--bg-page);">
         <!-- Top Nav Header for Admin -->
-        <header class="d-flex justify-content-between align-items-center px-4 py-3 bg-white border-bottom" style="border-color: var(--border-subtle) !important;">
+        <header class="d-flex justify-content-between align-items-center px-4 py-3 bg-white border-bottom" style="border-color: var(--border-subtle) !important; position: relative; z-index: 1050;">
             <h5 class="fw-bold mb-0" style="color: var(--navy-dark)">Quản trị hệ thống &bull; Kotoba</h5>
             <div class="d-flex align-items-center gap-3">
                 <span class="badge" style="background-color: var(--steel-blue); color: white;">Admin Portal</span>

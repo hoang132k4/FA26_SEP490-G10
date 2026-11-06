@@ -171,65 +171,123 @@
                 </div>
             </div>
 
-            <!-- Right Column: Course Curriculum & Sibling Lessons Sidebar (4 Columns) -->
+            <!-- Right Column: Course Curriculum & Lessons (4 Columns) -->
             <div class="col-lg-4">
-                <div class="card p-4 kotoba-card bg-white shadow-sm border sticky-top" style="top: 85px;">
-                    <!-- Course Header in Sidebar -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="fw-bold small text-muted text-uppercase">Nội dung khóa học</span>
-                        <span class="badge px-2 py-0.5" style="background-color: var(--navy-dark); color: white;" th:text="${course.level}">N4</span>
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-top" style="top: 85px; z-index: 10;">
+                    
+                    <!-- Top Meta: Level & Label -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge px-2.5 py-1 rounded-pill fw-bold" 
+                                  style="background-color: var(--navy-dark); color: white;" 
+                                  th:text="${course.level}">N2</span>
+                            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Nội dung khóa học</span>
+                        </div>
+                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small" 
+                              th:text="${totalLessonsCount != null ? totalLessonsCount : '12'} + ' bài học'">12 bài</span>
                     </div>
 
-                    <h6 class="fw-bold text-dark mb-2 text-truncate" th:text="${course.title}">Khóa học N4</h6>
+                    <!-- Course Title -->
+                    <h6 class="fw-bold text-dark mb-3" style="line-height: 1.45;" th:text="${course.title}">
+                        Khóa học Đột Phá JLPT N2 Cao Cấp
+                    </h6>
 
-                    <!-- Progress bar -->
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between small text-muted mb-1">
-                            <span>Tiến độ:</span>
-                            <b class="text-primary" th:text="${registration != null ? registration.progressPercent : 0} + '%'">0%</b>
+                    <!-- Progress Bar Section -->
+                    <div class="p-3 rounded-3 mb-3" style="background-color: #F8FAFC; border: 1px solid #EDF2F7;">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5" style="font-size: 0.8rem;">
+                            <span class="text-muted fw-medium">Tiến độ hoàn thành</span>
+                            <span class="fw-bold text-primary fs-6" th:text="${registration != null ? registration.progressPercent : 0} + '%'">0%</span>
                         </div>
-                        <div class="progress progress-kotoba" style="height: 6px;">
+                        <div class="progress" style="height: 6px; border-radius: 4px; background-color: #E2E8F0;">
                             <div class="progress-bar bg-primary" 
-                                 th:style="'width: ' + (${registration != null ? registration.progressPercent : 0}) + '%;'"></div>
+                                 th:style="'width: ' + (${registration != null ? registration.progressPercent : 0}) + '%; border-radius: 4px;'"></div>
                         </div>
                     </div>
 
-                    <hr class="my-3 opacity-25">
-
-                    <!-- Scrollable list of lessons grouped by section -->
-                    <div class="overflow-auto pe-1" style="max-height: 520px;">
-                        <div th:each="entry, sStat : ${groupedLessons}" class="mb-3">
-                            <div class="fw-bold text-muted small mb-2 d-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
-                                <i class="bi bi-folder2 text-primary"></i>
-                                <span class="text-truncate" th:text="${entry.key}">Chương 1</span>
-                            </div>
-
-                            <div class="d-flex flex-column gap-1.5">
-                                <a th:each="sLesson : ${entry.value}" 
-                                   th:href="@{/learning/lessons/{id}(id=${sLesson.id})}" 
-                                   class="p-2.5 rounded-2 d-flex align-items-center justify-content-between text-decoration-none transition"
-                                   th:style="${sLesson.id == lesson.id} ? 'background-color: var(--pastel-blue); border-left: 3px solid var(--steel-blue);' : 'background-color: #F8FAFC; border: 1px solid #F1F5F9;'">
-                                    
-                                    <div class="d-flex align-items-center gap-2 min-w-0">
-                                        <i th:class="${sLesson.id == lesson.id} ? 'bi bi-book-half text-primary' : 'bi bi-circle text-muted small'"></i>
-                                        <span class="small text-truncate" 
-                                              th:classappend="${sLesson.id == lesson.id} ? 'fw-bold text-primary' : 'text-dark'" 
-                                              style="font-size: 0.8rem; max-width: 195px;" 
-                                              th:text="${sLesson.title}">
-                                            Tên bài học
-                                        </span>
+                    <!-- Chapters & Lessons Accordion List -->
+                    <div class="curriculum-scroll-container overflow-auto pe-1" style="max-height: 520px;">
+                        <div class="accordion accordion-flush d-flex flex-column gap-2" id="curriculumAccordion">
+                            
+                            <div th:each="entry, sStat : ${groupedLessons}" 
+                                 class="border rounded-3 overflow-hidden shadow-none" 
+                                 style="border-color: #E2E8F0 !important;">
+                                
+                                <!-- Chapter Header Accordion Button -->
+                                <button class="accordion-button px-3 py-2.5 fw-semibold small bg-white text-dark shadow-none d-flex align-items-center justify-content-between"
+                                        th:classappend="${entry.key == lesson.sectionName or (sStat.first and lesson.sectionName == null)} ? '' : 'collapsed'"
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        th:data-bs-target="'#chapterCollapse-' + ${sStat.index}" 
+                                        aria-expanded="false" 
+                                        style="font-size: 0.82rem;">
+                                    <div class="d-flex align-items-center gap-2 text-truncate me-2" style="max-width: 82%;">
+                                        <i class="bi bi-folder2-open text-primary flex-shrink-0"></i>
+                                        <span class="text-truncate fw-bold" th:text="${entry.key}">Chương 1</span>
                                     </div>
+                                    <span class="badge bg-light text-muted border rounded-pill ms-auto me-1" 
+                                          style="font-size: 0.7rem; font-weight: 500;"
+                                          th:text="${entry.value.size()} + ' bài'">4 bài</span>
+                                </button>
 
-                                    <span class="badge border" 
-                                          th:classappend="${sLesson.id == lesson.id} ? 'bg-primary text-white' : 'bg-light text-muted'" 
-                                          style="font-size: 0.68rem;" 
-                                          th:text="${sLesson.typeDisplayName}">
-                                        Bài học
-                                    </span>
-                                </a>
+                                <!-- Chapter Lessons Body -->
+                                <div th:id="'chapterCollapse-' + ${sStat.index}" 
+                                     class="accordion-collapse collapse"
+                                     th:classappend="${entry.key == lesson.sectionName or (sStat.first and lesson.sectionName == null)} ? 'show' : ''"
+                                     data-bs-parent="#curriculumAccordion">
+                                    <div class="p-2 d-flex flex-column gap-1.5" style="background-color: #F8FAFC; border-top: 1px solid #EDF2F7;">
+                                        
+                                        <a th:each="sLesson : ${entry.value}" 
+                                           th:href="@{/learning/lessons/{id}(id=${sLesson.id})}" 
+                                           class="p-2.5 rounded-3 d-flex align-items-start gap-2.5 text-decoration-none transition-all"
+                                           th:style="${sLesson.id == lesson.id} ? 'background: #EFF6FF; border: 1.5px solid #3B82F6;' : 'background: #FFFFFF; border: 1px solid #E2E8F0;'">
+                                            
+                                            <!-- Status Icon -->
+                                            <div class="mt-0.5 flex-shrink-0">
+                                                <i th:if="${sLesson.id == lesson.id}" class="bi bi-play-circle-fill text-primary fs-5"></i>
+                                                <i th:unless="${sLesson.id == lesson.id}" class="bi bi-circle text-secondary opacity-50" style="font-size: 0.95rem;"></i>
+                                            </div>
+
+                                            <!-- Lesson Info -->
+                                            <div class="flex-grow-1 min-w-0">
+                                                <div class="small fw-semibold mb-1" 
+                                                     th:classappend="${sLesson.id == lesson.id} ? 'text-primary' : 'text-dark'"
+                                                     style="font-size: 0.82rem; line-height: 1.35;" 
+                                                     th:text="${sLesson.title}">
+                                                    Tên bài học
+                                                </div>
+                                                <div class="d-flex align-items-center justify-content-end gap-2 mt-1">
+                                                    <span class="badge rounded-pill" 
+                                                          th:classappend="${sLesson.id == lesson.id} ? 'bg-primary text-white' : 'bg-light text-secondary border'"
+                                                          style="font-size: 0.65rem; font-weight: 500;"
+                                                          th:text="${sLesson.typeDisplayName}">
+                                                        Lý thuyết
+                                                    </span>
+                                                    <span class="text-muted" style="font-size: 0.72rem;">
+                                                        <i class="bi bi-clock me-0.5"></i>
+                                                        <span th:text="${sLesson.durationMinutes != null ? sLesson.durationMinutes : 20}">20</span>p
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                        </a>
+
+                                    </div>
+                                </div>
+
                             </div>
+
                         </div>
                     </div>
+
+                    <!-- Bottom Link to Full Syllabus -->
+                    <div class="mt-3 pt-2 border-top text-center">
+                        <a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}" 
+                           class="text-decoration-none text-muted small fw-medium d-inline-flex align-items-center gap-1 hover-primary">
+                            <i class="bi bi-list-columns-reverse"></i>
+                            <span>Xem toàn bộ giáo trình khóa học</span>
+                        </a>
+                    </div>
+
                 </div>
             </div>
         </div>

@@ -91,15 +91,43 @@ h1, h2, h3, h4, h5, h6 {
 .kotoba-sidebar {
   background-color: var(--navy-dark);
   color: #FFFFFF;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
+  padding: 24px 16px 36px 16px;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+/* Custom sleek minimalist scrollbar for sidebar */
+.kotoba-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.kotoba-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kotoba-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.kotoba-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.kotoba-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .kotoba-brand {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -150,6 +178,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   gap: 6px;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .kotoba-nav .nav-link {
@@ -191,11 +220,13 @@ h1, h2, h3, h4, h5, h6 {
 .sidebar-fuji-art {
   margin-top: auto;
   padding-top: 30px;
+  padding-bottom: 30px;
   opacity: 0.25;
   pointer-events: none;
   text-align: center;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
 }
 
 .sidebar-fuji-quote {
@@ -219,6 +250,12 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   padding: 18px 28px;
   background-color: transparent;
+  position: relative;
+  z-index: 1050;
+}
+
+.kotoba-topbar .dropdown-menu {
+  z-index: 1060 !important;
 }
 
 .kotoba-search-pill {
@@ -2074,3 +2111,45 @@ textarea.lesson-field {
 .manager-skill-extra-actions .dropdown-item { overflow:hidden; text-overflow:ellipsis; }
 @media(max-width:1180px) { .manager-skill-columns { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:640px) { .manager-skill-columns { grid-template-columns:1fr; } .manager-chapter-head { align-items:flex-start; } .manager-add-chapter { width:100%; flex-wrap:wrap; } .manager-add-chapter input { width:auto; flex:1 1 180px; } }
+
+/* --------------------------------------------------------------------------
+   Course Curriculum Accordion (Right Sidebar on Lesson Study)
+   -------------------------------------------------------------------------- */
+.curriculum-accordion .accordion-button {
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+.curriculum-accordion .accordion-button:not(.collapsed) {
+  background-color: #F1F5F9 !important;
+  color: var(--navy-dark) !important;
+}
+
+.curriculum-accordion .accordion-button::after {
+  background-size: 0.8rem;
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.curriculum-scroll-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.curriculum-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.curriculum-scroll-container::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+.curriculum-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.curriculum-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+

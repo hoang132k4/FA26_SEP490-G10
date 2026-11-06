@@ -5,182 +5,154 @@
 )}">
     <div id="mainContent">
 
-        <!-- Flash Alert Messages -->
-        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
-            <i class="bi bi-check-circle-fill fs-5 me-2"></i>
-            <span th:text="${successMessage}">Thao tác thành công!</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
-            <span th:text="${errorMessage}">Đã xảy ra lỗi!</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
-
-        <!-- Page Header (3 buttons removed as requested) -->
-        <div class="mb-4">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-1 small">
-                    <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Học tập</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Gói Flashcard từ vựng</li>
-                </ol>
-            </nav>
-            <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">
-                <i class="bi bi-collection-play-fill text-danger me-2"></i>Danh mục Gói Flashcard Từ Vựng
-            </h3>
-            <p class="text-muted small mb-0">Hệ thống từ vựng phân loại theo gói chuẩn giáo trình JLPT và không gian tự biên soạn dành cho học viên.</p>
+        <!-- Compact Header & Action Row -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 small text-muted">
+                        <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Học tập</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Gói Flashcard từ vựng</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">
+                    <i class="bi bi-collection-play-fill text-danger me-2"></i>Gói Flashcard Từ Vựng
+                </h3>
+                <p class="text-muted small mb-0">Học từ vựng theo giáo trình chuẩn JLPT và tự quản lý sổ tay từ vựng cá nhân.</p>
+            </div>
+            <div>
+                <a th:href="@{/flashcards/create}" class="btn btn-sakura rounded-pill px-4 py-2.5 fw-semibold shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>Tạo gói thẻ mới</span>
+                </a>
+            </div>
         </div>
 
-        <!-- Metric Stat Cards -->
+        <!-- Mini Stats Summary Bar -->
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium">Gói hệ thống</span>
-                            <h4 class="fw-bold mb-0 mt-1" style="color: var(--navy-dark)" th:text="${totalSystemDecks}">0</h4>
-                        </div>
-                        <div class="rounded-circle p-2 bg-primary bg-opacity-10 text-primary">
-                            <i class="bi bi-building fs-4"></i>
-                        </div>
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-medium">Gói hệ thống</span>
+                        <h4 class="fw-bold mb-0 mt-1" style="color: var(--navy-dark)" th:text="${totalSystemDecks}">0</h4>
+                    </div>
+                    <div class="rounded-circle p-2.5 bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-building fs-5"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium">Gói cá nhân</span>
-                            <h4 class="fw-bold mb-0 mt-1 text-danger" th:text="${totalUserDecks}">0</h4>
-                        </div>
-                        <div class="rounded-circle p-2 bg-danger bg-opacity-10 text-danger">
-                            <i class="bi bi-person-badge fs-4"></i>
-                        </div>
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-medium">Gói cá nhân</span>
+                        <h4 class="fw-bold mb-0 mt-1 text-danger" th:text="${totalUserDecks}">0</h4>
+                    </div>
+                    <div class="rounded-circle p-2.5 bg-danger bg-opacity-10 text-danger">
+                        <i class="bi bi-person-badge fs-5"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium">Tổng từ vựng</span>
-                            <h4 class="fw-bold mb-0 mt-1 text-dark" th:text="${stats.total}">0</h4>
-                        </div>
-                        <div class="rounded-circle p-2 bg-light text-secondary">
-                            <i class="bi bi-card-text fs-4"></i>
-                        </div>
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-medium">Tổng từ vựng</span>
+                        <h4 class="fw-bold mb-0 mt-1 text-dark" th:text="${stats.total}">0</h4>
+                    </div>
+                    <div class="rounded-circle p-2.5 bg-light text-secondary">
+                        <i class="bi bi-card-text fs-5"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium">Đã thành thạo</span>
-                            <h4 class="fw-bold mb-0 mt-1 text-success" th:text="${stats.mastered}">0</h4>
-                        </div>
-                        <div class="rounded-circle p-2 bg-success bg-opacity-10 text-success">
-                            <i class="bi bi-check-all fs-4"></i>
-                        </div>
+            <div class="col-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 d-flex flex-row align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-medium">Đã thuộc lòng</span>
+                        <h4 class="fw-bold mb-0 mt-1 text-success" th:text="${stats.mastered}">0</h4>
+                    </div>
+                    <div class="rounded-circle p-2.5 bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-check2-circle fs-5"></i>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 2-Tier Segmented Tab Switcher: Gói Hệ Thống vs Không Gian Học Viên -->
-        <div class="card border-0 shadow-sm rounded-4 p-2 bg-white mb-4">
-            <div class="nav nav-pills nav-fill gap-2" role="tablist">
-                <a th:href="@{/flashcards(tab='system', level=${selectedLevel != 'ALL' ? selectedLevel : null}, keyword=${keyword})}" 
-                   class="nav-link py-2.5 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2"
-                   th:classappend="${activeTab == 'system' ? 'active' : ''}">
-                    <i class="bi bi-collection-fill fs-5"></i>
-                    <span>Gói Flashcard Hệ thống (Có sẵn)</span>
-                </a>
-                <a th:href="@{/flashcards(tab='user', level=${selectedLevel != 'ALL' ? selectedLevel : null}, keyword=${keyword})}" 
-                   class="nav-link py-2.5 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2"
-                   th:classappend="${activeTab == 'user' ? 'active' : ''}">
-                    <i class="bi bi-person-workspace fs-5"></i>
-                    <span>Không gian của tôi (Gói học viên)</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- Filter & Search Controls (Applies to current Tab) -->
+        <!-- Toolbar: Tabs + Search & Filter in One Cohesive Card -->
         <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-            <form th:action="@{/flashcards}" method="get" class="row g-2 align-items-center">
-                <input type="hidden" name="tab" th:value="${activeTab}" />
-
-                <!-- Search keyword -->
-                <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="bi bi-search text-muted"></i>
-                        </span>
-                        <input type="text" name="keyword" th:value="${keyword}"
-                               class="form-control bg-light border-start-0"
-                               placeholder="Tìm theo tên gói, từ vựng, Hán tự, hoặc nghĩa tiếng Việt...">
-                    </div>
-                </div>
-
-                <!-- Level filter -->
-                <div class="col-md-4">
-                    <select name="level" class="form-select bg-light">
-                        <option value="ALL" th:selected="${selectedLevel == 'ALL'}">Tất cả cấp độ JLPT</option>
-                        <option value="N5" th:selected="${selectedLevel == 'N5'}">Cấp độ N5 (Căn bản)</option>
-                        <option value="N4" th:selected="${selectedLevel == 'N4'}">Cấp độ N4 (Sơ cấp)</option>
-                        <option value="N3" th:selected="${selectedLevel == 'N3'}">Cấp độ N3 (Trung cấp)</option>
-                        <option value="N2" th:selected="${selectedLevel == 'N2'}">Cấp độ N2 (Trung - Cao cấp)</option>
-                        <option value="N1" th:selected="${selectedLevel == 'N1'}">Cấp độ N1 (Thành thạo)</option>
-                    </select>
-                </div>
-
-                <!-- Submit / Reset buttons -->
-                <div class="col-md-2 d-flex gap-1">
-                    <button type="submit" class="btn btn-primary w-100 rounded-pill" title="Lọc gói thẻ">
-                        <i class="bi bi-funnel me-1"></i> Lọc gói
-                    </button>
-                    <a th:href="@{/flashcards(tab=${activeTab})}" class="btn btn-outline-secondary rounded-pill px-3" title="Đặt lại bộ lọc">
-                        <i class="bi bi-arrow-counterclockwise"></i>
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <!-- Segmented Tabs -->
+                <div class="nav nav-pills gap-2 flex-shrink-0" role="tablist">
+                    <a th:href="@{/flashcards(tab='system', level=${selectedLevel != 'ALL' ? selectedLevel : null}, keyword=${keyword})}" 
+                       class="nav-link py-2 px-3.5 rounded-pill fw-semibold d-inline-flex align-items-center gap-2"
+                       th:classappend="${activeTab == 'system' ? 'active shadow-sm' : 'bg-light text-secondary'}">
+                        <i class="bi bi-collection-fill"></i>
+                        <span>Gói hệ thống</span>
+                        <span class="badge rounded-pill" 
+                              th:classappend="${activeTab == 'system' ? 'bg-white text-primary' : 'bg-secondary bg-opacity-25 text-dark'}"
+                              th:text="${totalSystemDecks}">0</span>
+                    </a>
+                    <a th:href="@{/flashcards(tab='user', level=${selectedLevel != 'ALL' ? selectedLevel : null}, keyword=${keyword})}" 
+                       class="nav-link py-2 px-3.5 rounded-pill fw-semibold d-inline-flex align-items-center gap-2"
+                       th:classappend="${activeTab == 'user' ? 'active shadow-sm' : 'bg-light text-secondary'}">
+                        <i class="bi bi-person-fill"></i>
+                        <span>Gói của tôi</span>
+                        <span class="badge rounded-pill" 
+                              th:classappend="${activeTab == 'user' ? 'bg-white text-danger' : 'bg-secondary bg-opacity-25 text-dark'}"
+                              th:text="${totalUserDecks}">0</span>
                     </a>
                 </div>
-            </form>
+
+                <!-- Search & Level Filter Form -->
+                <form th:action="@{/flashcards}" method="get" class="d-flex flex-wrap align-items-center gap-2 flex-grow-1 justify-content-md-end">
+                    <input type="hidden" name="tab" th:value="${activeTab}" />
+
+                    <!-- Search Input -->
+                    <div class="input-group" style="max-width: 320px; min-width: 200px;">
+                        <span class="input-group-text bg-light border-end-0 py-2">
+                            <i class="bi bi-search text-muted small"></i>
+                        </span>
+                        <input type="text" name="keyword" th:value="${keyword}"
+                               class="form-control form-control-sm bg-light border-start-0 py-2"
+                               placeholder="Tìm gói, từ vựng, nghĩa...">
+                    </div>
+
+                    <!-- Level Select -->
+                    <select name="level" class="form-select form-select-sm bg-light py-2" style="width: auto; min-width: 140px;">
+                        <option value="ALL" th:selected="${selectedLevel == 'ALL'}">Tất cả cấp độ</option>
+                        <option value="N5" th:selected="${selectedLevel == 'N5'}">Cấp độ N5</option>
+                        <option value="N4" th:selected="${selectedLevel == 'N4'}">Cấp độ N4</option>
+                        <option value="N3" th:selected="${selectedLevel == 'N3'}">Cấp độ N3</option>
+                        <option value="N2" th:selected="${selectedLevel == 'N2'}">Cấp độ N2</option>
+                        <option value="N1" th:selected="${selectedLevel == 'N1'}">Cấp độ N1</option>
+                    </select>
+
+                    <!-- Filter & Reset Buttons -->
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 py-2 fw-medium" title="Lọc">
+                        <i class="bi bi-funnel"></i> Lọc
+                    </button>
+                    <a th:href="@{/flashcards(tab=${activeTab})}" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-2" title="Đặt lại bộ lọc"
+                       th:if="${(keyword != null and !keyword.isBlank()) or (selectedLevel != null and selectedLevel != 'ALL')}">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </form>
+            </div>
         </div>
 
         <!-- ========================================================================= -->
-        <!-- TAB 1: GÓI FLASHCARD HỆ THỐNG (CHUẨN GIÁO TRÌNH, KHÔNG CÓ NÚT TẠO) -->
+        <!-- TAB 1: GÓI FLASHCARD HỆ THỐNG -->
         <!-- ========================================================================= -->
         <div th:if="${activeTab == 'system'}">
-            <!-- Manager Banner Note -->
-            <div class="alert alert-light border border-primary-subtle rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-sm bg-white">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle p-2 bg-info bg-opacity-10 text-primary">
-                        <i class="bi bi-cloud-arrow-down-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="fw-bold mb-0 text-dark">Hệ thống phân phối gói Flashcard chuẩn</h6>
-                        <p class="text-muted small mb-0">Các gói từ vựng được biên soạn theo từng bài học và khóa học JLPT chuẩn. Khi có gói mới được phát hành, hệ thống sẽ tự động cập nhật.</p>
-                    </div>
-                </div>
-                <span class="badge bg-light text-primary border border-primary px-3 py-2 rounded-pill small">
-                    <i class="bi bi-shield-check me-1"></i>Gói chuẩn hệ thống
-                </span>
-            </div>
-
             <!-- System Decks Grid -->
             <div th:if="${systemDecks != null and !systemDecks.isEmpty()}" class="row g-4 mb-4">
                 <div th:each="deck, dStat : ${systemDecks}" class="col-lg-6 col-md-12">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 hover-shadow transition-all d-flex flex-column border-top border-4"
-                         th:style="'border-top-color: ' + (${deck.jlptLevel == 'N2' ? '#F59E0B' : (deck.jlptLevel == 'N3' ? '#0EA5E9' : (deck.jlptLevel == 'N4' ? '#3B82F6' : '#10B981'))}) + ' !important;'">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column hover-lift transition-all">
                         
-                        <!-- Header Row: Badges & Stats -->
+                        <!-- Top Meta Row -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge rounded-pill px-3 py-1.5 fw-bold"
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold"
                                       th:classappend="${deck.levelBadgeClass}"
                                       th:text="${deck.jlptLevel}">N4</span>
-                                <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1 small">
-                                    <i class="bi bi-layers-fill me-1 text-primary"></i>
+                                <span class="text-muted small fw-medium">
+                                    <i class="bi bi-layers text-secondary me-1"></i>
                                     <span th:text="${deck.totalCards} + ' từ vựng'">10 từ</span>
                                 </span>
                             </div>
@@ -189,7 +161,7 @@
                             </span>
                         </div>
 
-                        <!-- Deck Title & Topic -->
+                        <!-- Title & Subtitle -->
                         <div class="mb-3">
                             <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
                                 <i th:class="'bi ' + ${deck.iconClass} + ' text-primary'"></i>
@@ -198,12 +170,7 @@
                             <p class="text-muted small mb-0" th:text="${deck.topicName}">Chủ đề bài học</p>
                         </div>
 
-                        <!-- Description -->
-                        <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;" th:text="${deck.description}">
-                            Mô tả chi tiết của gói flashcard.
-                        </p>
-
-                        <!-- Mastery Progress Bar -->
+                        <!-- Progress Bar -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.76rem;">
                                 <span>Tiến độ ghi nhớ</span>
@@ -213,7 +180,7 @@
                                     <span class="text-info fw-bold" th:text="${deck.newCount} + ' mới'">0</span>
                                 </span>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 4px;">
+                            <div class="progress" style="height: 5px; border-radius: 4px; background-color: #f1f5f9;">
                                 <div class="progress-bar bg-success" 
                                      th:style="'width: ' + (${deck.totalCards > 0 ? (deck.masteredCount * 100.0 / deck.totalCards) : 0}) + '%;'"></div>
                                 <div class="progress-bar bg-warning" 
@@ -223,39 +190,35 @@
                             </div>
                         </div>
 
-                        <!-- Vocabulary Preview Pills (Sample 5 words) -->
+                        <!-- Vocabulary Preview Pills (Sample 4 words) -->
                         <div class="d-flex flex-wrap gap-1.5 mb-4">
-                            <span th:each="c, cStat : ${deck.cards}" th:if="${cStat.index < 5}" 
+                            <span th:each="c, cStat : ${deck.cards}" th:if="${cStat.index < 4}" 
                                   class="badge bg-light text-dark border px-2.5 py-1 rounded-pill small fw-normal"
+                                  style="font-family: 'Noto Sans JP', sans-serif;"
                                   th:title="${c.reading + ': ' + c.meaning}">
                                 <b th:text="${c.vocabulary}">Từ</b>
                             </span>
-                            <span th:if="${deck.cards.size() > 5}" class="badge bg-white text-muted border px-2 py-1 rounded-pill small">
-                                +<span th:text="${deck.cards.size() - 5}">2</span> từ khác...
+                            <span th:if="${deck.cards.size() > 4}" class="badge bg-white text-muted border px-2 py-1 rounded-pill small">
+                                +<span th:text="${deck.cards.size() - 4}">2</span> từ khác...
                             </span>
                         </div>
 
                         <!-- Deck Action Buttons -->
-                        <div class="d-flex gap-2 pt-3 border-top mt-auto">
+                        <div class="d-flex gap-2 pt-3 border-top mt-auto align-items-center">
                             <!-- View Words Modal Trigger -->
                             <button type="button" 
-                                    class="btn btn-outline-primary rounded-pill px-3 py-2 flex-grow-1 small d-flex align-items-center justify-content-center gap-1.5"
+                                    class="btn btn-outline-primary rounded-pill px-3 flex-grow-1 small d-inline-flex align-items-center justify-content-center gap-2"
+                                    style="height: 38px;"
                                     data-bs-toggle="modal" 
                                     th:data-bs-target="'#sysDeckModal-' + ${dStat.index}">
                                 <i class="bi bi-eye"></i>
                                 <span>Xem từ trong gói</span>
                             </button>
 
-                            <!-- Match Game for this Deck -->
-                            <a th:href="@{/flashcards/practice(mode='match', lessonId=${deck.lessonId}, level=${deck.jlptLevel})}" 
-                               class="btn btn-outline-warning text-dark rounded-pill px-2.5 py-2 small d-flex align-items-center justify-content-center"
-                               title="Chơi trò chơi Ghép thẻ gói này">
-                                <i class="bi bi-puzzle-fill text-warning"></i>
-                            </a>
-
                             <!-- Practice Deck Button -->
                             <a th:href="@{/flashcards/practice(lessonId=${deck.lessonId}, level=${deck.jlptLevel})}" 
-                               class="btn btn-primary rounded-pill px-3 py-2 flex-grow-1 small d-flex align-items-center justify-content-center gap-1.5 shadow-sm">
+                               class="btn btn-primary rounded-pill px-3 flex-grow-1 small d-inline-flex align-items-center justify-content-center gap-2 shadow-sm"
+                               style="height: 38px;">
                                 <i class="bi bi-play-circle-fill"></i>
                                 <span>Học thẻ gói này</span>
                             </a>
@@ -272,14 +235,12 @@
                                             <span class="badge rounded-pill" th:classappend="${deck.levelBadgeClass}" th:text="${deck.jlptLevel}">N4</span>
                                             <span class="text-muted small" th:text="${deck.totalCards} + ' từ vựng trong gói'">10 từ</span>
                                         </div>
-                                        <h5 class="modal-title fw-bold text-dark" th:text="${deck.title}">Chi tiết từ vựng trong gói</h5>
+                                        <h5 class="modal-title fw-bold text-dark" th:text="${deck.title}">Danh mục từ vựng trong gói</h5>
                                     </div>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
 
                                 <div class="modal-body p-4">
-                                    <p class="text-muted small mb-3" th:text="${deck.description}">Mô tả</p>
-
                                     <div class="table-responsive">
                                         <table class="table table-hover align-middle mb-0">
                                             <thead class="table-light">
@@ -289,7 +250,7 @@
                                                     <th>Ý nghĩa tiếng Việt</th>
                                                     <th>Ví dụ minh họa</th>
                                                     <th style="width: 100px;">Trạng thái</th>
-                                                    <th style="width: 60px;">Phát âm</th>
+                                                    <th style="width: 50px;">Phát âm</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -326,7 +287,7 @@
 
                                 <div class="modal-footer border-top px-4 py-3 d-flex justify-content-between align-items-center">
                                     <span class="text-muted small">
-                                        <i class="bi bi-info-circle me-1"></i>Học viên có thể bấm nút loa để nghe giọng đọc bản ngữ.
+                                        <i class="bi bi-info-circle me-1"></i>Bấm nút loa để nghe phát âm tiếng Nhật bản ngữ.
                                     </span>
                                     <div class="d-flex gap-2">
                                         <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
@@ -346,66 +307,40 @@
             <!-- Empty State for System Decks -->
             <div th:if="${systemDecks == null or systemDecks.isEmpty()}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
                 <div class="mb-3">
-                    <i class="bi bi-folder-x display-1 text-muted opacity-50"></i>
+                    <i class="bi bi-search display-3 text-muted opacity-50"></i>
                 </div>
-                <h5 class="fw-bold text-dark">Chưa có Gói Flashcard hệ thống nào phù hợp</h5>
-                <p class="text-muted small mx-auto" style="max-width: 440px;">
-                    Không tìm thấy gói flashcard nào với từ khóa hoặc cấp độ đã chọn. Vui lòng thử lại với bộ lọc khác.
+                <h5 class="fw-bold text-dark">Không tìm thấy gói flashcard hệ thống nào</h5>
+                <p class="text-muted small mx-auto mb-3" style="max-width: 420px;">
+                    Không có gói flashcard nào phù hợp với bộ lọc tìm kiếm của bạn. Hãy thử thay đổi từ khóa hoặc cấp độ.
                 </p>
-                <div class="mt-2">
-                    <a th:href="@{/flashcards(tab='system')}" class="btn btn-outline-primary rounded-pill px-4">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> Xem tất cả các gói hệ thống
+                <div>
+                    <a th:href="@{/flashcards(tab='system')}" class="btn btn-outline-primary rounded-pill px-4 small">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại bộ lọc
                     </a>
                 </div>
             </div>
         </div>
 
         <!-- ========================================================================= -->
-        <!-- TAB 2: KHÔNG GIAN CỦA HỌC VIÊN (CÓ NÚT TẠO GÓI/THẺ RIÊNG CỦA HỌC VIÊN) -->
+        <!-- TAB 2: KHÔNG GIAN CỦA HỌC VIÊN -->
         <!-- ========================================================================= -->
         <div th:if="${activeTab == 'user'}">
-            <!-- Learner Workspace Header with Prominent CREATE Button -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white border-start border-danger border-4">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle p-3 bg-danger bg-opacity-10 text-danger">
-                            <i class="bi bi-person-workspace fs-2"></i>
-                        </div>
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <h4 class="fw-bold mb-0 text-dark">Không gian Flashcard cá nhân của bạn</h4>
-                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1 small fw-semibold">Dành riêng cho bạn</span>
-                            </div>
-                            <p class="text-muted small mb-0">Nơi bạn tự biên soạn các bộ từ vựng khó nhớ, thuật ngữ riêng hoặc ghi chú từ vựng theo nhu cầu học tập.</p>
-                        </div>
-                    </div>
-
-                    <!-- HERE IS THE CREATE BUTTON (Exclusive to Learner Workspace) -->
-                    <div class="d-flex gap-2">
-                        <a th:href="@{/flashcards/create}" class="btn btn-sakura rounded-pill px-4 py-2.5 fw-bold shadow-sm d-flex align-items-center gap-2">
-                            <i class="bi bi-plus-circle-fill fs-5"></i>
-                            <span>Tạo thẻ Flashcard mới</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
             <!-- Learner Decks Grid -->
             <div th:if="${userDecks != null and !userDecks.isEmpty()}" class="row g-4 mb-4">
                 <div th:each="deck, dStat : ${userDecks}" class="col-lg-6 col-md-12">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 hover-shadow transition-all d-flex flex-column border-top border-4 border-danger">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column hover-lift transition-all">
                         
-                        <!-- Header Row: Badges & Stats -->
+                        <!-- Top Meta Row -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-bold">
+                                <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 fw-bold">
                                     <i class="bi bi-person-fill me-1"></i>Cá nhân
                                 </span>
                                 <span class="badge rounded-pill px-2.5 py-1 fw-bold"
                                       th:classappend="${deck.levelBadgeClass}"
                                       th:text="${deck.jlptLevel}">N4</span>
-                                <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1 small">
-                                    <i class="bi bi-layers-fill me-1 text-danger"></i>
+                                <span class="text-muted small fw-medium">
+                                    <i class="bi bi-layers text-secondary me-1"></i>
                                     <span th:text="${deck.totalCards} + ' từ vựng'">10 từ</span>
                                 </span>
                             </div>
@@ -423,12 +358,7 @@
                             <p class="text-muted small mb-0" th:text="${deck.topicName}">Không gian học viên</p>
                         </div>
 
-                        <!-- Description -->
-                        <p class="text-muted small flex-grow-1 mb-3" style="line-height: 1.6;" th:text="${deck.description}">
-                            Bộ từ vựng cá nhân do bạn tự biên tập.
-                        </p>
-
-                        <!-- Mastery Progress Bar -->
+                        <!-- Progress Bar -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.76rem;">
                                 <span>Tiến độ ghi nhớ</span>
@@ -438,7 +368,7 @@
                                     <span class="text-info fw-bold" th:text="${deck.newCount} + ' mới'">0</span>
                                 </span>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 4px;">
+                            <div class="progress" style="height: 5px; border-radius: 4px; background-color: #f1f5f9;">
                                 <div class="progress-bar bg-success" 
                                      th:style="'width: ' + (${deck.totalCards > 0 ? (deck.masteredCount * 100.0 / deck.totalCards) : 0}) + '%;'"></div>
                                 <div class="progress-bar bg-warning" 
@@ -448,46 +378,55 @@
                             </div>
                         </div>
 
-                        <!-- Vocabulary Preview Pills (Sample 5 words) -->
+                        <!-- Vocabulary Preview Pills (Sample 4 words) -->
                         <div class="d-flex flex-wrap gap-1.5 mb-4">
-                            <span th:each="c, cStat : ${deck.cards}" th:if="${cStat.index < 5}" 
+                            <span th:each="c, cStat : ${deck.cards}" th:if="${cStat.index < 4}" 
                                   class="badge bg-light text-dark border px-2.5 py-1 rounded-pill small fw-normal"
+                                  style="font-family: 'Noto Sans JP', sans-serif;"
                                   th:title="${c.reading + ': ' + c.meaning}">
                                 <b th:text="${c.vocabulary}">Từ</b>
                             </span>
-                            <span th:if="${deck.cards.size() > 5}" class="badge bg-white text-muted border px-2 py-1 rounded-pill small">
-                                +<span th:text="${deck.cards.size() - 5}">2</span> từ khác...
+                            <span th:if="${deck.cards.size() > 4}" class="badge bg-white text-muted border px-2 py-1 rounded-pill small">
+                                +<span th:text="${deck.cards.size() - 4}">2</span> từ khác...
                             </span>
                         </div>
 
                         <!-- Deck Action Buttons -->
-                        <div class="d-flex gap-2 pt-3 border-top mt-auto flex-wrap">
-                            <!-- Edit Deck Info -->
+                        <div class="d-flex gap-2 pt-3 border-top mt-auto align-items-center">
+                            <!-- Edit Deck Info & Cards -->
                             <a th:href="@{/flashcards/deck-edit(deckName=${deck.title}, jlptLevel=${deck.jlptLevel})}"
-                               class="btn btn-outline-secondary rounded-pill px-2.5 py-2 small d-flex align-items-center justify-content-center gap-1"
-                               title="Sửa thông tin gói">
-                                <i class="bi bi-pencil-square"></i>
+                               class="btn btn-light border rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                               style="width: 38px; height: 38px;"
+                               title="Chỉnh sửa gói thẻ và từ vựng">
+                                <i class="bi bi-pencil"></i>
                             </a>
+
+                            <!-- Delete Deck -->
+                            <form th:action="@{/flashcards/deck-delete}" method="post" class="m-0 p-0 d-inline-flex flex-shrink-0"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa toàn bộ gói flashcard này?');">
+                                <input type="hidden" name="deckName" th:value="${deck.title}"/>
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" class="btn btn-light border text-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                                        style="width: 38px; height: 38px;"
+                                        title="Xóa gói thẻ này">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
 
                             <!-- View Words Modal Trigger -->
                             <button type="button" 
-                                    class="btn btn-outline-secondary rounded-pill px-3 py-2 flex-grow-1 small d-flex align-items-center justify-content-center gap-1.5"
+                                    class="btn btn-outline-secondary rounded-pill px-3 small d-inline-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap"
+                                    style="height: 38px;"
                                     data-bs-toggle="modal" 
                                     th:data-bs-target="'#userDeckModal-' + ${dStat.index}">
                                 <i class="bi bi-eye"></i>
                                 <span>Xem từ</span>
                             </button>
 
-                            <!-- Match Game for this Deck -->
-                            <a th:href="@{/flashcards/practice(mode='match', deckName=${deck.title}, level=${deck.jlptLevel})}" 
-                               class="btn btn-outline-warning text-dark rounded-pill px-2.5 py-2 small d-flex align-items-center justify-content-center"
-                               title="Chơi trò chơi Ghép thẻ gói này">
-                                <i class="bi bi-puzzle-fill text-warning"></i>
-                            </a>
-
                             <!-- Practice Deck Button -->
                             <a th:href="@{/flashcards/practice(deckName=${deck.title}, level=${deck.jlptLevel})}" 
-                               class="btn btn-sakura rounded-pill px-3 py-2 flex-grow-1 small d-flex align-items-center justify-content-center gap-1.5 shadow-sm">
+                               class="btn btn-sakura rounded-pill px-3 small d-inline-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap shadow-sm"
+                               style="height: 38px;">
                                 <i class="bi bi-play-circle-fill"></i>
                                 <span>Ôn tập gói này</span>
                             </a>
@@ -520,7 +459,8 @@
                                                     <th>Ý nghĩa tiếng Việt</th>
                                                     <th>Ví dụ minh họa</th>
                                                     <th style="width: 100px;">Trạng thái</th>
-                                                    <th style="width: 60px;">Phát âm</th>
+                                                    <th style="width: 50px;">Phát âm</th>
+                                                    <th style="width: 80px;" class="text-end">Hành động</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -549,6 +489,21 @@
                                                             <i class="bi bi-volume-up-fill"></i>
                                                         </button>
                                                     </td>
+                                                    <td class="text-end">
+                                                        <div class="d-flex justify-content-end gap-1">
+                                                            <a th:href="@{/flashcards/{id}/edit(id=${card.flashcardId})}" 
+                                                               class="btn btn-sm btn-outline-primary rounded-circle p-1.5" title="Sửa thẻ">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                            <form th:action="@{/flashcards/{id}/delete(id=${card.flashcardId})}" method="post" class="d-inline"
+                                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa thẻ từ vựng này không?');">
+                                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-1.5" title="Xóa thẻ">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -556,8 +511,8 @@
                                 </div>
 
                                 <div class="modal-footer border-top px-4 py-3 d-flex justify-content-between align-items-center">
-                                    <a th:href="@{/flashcards/create(deckName=${deck.title}, level=${deck.jlptLevel})}" class="btn btn-outline-primary rounded-pill px-3 small">
-                                        <i class="bi bi-plus-circle me-1"></i> Thêm từ mới vào gói
+                                    <a th:href="@{/flashcards/deck-edit(deckName=${deck.title}, jlptLevel=${deck.jlptLevel})}" class="btn btn-outline-primary rounded-pill px-3 small">
+                                        <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa toàn bộ gói
                                     </a>
                                     <div class="d-flex gap-2">
                                         <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
@@ -575,20 +530,20 @@
             </div>
 
             <!-- Empty State for User Decks (When learner has not created any deck yet) -->
-            <div th:if="${userDecks == null or userDecks.isEmpty()}" class="card border-0 shadow-sm rounded-5 p-5 text-center bg-white my-4">
+            <div th:if="${userDecks == null or userDecks.isEmpty()}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
                 <div class="mb-3">
-                    <div class="d-inline-flex p-4 rounded-circle bg-danger bg-opacity-10 text-danger mb-2">
-                        <i class="bi bi-journal-plus display-2"></i>
+                    <div class="d-inline-flex p-3 rounded-circle bg-danger bg-opacity-10 text-danger mb-2">
+                        <i class="bi bi-journal-plus fs-1"></i>
                     </div>
                 </div>
-                <h4 class="fw-bold mb-2" style="color: var(--navy-dark)">Bạn chưa có gói Flashcard cá nhân nào</h4>
-                <p class="text-muted small mx-auto mb-4" style="max-width: 480px; line-height: 1.6;">
-                    Đây là không gian dành riêng cho bạn! Hãy tạo các thẻ từ vựng bạn cảm thấy khó nhớ khi đọc sách, xem phim, hoặc ghi lại các thuật ngữ tiếng Nhật chuyên ngành để rèn luyện mỗi ngày.
+                <h5 class="fw-bold mb-2" style="color: var(--navy-dark)">Bạn chưa có gói Flashcard cá nhân nào</h5>
+                <p class="text-muted small mx-auto mb-4" style="max-width: 440px; line-height: 1.6;">
+                    Hãy bắt đầu biên soạn những bộ từ vựng yêu thích, từ khó nhớ khi xem phim, đọc sách hoặc thuật ngữ chuyên ngành để rèn luyện mỗi ngày.
                 </p>
                 <div>
-                    <a th:href="@{/flashcards/create}" class="btn btn-sakura rounded-pill px-5 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-plus-circle-fill fs-5"></i>
-                        <span>Bắt đầu tạo thẻ từ vựng đầu tiên</span>
+                    <a th:href="@{/flashcards/create}" class="btn btn-sakura rounded-pill px-4 py-2.5 fw-semibold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span>Tạo gói Flashcard đầu tiên</span>
                     </a>
                 </div>
             </div>

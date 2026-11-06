@@ -39,4 +39,19 @@ public interface FlashcardService {
      * Rename or re-level all flashcards that belong to a user deck (identified by deckName + creatorId).
      */
     int updateDeckInfo(String oldDeckName, String newDeckName, String newJlptLevel, Long creatorId);
+
+    /**
+     * Get all flashcards belonging to a user deck.
+     */
+    List<Flashcard> getDeckCards(String deckName, Long creatorId);
+
+    /**
+     * Save/update an entire deck: updates metadata, adds/updates words, and deletes removed words.
+     */
+    int saveFullDeck(String oldDeckName, String newDeckName, String newJlptLevel, Long lessonId, Long creatorId, List<FlashcardRequest> cards, List<Long> deletedCardIds);
+
+    /**
+     * Delete all flashcards belonging to a user deck.
+     */
+    int deleteDeck(String deckName, Long creatorId);
 }

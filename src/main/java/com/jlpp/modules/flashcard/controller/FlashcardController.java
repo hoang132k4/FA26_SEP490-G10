@@ -2,6 +2,7 @@ package com.jlpp.modules.flashcard.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jlpp.modules.auth.model.CustomOAuth2User;
 import com.jlpp.modules.auth.model.CustomUserDetails;
 import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.LessonRepository;
@@ -43,10 +44,10 @@ public class FlashcardController {
             @RequestParam(required = false) Long lessonId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "system") String tab,
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            org.springframework.security.core.Authentication authentication,
             Model model
     ) {
-        Long currentUserId = userDetails != null ? userDetails.getId() : null;
+        Long currentUserId = getCurrentUserId(authentication);
         List<FlashcardDeckDto> systemDecks = flashcardService.getSystemFlashcardDecks(keyword, level);
         List<FlashcardDeckDto> userDecks = flashcardService.getUserFlashcardDecks(keyword, level, currentUserId);
         List<Flashcard> flashcards = flashcardService.getFlashcards(keyword, level, lessonId, status);
@@ -117,7 +118,7 @@ public class FlashcardController {
     public String createSubmit(
             @Valid @ModelAttribute("flashcardRequest") FlashcardRequest request,
             BindingResult bindingResult,
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            org.springframework.security.core.Authentication authentication,
             Model model,
             RedirectAttributes redirectAttributes
     ) {
@@ -127,7 +128,7 @@ public class FlashcardController {
             return "pages/flashcard/form";
         }
 
-        Long creatorId = userDetails != null ? userDetails.getId() : null;
+        Long creatorId = getCurrentUserId(authentication);
         Flashcard created = flashcardService.createFlashcard(request, creatorId);
         redirectAttributes.addFlashAttribute("successMessage",
                 "Tạo thẻ Flashcard mới '" + created.getVocabulary() + "' thành công!");
@@ -275,7 +276,7 @@ public class FlashcardController {
             @RequestParam(name = "customDeckName", required = false) String customDeckName,
             @RequestParam(name = "jlptLevel", defaultValue = "N4") String jlptLevel,
             @RequestParam(name = "lessonId", required = false) Long lessonId,
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            org.springframework.security.core.Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
         if (payload == null || payload.isBlank()) {
@@ -283,7 +284,7 @@ public class FlashcardController {
             return "redirect:/flashcards/create";
         }
 
-        Long creatorId = userDetails != null ? userDetails.getId() : null;
+        Long creatorId = getCurrentUserId(authentication);
         int successCount = 0;
         int failCount = 0;
 
@@ -333,35 +334,127 @@ public class FlashcardController {
     }
 
     /**
-     * 8. Edit Deck Info - Show Form
+     * 8. Edit Deck Info & Cards - Show Full Deck Editor
      */
     @GetMapping("/deck-edit")
     public String deckEditForm(
             @RequestParam(name = "deckName") String deckName,
             @RequestParam(name = "jlptLevel", required = false) String jlptLevel,
+            org.springframework.security.core.Authentication authentication,
             Model model
     ) {
+        Long creatorId = getCurrentUserId(authentication);
+        List<Flashcard> cards = flashcardService.getDeckCards(deckName, creatorId);
+        List<Lesson> lessons = lessonRepository.findAll();
+
+        String determinedLevel = (jlptLevel != null && !jlptLevel.isBlank()) ? jlptLevel : "N4";
+        Long selectedLessonId = null;
+        if (!cards.isEmpty()) {
+            if (cards.get(0).getJlptLevel() != null && !cards.get(0).getJlptLevel().isBlank()) {
+                determinedLevel = cards.get(0).getJlptLevel();
+            }
+            selectedLessonId = cards.get(0).getLessonId();
+        }
+
+        String cardsJson = "[]";
+        try {
+            cardsJson = objectMapper.writeValueAsString(cards);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize deck cards: {}", e.getMessage());
+        }
+
         model.addAttribute("deckName", deckName);
-        model.addAttribute("jlptLevel", jlptLevel != null ? jlptLevel : "N4");
+        model.addAttribute("jlptLevel", determinedLevel);
+        model.addAttribute("selectedLessonId", selectedLessonId);
+        model.addAttribute("cards", cards);
+        model.addAttribute("cardsJson", cardsJson);
+        model.addAttribute("lessons", lessons);
+        model.addAttribute("totalCards", cards.size());
+
         return "pages/flashcard/deck-edit";
     }
 
     /**
-     * 8. Edit Deck Info - Handle Submit
+     * 8. Edit Deck Info & Cards - Save All Changes
      */
     @PostMapping("/deck-edit")
     public String deckEditSubmit(
             @RequestParam(name = "oldDeckName") String oldDeckName,
             @RequestParam(name = "newDeckName") String newDeckName,
-            @RequestParam(name = "jlptLevel") String jlptLevel,
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(name = "jlptLevel", defaultValue = "N4") String jlptLevel,
+            @RequestParam(name = "lessonId", required = false) Long lessonId,
+            @RequestParam(name = "cardsPayload", required = false) String cardsPayload,
+            @RequestParam(name = "deletedCardIds", required = false) String deletedCardIdsStr,
+            org.springframework.security.core.Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
-        Long creatorId = userDetails != null ? userDetails.getId() : null;
-        int updated = flashcardService.updateDeckInfo(oldDeckName, newDeckName, jlptLevel, creatorId);
+        Long creatorId = getCurrentUserId(authentication);
+
+        List<FlashcardRequest> cardsList = new ArrayList<>();
+        if (cardsPayload != null && !cardsPayload.isBlank()) {
+            try {
+                cardsList = objectMapper.readValue(cardsPayload,
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, FlashcardRequest.class));
+            } catch (Exception e) {
+                log.error("Failed to parse cardsPayload: {}", e.getMessage());
+            }
+        }
+
+        List<Long> deletedIds = new ArrayList<>();
+        if (deletedCardIdsStr != null && !deletedCardIdsStr.isBlank()) {
+            try {
+                deletedIds = objectMapper.readValue(deletedCardIdsStr,
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, Long.class));
+            } catch (Exception e) {
+                for (String part : deletedCardIdsStr.split(",")) {
+                    try {
+                        if (!part.trim().isEmpty()) deletedIds.add(Long.parseLong(part.trim()));
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        }
+
+        // Fallback for simple metadata update if no cards payload sent
+        if (cardsList.isEmpty() && (cardsPayload == null || cardsPayload.isBlank())) {
+            int updated = flashcardService.updateDeckInfo(oldDeckName, newDeckName, jlptLevel, creatorId);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã cập nhật thông tin gói \"" + newDeckName + "\" (" + updated + " thẻ) thành công!");
+            return "redirect:/flashcards?tab=user";
+        }
+
+        int savedCount = flashcardService.saveFullDeck(oldDeckName, newDeckName, jlptLevel, lessonId, creatorId, cardsList, deletedIds);
         redirectAttributes.addFlashAttribute("successMessage",
-                "Đã cập nhật gói \"" + newDeckName + "\" (" + updated + " thẻ) thành công!");
+                "Đã lưu thành công gói \"" + newDeckName + "\" với " + savedCount + " từ vựng!");
         return "redirect:/flashcards?tab=user";
+    }
+
+    /**
+     * 9. Delete Deck
+     */
+    @PostMapping("/deck-delete")
+    public String deckDelete(
+            @RequestParam(name = "deckName") String deckName,
+            org.springframework.security.core.Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        Long creatorId = getCurrentUserId(authentication);
+        int deleted = flashcardService.deleteDeck(deckName, creatorId);
+        redirectAttributes.addFlashAttribute("successMessage",
+                "Đã xóa gói flashcard \"" + deckName + "\" (" + deleted + " thẻ) thành công!");
+        return "redirect:/flashcards?tab=user";
+    }
+
+    private Long getCurrentUserId(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        } else if (principal instanceof CustomOAuth2User oauth2User) {
+            return oauth2User.getUser() != null ? oauth2User.getUser().getId() : null;
+        }
+        return null;
     }
 }
 

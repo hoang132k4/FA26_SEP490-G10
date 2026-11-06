@@ -54,16 +54,25 @@ public class FlashcardServiceImpl implements FlashcardService {
                 ? request.getCustomDeckName().trim()
                 : null;
 
+        String vocab = request.getVocabulary() != null ? request.getVocabulary().trim() : "";
+        String meaning = request.getMeaning() != null ? request.getMeaning().trim() : "";
+        String front = (request.getFrontContent() != null && !request.getFrontContent().isBlank())
+                ? request.getFrontContent().trim()
+                : vocab;
+        String back = (request.getBackContent() != null && !request.getBackContent().isBlank())
+                ? request.getBackContent().trim()
+                : meaning;
+
         Flashcard flashcard = Flashcard.builder()
                 .lessonId(request.getLessonId())
                 .creatorId(creatorId)
                 .customDeckName(customDeck)
                 .isCustom(custom)
-                .vocabulary(request.getVocabulary().trim())
+                .vocabulary(vocab)
                 .reading(request.getReading() != null ? request.getReading().trim() : null)
-                .meaning(request.getMeaning().trim())
-                .frontContent(request.getFrontContent() != null ? request.getFrontContent().trim() : null)
-                .backContent(request.getBackContent() != null ? request.getBackContent().trim() : null)
+                .meaning(meaning)
+                .frontContent(front)
+                .backContent(back)
                 .exampleSentence(request.getExampleSentence() != null ? request.getExampleSentence().trim() : null)
                 .jlptLevel(request.getJlptLevel() != null && !request.getJlptLevel().isBlank() ? request.getJlptLevel().trim() : "N4")
                 .reviewStatus(request.getReviewStatus() != null && !request.getReviewStatus().isBlank() ? request.getReviewStatus().trim() : "NEW")
@@ -416,6 +425,131 @@ public class FlashcardServiceImpl implements FlashcardService {
             }
         }
         flashcardRepository.saveAll(deckCards);
+        return deckCards.size();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Flashcard> getDeckCards(String deckName, Long creatorId) {
+        if (deckName == null || deckName.isBlank()) {
+            return Collections.emptyList();
+        }
+        List<Flashcard> allCards = flashcardRepository.findAll();
+        return allCards.stream()
+                .filter(c -> {
+                    boolean matchCreator = (creatorId == null) || (c.getCreatorId() == null) || creatorId.equals(c.getCreatorId());
+                    boolean matchDeck = deckName.equalsIgnoreCase(c.getCustomDeckName());
+                    return matchCreator && matchDeck;
+                })
+                .sorted(Comparator.comparing(Flashcard::getFlashcardId, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public int saveFullDeck(String oldDeckName, String newDeckName, String newJlptLevel, Long lessonId, Long creatorId, List<FlashcardRequest> cards, List<Long> deletedCardIds) {
+        String finalDeckName = (newDeckName != null && !newDeckName.isBlank()) ? newDeckName.trim() : (oldDeckName != null ? oldDeckName.trim() : "Gói từ vựng");
+        String finalLevel = (newJlptLevel != null && !newJlptLevel.isBlank()) ? newJlptLevel.trim() : "N4";
+
+        // 1. Process deletions
+        if (deletedCardIds != null && !deletedCardIds.isEmpty()) {
+            for (Long delId : deletedCardIds) {
+                if (delId != null) {
+                    flashcardRepository.findById(delId).ifPresent(c -> {
+                        if (creatorId == null || c.getCreatorId() == null || creatorId.equals(c.getCreatorId())) {
+                            flashcardRepository.delete(c);
+                        }
+                    });
+                }
+            }
+        }
+
+        // 2. Process card updates and additions
+        int savedCount = 0;
+        if (cards != null) {
+            for (FlashcardRequest req : cards) {
+                String vocab = req.getVocabulary() != null ? req.getVocabulary().trim() : "";
+                String meaning = req.getMeaning() != null ? req.getMeaning().trim() : "";
+                if (vocab.isEmpty() || meaning.isEmpty()) {
+                    continue;
+                }
+                String reading = req.getReading() != null ? req.getReading().trim() : "";
+                String example = req.getExampleSentence() != null ? req.getExampleSentence().trim() : "";
+                String backContent = meaning + (!reading.isBlank() ? " (" + reading + ")" : "");
+
+                if (req.getFlashcardId() != null) {
+                    // Update existing card
+                    Flashcard existing = flashcardRepository.findById(req.getFlashcardId()).orElse(null);
+                    if (existing != null && (creatorId == null || existing.getCreatorId() == null || creatorId.equals(existing.getCreatorId()))) {
+                        existing.setVocabulary(vocab);
+                        existing.setReading(reading);
+                        existing.setMeaning(meaning);
+                        existing.setExampleSentence(example);
+                        existing.setFrontContent(vocab);
+                        existing.setBackContent(backContent);
+                        existing.setCustomDeckName(finalDeckName);
+                        existing.setJlptLevel(finalLevel);
+                        existing.setLessonId(lessonId);
+                        existing.setIsCustom(true);
+                        flashcardRepository.save(existing);
+                        savedCount++;
+                    }
+                } else {
+                    // Insert new card
+                    Flashcard newCard = Flashcard.builder()
+                            .vocabulary(vocab)
+                            .reading(reading)
+                            .meaning(meaning)
+                            .exampleSentence(example)
+                            .frontContent(vocab)
+                            .backContent(backContent)
+                            .customDeckName(finalDeckName)
+                            .jlptLevel(finalLevel)
+                            .lessonId(lessonId)
+                            .creatorId(creatorId)
+                            .isCustom(true)
+                            .reviewStatus("NEW")
+                            .build();
+                    flashcardRepository.save(newCard);
+                    savedCount++;
+                }
+            }
+        }
+
+        // 3. If deck name changed, update any remaining cards under oldDeckName
+        if (oldDeckName != null && !oldDeckName.equalsIgnoreCase(finalDeckName)) {
+            List<Flashcard> remaining = flashcardRepository.findAll().stream()
+                    .filter(c -> {
+                        boolean matchCreator = (creatorId == null) || (c.getCreatorId() == null) || creatorId.equals(c.getCreatorId());
+                        boolean matchDeck = oldDeckName.equalsIgnoreCase(c.getCustomDeckName());
+                        return matchCreator && matchDeck;
+                    })
+                    .collect(Collectors.toList());
+            for (Flashcard c : remaining) {
+                c.setCustomDeckName(finalDeckName);
+                c.setJlptLevel(finalLevel);
+                c.setLessonId(lessonId);
+            }
+            flashcardRepository.saveAll(remaining);
+        }
+
+        return savedCount;
+    }
+
+    @Override
+    @Transactional
+    public int deleteDeck(String deckName, Long creatorId) {
+        if (deckName == null || deckName.isBlank()) return 0;
+        List<Flashcard> allCards = flashcardRepository.findAll();
+        List<Flashcard> deckCards = allCards.stream()
+                .filter(c -> {
+                    boolean matchCreator = (creatorId == null) || (c.getCreatorId() == null) || creatorId.equals(c.getCreatorId());
+                    boolean matchDeck = deckName.equalsIgnoreCase(c.getCustomDeckName());
+                    return matchCreator && matchDeck;
+                })
+                .collect(Collectors.toList());
+
+        flashcardRepository.deleteAll(deckCards);
         return deckCards.size();
     }
 }
