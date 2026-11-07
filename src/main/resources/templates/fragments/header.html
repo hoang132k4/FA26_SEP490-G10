@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-    <nav th:fragment="header(role)" class="navbar navbar-expand-lg px-4 border-bottom" style="background-color: #FFFFFF; border-color: var(--border-subtle) !important;">
+    <nav th:fragment="header" class="navbar navbar-expand-lg px-4 border-bottom bg-white sticky-top" style="border-color: #E2E8F0 !important; z-index: 1040; min-height: 64px;">
         <div class="container-fluid">
             <!-- Brand Logo -->
             <a th:href="@{/}" class="d-flex align-items-center gap-2 text-decoration-none">
@@ -14,60 +14,132 @@
                     </svg>
                 </div>
                 <div>
-                    <h5 class="fw-bold mb-0" style="color: var(--navy-dark); line-height: 1;">JEPS</h5>
-                    <span class="text-muted" style="font-size: 0.68rem; font-family: 'Noto Sans JP';">Japanese Exam Prep</span>
+                    <h5 class="fw-bold mb-0" style="color: #173B57; line-height: 1;">JEPS</h5>
+                    <span class="text-muted" style="font-size: 0.68rem; font-family: 'Noto Sans JP', sans-serif;">Japanese Exam Prep</span>
                 </div>
             </a>
 
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="topNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                <!-- Navigation links matching screenshot: Home Page, Course List, JLPT Mock Exam, About Us -->
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 d-flex align-items-center gap-1">
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/}">Home Page</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/}"
+                           th:style="${activeMenu == 'home'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
+                           onmouseover="this.style.color='#173B57'"
+                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
+                           th:attr="data-active=${activeMenu == 'home' ? 'true' : null}">Home Page</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/courses}">Course List</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/courses}"
+                           th:style="${activeMenu == 'courses'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
+                           onmouseover="this.style.color='#173B57'"
+                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
+                           th:attr="data-active=${activeMenu == 'courses' ? 'true' : null}">Course List</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/mock-exam}">JLPT Mock Exam</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/mock-exam}"
+                           th:style="${activeMenu == 'mock' or activeMenu == 'exam' or activeMenu == 'exams'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
+                           onmouseover="this.style.color='#173B57'"
+                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
+                           th:attr="data-active=${activeMenu == 'mock' or activeMenu == 'exam' or activeMenu == 'exams' ? 'true' : null}">JLPT Mock Exam</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/about}">About Us</a>
+                        <a class="nav-link px-3 fw-medium" th:href="@{/about}"
+                           th:style="${activeMenu == 'about'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
+                           onmouseover="this.style.color='#173B57'"
+                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
+                           th:attr="data-active=${activeMenu == 'about' ? 'true' : null}">About Us</a>
                     </li>
                 </ul>
 
-                <div class="d-flex align-items-center gap-3">
-                    <!-- If Not Authenticated -->
-                    <div th:if="${(currentUser == null and (role == null or role == 'GUEST' or role == '')) and (isAuthenticated == null or !isAuthenticated)}" class="d-flex gap-2">
-                        <a th:href="@{/auth/login}" class="btn btn-steel-outline btn-sm">Đăng nhập</a>
-                        <a th:href="@{/auth/register}" class="btn btn-steel btn-sm">Bắt đầu học</a>
+                <!-- Right Side: User Dropdown or Guest Buttons -->
+                <div class="d-flex align-items-center">
+                    <!-- Guest -->
+                    <div th:if="${(currentUser == null and (currentRole == null or currentRole == 'GUEST' or currentRole == '')) and (isAuthenticated == null or !isAuthenticated)}" class="d-flex gap-2">
+                        <a th:href="@{/auth/login}" class="btn btn-outline-primary btn-sm px-3 py-1 rounded-pill fw-medium" style="border-color: #BFDBFE; color: #2563EB;">Đăng nhập</a>
+                        <a th:href="@{/auth/register}" class="btn btn-primary btn-sm px-3 py-1 rounded-pill fw-medium shadow-sm" style="background-color: #173B57; border-color: #173B57;">Bắt đầu học</a>
                     </div>
 
-                    <!-- If Authenticated -->
-                    <div th:if="${currentUser != null or (role != null and role != 'GUEST' and role != '') or (isAuthenticated != null and isAuthenticated)}" class="dropdown">
-                        <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-sm" type="button" data-bs-toggle="dropdown">
-                            <img th:if="${(currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (currentUserAvatar != null and !currentUserAvatar.isEmpty())}"
-                                 th:src="${currentUserAvatar != null and !currentUserAvatar.isEmpty() ? currentUserAvatar : currentUser.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover" style="width: 26px; height: 26px;" />
-                            <i th:unless="${(currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (currentUserAvatar != null and !currentUserAvatar.isEmpty())}" class="bi bi-person-circle fs-5" style="color: var(--navy-dark)"></i>
-                            <span th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : (userName != null ? userName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : 'Học viên'))}">Học viên</span>
+                    <!-- Authenticated User (Pill button with Avatar, Full Name, and Caret - exactly as in screenshot) -->
+                    <div th:unless="${(currentUser == null and (currentRole == null or currentRole == 'GUEST' or currentRole == '')) and (isAuthenticated == null or !isAuthenticated)}" class="dropdown">
+                        <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 14px; font-weight: 500; background-color: #FFFFFF; border-color: #E2E8F0 !important;">
+                            <!-- Avatar circle -->
+                            <div class="rounded-circle overflow-hidden d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; background-color: #F1F5F9; border: 1px solid #E2E8F0;">
+                                <img th:if="${(currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty())}"
+                                     th:src="${currentUserAvatar != null and !currentUserAvatar.isBlank() ? currentUserAvatar : (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty() ? currentUser.avatarUrl : profile.avatarUrl)}"
+                                     alt="Avatar" class="w-100 h-100 object-fit-cover" />
+                                <span th:if="${!((currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty())) and ((currentUserFullName != null and !currentUserFullName.isBlank()) or (currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null))}"
+                                      class="fw-bold small text-secondary"
+                                      th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? #strings.substring(currentUserFullName, 0, 1).toUpperCase() : (currentUser != null and currentUser.fullName != null ? #strings.substring(currentUser.fullName, 0, 1).toUpperCase() : #strings.substring(profile.fullName, 0, 1).toUpperCase())}">
+                                    U
+                                </span>
+                                <i th:unless="${(currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty()) or (currentUserFullName != null and !currentUserFullName.isBlank()) or (currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null)}"
+                                   class="bi bi-person-fill text-muted" style="font-size: 14px;"></i>
+                            </div>
+
+                            <!-- User's Full Name -->
+                            <span class="text-dark fw-medium"
+                                  th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : (profile != null and profile.fullName != null ? profile.fullName : (userName != null ? userName : 'Học viên')))}">
+                                Học viên
+                            </span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
+
+                        <!-- Dropdown Menu -->
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 py-2" style="min-width: 230px; z-index: 1060; border: 1px solid #E2E8F0 !important;">
                             <li>
-                                <a class="dropdown-item py-2"
+                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark"
                                    th:href="@{${currentUser != null and currentUser.role != null and currentUser.role.name() == 'ADMIN' ? '/admin/dashboard' : (currentUser != null and currentUser.role != null and currentUser.role.name() == 'MANAGER' ? '/manager/dashboard' : '/learning/dashboard')}}">
-                                    <i class="bi bi-speedometer2 me-2"></i> Tổng quan học tập
+                                    <i class="bi bi-grid text-primary fs-6"></i>
+                                    <span>Tổng quan học tập</span>
                                 </a>
                             </li>
-                            <li><a class="dropdown-item py-2" th:href="@{/profile}"><i class="bi bi-person me-2"></i> Hồ sơ cá nhân</a></li>
-                            <li><a class="dropdown-item py-2" th:href="@{/order/history}"><i class="bi bi-receipt me-2"></i> Đơn hàng</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item py-2 text-danger" th:href="@{/auth/logout}"><i class="bi bi-box-arrow-right me-2"></i> Đăng xuất</a></li>
+                            <li>
+                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/learning-path}">
+                                    <i class="bi bi-compass text-primary fs-6"></i>
+                                    <span>Lộ trình học</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/mock-exam}">
+                                    <i class="bi bi-pencil-square text-primary fs-6"></i>
+                                    <span>JLPT Mock Exam</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/exams/placement}">
+                                    <i class="bi bi-card-checklist text-primary fs-6"></i>
+                                    <span>Đánh giá đầu vào</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/orders}">
+                                    <i class="bi bi-bag-check text-primary fs-6"></i>
+                                    <span>Lịch sử mua hàng</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/profile}">
+                                    <i class="bi bi-person text-primary fs-6"></i>
+                                    <span>Hồ sơ cá nhân</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-2" style="border-color: #F1F5F9;"></li>
+                            <li>
+                                <form th:action="@{/auth/logout}" method="post" class="m-0 p-0">
+                                    <button type="submit" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 text-danger fw-semibold border-0 bg-transparent w-100 text-start">
+                                        <i class="bi bi-box-arrow-right fs-6"></i>
+                                        <span>Đăng xuất</span>
+                                    </button>
+                                </form>
+                            </li>
                         </ul>
                     </div>
                 </div>
+
             </div>
         </div>
     </nav>

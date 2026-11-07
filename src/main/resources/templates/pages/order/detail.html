@@ -7,7 +7,7 @@
         <!-- Back to Order History Link (Mockup element 1) -->
         <div class="mb-3 mt-2">
             <a th:href="@{/orders}" class="text-decoration-none fw-semibold" style="color: var(--fuji-blue)">
-                <i class="bi bi-arrow-left me-1"></i> Back to Order History
+                <i class="bi bi-arrow-left me-1"></i> Quay lại lịch sử đơn hàng
             </a>
         </div>
 
@@ -123,10 +123,7 @@
                     </div>
 
                     <!-- Bottom Summary Area (Mockup element 3 Total in red/coral) -->
-                    <div class="p-4 bg-light d-flex justify-content-between align-items-center border-top">
-                        <a th:href="@{/orders}" class="btn btn-outline-secondary px-4 py-2 rounded-3">
-                            <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
-                        </a>
+                    <div class="p-4 bg-light d-flex justify-content-end align-items-center border-top">
                         <div class="text-end">
                             <span class="text-muted small d-block">Tổng giá trị đơn hàng (Total Amount)</span>
                             <span class="fs-4 fw-bold" style="color: var(--sunset-coral);" th:text="'Total: ' + ${order.totalAmountFormatted}">

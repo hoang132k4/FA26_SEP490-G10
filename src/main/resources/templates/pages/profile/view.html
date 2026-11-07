@@ -1,141 +1,272 @@
 <div th:replace="${profile != null and !profile.learner} ? ~{layouts/admin-layout :: html('Hồ sơ cá nhân - JEPS', 'profile', ~{::#mainContent})} : ~{layouts/learner-layout :: html('Hồ sơ cá nhân - JEPS', 'profile', ~{::#mainContent})}">
     <div id="mainContent">
-        <!-- Breadcrumb & Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-            <div>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-1">
-                        <li class="breadcrumb-item"><a th:href="@{${profile.dashboardUrl}}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Hồ sơ cá nhân</li>
-                    </ol>
-                </nav>
-                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Thông tin tài khoản</h3>
+
+        <!-- A. Top Section: Breadcrumb & Page Heading -->
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2 small">
+                    <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none fw-semibold" style="color: #2563EB;">Trang chủ</a></li>
+                    <li class="breadcrumb-item active fw-medium" aria-current="page" style="color: #64748B;">Hồ sơ cá nhân</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-1" style="color: #0F172A; letter-spacing: -0.5px;">Thông tin tài khoản</h3>
+                    <p class="text-muted small mb-0">Quản lý thông tin hồ sơ cá nhân, liên hệ và mục tiêu chứng chỉ JLPT của bạn.</p>
+                </div>
             </div>
         </div>
 
         <div class="row g-4">
-            <!-- Left Column: User Summary Card -->
+            
+            <!-- B. Left Profile Card (Vertical card layout - Ảnh 3 & 5) -->
             <div class="col-lg-4 col-md-5">
-                <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white h-100">
+                <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white h-100" style="border: 1px solid #E2E8F0 !important;">
+                    
+                    <!-- Avatar Display with direct Upload / Edit Pencil Button (Ảnh 5) -->
                     <div class="d-flex justify-content-center mb-3">
-                        <div th:if="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
-                             class="rounded-circle overflow-hidden shadow-sm d-flex align-items-center justify-content-center border"
-                             style="width: 90px; height: 90px;">
-                            <img th:src="${profile.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
-                        </div>
-                        <div th:unless="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
-                             class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm"
-                             style="width: 90px; height: 90px; background: linear-gradient(135deg, #173B57 0%, #244F70 100%); font-size: 36px; font-weight: bold;">
-                            <span th:text="${profile.fullName != null and !profile.fullName.isEmpty() ? profile.fullName.substring(0, 1).toUpperCase() : 'U'}">U</span>
+                        <div class="position-relative d-inline-block">
+                            <div th:if="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
+                                 class="rounded-circle overflow-hidden shadow-sm d-flex align-items-center justify-content-center border"
+                                 style="width: 104px; height: 104px; border-color: #E2E8F0 !important;">
+                                <img th:src="${profile.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                            <div th:unless="${profile.avatarUrl != null and !profile.avatarUrl.isBlank()}"
+                                 class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm"
+                                 style="width: 104px; height: 104px; background: linear-gradient(135deg, #173B57 0%, #2563EB 100%); font-size: 42px; font-weight: bold;">
+                                <span th:text="${profile.fullName != null and !profile.fullName.isEmpty() ? profile.fullName.substring(0, 1).toUpperCase() : 'U'}">U</span>
+                            </div>
+
+                            <!-- Direct Avatar Pencil Button -->
+                            <form id="avatarUploadForm" th:action="@{/profile/avatar}" method="post" enctype="multipart/form-data" class="m-0">
+                                <input type="file" id="avatarFileInput" name="avatarFile" accept="image/png, image/jpeg, image/jpg, image/webp" style="display: none;" onchange="this.form.submit()">
+                                <label for="avatarFileInput" class="btn btn-sm btn-primary rounded-circle shadow position-absolute bottom-0 end-0 p-0 d-flex align-items-center justify-content-center"
+                                       style="width: 32px; height: 32px; cursor: pointer; border: 2px solid #FFFFFF; background-color: #2563EB;" title="Đổi ảnh đại diện">
+                                    <i class="bi bi-pencil-fill" style="font-size: 13px;"></i>
+                                </label>
+                            </form>
                         </div>
                     </div>
-                    <h5 class="fw-bold mb-1" style="color: var(--navy-dark)" th:text="${profile.fullName}">Họ và Tên</h5>
-                    <p class="text-muted small mb-2" th:text="${profile.email}">email@example.com</p>
 
-                    <div class="d-flex justify-content-center gap-2 mb-4">
-                        <span class="badge px-3 py-2 rounded-pill"
-                              th:classappend="${profile.role.name() == 'ADMIN'} ? 'bg-danger' : (${profile.role.name() == 'MANAGER'} ? 'bg-primary' : 'bg-success')"
+                    <!-- User Name & Email with Pencil Icon (Ảnh 5) -->
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                        <h5 class="fw-bold mb-0" style="color: #0F172A" th:text="${profile.fullName}">Họ và Tên</h5>
+                        <button type="button" class="btn btn-sm btn-link text-primary p-0 text-decoration-none" onclick="toggleEdit('fullName', true)" title="Chỉnh sửa họ tên">
+                            <i class="bi bi-pencil-fill" style="font-size: 13px;"></i>
+                        </button>
+                    </div>
+                    <p class="text-muted small mb-3" th:text="${profile.email}">email@example.com</p>
+
+                    <!-- Role & Status Badges -->
+                    <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
+                        <span class="badge px-3 py-2 rounded-pill fw-semibold"
+                              th:classappend="${profile.role.name() == 'ADMIN'} ? 'bg-danger-subtle text-danger border border-danger-subtle' : (${profile.role.name() == 'MANAGER'} ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle')"
                               th:text="${profile.roleDisplayName}">
                             Học viên (Learner)
                         </span>
-                        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
-                            <i class="bi bi-check-circle-fill text-success me-1"></i>
+                        <span class="badge px-3 py-2 rounded-pill fw-semibold" style="background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;">
+                            <i class="bi bi-check-circle-fill me-1"></i>
                             <span th:text="${profile.status == 'ACTIVE' ? 'Hoạt động' : profile.status}">Hoạt động</span>
                         </span>
                     </div>
 
                     <hr class="text-muted my-3 opacity-25">
 
-                    <!-- Quick Navigation Actions -->
+                    <!-- Actions List (Ảnh 3: Đã bỏ Cập nhật thông tin & Quay lại trang chủ) -->
                     <div class="d-grid gap-2 text-start">
-                        <a th:href="@{/profile/edit}" class="btn btn-outline-primary py-2 rounded-3 text-start">
-                            <i class="bi bi-pencil me-2"></i> Cập nhật thông tin
-                        </a>
-                        <a th:href="@{/profile/change-password}" class="btn btn-outline-secondary py-2 rounded-3 text-start">
-                            <i class="bi bi-shield-lock me-2"></i> Đổi mật khẩu
-                        </a>
-                        <a th:href="@{${profile.dashboardUrl}}" class="btn btn-light py-2 rounded-3 text-start border">
-                            <i class="bi bi-speedometer2 me-2"></i> Quay lại Dashboard
+                        <a th:href="@{/profile/change-password}" class="btn btn-outline-secondary py-2 px-3 rounded-3 text-start fw-medium d-flex align-items-center gap-2" style="border-color: #E2E8F0;">
+                            <i class="bi bi-shield-lock text-secondary"></i>
+                            <span>Đổi mật khẩu</span>
                         </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: Detail Information Cards -->
+            <!-- C. Right Information Section (Ảnh 4) -->
             <div class="col-lg-8 col-md-7">
-                <!-- Basic & Contact Information Card -->
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
-                    <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: var(--navy-dark)">
+                
+                <!-- Card 1: Thông tin cơ bản & Liên hệ (Ảnh 4) -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important;">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: #0F172A">
                         <i class="bi bi-person-lines-fill me-2 text-primary"></i> Thông tin cơ bản & Liên hệ
                     </h5>
                     <div class="row g-3">
+                        
+                        <!-- 1. Họ và tên (Có nút bút chỉnh sửa trực tiếp) -->
                         <div class="col-sm-6">
-                            <div class="p-3 bg-light rounded-3">
-                                <span class="text-muted small d-block mb-1">Họ và tên</span>
-                                <strong class="fs-6" style="color: var(--text-main)" th:text="${profile.fullName}">Nguyễn Văn A</strong>
+                            <div class="p-3 rounded-3 h-100 position-relative" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                                <div id="display-fullName">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <span class="text-muted small d-block mb-1">Họ và tên</span>
+                                        <button type="button" class="btn btn-sm btn-light border-0 text-primary rounded-circle p-1" onclick="toggleEdit('fullName', true)" title="Chỉnh sửa họ và tên" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-pencil-fill" style="font-size: 13px;"></i>
+                                        </button>
+                                    </div>
+                                    <strong class="fs-6 d-block" style="color: #0F172A" th:text="${profile.fullName}">Nguyễn Văn A</strong>
+                                </div>
+                                <div id="edit-fullName" style="display: none;">
+                                    <span class="text-primary small fw-semibold d-block mb-1">Chỉnh sửa Họ và tên</span>
+                                    <form th:action="@{/profile/edit}" method="post">
+                                        <input type="hidden" name="email" th:value="${profile.email}">
+                                        <input type="hidden" name="phone" th:value="${profile.phone}">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <input type="text" name="fullName" class="form-control fw-semibold" th:value="${profile.fullName}" required minlength="2" maxlength="100">
+                                            <button type="submit" class="btn btn-success px-2" title="Lưu thay đổi">
+                                                <i class="bi bi-check-lg me-1"></i>Lưu
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary px-2" onclick="toggleEdit('fullName', false)" title="Hủy">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- 2. Tên đăng nhập (Cố định - Không đổi) -->
                         <div class="col-sm-6">
-                            <div class="p-3 bg-light rounded-3">
+                            <div class="p-3 rounded-3 h-100" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                                 <span class="text-muted small d-block mb-1">Tên đăng nhập</span>
-                                <strong class="fs-6" style="color: var(--text-main)" th:text="${profile.username != null ? profile.username : 'Chưa thiết lập'}">learner01</strong>
+                                <strong class="fs-6 d-block" style="color: #0F172A" th:text="${profile.username != null ? profile.username : 'Chưa thiết lập'}">learner01</strong>
                             </div>
                         </div>
+
+                        <!-- 3. Địa chỉ Email (Có nút bút chỉnh sửa trực tiếp) -->
                         <div class="col-sm-6">
-                            <div class="p-3 bg-light rounded-3">
-                                <span class="text-muted small d-block mb-1">Địa chỉ Email</span>
-                                <strong class="fs-6" style="color: var(--text-main)" th:text="${profile.email}">learner@jeps.edu.vn</strong>
+                            <div class="p-3 rounded-3 h-100 position-relative" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                                <div id="display-email">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <span class="text-muted small d-block mb-1">Địa chỉ Email</span>
+                                        <button type="button" class="btn btn-sm btn-light border-0 text-primary rounded-circle p-1" onclick="toggleEdit('email', true)" title="Chỉnh sửa email" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-pencil-fill" style="font-size: 13px;"></i>
+                                        </button>
+                                    </div>
+                                    <strong class="fs-6 d-block" style="color: #0F172A" th:text="${profile.email}">learner@jeps.edu.vn</strong>
+                                </div>
+                                <div id="edit-email" style="display: none;">
+                                    <span class="text-primary small fw-semibold d-block mb-1">Chỉnh sửa Địa chỉ Email</span>
+                                    <form th:action="@{/profile/edit}" method="post">
+                                        <input type="hidden" name="fullName" th:value="${profile.fullName}">
+                                        <input type="hidden" name="phone" th:value="${profile.phone}">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <input type="email" name="email" class="form-control fw-semibold" th:value="${profile.email}" required maxlength="150">
+                                            <button type="submit" class="btn btn-success px-2" title="Lưu thay đổi">
+                                                <i class="bi bi-check-lg me-1"></i>Lưu
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary px-2" onclick="toggleEdit('email', false)" title="Hủy">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- 4. Số điện thoại (Có nút bút chỉnh sửa trực tiếp) -->
                         <div class="col-sm-6">
-                            <div class="p-3 bg-light rounded-3">
-                                <span class="text-muted small d-block mb-1">Số điện thoại</span>
-                                <strong class="fs-6" style="color: var(--text-main)" th:text="${profile.phone != null and !profile.phone.isEmpty() ? profile.phone : 'Chưa cập nhật'}">0901234567</strong>
+                            <div class="p-3 rounded-3 h-100 position-relative" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                                <div id="display-phone">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <span class="text-muted small d-block mb-1">Số điện thoại</span>
+                                        <button type="button" class="btn btn-sm btn-light border-0 text-primary rounded-circle p-1" onclick="toggleEdit('phone', true)" title="Chỉnh sửa số điện thoại" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-pencil-fill" style="font-size: 13px;"></i>
+                                        </button>
+                                    </div>
+                                    <strong class="fs-6 d-block" style="color: #0F172A" th:text="${profile.phone != null and !profile.phone.isEmpty() ? profile.phone : 'Chưa cập nhật'}">0901234567</strong>
+                                </div>
+                                <div id="edit-phone" style="display: none;">
+                                    <span class="text-primary small fw-semibold d-block mb-1">Chỉnh sửa Số điện thoại</span>
+                                    <form th:action="@{/profile/edit}" method="post">
+                                        <input type="hidden" name="fullName" th:value="${profile.fullName}">
+                                        <input type="hidden" name="email" th:value="${profile.email}">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <input type="tel" name="phone" class="form-control fw-semibold" th:value="${profile.phone}" placeholder="09xxxxxxxx (10 chữ số)" pattern="^(0[0-9]{9})?$">
+                                            <button type="submit" class="btn btn-success px-2" title="Lưu thay đổi">
+                                                <i class="bi bi-check-lg me-1"></i>Lưu
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary px-2" onclick="toggleEdit('phone', false)" title="Hủy">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- 5. Vai trò trong hệ thống -->
                         <div class="col-sm-6">
-                            <div class="p-3 bg-light rounded-3">
+                            <div class="p-3 rounded-3 h-100" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                                 <span class="text-muted small d-block mb-1">Vai trò trong hệ thống</span>
-                                <strong class="fs-6" style="color: var(--text-main)" th:text="${profile.roleDisplayName}">Học viên</strong>
+                                <strong class="fs-6 d-block" style="color: #0F172A" th:text="${profile.roleDisplayName}">Học viên</strong>
                             </div>
                         </div>
+
+                        <!-- 6. Ngày tham gia -->
                         <div class="col-sm-6">
-                            <div class="p-3 bg-light rounded-3">
+                            <div class="p-3 rounded-3 h-100" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                                 <span class="text-muted small d-block mb-1">Ngày tham gia</span>
-                                <strong class="fs-6" style="color: var(--text-main)" th:text="${profile.createdAtFormatted}">20/10/2026 10:00</strong>
+                                <strong class="fs-6 d-block" style="color: #0F172A" th:text="${profile.createdAtFormatted}">20/10/2026 10:00</strong>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
-                <!-- Learning Path / JLPT Target Card (Only for Learners) -->
-                <div th:if="${profile.learner}" class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                    <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: var(--navy-dark)">
+                <!-- Card 2: Thông tin học tập & Mục tiêu JLPT (For Learners) -->
+                <div th:if="${profile.learner}" class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #E2E8F0 !important;">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: #0F172A">
                         <i class="bi bi-award-fill me-2 text-warning"></i> Thông tin học tập & Mục tiêu JLPT
                     </h5>
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">
-                            <div class="p-3 rounded-3 border" style="background-color: #F8FAFC;">
+                            <div class="p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                                 <span class="text-muted small d-block mb-1">Trình độ JLPT hiện tại</span>
                                 <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill" th:text="${profile.currentJlptLevel}">N5</span>
+                                    <span class="badge px-3 py-2 rounded-pill fw-bold fs-6" style="background-color: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;" th:text="${profile.currentJlptLevel}">N5</span>
                                 </div>
                             </div>
                         </div>
                         <div class="col-sm-6">
-                            <div class="p-3 rounded-3 border" style="background-color: #F8FAFC;">
+                            <div class="p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                                 <span class="text-muted small d-block mb-1">Mục tiêu JLPT hướng tới</span>
                                 <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill" th:text="${profile.targetJlptLevel != null and !profile.targetJlptLevel.isBlank() ? profile.targetJlptLevel : 'Chưa thiết lập'}">N3</span>
+                                    <span class="badge px-3 py-2 rounded-pill fw-bold fs-6" style="background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;" th:text="${profile.targetJlptLevel != null and !profile.targetJlptLevel.isBlank() ? profile.targetJlptLevel : 'Chưa thiết lập'}">N3</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="alert alert-light border small text-muted mb-0">
-                        <i class="bi bi-info-circle me-1"></i> Trình độ hiện tại và mục tiêu JLPT được tự động ghi nhận khi làm bài kiểm tra phân lớp (Placement Test) hoặc điều chỉnh lộ trình học (Recalibrate Learning Path).
+                    
+                    <!-- Informative Helper Banner -->
+                    <div class="alert alert-light border small text-muted mb-0 d-flex align-items-center gap-2 rounded-3" style="background-color: #F8FAFC; border-color: #E2E8F0 !important;">
+                        <i class="bi bi-info-circle text-primary fs-5"></i>
+                        <span>Trình độ hiện tại và mục tiêu JLPT được tự động ghi nhận khi làm bài kiểm tra phân lớp (Placement Test) hoặc điều chỉnh lộ trình học (Recalibrate Learning Path).</span>
                     </div>
                 </div>
+
             </div>
+
         </div>
+
+        <!-- Inline Edit Toggle Script (PLACED INSIDE #mainContent TO EXECUTE IN BROWSER) -->
+        <script>
+            function toggleEdit(field, isEditing) {
+                var displayEl = document.getElementById('display-' + field);
+                var editEl = document.getElementById('edit-' + field);
+                if (!displayEl || !editEl) return;
+
+                if (isEditing) {
+                    displayEl.style.setProperty('display', 'none', 'important');
+                    editEl.style.setProperty('display', 'block', 'important');
+                    var input = editEl.querySelector('input[type="text"], input[type="email"], input[type="tel"]');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                } else {
+                    displayEl.style.setProperty('display', 'block', 'important');
+                    editEl.style.setProperty('display', 'none', 'important');
+                }
+            }
+        </script>
     </div>
 </div>
