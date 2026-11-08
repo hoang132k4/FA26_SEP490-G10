@@ -1,10 +1,133 @@
 <div th:replace="~{layouts/public-layout :: html(
-    pageTitle='Home Page',
+    pageTitle='Trang chủ - JEPS',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <!-- Hero Banner: JEPS Japanese Learning Platform -->
-        <section class="card p-5 mb-5 kotoba-card position-relative overflow-hidden" style="background: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%);">
+
+        <!-- ============================================================== -->
+        <!-- 1. LEARNER QUICK STUDY HUB (Visible when Logged In)            -->
+        <!-- ============================================================== -->
+        <section th:if="${isAuthenticated}" class="card kotoba-card p-4 p-md-5 mb-5 border-0 shadow-sm"
+                 style="background: linear-gradient(135deg, #173B57 0%, #244F70 100%); color: #FFFFFF; border-radius: 20px;">
+            <div class="row align-items-center mb-4">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-1 rounded-pill" style="background-color: var(--sakura-accent); color: white; font-weight: 700;">
+                            <i class="bi bi-person-check-fill me-1"></i> Không gian học tập cá nhân
+                        </span>
+                        <span th:if="${currentUser != null and currentUser.currentJlptLevel != null}" 
+                              class="badge bg-white text-dark rounded-pill px-3 py-1 fw-bold"
+                              th:text="${'Mục tiêu: ' + currentUser.currentJlptLevel}">Mục tiêu: N4</span>
+                    </div>
+                    <h1 class="h2 fw-bold text-white mb-1">
+                        Xin chào, <span th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : 'Học viên'}">Học viên</span>! 🌸
+                    </h1>
+                    <p class="text-white-50 mb-0">Hôm nay bạn muốn học nội dung gì? Chọn nhanh các mục học tập bên dưới để bắt đầu ngay.</p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <a th:href="@{/learning/dashboard}" class="btn btn-light rounded-pill px-4 py-2 fw-semibold shadow-sm">
+                        <i class="bi bi-speedometer2 text-primary me-1"></i> Xem Dashboard đầy đủ
+                    </a>
+                </div>
+            </div>
+
+            <!-- Resume Active Course Card (If enrolled in courses) -->
+            <div th:if="${activeCourse != null}" class="card p-3 p-md-4 mb-4 border-0 rounded-4" style="background-color: rgba(255, 255, 255, 0.12); backdrop-filter: blur(8px);">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-7">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-light text-dark rounded-pill px-2 py-0.5 small" th:text="${activeCourse.level}">N5</span>
+                            <span class="small text-white-50">Khóa học đang tiếp diễn:</span>
+                        </div>
+                        <h4 class="fw-bold text-white mb-2" th:text="${activeCourse.title}">Khóa học Nhập môn Tiếng Nhật</h4>
+                        <div class="d-flex align-items-center gap-2 text-white-50 small mb-2" th:if="${nextLesson != null}">
+                            <i class="bi bi-play-circle-fill text-warning"></i>
+                            <span>Bài tiếp theo: <strong class="text-white" th:text="${nextLesson.title}">Bài 1: Bảng chữ cái</strong></span>
+                        </div>
+                        <!-- Progress bar -->
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="progress flex-grow-1" style="height: 7px; background-color: rgba(255, 255, 255, 0.2);">
+                                <div class="progress-bar bg-warning" role="progressbar" 
+                                     th:style="'width: ' + ${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 0} + '%;'"></div>
+                            </div>
+                            <span class="small text-white fw-bold" th:text="${(activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 0) + '%'}">0%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-5 text-md-end">
+                        <a th:if="${nextLesson != null}" th:href="@{/learning/lessons/{id}(id=${nextLesson.id})}" class="btn btn-sakura btn-lg px-4 py-2 rounded-pill shadow-sm fw-bold">
+                            <i class="bi bi-play-fill fs-5 me-1 align-middle"></i> Tiếp tục học ngay
+                        </a>
+                        <a th:unless="${nextLesson != null}" th:href="@{/learning/courses/{id}/lessons(id=${activeCourse.id})}" class="btn btn-sakura btn-lg px-4 py-2 rounded-pill shadow-sm fw-bold">
+                            <i class="bi bi-journal-text me-1"></i> Vào danh sách bài học
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Quick Shortcut Navigation Cards (Homepage direct jump) -->
+            <div class="row g-3">
+                <!-- 1. My Courses -->
+                <div class="col-6 col-lg-3">
+                    <a th:href="@{/learning/my-courses}" class="card p-3 h-100 text-decoration-none border-0 rounded-4 transition-all" style="background-color: #FFFFFF; color: var(--navy-dark);">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background-color: #EBF4FA;">
+                                <i class="bi bi-bookmark-check fs-5 text-primary"></i>
+                            </div>
+                            <span th:if="${registeredCourseCount != null && registeredCourseCount > 0}" class="badge bg-primary text-white rounded-pill px-2.5 py-1" th:text="${registeredCourseCount}">1</span>
+                        </div>
+                        <h6 class="fw-bold mb-1" style="color: var(--navy-dark);">Khóa học của tôi</h6>
+                        <p class="small text-muted mb-0" style="font-size: 0.8rem;">Quản lý và tiếp tục các bài giảng đã đăng ký</p>
+                    </a>
+                </div>
+
+                <!-- 2. Flashcards -->
+                <div class="col-6 col-lg-3">
+                    <a th:href="@{/flashcards}" class="card p-3 h-100 text-decoration-none border-0 rounded-4 transition-all" style="background-color: #FFFFFF; color: var(--navy-dark);">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background-color: #FFF3EB;">
+                                <i class="bi bi-card-text fs-5" style="color: var(--sakura-accent);"></i>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">Lật thẻ</span>
+                        </div>
+                        <h6 class="fw-bold mb-1" style="color: var(--navy-dark);">Từ vựng Flashcard</h6>
+                        <p class="small text-muted mb-0" style="font-size: 0.8rem;">Ôn từ mới theo chủ đề, trắc nghiệm &amp; ghép từ</p>
+                    </a>
+                </div>
+
+                <!-- 3. Assessment & Exams -->
+                <div class="col-6 col-lg-3">
+                    <a th:href="@{/exams}" class="card p-3 h-100 text-decoration-none border-0 rounded-4 transition-all" style="background-color: #FFFFFF; color: var(--navy-dark);">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background-color: #EDF7EE;">
+                                <i class="bi bi-award fs-5 text-success"></i>
+                            </div>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">JLPT Test</span>
+                        </div>
+                        <h6 class="fw-bold mb-1" style="color: var(--navy-dark);">Đánh giá năng lực</h6>
+                        <p class="small text-muted mb-0" style="font-size: 0.8rem;">Thi thử JLPT N5–N1 &amp; bài kiểm tra cột mốc</p>
+                    </a>
+                </div>
+
+                <!-- 4. Learning Path -->
+                <div class="col-6 col-lg-3">
+                    <a th:href="@{/learning-path}" class="card p-3 h-100 text-decoration-none border-0 rounded-4 transition-all" style="background-color: #FFFFFF; color: var(--navy-dark);">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background-color: #F3EBF9;">
+                                <i class="bi bi-diagram-3 fs-5" style="color: #8E44AD;"></i>
+                            </div>
+                            <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">Lộ trình</span>
+                        </div>
+                        <h6 class="fw-bold mb-1" style="color: var(--navy-dark);">Lộ trình học tập</h6>
+                        <p class="small text-muted mb-0" style="font-size: 0.8rem;">Theo dõi tiến độ và giai đoạn chinh phục tiếng Nhật</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 2. PUBLIC HERO BANNER (Visible when Guest/Not Logged In)       -->
+        <!-- ============================================================== -->
+        <section th:if="${!isAuthenticated}" class="card p-5 mb-5 kotoba-card position-relative overflow-hidden border-0 shadow-sm" style="background: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%); border-radius: 20px;">
             <div class="row align-items-center">
                 <div class="col-lg-7">
                     <span class="badge mb-3 px-3 py-1 rounded-pill" style="background-color: #EBF4FA; color: var(--navy-dark); font-weight: 700; letter-spacing: 0.5px;">
@@ -15,14 +138,14 @@
                         <span style="color: var(--steel-blue);">Từng bước vững chắc</span>
                     </h1>
                     <p class="fs-5 text-muted mb-4" style="line-height: 1.6;">
-                        Hệ thống học tập thông minh lấy cảm hứng từ tinh thần Nhật Bản: Kiên trì, Tối giản và Hiệu quả. Lộ trình cá nhân hóa từ N5 đến N1.
+                        Hệ thống học tập thông minh chuẩn phong cách Nhật Bản: Kiên trì, Tối giản và Hiệu quả. Lộ trình cá nhân hóa từ N5 đến N1.
                     </p>
-                    <div class="d-flex gap-3">
-                        <a th:href="@{/courses}" class="btn btn-steel btn-lg px-4">
+                    <div class="d-flex flex-wrap gap-3">
+                        <a th:href="@{/courses}" class="btn btn-steel btn-lg px-4 rounded-pill shadow-sm">
                             <i class="bi bi-book me-1"></i> Khám phá khóa học
                         </a>
-                        <a th:href="@{/mock-exam}" class="btn btn-steel-outline btn-lg px-4">
-                            <i class="bi bi-pencil-square me-1"></i> JLPT Mock Exam
+                        <a th:href="@{/mock-exam}" class="btn btn-steel-outline btn-lg px-4 rounded-pill">
+                            <i class="bi bi-pencil-square me-1"></i> Thi thử JLPT miễn phí
                         </a>
                     </div>
                 </div>
@@ -39,14 +162,17 @@
             </div>
         </section>
 
+        <!-- ============================================================== -->
+        <!-- 3. FEATURED COURSES SECTION (Common for both)                 -->
+        <!-- ============================================================== -->
         <section class="mb-5">
             <div class="d-flex justify-content-between align-items-end mb-4">
                 <div>
-                    <span class="text-uppercase fw-bold small text-muted">Bắt đầu hành trình</span>
-                    <h2 class="fw-bold mb-0 text-dark">Khóa học nổi bật</h2>
+                    <span class="text-uppercase fw-bold small text-muted">Chương trình chất lượng cao</span>
+                    <h2 class="fw-bold mb-0 text-dark">Khóa học JLPT Nổi bật</h2>
                 </div>
                 <a th:href="@{/courses}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue)">
-                    View Course List &rarr;
+                    Xem tất cả khóa học &rarr;
                 </a>
             </div>
             <div class="row">
@@ -56,60 +182,50 @@
             </div>
         </section>
 
-        <section class="card kotoba-card p-4 p-lg-5 mb-4">
-            <div class="row align-items-center g-3">
-                <div class="col-lg-8">
-                    <span class="text-uppercase fw-bold small text-muted">Sẵn sàng thử sức?</span>
-                    <h2 class="fw-bold mb-2">Kiểm tra trình độ JLPT của bạn</h2>
-                    <p class="text-muted mb-0">Xem cấu trúc đề thi thử từ N5 đến N1 và chọn cấp độ phù hợp.</p>
-                </div>
-                <div class="col-lg-4 text-lg-end">
-                    <a th:href="@{/mock-exam}" class="btn btn-steel">
-                        View JLPT Mock Exam <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <!-- JLPT Level Navigation Cards -->
+        <!-- ============================================================== -->
+        <!-- 4. JLPT LEVEL TARGET ROADMAP                                    -->
+        <!-- ============================================================== -->
         <section class="mb-5">
             <div class="d-flex justify-content-between align-items-end mb-4">
                 <div>
-                    <span class="text-uppercase fw-bold small text-muted">Lộ trình học</span>
-                    <h2 class="fw-bold mb-0 text-dark">Chọn Cấp độ JLPT Mục tiêu</h2>
+                    <span class="text-uppercase fw-bold small text-muted">Lộ trình học theo cấp độ</span>
+                    <h2 class="fw-bold mb-0 text-dark">Chọn Cấp độ JLPT Mục tiêu của Bạn</h2>
                 </div>
                 <a th:href="@{/courses}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue)">
-                    Xem tất cả lộ trình &rarr;
+                    Xem toàn bộ lộ trình &rarr;
                 </a>
             </div>
 
             <div class="row g-3">
-                <div class="col" th:each="lvl, iter : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }">
-                    <div class="card p-3 text-center kotoba-card h-100" th:classappend="${lvl == 'N4'} ? 'border-2' : ''" th:style="${lvl == 'N4'} ? 'border-color: var(--steel-blue) !important;' : ''">
-                        <span class="badge mb-2 px-2 py-1 rounded-pill" style="background-color: #E2E8F0; color: #475569;" th:text="${lvl == 'N5' ? 'Căn bản' : (lvl == 'N4' ? 'Sơ cấp' : (lvl == 'N3' ? 'Trung cấp' : (lvl == 'N2' ? 'Nâng cao' : 'Thành thạo')))}"></span>
+                <div class="col" th:each="lvl : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }">
+                    <div class="card p-3 text-center kotoba-card h-100 border-0 shadow-sm" 
+                         th:style="${lvl == 'N4'} ? 'border: 2px solid var(--steel-blue) !important;' : ''">
+                        <span class="badge mb-2 px-2 py-1 rounded-pill" style="background-color: #E2E8F0; color: #475569;" 
+                              th:text="${lvl == 'N5' ? 'Căn bản' : (lvl == 'N4' ? 'Sơ cấp' : (lvl == 'N3' ? 'Trung cấp' : (lvl == 'N2' ? 'Nâng cao' : 'Thành thạo')))}"></span>
                         <h2 class="fw-bold my-2" style="color: var(--navy-dark);" th:text="${lvl}">N4</h2>
-                        <a th:href="@{/courses(level=${lvl})}" class="btn btn-steel-outline btn-sm w-100 mt-2">Chọn</a>
+                        <a th:href="@{/courses(level=${lvl})}" class="btn btn-steel-outline btn-sm w-100 mt-2 rounded-pill">
+                            Chọn <i class="bi bi-chevron-right small"></i>
+                        </a>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Featured Courses Section -->
-        <section class="mb-5" th:if="${featuredCourses != null && !featuredCourses.isEmpty()}">
-            <div class="d-flex justify-content-between align-items-end mb-4">
-                <div>
-                    <span class="text-uppercase fw-bold small text-muted">Đặc sắc &bull; Nổi bật</span>
-                    <h2 class="fw-bold mb-0 text-dark">Khóa Học JLPT Tiêu Biểu</h2>
+        <!-- ============================================================== -->
+        <!-- 5. CALL TO ACTION: MOCK EXAMS                                   -->
+        <!-- ============================================================== -->
+        <section class="card kotoba-card p-4 p-lg-5 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%); border-radius: 20px;">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <span class="text-uppercase fw-bold small text-muted">Thử sức trực tuyến</span>
+                    <h2 class="fw-bold mb-2" style="color: var(--navy-dark);">Đánh giá năng lực &amp; Thi thử JLPT</h2>
+                    <p class="text-muted mb-0">Hệ thống đề thi thử sát với cấu trúc thực tế của hiệp hội JLPT Nhật Bản, có tính giờ và chấm điểm tự động.</p>
                 </div>
-                <a th:href="@{/courses}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue)">
-                    Xem tất cả khóa học &rarr;
-                </a>
-            </div>
-
-            <div class="row">
-                <th:block th:each="c : ${featuredCourses}">
-                    <div th:replace="~{fragments/components/course-card :: courseCard(${c}, false)}"></div>
-                </th:block>
+                <div class="col-lg-4 text-lg-end">
+                    <a th:href="@{${isAuthenticated ? '/exams' : '/mock-exam'}}" class="btn btn-steel btn-lg px-4 rounded-pill shadow-sm">
+                        <i class="bi bi-pencil-square me-1"></i> Vào thi thử ngay
+                    </a>
+                </div>
             </div>
         </section>
     </div>

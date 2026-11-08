@@ -1,183 +1,249 @@
 <div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Đăng ký khóa học - JEPS',
+    pageTitle='Xác nhận đăng ký khóa học - JEPS',
     activeMenu='courses',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <!-- Breadcrumb / Back Link -->
-        <div class="d-flex align-items-center justify-content-between mb-4">
+
+        <!-- Top Navigation / Breadcrumb -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb small mb-0">
-                    <li class="breadcrumb-item"><a th:href="@{/learning/courses}" class="text-decoration-none text-muted">Khóa học JLPT</a></li>
-                    <li class="breadcrumb-item"><a th:href="@{/learning/courses/recommended}" class="text-decoration-none text-muted">Đề xuất cho bạn</a></li>
-                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Đăng ký khóa học</li>
+                    <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none text-muted">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/courses}" class="text-decoration-none text-muted">Khóa học JLPT</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/courses/{id}(id=${course.id})}" class="text-decoration-none text-muted" th:text="${course.title}">Chi tiết khóa học</a></li>
+                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Xác nhận đăng ký</li>
                 </ol>
             </nav>
-            <a th:href="@{/learning/courses/recommended}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left me-1"></i> Quay lại trang gợi ý
+            <a th:href="@{/courses/{id}(id=${course.id})}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại chi tiết khóa học
             </a>
         </div>
 
-        <div class="row">
-            <!-- Left Column: Course Summary & Syllabus Preview (SRS 2.5.2 (3), (4)) -->
-            <div class="col-lg-7 mb-4">
-                <!-- Course Summary Card -->
-                <div class="card p-4 kotoba-card mb-4 shadow-sm">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="badge px-3 py-1 rounded-pill" style="background-color: var(--sakura-accent); color: white; font-weight: 700;"
-                              th:text="${course.level}">N5</span>
-                        <span class="badge bg-light text-muted border" th:text="${'Mã: ' + course.code}">JLPT-N5</span>
-                    </div>
+        <!-- Main Enrollment Row -->
+        <div class="row g-4 justify-content-center">
 
-                    <h4 class="fw-bold text-dark mb-2" th:text="${course.title}">Khóa học Tiếng Nhật JLPT</h4>
-                    <p class="text-muted small mb-3" th:text="${course.shortDescription}">Mô tả khóa học...</p>
-
-                    <!-- Meta specs grid -->
-                    <div class="row g-2 p-3 bg-light rounded-3 mb-3 small">
-                        <div class="col-6 col-sm-3">
-                            <span class="text-muted d-block">Thời lượng:</span>
-                            <strong class="text-dark"><i class="bi bi-clock me-1 text-primary"></i> <span th:text="${course.durationHours + ' giờ'}">40 giờ</span></strong>
+            <!-- LEFT COLUMN: Account Confirmation & Payment Method (60%) -->
+            <div class="col-lg-7">
+                <div class="card p-4 p-md-5 border-0 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #ECE7DE !important;">
+                    
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background-color: #EBF4FA;">
+                            <i class="bi bi-patch-check-fill fs-4 text-primary"></i>
                         </div>
-                        <div class="col-6 col-sm-3">
-                            <span class="text-muted d-block">Số bài giảng:</span>
-                            <strong class="text-dark"><i class="bi bi-journal-check me-1 text-primary"></i> <span th:text="${course.lessonCount + ' bài'}">30 bài</span></strong>
-                        </div>
-                        <div class="col-6 col-sm-3">
-                            <span class="text-muted d-block">Đánh giá:</span>
-                            <strong class="text-dark"><i class="bi bi-star-fill text-warning me-1"></i> <span th:text="${course.rating + '/5.0'}">4.9/5.0</span></strong>
-                        </div>
-                        <div class="col-6 col-sm-3">
-                            <span class="text-muted d-block">Chứng chỉ:</span>
-                            <strong class="text-dark"><i class="bi bi-patch-check text-success me-1"></i> Chuẩn JLPT</strong>
+                        <div>
+                            <h4 class="fw-bold mb-0 text-dark" style="color: var(--navy-dark);">Xác Nhận Kích Hoạt Khóa Học</h4>
+                            <p class="small text-muted mb-0">Khóa học sẽ được tích hợp ngay vào tài khoản học tập của bạn</p>
                         </div>
                     </div>
 
-                    <!-- Covered Skills -->
-                    <div class="mb-3" th:if="${course.coveredSkills != null}">
-                        <span class="small fw-semibold text-dark d-block mb-1">Kỹ năng bao gồm:</span>
-                        <div class="d-flex flex-wrap gap-1">
-                            <span class="badge bg-white text-secondary border small" 
-                                  th:each="skill : ${#strings.arraySplit(course.coveredSkills, ',')}" 
-                                  th:text="${#strings.trim(skill)}">Kỹ năng</span>
-                        </div>
-                    </div>
+                    <hr class="my-4" style="border-color: #F1EDE4;">
 
-                    <!-- Learning Objectives Preview -->
-                    <div class="border-top pt-3" th:if="${course.objectives != null}">
-                        <span class="small fw-semibold text-dark d-block mb-1"><i class="bi bi-check2-circle text-success me-1"></i> Kết quả đầu ra kỳ vọng:</span>
-                        <div class="text-muted small" style="white-space: pre-line; line-height: 1.6;" th:text="${course.objectives}">
-                            Mục tiêu...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Lessons & Materials Structure (SRS 2.5.2 (4)) -->
-                <div class="card p-4 kotoba-card shadow-sm">
-                    <h6 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-layers text-primary me-2"></i> Cấu trúc chương trình học (<span th:text="${course.lessons != null ? course.lessons.size() : 0}">8</span> bài)
-                    </h6>
-                    <div class="list-group list-group-flush small">
-                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center" 
-                             th:each="lesson : ${course.lessons}">
-                            <div>
-                                <i class="bi bi-check-circle text-muted me-2"></i>
-                                <span class="fw-semibold text-dark" th:text="${lesson.title}">Bài học</span>
-                                <small class="text-muted ms-2" th:text="${'(' + lesson.sectionName + ')'}">(Chương 1)</small>
-                            </div>
-                            <span class="badge bg-light text-muted border" th:text="${lesson.durationMinutes + 'p'}">25p</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: Registration & Enrollment Form (SRS 2.5.2 (2)) -->
-            <div class="col-lg-5">
-                <div class="card p-4 kotoba-card shadow-sm sticky-top" style="top: 20px; z-index: 10;">
-                    <div class="border-bottom pb-3 mb-3">
-                        <span class="badge px-3 py-1 rounded-pill bg-primary-subtle text-primary fw-semibold small mb-2">Đăng ký học phần</span>
-                        <h5 class="fw-bold text-dark mb-0">Xác nhận thông tin học viên</h5>
-                    </div>
-
-                    <!-- Price Calculation Box -->
-                    <div class="p-3 bg-light rounded-3 mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="text-muted small">Học phí niêm yết:</span>
-                            <span class="text-muted text-decoration-line-through small" 
-                                  th:if="${course.discountPrice != null && course.discountPrice > 0}"
-                                  th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</span>
-                            <span class="fw-semibold text-dark" 
-                                  th:if="${course.discountPrice == null || course.discountPrice == 0}"
-                                  th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">299,000 đ</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary-subtle">
-                            <span class="fw-bold text-dark">Thành tiền thanh toán:</span>
-                            <h4 class="fw-bold text-danger mb-0" 
-                                th:if="${course.discountPrice != null && course.discountPrice > 0}"
-                                th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">199,000 đ</h4>
-                            <h4 class="fw-bold text-dark mb-0" 
-                                th:if="${course.discountPrice == null || course.discountPrice == 0}"
-                                th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ (Miễn phí)'}">0 đ</h4>
-                        </div>
-                    </div>
-
-                    <!-- Enrollment Form -->
+                    <!-- Registration Form -->
                     <form th:action="@{/learning/courses/{id}/register(id=${course.id})}" th:object="${registrationRequest}" method="post">
                         <input type="hidden" th:field="*{courseId}">
+                        <!-- Auto-filled from logged-in account, no re-typing needed -->
+                        <input type="hidden" th:field="*{fullName}">
+                        <input type="hidden" th:field="*{email}">
+                        <input type="hidden" th:field="*{phone}">
 
-                        <!-- Full Name -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-dark">Họ và tên học viên <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{fullName}" class="form-control" required placeholder="Nguyễn Văn A">
-                            <div class="invalid-feedback d-block text-danger small" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                        <!-- Step 1: Account Confirmation Box -->
+                        <div class="mb-4">
+                            <label class="small text-uppercase fw-bold text-muted mb-2 d-block" style="letter-spacing: 0.5px;">
+                                <i class="bi bi-person-badge me-1"></i>Tài khoản học viên thụ hưởng
+                            </label>
+                            
+                            <div class="p-3 rounded-3 border d-flex align-items-center gap-3" style="background-color: #FAF8F5; border-color: #EAE6DE !important;">
+                                <!-- Avatar -->
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" 
+                                     style="width: 48px; height: 48px; background-color: var(--navy-dark); font-size: 1.1rem; flex-shrink: 0;">
+                                    <span th:text="${learner != null and learner.fullName != null and !learner.fullName.isBlank() ? #strings.substring(learner.fullName, 0, 1).toUpperCase() : 'H'}">H</span>
+                                </div>
+                                <!-- Details -->
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h6 class="fw-bold text-dark mb-0 text-truncate" th:text="${learner != null ? learner.fullName : 'Học viên'}">Nguyễn Văn Học Viên</h6>
+                                        <span class="badge rounded-pill text-bg-light border small text-muted" 
+                                              th:if="${learner != null and learner.currentJlptLevel != null}" 
+                                              th:text="${learner.currentJlptLevel}">N4</span>
+                                    </div>
+                                    <div class="small text-muted text-truncate" th:text="${learner != null ? learner.email : 'learner@jeps.edu.vn'}">learner@jeps.edu.vn</div>
+                                </div>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill small">
+                                    <i class="bi bi-check-circle me-1"></i>Đã đăng nhập
+                                </span>
+                            </div>
+
+                            <small class="text-muted d-block mt-2" style="font-size: 0.8rem;">
+                                <i class="bi bi-info-circle text-primary me-1"></i>
+                                Khi kích hoạt thành công, khóa học sẽ xuất hiện ngay trong mục <strong>"Khóa học của tôi"</strong> để bạn vào học mọi lúc mọi nơi trên mọi thiết bị.
+                            </small>
                         </div>
 
-                        <!-- Email -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-dark">Email đăng ký <span class="text-danger">*</span></label>
-                            <input type="email" th:field="*{email}" class="form-control" required placeholder="name@example.com">
-                            <div class="invalid-feedback d-block text-danger small" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        <!-- Step 2: Payment Method (if course has fee) -->
+                        <div class="mb-4" th:if="${course.price > 0}">
+                            <label class="small text-uppercase fw-bold text-muted mb-2 d-block" style="letter-spacing: 0.5px;">
+                                <i class="bi bi-credit-card me-1"></i>Chọn phương thức thanh toán
+                            </label>
+
+                            <div class="d-flex flex-column gap-2.5">
+                                <!-- Option 1: VNPay QR / Banking -->
+                                <label class="card p-3 border rounded-3 cursor-pointer d-flex flex-row align-items-center gap-3 transition-all" style="background-color: #FAFCFE; border-color: #C8DBEE !important;">
+                                    <input type="radio" th:field="*{paymentMethod}" value="VNPAY" class="form-check-input mt-0" checked>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-dark small">Thanh toán qua VNPay (Quét mã QR / Mobile Banking / Thẻ ATM)</span>
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">Khuyên dùng</span>
+                                        </div>
+                                        <small class="text-muted d-block" style="font-size: 0.78rem;">Khóa học được mở khóa ngay lập tức trong tài khoản sau khi quét mã</small>
+                                    </div>
+                                    <i class="bi bi-qr-code fs-4 text-primary"></i>
+                                </label>
+
+                                <!-- Option 2: Direct Bank Transfer -->
+                                <label class="card p-3 border rounded-3 cursor-pointer d-flex flex-row align-items-center gap-3 transition-all" style="background-color: #FFFFFF;">
+                                    <input type="radio" th:field="*{paymentMethod}" value="BANK_TRANSFER" class="form-check-input mt-0">
+                                    <div class="flex-grow-1">
+                                        <span class="fw-bold text-dark small d-block">Chuyển khoản trực tiếp tới tài khoản ngân hàng của JEPS</span>
+                                        <small class="text-muted d-block" style="font-size: 0.78rem;">Chuyển khoản qua số tài khoản hoặc mã VietQR 24/7</small>
+                                    </div>
+                                    <i class="bi bi-bank fs-4 text-muted"></i>
+                                </label>
+
+                                <!-- Option 3: MoMo Wallet -->
+                                <label class="card p-3 border rounded-3 cursor-pointer d-flex flex-row align-items-center gap-3 transition-all" style="background-color: #FFFFFF;">
+                                    <input type="radio" th:field="*{paymentMethod}" value="MOMO" class="form-check-input mt-0">
+                                    <div class="flex-grow-1">
+                                        <span class="fw-bold text-dark small d-block">Ví điện tử MoMo</span>
+                                        <small class="text-muted d-block" style="font-size: 0.78rem;">Thanh toán siêu tốc qua ứng dụng MoMo</small>
+                                    </div>
+                                    <i class="bi bi-wallet2 fs-4 text-muted"></i>
+                                </label>
+                            </div>
                         </div>
 
-                        <!-- Phone -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-dark">Số điện thoại liên hệ</label>
-                            <input type="tel" th:field="*{phone}" class="form-control" placeholder="09xxxxxxxx">
+                        <!-- Free Course Notice (if price == 0) -->
+                        <div class="mb-4" th:if="${course.price == 0}">
+                            <input type="hidden" th:field="*{paymentMethod}" value="FREE">
+                            <div class="p-3 rounded-3 d-flex align-items-center gap-3" style="background-color: #EDF7EE; border: 1px solid #C8E6C9;">
+                                <div class="rounded-circle p-2 bg-success text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; flex-shrink: 0;">
+                                    <i class="bi bi-gift-fill fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-bold text-success d-block small">Khóa học được tài trợ hoàn toàn Miễn phí</span>
+                                    <span class="small text-muted" style="font-size: 0.8rem;">Bạn không cần thanh toán bất kỳ chi phí nào. Bấm nút bên dưới để kích hoạt ngay.</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Payment Method Selection -->
-                        <div class="mb-3" th:if="${course.price > 0}">
-                            <label class="form-label small fw-semibold text-dark">Phương thức thanh toán</label>
-                            <select th:field="*{paymentMethod}" class="form-select">
-                                <option value="VNPAY">Cổng thanh toán VNPay (ATM / QR Code / Visa)</option>
-                                <option value="MOMO">Ví điện tử MoMo</option>
-                                <option value="BANK_TRANSFER">Chuyển khoản ngân hàng trực tiếp</option>
-                                <option value="FREE">Học thử / Đăng ký trải nghiệm</option>
-                            </select>
-                        </div>
-                        <input th:if="${course.price == 0}" type="hidden" th:field="*{paymentMethod}" value="FREE">
-
-                        <!-- Note -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-dark">Ghi chú (nếu có)</label>
-                            <textarea th:field="*{note}" class="form-control" rows="2" placeholder="Ví dụ: Mong muốn ôn thi kỳ thi tháng 7..."></textarea>
-                        </div>
-
-                        <!-- Terms Agreement -->
-                        <div class="mb-4 form-check">
-                            <input type="checkbox" class="form-check-input" id="termsCheck" th:field="*{termsAccepted}" required>
-                            <label class="form-check-label small text-muted" for="termsCheck">
-                                Tôi đồng ý với Điều khoản tham gia khóa học &amp; Quy định học viên của JEPS.
+                        <!-- Step 3: Terms Agreement -->
+                        <div class="mb-4 form-check p-3 rounded-3" style="background-color: #F8FAFC;">
+                            <input type="checkbox" class="form-check-input ms-0 me-2" id="termsCheck" th:field="*{termsAccepted}" required checked>
+                            <label class="form-check-label small text-muted cursor-pointer" for="termsCheck">
+                                Tôi đồng ý với <a href="#" class="text-decoration-none fw-semibold">Quy chế học tập &amp; Điều khoản sử dụng</a> của nền tảng JEPS.
                             </label>
                             <div class="invalid-feedback d-block text-danger small" th:if="${#fields.hasErrors('termsAccepted')}" th:errors="*{termsAccepted}"></div>
                         </div>
 
-                        <!-- Submit Button -->
-                        <button type="submit" class="btn btn-sakura w-100 py-3 fw-semibold fs-6 shadow-sm">
-                            <i class="bi bi-check2-circle me-1"></i> Xác nhận &amp; Đăng ký khóa học
+                        <!-- Submit CTA Button -->
+                        <button type="submit" class="btn btn-sakura btn-lg w-100 py-3 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <span th:text="${course.price > 0 ? 'Xác nhận &amp; Tiến hành thanh toán' : 'Kích hoạt &amp; Bắt đầu học ngay'}">Kích hoạt khóa học</span>
                         </button>
+
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check text-success me-1"></i> Khóa học được kích hoạt và lưu trữ vĩnh viễn trong tài khoản học viên
+                            </small>
+                        </div>
                     </form>
+
                 </div>
             </div>
+
+            <!-- RIGHT COLUMN: Order Summary Box (Tóm tắt đơn hàng 40%) -->
+            <div class="col-lg-5">
+                <div class="card p-4 border-0 shadow-sm sticky-top" style="top: 85px; border-radius: 20px; background: #FFFFFF; border: 1px solid #ECE7DE !important;">
+                    
+                    <h5 class="fw-bold mb-3 text-dark" style="color: var(--navy-dark);">
+                        <i class="bi bi-bag-check me-2 text-primary"></i>Tóm Tắt Đơn Hàng
+                    </h5>
+
+                    <!-- Course Mini Card -->
+                    <div class="p-3 rounded-3 mb-4 d-flex gap-3 align-items-center" style="background-color: #FAF8F5; border: 1px solid #EAE6DE;">
+                        <img th:if="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                             th:src="${course.thumbnail}" 
+                             class="rounded-3 object-fit-cover shadow-sm" style="width: 80px; height: 60px; flex-shrink: 0;" alt="">
+                        <img th:unless="${course.thumbnail != null and !course.thumbnail.isBlank()}"
+                             th:src="${course.thumbnailUrl != null && !#strings.isEmpty(course.thumbnailUrl) ? course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                             class="rounded-3 object-fit-cover shadow-sm" style="width: 80px; height: 60px; flex-shrink: 0;" alt="">
+                        
+                        <div class="overflow-hidden">
+                            <div class="d-flex align-items-center gap-1 mb-1">
+                                <span class="badge px-2 py-0.5 rounded-pill" style="background-color: var(--navy-dark); color: white; font-size: 0.7rem;" th:text="${course.level}">N5</span>
+                                <span class="small text-muted" style="font-size: 0.75rem;" th:text="${course.durationHours != null ? course.durationHours + ' giờ đào tạo' : '40 giờ'}">40 giờ</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-0 text-truncate" th:text="${course.title}">Tên khóa học</h6>
+                        </div>
+                    </div>
+
+                    <!-- Price Breakdown -->
+                    <div class="d-flex flex-column gap-2 mb-3 pb-3 border-bottom" style="border-color: #F1EDE4 !important;">
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>Học phí niêm yết:</span>
+                            <span th:if="${course.discountPrice != null && course.discountPrice > 0}"
+                                  class="text-decoration-line-through"
+                                  th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</span>
+                            <span th:if="${course.discountPrice == null || course.discountPrice == 0}"
+                                  th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">299,000 đ</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between small text-success" th:if="${course.discountPrice != null && course.discountPrice > 0}">
+                            <span><i class="bi bi-tag-fill me-1"></i> Ưu đãi giảm giá:</span>
+                            <span th:text="${'- ' + #numbers.formatDecimal(course.price - course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">- 100,000 đ</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Amount -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold text-dark fs-6">Tổng thanh toán:</span>
+                        <div>
+                            <h3 class="fw-bold text-danger mb-0 text-end" 
+                                th:if="${course.discountPrice != null && course.discountPrice > 0}"
+                                th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                199,000 đ
+                            </h3>
+                            <h3 class="fw-bold text-dark mb-0 text-end" 
+                                th:if="${course.discountPrice == null || course.discountPrice == 0}"
+                                th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">
+                                0 đ
+                            </h3>
+                        </div>
+                    </div>
+
+                    <!-- Included Benefits -->
+                    <div class="p-3 rounded-3" style="background-color: #FAF8F5; border: 1px dashed #E2DCCF;">
+                        <span class="small fw-bold text-dark d-block mb-2">Quyền lợi học viên bao gồm:</span>
+                        <ul class="list-unstyled mb-0 small text-muted d-flex flex-column gap-2" style="font-size: 0.82rem;">
+                            <li class="d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>Kích hoạt học ngay trong mục "Khóa học của tôi"</span>
+                            </li>
+                            <li class="d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>Bộ thẻ Flashcard từ vựng độc quyền kèm audio phát âm</span>
+                            </li>
+                            <li class="d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>Kho đề thi thử JLPT có chấm điểm và giải thích tự động</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
+
     </div>
 </div>

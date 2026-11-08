@@ -2153,3 +2153,75 @@ textarea.lesson-field {
   scrollbar-color: #CBD5E1 transparent;
 }
 
+
+/* ==========================================================================
+   Modern Header & Course Card Enhancements
+   ========================================================================== */
+.navbar-nav .nav-link {
+  white-space: nowrap !important;
+  font-size: 0.94rem;
+  letter-spacing: -0.2px;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.navbar-nav .nav-link:hover {
+  color: var(--steel-blue) !important;
+  background-color: rgba(49, 92, 120, 0.05);
+}
+
+.navbar-nav .nav-link.active {
+  color: var(--navy-dark) !important;
+  font-weight: 700 !important;
+}
+
+.kotoba-course-card {
+  transition: transform 0.28s ease, box-shadow 0.28s ease !important;
+}
+
+.kotoba-course-card:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 14px 30px rgba(23, 59, 87, 0.12) !important;
+}
+
+.kotoba-course-card .course-thumb-img {
+  transition: transform 0.4s ease;
+}
+
+.kotoba-course-card:hover .course-thumb-img {
+  transform: scale(1.05);
+}
+
+/* Hover dropdown for header menu */
+.dropdown-hover {
+  position: relative;
+}
+
+@media (min-width: 992px) {
+  .dropdown-hover:hover > .dropdown-menu {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
+  }
+
+  .dropdown-hover > .dropdown-menu {
+    display: block !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s ease;
+  }
+
+  /* Invisible hover bridge */
+  .dropdown-hover::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 12px;
+  }
+}

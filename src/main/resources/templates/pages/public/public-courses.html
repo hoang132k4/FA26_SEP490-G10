@@ -1,52 +1,142 @@
 <div th:replace="~{layouts/public-layout :: html(
-    pageTitle='Course List',
+    pageTitle='Danh mục Khóa học JLPT - JEPS',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <section class="card kotoba-card p-4 p-lg-5 mb-4">
-            <span class="text-uppercase fw-bold small text-muted">Chương trình đào tạo</span>
-            <div class="row align-items-end g-3">
+
+        <!-- ============================================================== -->
+        <!-- 1. HERO BANNER: JAPANESE MODERN CATALOG HEADER                 -->
+        <!-- ============================================================== -->
+        <section class="card kotoba-card p-4 p-md-5 mb-5 border-0 shadow-sm" 
+                 style="background: linear-gradient(135deg, #FFFFFF 0%, #F9F7F2 100%); border-radius: 24px; border: 1px solid #ECE7DE !important;">
+            <div class="row align-items-center g-4">
                 <div class="col-lg-7">
-                    <h1 class="fw-bold mb-2">Course List</h1>
-                    <p class="text-muted mb-0">Khóa học luyện thi JLPT theo từng cấp độ từ N5 đến N1.</p>
-                </div>
-                <div class="col-lg-5">
-                    <form th:action="@{/courses}" method="get" class="d-flex gap-2">
+                    <div class="d-inline-flex align-items-center gap-2 mb-3 px-3 py-1.5 rounded-pill bg-white border shadow-sm">
+                        <span class="rounded-circle" style="width: 8px; height: 8px; background-color: var(--sakura-accent);"></span>
+                        <span class="fw-bold small text-muted text-uppercase" style="letter-spacing: 0.6px; font-size: 0.76rem;">Chương trình đào tạo chuẩn JLPT</span>
+                    </div>
+                    <h1 class="display-6 fw-bold mb-3" style="color: var(--navy-dark); line-height: 1.25;">
+                        Khóa Học Tiếng Nhật &amp; Luyện Thi JLPT
+                    </h1>
+                    <p class="text-muted fs-6 mb-4" style="line-height: 1.65; max-width: 620px;">
+                        Hệ thống bài giảng toàn diện 4 kỹ năng (Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu) được thiết kế theo chuẩn đề thi của Hiệp hội JLPT Nhật Bản.
+                    </p>
+
+                    <!-- Integrated Search Bar -->
+                    <form th:action="@{/courses}" method="get" class="d-flex align-items-center gap-2" style="max-width: 580px;">
                         <input type="hidden" name="level" th:value="${selectedLevel}">
-                        <label for="courseSearch" class="visually-hidden">Tìm khóa học</label>
-                        <input id="courseSearch" class="form-control rounded-pill" type="search" name="q"
-                               th:value="${searchQuery}" placeholder="Tìm theo tên, cấp độ...">
-                        <button class="btn btn-steel" type="submit"><i class="bi bi-search me-1"></i>Tìm</button>
+                        <div class="input-group shadow-sm" style="border-radius: 50px; overflow: hidden; background: #FFFFFF; border: 1px solid #DCE3E8;">
+                            <span class="input-group-text bg-white border-0 ps-3 pe-2 text-muted">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input class="form-control border-0 py-2.5 shadow-none" type="search" name="q"
+                                   th:value="${searchQuery}" placeholder="Tìm theo tên khóa học, kỹ năng, chữ Hán..."
+                                   style="font-size: 0.95rem;">
+                            <button class="btn btn-steel px-4 py-2.5 fw-semibold" type="submit" style="border-radius: 0 50px 50px 0;">
+                                Tìm kiếm
+                            </button>
+                        </div>
                     </form>
                 </div>
+
+                <div class="col-lg-5 text-center d-none d-lg-block">
+                    <!-- Artistic Fuji Illustration -->
+                    <div class="position-relative d-inline-block">
+                        <svg viewBox="0 0 280 180" width="280" height="180" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Soft Red Sun -->
+                            <circle cx="180" cy="70" r="42" fill="#E06D53" opacity="0.9" />
+                            <!-- Clouds -->
+                            <path d="M 20 60 Q 45 45 70 60 T 120 60" stroke="#CBD5E1" stroke-width="2" fill="none" opacity="0.7" />
+                            <path d="M 170 35 Q 195 25 220 35 T 260 35" stroke="#CBD5E1" stroke-width="2" fill="none" opacity="0.7" />
+                            <!-- Mount Fuji Silhouette -->
+                            <path d="M 30 165 L 130 55 L 155 55 L 255 165 Z" fill="#173B57" />
+                            <!-- Snow Peak -->
+                            <path d="M 130 55 L 155 55 L 168 88 L 156 82 L 142 90 L 132 82 L 118 88 Z" fill="#FFFFFF" />
+                        </svg>
+                        <div class="small text-muted fst-italic mt-2" style="font-family: 'Noto Sans JP'; letter-spacing: 1px;">一歩ずつ、確実に前へ</div>
+                    </div>
+                </div>
             </div>
         </section>
 
+        <!-- ============================================================== -->
+        <!-- 2. LEVEL SELECTOR TABS & COUNT                                  -->
+        <!-- ============================================================== -->
         <section class="mb-4" aria-label="Lọc khóa học theo cấp độ">
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <a class="btn btn-sm rounded-pill"
-                   th:classappend="${selectedLevel == ''} ? 'btn-steel' : 'btn-steel-outline'"
-                   th:href="@{/courses(q=${searchQuery})}">Tất cả cấp độ</a>
-                <a th:each="level : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }"
-                   class="btn btn-sm rounded-pill"
-                   th:classappend="${selectedLevel == level} ? 'btn-steel' : 'btn-steel-outline'"
-                   th:href="@{/courses(level=${level},q=${searchQuery})}"
-                   th:text="${level}">N5</a>
-                <span class="small text-muted ms-auto" th:text="${courseCount + ' khóa học'}">5 khóa học</span>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pb-2">
+                <!-- Level Pills -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="small fw-bold text-muted me-1 text-nowrap"><i class="bi bi-layers me-1"></i>Cấp độ:</span>
+                    
+                    <a class="btn btn-sm rounded-pill px-3 py-1.5 fw-semibold text-nowrap"
+                       th:classappend="${selectedLevel == null or selectedLevel == ''} ? 'btn-steel shadow-sm text-white' : 'btn-light border bg-white text-dark'"
+                       th:href="@{/courses(q=${searchQuery})}">
+                        Tất cả cấp độ
+                    </a>
+                    
+                    <a th:each="lvl : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }"
+                       class="btn btn-sm rounded-pill px-3 py-1.5 fw-semibold text-nowrap"
+                       th:classappend="${selectedLevel == lvl} ? 'btn-steel shadow-sm text-white' : 'btn-light border bg-white text-dark'"
+                       th:href="@{/courses(level=${lvl}, q=${searchQuery})}"
+                       th:text="${lvl == 'N5' ? 'N5 (Căn bản)' : (lvl == 'N4' ? 'N4 (Sơ cấp)' : (lvl == 'N3' ? 'N3 (Trung cấp)' : (lvl == 'N2' ? 'N2 (Nâng cao)' : 'N1 (Chuyên sâu)')))}">
+                        N5
+                    </a>
+                </div>
+
+                <!-- Course Match Counter -->
+                <div class="small text-muted fw-medium text-nowrap">
+                    <i class="bi bi-collection me-1 text-primary"></i>
+                    <span th:text="${courseCount + ' khóa học phù hợp'}">0 khóa học</span>
+                </div>
             </div>
         </section>
 
-        <div th:if="${!courses.isEmpty()}" class="row">
-            <div th:each="course : ${courses}">
+        <!-- ============================================================== -->
+        <!-- 3. COURSES GRID                                                -->
+        <!-- ============================================================== -->
+        <div th:if="${courses != null && !courses.isEmpty()}" class="row g-4 mb-5">
+            <th:block th:each="course : ${courses}">
                 <div th:replace="~{fragments/components/course-card :: courseCard(${course}, false)}"></div>
+            </th:block>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- 4. EMPTY STATE                                                  -->
+        <!-- ============================================================== -->
+        <div th:if="${courses == null || courses.isEmpty()}" class="card kotoba-card text-center p-5 border-0 shadow-sm mb-5" 
+             style="border-radius: 20px; background: #FFFFFF;">
+            <div class="d-inline-flex p-4 rounded-circle bg-light mb-3 text-muted mx-auto" style="width: 72px; height: 72px; align-items: center; justify-content: center;">
+                <i class="bi bi-search fs-2"></i>
+            </div>
+            <h4 class="fw-bold mb-2" style="color: var(--navy-dark);">Không tìm thấy khóa học phù hợp</h4>
+            <p class="text-muted mb-4 small">Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc để xem tất cả các khóa học.</p>
+            <div>
+                <a th:href="@{/courses}" class="btn btn-steel px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                    <i class="bi bi-arrow-repeat me-1"></i> Xem tất cả khóa học
+                </a>
             </div>
         </div>
 
-        <div th:if="${courses.isEmpty()}" class="card kotoba-card text-center p-5">
-            <i class="bi bi-search fs-1 text-muted mb-3"></i>
-            <h2 class="h4 fw-bold">Không tìm thấy khóa học phù hợp</h2>
-            <p class="text-muted mb-3">Hãy thử từ khóa khác hoặc xem tất cả khóa học.</p>
-            <a th:href="@{/courses}" class="btn btn-steel align-self-center">View Course List</a>
-        </div>
+        <!-- ============================================================== -->
+        <!-- 5. HELPFUL FOOTER CALLOUT: PLACEMENT TEST                      -->
+        <!-- ============================================================== -->
+        <section class="card p-4 p-md-5 border-0 shadow-sm text-center position-relative overflow-hidden mb-4" 
+                 style="background: linear-gradient(135deg, #173B57 0%, #244F70 100%); color: #FFFFFF; border-radius: 24px;">
+            <div class="position-relative" style="z-index: 2;">
+                <span class="badge px-3 py-1.5 rounded-pill mb-3" style="background-color: var(--sakura-accent); color: white; font-weight: 700; font-size: 0.8rem;">
+                    <i class="bi bi-compass me-1"></i> Định hướng học tập
+                </span>
+                <h3 class="fw-bold text-white mb-2">Chưa biết trình độ hiện tại của bạn ở cấp độ nào?</h3>
+                <p class="text-white-50 mb-4 mx-auto" style="max-width: 650px; font-size: 0.95rem;">
+                    Làm bài kiểm tra đánh giá năng lực đầu vào hoàn toàn miễn phí để hệ thống JEPS tự động phân tích và đề xuất lộ trình học tối ưu nhất cho bạn.
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a th:href="@{${isAuthenticated ? '/exams' : '/mock-exam'}}" class="btn btn-light rounded-pill px-4 py-2.5 fw-bold shadow-sm">
+                        <i class="bi bi-pencil-square text-primary me-1"></i> Làm bài đánh giá năng lực ngay
+                    </a>
+                </div>
+            </div>
+        </section>
+
     </div>
 </div>

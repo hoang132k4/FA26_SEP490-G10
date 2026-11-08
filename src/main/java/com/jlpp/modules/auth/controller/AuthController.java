@@ -264,9 +264,9 @@ public class AuthController {
             return "redirect:/auth/login";
         }
 
-        // If phone already completed, forward to learner dashboard
+        // If phone already completed, forward to homepage
         if (user.getPhone() != null && !user.getPhone().isBlank()) {
-            return "redirect:/learning/dashboard";
+            return "redirect:/";
         }
 
         if (!model.containsAttribute("completeProfileRequest")) {
@@ -318,6 +318,6 @@ public class AuthController {
 
         log.info("Profile completed for Google user: {} with phone: {}", user.getEmail(), user.getPhone());
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ thành công! Chào mừng bạn đến với JEPS.");
-        return "redirect:/learning/dashboard";
+        return "redirect:/";
     }
 }

@@ -363,7 +363,7 @@ public class LearnerCourseController {
     }
 
     /**
-     * UC-04: View Course List (Learner Interface)
+     * Unified Course Catalog: Redirect to the unified /courses page
      */
     @GetMapping("/courses")
     public String learnerCourseList(
@@ -371,43 +371,24 @@ public class LearnerCourseController {
             Principal principal,
             HttpSession session,
             Model model) {
-
-        User learner = getCurrentLearner(principal, session);
-        Page<Course> coursePage = courseService.getCourses(filter);
-
-        model.addAttribute("learner", learner);
-        model.addAttribute("coursePage", coursePage);
-        model.addAttribute("courses", coursePage.getContent());
-        model.addAttribute("filter", filter);
-        model.addAttribute("levels", List.of("ALL", "N5", "N4", "N3", "N2", "N1"));
-        model.addAttribute("activeMenu", "courses");
-        return "pages/learning/course-list";
+        String lvl = filter != null && filter.getLevel() != null && !"ALL".equalsIgnoreCase(filter.getLevel()) ? filter.getLevel() : "";
+        String kw = filter != null && filter.getKeyword() != null ? filter.getKeyword() : "";
+        if (!lvl.isBlank() && !kw.isBlank()) {
+            return "redirect:/courses?level=" + lvl + "&q=" + kw;
+        } else if (!lvl.isBlank()) {
+            return "redirect:/courses?level=" + lvl;
+        } else if (!kw.isBlank()) {
+            return "redirect:/courses?q=" + kw;
+        }
+        return "redirect:/courses";
     }
 
     /**
-     * UC-05: View Course Detail (Learner)
+     * Unified Course Detail Screen: Redirect to unified /courses/{id}
      */
     @GetMapping("/courses/{id}")
-    public String learnerCourseDetail(
-            @PathVariable Long id,
-            Principal principal,
-            HttpSession session,
-            Model model) {
-
-        User learner = getCurrentLearner(principal, session);
-        Course course = courseService.getCourseById(id);
-        boolean isEnrolled = registrationService.isUserEnrolled(learner.getId(), course.getId());
-        CourseRegistration registration = registrationService.getRegistration(learner.getId(), course.getId());
-        List<Course> relatedCourses = courseService.getOtherCourses(id, course.getLevel(), 3);
-
-        model.addAttribute("learner", learner);
-        model.addAttribute("course", course);
-        model.addAttribute("lessons", course.getLessons());
-        model.addAttribute("isEnrolled", isEnrolled);
-        model.addAttribute("registration", registration);
-        model.addAttribute("relatedCourses", relatedCourses);
-        model.addAttribute("activeMenu", "courses");
-        return "pages/learning/course-detail";
+    public String learnerCourseDetail(@PathVariable Long id) {
+        return "redirect:/courses/" + id;
     }
 
     /**
@@ -444,7 +425,7 @@ public class LearnerCourseController {
         if (registrationService.isUserEnrolled(learner.getId(), course.getId())) {
             redirectAttributes.addFlashAttribute("warningMessage",
                     "Bạn đã đăng ký khóa học này trước đó. Dưới đây là thông tin chi tiết khóa học của bạn.");
-            return "redirect:/learning/courses/" + id;
+            return "redirect:/courses/" + id;
         }
 
         if (!model.containsAttribute("registrationRequest")) {
@@ -493,10 +474,10 @@ public class LearnerCourseController {
             registrationService.registerCourse(learner.getId(), request);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Chúc mừng bạn đã đăng ký thành công khóa học: " + course.getTitle() + "! Bạn có thể bắt đầu bài học ngay bây giờ.");
-            return "redirect:/learning/courses/" + id;
+            return "redirect:/courses/" + id;
         } catch (IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("warningMessage", ex.getMessage());
-            return "redirect:/learning/courses/" + id;
+            return "redirect:/courses/" + id;
         } catch (Exception ex) {
             log.error("Failed to register course ID: {} for user ID: {}", id, learner.getId(), ex);
             model.addAttribute("errorMessage", "Đã có lỗi xảy ra trong quá trình đăng ký khóa học. Vui lòng thử lại sau.");

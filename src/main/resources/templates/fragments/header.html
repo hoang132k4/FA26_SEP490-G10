@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-    <nav th:fragment="header" class="navbar navbar-expand-lg px-4 border-bottom bg-white sticky-top" style="border-color: #E2E8F0 !important; z-index: 1040; min-height: 64px;">
+    <nav th:fragment="header(role, activeMenu)" 
+         th:with="curActive=${activeMenu != null ? activeMenu : ''}, 
+                  isUserAuth=${(currentUser != null) or (role != null and role != 'GUEST' and role != '') or (isAuthenticated != null and isAuthenticated)}"
+         class="navbar navbar-expand-lg px-3 px-xl-4 border-bottom sticky-top shadow-sm" 
+         style="background-color: #FFFFFF; border-color: var(--border-subtle) !important; z-index: 1040;">
         <div class="container-fluid">
             <!-- Brand Logo -->
-            <a th:href="@{/}" class="d-flex align-items-center gap-2 text-decoration-none">
-                <div class="kotoba-logo-circle" style="width: 36px; height: 36px;">
-                    <svg viewBox="0 0 100 100" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+            <a th:href="@{/}" class="navbar-brand d-flex align-items-center gap-2 me-3 me-xl-4 text-decoration-none py-1">
+                <div class="kotoba-logo-circle" style="width: 38px; height: 38px; flex-shrink: 0;">
+                    <svg viewBox="0 0 100 100" width="38" height="38" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="50" cy="50" r="50" fill="#E06D53" />
                         <circle cx="50" cy="42" r="22" fill="#FFFFFF" opacity="0.3" />
                         <path d="M 20 85 L 43 32 L 57 32 L 80 85 Z" fill="#173B57" />
@@ -14,134 +18,385 @@
                     </svg>
                 </div>
                 <div>
-                    <h5 class="fw-bold mb-0" style="color: #173B57; line-height: 1;">JEPS</h5>
-                    <span class="text-muted" style="font-size: 0.68rem; font-family: 'Noto Sans JP', sans-serif;">Japanese Exam Prep</span>
+                    <h5 class="fw-bold mb-0 text-nowrap" style="color: var(--navy-dark); line-height: 1.1; letter-spacing: -0.5px;">JEPS</h5>
+                    <span class="text-muted text-nowrap" style="font-size: 0.68rem; font-family: 'Noto Sans JP';">日本語試験対策</span>
                 </div>
             </a>
 
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="Toggle navigation">
+            <!-- Mobile Hamburger Toggle -->
+            <button class="navbar-toggler border-0 shadow-none p-1" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
+            <!-- Navigation Links -->
             <div class="collapse navbar-collapse" id="topNav">
-                <!-- Navigation links matching screenshot: Home Page, Course List, JLPT Mock Exam, About Us -->
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 d-flex align-items-center gap-1">
+                <!-- If GUEST / Public Navigation -->
+                <ul th:if="${!isUserAuth}" class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/}"
-                           th:style="${activeMenu == 'home'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
-                           onmouseover="this.style.color='#173B57'"
-                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
-                           th:attr="data-active=${activeMenu == 'home' ? 'true' : null}">Home Page</a>
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'home'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/}">
+                            <i class="bi bi-house-door me-1"></i>Trang chủ
+                        </a>
+                    </li>
+
+                    <!-- Hover dropdown for Course Catalog -->
+                    <li class="nav-item dropdown dropdown-hover">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap d-flex align-items-center gap-1" 
+                           th:classappend="${curActive == 'courses'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/courses}">
+                            <i class="bi bi-collection-play me-1"></i>Khóa học JLPT
+                            <i class="bi bi-chevron-down text-muted" style="font-size: 0.65rem;"></i>
+                        </a>
+                        <ul class="dropdown-menu shadow border-0 rounded-3 py-2 mt-0" style="min-width: 270px;">
+                            <li>
+                                <a class="dropdown-item py-2 fw-semibold text-primary" th:href="@{/courses}">
+                                    <i class="bi bi-grid-fill me-2"></i>Tất cả khóa học (N5 – N1)
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N5')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N5</span>Khóa học JLPT N5 (Căn bản)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N4')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N4</span>Khóa học JLPT N4 (Sơ cấp)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N3')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N3</span>Khóa học JLPT N3 (Trung cấp)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N2')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N2</span>Khóa học JLPT N2 (Nâng cao)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N1')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N1</span>Khóa học JLPT N1 (Chuyên sâu)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'mock-exam' or curActive == 'exams'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/mock-exam}">
+                            <i class="bi bi-pencil-square me-1"></i>Thi thử JLPT
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/courses}"
-                           th:style="${activeMenu == 'courses'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
-                           onmouseover="this.style.color='#173B57'"
-                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
-                           th:attr="data-active=${activeMenu == 'courses' ? 'true' : null}">Course List</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/mock-exam}"
-                           th:style="${activeMenu == 'mock' or activeMenu == 'exam' or activeMenu == 'exams'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
-                           onmouseover="this.style.color='#173B57'"
-                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
-                           th:attr="data-active=${activeMenu == 'mock' or activeMenu == 'exam' or activeMenu == 'exams' ? 'true' : null}">JLPT Mock Exam</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 fw-medium" th:href="@{/about}"
-                           th:style="${activeMenu == 'about'} ? 'color: #173B57; font-weight: 700;' : 'color: #475569;'"
-                           onmouseover="this.style.color='#173B57'"
-                           onmouseout="if(!this.dataset.active) this.style.color='#475569'"
-                           th:attr="data-active=${activeMenu == 'about' ? 'true' : null}">About Us</a>
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'about'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/about}">
+                            <i class="bi bi-info-circle me-1"></i>Giới thiệu
+                        </a>
                     </li>
                 </ul>
 
-                <!-- Right Side: User Dropdown or Guest Buttons -->
-                <div class="d-flex align-items-center">
-                    <!-- Guest -->
-                    <div th:if="${(currentUser == null and (currentRole == null or currentRole == 'GUEST' or currentRole == '')) and (isAuthenticated == null or !isAuthenticated)}" class="d-flex gap-2">
-                        <a th:href="@{/auth/login}" class="btn btn-outline-primary btn-sm px-3 py-1 rounded-pill fw-medium" style="border-color: #BFDBFE; color: #2563EB;">Đăng nhập</a>
-                        <a th:href="@{/auth/register}" class="btn btn-primary btn-sm px-3 py-1 rounded-pill fw-medium shadow-sm" style="background-color: #173B57; border-color: #173B57;">Bắt đầu học</a>
-                    </div>
+                <!-- If Authenticated Learner Navigation: ONLY items not in the dropdown image -->
+                <ul th:if="${isUserAuth}" class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'home'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/}">
+                            <i class="bi bi-house-door me-1"></i>Trang chủ
+                        </a>
+                    </li>
 
-                    <!-- Authenticated User (Pill button with Avatar, Full Name, and Caret - exactly as in screenshot) -->
-                    <div th:unless="${(currentUser == null and (currentRole == null or currentRole == 'GUEST' or currentRole == '')) and (isAuthenticated == null or !isAuthenticated)}" class="dropdown">
-                        <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 14px; font-weight: 500; background-color: #FFFFFF; border-color: #E2E8F0 !important;">
-                            <!-- Avatar circle -->
-                            <div class="rounded-circle overflow-hidden d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; background-color: #F1F5F9; border: 1px solid #E2E8F0;">
-                                <img th:if="${(currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty())}"
-                                     th:src="${currentUserAvatar != null and !currentUserAvatar.isBlank() ? currentUserAvatar : (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty() ? currentUser.avatarUrl : profile.avatarUrl)}"
-                                     alt="Avatar" class="w-100 h-100 object-fit-cover" />
-                                <span th:if="${!((currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty())) and ((currentUserFullName != null and !currentUserFullName.isBlank()) or (currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null))}"
-                                      class="fw-bold small text-secondary"
-                                      th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? #strings.substring(currentUserFullName, 0, 1).toUpperCase() : (currentUser != null and currentUser.fullName != null ? #strings.substring(currentUser.fullName, 0, 1).toUpperCase() : #strings.substring(profile.fullName, 0, 1).toUpperCase())}">
-                                    U
-                                </span>
-                                <i th:unless="${(currentUserAvatar != null and !currentUserAvatar.isBlank()) or (currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (profile != null and profile.avatarUrl != null and !profile.avatarUrl.isEmpty()) or (currentUserFullName != null and !currentUserFullName.isBlank()) or (currentUser != null and currentUser.fullName != null) or (profile != null and profile.fullName != null)}"
-                                   class="bi bi-person-fill text-muted" style="font-size: 14px;"></i>
-                            </div>
-
-                            <!-- User's Full Name -->
-                            <span class="text-dark fw-medium"
-                                  th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : (profile != null and profile.fullName != null ? profile.fullName : (userName != null ? userName : 'Học viên')))}">
-                                Học viên
-                            </span>
-                        </button>
-
-                        <!-- Dropdown Menu -->
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 py-2" style="min-width: 230px; z-index: 1060; border: 1px solid #E2E8F0 !important;">
+                    <!-- Hover dropdown for Course Catalog (Learner view) -->
+                    <li class="nav-item dropdown dropdown-hover">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap d-flex align-items-center gap-1" 
+                           th:classappend="${curActive == 'courses'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/courses}">
+                            <i class="bi bi-collection-play me-1"></i>Khóa học JLPT
+                            <i class="bi bi-chevron-down text-muted" style="font-size: 0.65rem;"></i>
+                        </a>
+                        <ul class="dropdown-menu shadow border-0 rounded-3 py-2 mt-0" style="min-width: 270px;">
                             <li>
-                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark"
-                                   th:href="@{${currentUser != null and currentUser.role != null and currentUser.role.name() == 'ADMIN' ? '/admin/dashboard' : (currentUser != null and currentUser.role != null and currentUser.role.name() == 'MANAGER' ? '/manager/dashboard' : '/learning/dashboard')}}">
-                                    <i class="bi bi-grid text-primary fs-6"></i>
-                                    <span>Tổng quan học tập</span>
+                                <a class="dropdown-item py-2 fw-semibold text-primary" th:href="@{/courses}">
+                                    <i class="bi bi-grid-fill me-2"></i>Tất cả khóa học (N5 – N1)
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N5')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N5</span>Khóa học JLPT N5 (Căn bản)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/learning-path}">
-                                    <i class="bi bi-compass text-primary fs-6"></i>
-                                    <span>Lộ trình học</span>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N4')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N4</span>Khóa học JLPT N4 (Sơ cấp)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/mock-exam}">
-                                    <i class="bi bi-pencil-square text-primary fs-6"></i>
-                                    <span>JLPT Mock Exam</span>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N3')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N3</span>Khóa học JLPT N3 (Trung cấp)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/exams/placement}">
-                                    <i class="bi bi-card-checklist text-primary fs-6"></i>
-                                    <span>Đánh giá đầu vào</span>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N2')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N2</span>Khóa học JLPT N2 (Nâng cao)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/orders}">
-                                    <i class="bi bi-bag-check text-primary fs-6"></i>
-                                    <span>Lịch sử mua hàng</span>
+                                <a class="dropdown-item py-2 d-flex align-items-center justify-content-between" th:href="@{/courses(level='N1')}">
+                                    <span><span class="badge rounded-pill text-bg-light border me-2 fw-bold">N1</span>Khóa học JLPT N1 (Chuyên sâu)</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
                                 </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/profile}">
-                                    <i class="bi bi-person text-primary fs-6"></i>
-                                    <span>Hồ sơ cá nhân</span>
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider my-2" style="border-color: #F1F5F9;"></li>
-                            <li>
-                                <form th:action="@{/auth/logout}" method="post" class="m-0 p-0">
-                                    <button type="submit" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 text-danger fw-semibold border-0 bg-transparent w-100 text-start">
-                                        <i class="bi bi-box-arrow-right fs-6"></i>
-                                        <span>Đăng xuất</span>
-                                    </button>
-                                </form>
                             </li>
                         </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'flashcards'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/flashcards}">
+                            <i class="bi bi-card-text me-1"></i>Từ vựng Flashcard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'exams' or curActive == 'placement'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/exams}">
+                            <i class="bi bi-award me-1"></i>Đánh giá năng lực
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'learning-path'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/learning-path}">
+                            <i class="bi bi-diagram-3 me-1"></i>Lộ trình học
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Right Side Actions: Auth / Profile -->
+                <div class="d-flex align-items-center gap-2 gap-xl-3 mt-3 mt-lg-0 ms-auto">
+                    <!-- If Not Authenticated -->
+                    <div th:if="${!isUserAuth}" class="d-flex align-items-center gap-2">
+                        <a th:href="@{/auth/login}" class="btn btn-steel-outline btn-sm rounded-pill px-3 py-1 text-nowrap">Đăng nhập</a>
+                        <a th:href="@{/auth/register}" class="btn btn-steel btn-sm rounded-pill px-3 py-1 text-nowrap">Bắt đầu học</a>
+                    </div>
+
+                    <!-- If Authenticated -->
+                    <div th:if="${isUserAuth}" class="d-flex align-items-center gap-2 gap-xl-3">
+                        
+                        <!-- Notification Bell Dropdown (Loaded from Database) -->
+                        <div class="dropdown">
+                            <button class="btn btn-light rounded-circle p-2 text-muted border shadow-none position-relative" 
+                                    type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" 
+                                    style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;" 
+                                    title="Thông báo của bạn">
+                                <i class="bi bi-bell-fill fs-6" style="color: var(--navy-dark)"></i>
+                                <!-- Dynamic Ping Badge with unread count -->
+                                <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}" 
+                                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" 
+                                      style="font-size: 0.65rem;"
+                                      id="unreadBadgeCount"
+                                      th:text="${unreadNotificationCount}">3</span>
+                            </button>
+
+                            <!-- Notification Dropdown Menu -->
+                            <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-0 overflow-hidden" 
+                                 aria-labelledby="notificationDropdown" 
+                                 style="width: 360px; max-width: 90vw; z-index: 1060; border: 1px solid #ECE7DE !important;">
+                                
+                                <!-- Header -->
+                                <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h6 class="fw-bold mb-0 text-dark">Thông báo</h6>
+                                        <span class="badge rounded-pill bg-primary-subtle text-primary small" 
+                                              id="unreadPillHeader"
+                                              th:text="${unreadNotificationCount != null ? unreadNotificationCount + ' mới' : '0 mới'}">3 mới</span>
+                                    </div>
+                                    <button class="btn btn-link btn-sm text-decoration-none p-0 text-muted small hover-primary" 
+                                            onclick="markAllNotificationsRead(event)">
+                                        <i class="bi bi-check2-all me-1"></i>Đọc tất cả
+                                    </button>
+                                </div>
+
+                                <!-- Notification Scroll List -->
+                                <div class="notification-scroll-box" style="max-height: 380px; overflow-y: auto;">
+                                    <!-- Items -->
+                                    <div th:if="${recentNotifications != null and !recentNotifications.isEmpty()}" class="list-group list-group-flush">
+                                        <a th:each="n : ${recentNotifications}" 
+                                           th:href="${n.targetUrl != null ? n.targetUrl : '#'}" 
+                                           th:onclick="'markSingleNotificationRead(' + ${n.id} + ', event)'"
+                                           class="list-group-item list-group-item-action p-3 border-bottom d-flex gap-3 align-items-start transition-all"
+                                           th:style="${!n.read} ? 'background-color: #FAFBFD;' : ''">
+                                            <!-- Icon -->
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 mt-1" 
+                                                 style="width: 36px; height: 36px; background-color: #F1EDE4;">
+                                                <i th:class="'bi ' + ${n.icon} + ' fs-6 ' + ${n.iconColor}"></i>
+                                            </div>
+                                            <!-- Text -->
+                                            <div class="flex-grow-1 overflow-hidden">
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <span class="fw-bold small text-dark text-truncate" th:text="${n.title}">Tiêu đề</span>
+                                                    <span th:if="${!n.read}" class="badge bg-primary rounded-circle p-1" style="width: 8px; height: 8px;" title="Chưa đọc"></span>
+                                                </div>
+                                                <p class="small text-muted mb-1" style="font-size: 0.8rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" th:text="${n.content}">
+                                                    Nội dung thông báo...
+                                                </p>
+                                                <small class="text-muted" style="font-size: 0.72rem;">
+                                                    <i class="bi bi-clock me-1"></i>
+                                                    <span th:text="${n.createdAt != null ? #temporals.format(n.createdAt, 'dd/MM/yyyy HH:mm') : 'Hôm nay'}">Hôm nay</span>
+                                                </small>
+                                            </div>
+                                        </a>
+                                    </div>
+
+                                    <!-- Empty State if no notification -->
+                                    <div th:if="${recentNotifications == null or recentNotifications.isEmpty()}" class="text-center p-4 text-muted">
+                                        <i class="bi bi-bell-slash fs-2 d-block mb-2 text-secondary"></i>
+                                        <span class="small">Chưa có thông báo mới nào</span>
+                                    </div>
+                                </div>
+
+                                <!-- Footer -->
+                                <div class="p-2.5 text-center bg-light border-top">
+                                    <a th:href="@{/learning/dashboard}" class="small text-decoration-none fw-semibold text-primary">
+                                        Xem tiến trình học tập tại Dashboard <i class="bi bi-arrow-right small"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Profile Pill Dropdown (100% matched to reference image) -->
+                        <div class="dropdown">
+                            <button class="btn dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-2.5 py-1 shadow-sm text-nowrap" 
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                    style="background-color: #E2E8F0; border: 1px solid #CBD5E1;">
+                                <!-- Avatar Circle -->
+                                <div class="rounded-circle d-flex align-items-center justify-content-center overflow-hidden" 
+                                     style="width: 30px; height: 30px; background-color: var(--navy-dark); color: white; flex-shrink: 0;">
+                                    <img th:if="${(currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (currentUserAvatar != null and !currentUserAvatar.isEmpty())}"
+                                         th:src="${currentUserAvatar != null and !currentUserAvatar.isEmpty() ? currentUserAvatar : currentUser.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover" />
+                                    <span th:unless="${(currentUser != null and currentUser.avatarUrl != null and !currentUser.avatarUrl.isEmpty()) or (currentUserAvatar != null and !currentUserAvatar.isEmpty())}"
+                                          class="fw-bold small"
+                                          th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? #strings.substring(currentUserFullName, 0, 1).toUpperCase() : (currentUser != null and currentUser.fullName != null ? #strings.substring(currentUser.fullName, 0, 1).toUpperCase() : 'N')}">
+                                        N
+                                    </span>
+                                </div>
+
+                                <!-- User Name (Truncated cleanly) -->
+                                <span class="fw-semibold small text-truncate d-inline-block" style="max-width: 140px; color: var(--navy-dark);"
+                                      th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : (userName != null ? userName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : 'Nguyễn Văn Học Viên'))}">
+                                    Nguyễn Văn Học ...
+                                </span>
+
+                                <!-- JLPT Target Level Badge -->
+                                <span class="badge rounded-pill bg-white text-dark border small px-2 py-0.5 fw-semibold" 
+                                      style="font-size: 0.72rem; color: #334155 !important; border-color: #CBD5E1 !important;"
+                                      th:text="${currentUser != null and currentUser.currentJlptLevel != null and !currentUser.currentJlptLevel.isBlank() ? currentUser.currentJlptLevel : 'N4'}">N4</span>
+                            </button>
+
+                            <!-- Dropdown Menu items -->
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border rounded-4 mt-2 py-2" 
+                                style="min-width: 270px; z-index: 1060; border-color: #E2E8F0 !important;">
+                                <!-- User Summary in Dropdown Header -->
+                                <li class="px-3 py-2 border-bottom">
+                                    <div class="fw-bold text-dark text-truncate" style="font-size: 0.96rem;"
+                                         th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : (currentUser != null and currentUser.fullName != null ? currentUser.fullName : 'Nguyễn Văn Học Viên')}">Nguyễn Văn Học Viên</div>
+                                    <div class="small text-muted text-truncate" style="font-size: 0.82rem;"
+                                         th:text="${currentUser != null and currentUser.email != null ? currentUser.email : 'learner@jeps.edu.vn'}">learner@jeps.edu.vn</div>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark"
+                                       th:href="@{${currentUser != null and currentUser.role != null and currentUser.role.name() == 'ADMIN' ? '/admin/dashboard' : (currentUser != null and currentUser.role != null and currentUser.role.name() == 'MANAGER' ? '/manager/dashboard' : '/learning/dashboard')}}">
+                                        <i class="bi bi-speedometer2 text-primary fs-6" style="width: 20px;"></i>
+                                        <span>Tổng quan học tập</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/learning/my-courses}">
+                                        <i class="bi bi-bookmark-check text-success fs-6" style="width: 20px;"></i>
+                                        <span>Khóa học của tôi</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/exams/history}">
+                                        <i class="bi bi-clock-history fs-6" style="color: #0ea5e9; width: 20px;"></i>
+                                        <span>Lịch sử thi</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/profile}">
+                                        <i class="bi bi-person text-secondary fs-6" style="width: 20px;"></i>
+                                        <span>Hồ sơ cá nhân</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/order/history}">
+                                        <i class="bi bi-receipt text-secondary fs-6" style="width: 20px;"></i>
+                                        <span>Lịch sử đơn hàng</span>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1" style="border-color: #F1F5F9;"></li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/auth/change-password}">
+                                        <i class="bi bi-shield-lock text-secondary fs-6" style="width: 20px;"></i>
+                                        <span>Đổi mật khẩu</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-danger" th:href="@{/auth/logout}">
+                                        <i class="bi bi-box-arrow-right text-danger fs-6" style="width: 20px;"></i>
+                                        <span>Đăng xuất</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
             </div>
         </div>
     </nav>
+
+    <!-- Notification Client Script -->
+    <script>
+        function markAllNotificationsRead(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            fetch('/api/notifications/read-all', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('unreadBadgeCount');
+                    if (badge) badge.style.display = 'none';
+                    const pill = document.getElementById('unreadPillHeader');
+                    if (pill) pill.innerText = '0 mới';
+                    document.querySelectorAll('.notification-scroll-box .list-group-item').forEach(el => {
+                        el.style.backgroundColor = '#FFFFFF';
+                    });
+                    document.querySelectorAll('.notification-scroll-box .badge.bg-primary.rounded-circle').forEach(el => {
+                        el.style.display = 'none';
+                    });
+                })
+                .catch(err => console.error('Error marking all notifications as read:', err));
+        }
+
+        function markSingleNotificationRead(id, e) {
+            fetch('/api/notifications/' + id + '/read', { method: 'POST' })
+                .catch(err => console.error('Error marking notification as read:', err));
+        }
+    </script>
 </body>
 </html>

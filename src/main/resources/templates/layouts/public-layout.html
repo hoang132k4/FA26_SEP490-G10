@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" th:fragment="html(pageTitle, content)">
 <head th:replace="~{layouts/base :: head(${pageTitle})}"></head>
-<body class="d-flex flex-column min-vh-100" style="background-color: #F8FAFC; color: var(--text-main);"
-      th:with="activeMenu=${activeMenu != null ? activeMenu : (pageTitle == 'Home Page' ? 'home' : (pageTitle == 'Course List' ? 'courses' : (pageTitle == 'JLPT Mock Exam' ? 'mock' : (pageTitle == 'About Us' ? 'about' : ''))))}">
+<body class="d-flex flex-column min-vh-100" style="background-color: var(--bg-page);">
     <!-- Top Nav Header -->
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div th:replace="~{fragments/header :: header(role=${currentRole}, activeMenu=${activeMenu != null ? activeMenu : 'home'})}"></div>
 
     <!-- Main Public Content -->
-    <main class="flex-grow-1">
-        <div class="container my-4">
+    <main class="flex-grow-1 py-4">
+        <div class="container-xl px-3 px-md-4">
             <div th:replace="~{fragments/components/alert :: alert}"></div>
             <div th:replace="${content}"></div>
         </div>

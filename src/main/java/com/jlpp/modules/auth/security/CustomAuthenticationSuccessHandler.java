@@ -64,7 +64,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             } else if ("ROLE_MANAGER".equals(role)) {
                 return "/manager/dashboard";
             } else if ("ROLE_LEARNER".equals(role)) {
-                return "/learning/dashboard";
+                return "/";
             }
         }
 

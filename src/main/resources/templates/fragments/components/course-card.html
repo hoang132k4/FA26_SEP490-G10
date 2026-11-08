@@ -1,89 +1,124 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-    <div th:fragment="courseCard(course, isLearner)" class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100 kotoba-card overflow-hidden d-flex flex-column" th:if="${course != null}">
-            <!-- Thumbnail & Level Badge -->
-            <div class="position-relative">
+    <div th:fragment="courseCard(course, isLearner)" 
+         th:with="isRegistered=${enrolledCourseIds != null and enrolledCourseIds.contains(course.id)}"
+         class="col-md-6 col-lg-4 mb-4 d-flex">
+        <div class="card w-100 kotoba-course-card border-0 shadow-sm d-flex flex-column overflow-hidden position-relative" 
+             style="border-radius: 18px; background: #FFFFFF; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid #ECE7DE !important;">
+            
+            <!-- Thumbnail Container with Hover Zoom -->
+            <div class="position-relative overflow-hidden" style="height: 200px; background-color: #E2E8F0;">
                 <img th:if="${course.thumbnail != null and !course.thumbnail.isBlank()}"
                      th:src="${course.thumbnail}" 
-                     class="card-img-top" 
-                     th:alt="${course.title}" 
-                     style="height: 195px; object-fit: cover;">
+                     class="w-100 h-100 object-fit-cover course-thumb-img" 
+                     th:alt="${course.title}">
                 <img th:unless="${course.thumbnail != null and !course.thumbnail.isBlank()}"
                      th:src="${course.thumbnailUrl != null && !#strings.isEmpty(course.thumbnailUrl) ? course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
-                     class="card-img-top" 
-                     th:alt="${course.title}" 
-                     style="height: 195px; object-fit: cover;">
+                     class="w-100 h-100 object-fit-cover course-thumb-img" 
+                     th:alt="${course.title}">
                 
-                <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill shadow-sm" 
-                      style="background-color: var(--navy-dark); color: white; font-weight: 700; letter-spacing: 0.5px;"
-                      th:text="${course.level != null ? course.level : 'N5'}">N5</span>
+                <!-- Dark Gradient Overlay for Badge Contrast -->
+                <div class="position-absolute top-0 start-0 w-100 h-100" 
+                     style="background: linear-gradient(180deg, rgba(23, 59, 87, 0.4) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.2) 100%); pointer-events: none;"></div>
+
+                <!-- Top-Left JLPT Level Pill Badge -->
+                <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1.5 rounded-pill shadow-sm" 
+                      style="background-color: var(--navy-dark); color: #FFFFFF; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-award-fill me-1 text-warning"></i><span th:text="${course.level != null ? course.level : 'N5'}">N5</span>
+                </span>
                 
-                <span th:if="${course.featured != null && course.featured}" class="position-absolute top-0 end-0 m-3 badge px-2 py-1 rounded-pill bg-danger shadow-sm">
-                    <i class="bi bi-fire me-1"></i> Nổi bật
+                <!-- Top-Right Status Badge (Registered vs Featured) -->
+                <span th:if="${isRegistered}" class="position-absolute top-0 end-0 m-3 badge px-3 py-1.5 rounded-pill shadow-sm text-white" 
+                      style="background-color: #27AE60; font-weight: 600; font-size: 0.78rem;">
+                    <i class="bi bi-check-circle-fill me-1"></i>Đã đăng ký
+                </span>
+                <span th:if="${!isRegistered && course.featured != null && course.featured}" 
+                      class="position-absolute top-0 end-0 m-3 badge px-2.5 py-1.5 rounded-pill shadow-sm text-white" 
+                      style="background-color: var(--sakura-accent); font-weight: 600; font-size: 0.78rem;">
+                    <i class="bi bi-fire me-1"></i>Nổi bật
                 </span>
             </div>
 
             <!-- Card Body -->
             <div class="card-body d-flex flex-column p-4 flex-grow-1">
-                <!-- Meta: Duration & Lesson count -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="small text-muted">
-                        <i class="bi bi-clock me-1 text-primary"></i> <span th:text="${course.duration != null ? course.duration : (course.durationHours != null ? course.durationHours + ' giờ học' : '40 giờ')}">40 giờ</span>
+                <!-- Meta: Duration, Lessons, Rating -->
+                <div class="d-flex align-items-center justify-content-between mb-2 text-muted" style="font-size: 0.82rem;">
+                    <span class="d-flex align-items-center">
+                        <i class="bi bi-clock me-1 text-primary"></i> 
+                        <span th:text="${course.duration != null ? course.duration : (course.durationHours != null ? course.durationHours + ' giờ' : '40 giờ')}">40 giờ</span>
                     </span>
-                    <span class="small text-muted">
-                        <i class="bi bi-journal-bookmark me-1 text-primary"></i> <span th:text="${course.lessonCount != null ? course.lessonCount + ' bài học' : '30 bài'}">30 bài</span>
+                    <span class="d-flex align-items-center">
+                        <i class="bi bi-journal-text me-1 text-primary"></i> 
+                        <span th:text="${course.lessonCount != null ? course.lessonCount + ' bài học' : '30 bài'}">30 bài</span>
+                    </span>
+                    <span class="d-flex align-items-center text-warning fw-semibold">
+                        <i class="bi bi-star-fill me-1"></i>5.0
                     </span>
                 </div>
                 
-                <!-- Title -->
-                <h5 class="card-title fw-bold text-dark mb-2" style="line-height: 1.4;">
-                    <a th:href="${isLearner} ? @{/learning/courses/{id}(id=${course.id})} : @{/courses/{id}(id=${course.id})}" 
+                <!-- Course Title (Max 2 lines) -->
+                <h5 class="card-title fw-bold text-dark mb-2" style="font-size: 1.08rem; line-height: 1.45; min-height: 2.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    <a th:href="@{/courses/{id}(id=${course.id})}" 
                        class="text-decoration-none text-dark hover-primary" th:text="${course.title}">
                         Khóa học Nhập môn Tiếng Nhật JLPT
                     </a>
                 </h5>
 
-                <!-- Description -->
-                <p class="card-text text-muted small flex-grow-1 mb-3" style="line-height: 1.6;" 
-                   th:text="${course.description != null ? #strings.abbreviate(course.description, 110) : 'Chương trình đào tạo toàn diện kiến thức theo chuẩn kỳ thi JLPT.'}">
+                <!-- Course Description -->
+                <p class="card-text text-muted small flex-grow-1 mb-3" style="line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" 
+                   th:text="${course.description != null ? course.description : 'Chương trình đào tạo toàn diện kiến thức theo chuẩn kỳ thi JLPT.'}">
                     Mô tả tóm tắt nội dung khóa học...
                 </p>
 
-                <!-- Covered Skills Badges -->
+                <!-- Covered Skills Pills -->
                 <div class="mb-3" th:if="${course.coveredSkills != null && !#strings.isEmpty(course.coveredSkills)}">
-                    <span class="badge bg-light text-secondary border small me-1 mb-1" 
+                    <span class="badge bg-light text-secondary border small me-1 mb-1 px-2.5 py-1 rounded-pill" 
                           th:each="skill : ${#strings.arraySplit(course.coveredSkills, ',')}" 
                           th:text="${#strings.trim(skill)}">Kỹ năng</span>
                 </div>
 
-                <!-- Footer: Price & Actions -->
-                <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-light">
+                <!-- Footer: Price & CTA Action -->
+                <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top" style="border-color: #F1EDE4 !important;">
                     <div>
-                        <div th:if="${course.discountPrice != null && course.discountPrice > 0}">
-                            <span class="fw-bold fs-5 text-danger" 
-                                  th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
-                                199,000 đ
+                        <!-- If enrolled: Show active tag -->
+                        <div th:if="${isRegistered}">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill small fw-semibold">
+                                <i class="bi bi-play-circle me-1"></i>Đang theo học
                             </span>
-                            <small class="text-muted text-decoration-line-through ms-1" 
-                                   th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">
-                                299,000 đ
-                            </small>
                         </div>
-                        <div th:if="${course.discountPrice == null || course.discountPrice == 0}">
-                            <span class="fw-bold fs-5" style="color: var(--steel-blue)" 
-                                  th:text="${course.price != null && course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">
-                                299,000 đ
-                            </span>
+                        <!-- If not enrolled: Show price -->
+                        <div th:unless="${isRegistered}">
+                            <div th:if="${course.discountPrice != null && course.discountPrice > 0}">
+                                <span class="fw-bold fs-5 text-danger" 
+                                      th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                    199,000 đ
+                                </span>
+                                <small class="text-muted text-decoration-line-through ms-1" style="font-size: 0.8rem;"
+                                       th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                    299,000 đ
+                                </small>
+                            </div>
+                            <div th:if="${course.discountPrice == null || course.discountPrice == 0}">
+                                <span class="fw-bold fs-5" style="color: var(--steel-blue)" 
+                                      th:text="${course.price != null && course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">
+                                    299,000 đ
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- CTA Buttons -->
-                    <div class="d-flex gap-2">
-                        <a th:href="${isLearner} ? @{/learning/courses/{id}(id=${course.id})} : @{/courses/{id}(id=${course.id})}" 
-                           class="btn btn-steel-outline btn-sm px-3">
-                            <i class="bi bi-eye me-1"></i> Xem chi tiết
+                    <!-- CTA Action Button -->
+                    <div>
+                        <a th:if="${isRegistered}" 
+                           th:href="@{/learning/courses/{id}/lessons(id=${course.id})}" 
+                           class="btn btn-sakura btn-sm px-3 py-1.5 rounded-pill shadow-sm fw-semibold text-nowrap">
+                            <i class="bi bi-play-fill me-1"></i>Vào học
+                        </a>
+                        <a th:unless="${isRegistered}" 
+                           th:href="@{/courses/{id}(id=${course.id})}" 
+                           class="btn btn-steel-outline btn-sm px-3 py-1.5 rounded-pill fw-semibold text-nowrap">
+                            Chi tiết <i class="bi bi-arrow-right ms-1"></i>
                         </a>
                     </div>
                 </div>

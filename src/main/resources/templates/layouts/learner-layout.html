@@ -1,23 +1,20 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" th:fragment="html(pageTitle, activeMenu, content)">
 <head th:replace="~{layouts/base :: head(${pageTitle})}"></head>
-<body class="d-flex flex-column min-vh-100" style="background-color: #F8FAFC; color: var(--text-main);">
+<body class="d-flex flex-column min-vh-100" style="background-color: var(--bg-page);">
+    <!-- Unified Top Navigation Header across all pages -->
+    <div th:replace="~{fragments/header :: header(role=${role != null ? role : currentRole}, activeMenu=${activeMenu})}"></div>
 
-    <!-- Top Nav Header -->
-    <div th:replace="~{fragments/header :: header}"></div>
-
-    <!-- Main Body Content (Full screen width without sidebar offset) -->
-    <main class="flex-grow-1 w-100 py-4 px-3 px-md-4 px-lg-5" style="max-width: 1440px; margin: 0 auto;">
-        <div th:replace="~{fragments/components/alert :: alert}"></div>
-        <div th:replace="${content}"></div>
+    <!-- Main Content Area: Full Width, Spacious & Comfortable for Learning -->
+    <main class="flex-grow-1 py-4">
+        <div class="container-xl px-3 px-md-4">
+            <div th:replace="~{fragments/components/alert :: alert}"></div>
+            <div th:replace="${content}"></div>
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-top py-3 text-center text-muted small mt-auto" style="border-color: #E2E8F0 !important;">
-        <div class="container">
-            <span>&copy; 2026 JEPS - Japanese Exam Preparation System. All rights reserved.</span>
-        </div>
-    </footer>
+    <!-- Unified Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
