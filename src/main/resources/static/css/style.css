@@ -1730,6 +1730,14 @@ textarea.lesson-field {
   grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr);
 }
 
+.lesson-field-row.is-kanji-header {
+  grid-template-columns: 100px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.lesson-field-row.is-kanji-meta {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .lesson-kanji-input {
   text-align: center;
   font-size: 1.15rem;
@@ -1745,15 +1753,598 @@ textarea.lesson-field {
 
 .lesson-compound-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr) 28px;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
 }
 
+/* ==================== KANJI STUDY BOARD (THEO MẪU THIẾT KẾ) ==================== */
+.kanji-study-board {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.kanji-study-shell {
+  display: flex;
+  flex-direction: row;
+  min-height: 420px;
+}
+
+/* --- Cột trái: Tổng quan Hán tự --- */
+.kanji-overview-col {
+  width: 320px;
+  flex-shrink: 0;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fbfdfc;
+}
+
+/* Khung chữ Hán chính */
+.kanji-stroke-box {
+  width: 170px;
+  height: 170px;
+  border: 2px solid #3d7068;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px rgba(61, 112, 104, 0.12), 0 4px 16px rgba(45, 92, 84, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.kanji-main-char {
+  font-size: 5.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #c86d3b;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+}
+
+.kanji-stroke-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3d7068;
+  background: #eef6f4;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* Huy hiệu Hán Việt */
+.kanji-hanviet-tag {
+  background-color: #23534b;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  padding: 6px 28px;
+  border-radius: 8px;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(35, 83, 75, 0.2);
+}
+
+.kanji-col-divider {
+  width: 100%;
+  border: none;
+  border-top: 1px dashed #d1ded9;
+  margin: 0 0 20px 0;
+}
+
+/* Các hàng âm đọc (Kun / On) */
+.kanji-reading-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.kanji-badge-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.kanji-badge-icon.is-kun {
+  background-color: #2b3a36;
+}
+
+.kanji-badge-icon.is-on {
+  background-color: #23534b;
+}
+
+.kanji-reading-text {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #23534b;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.kanji-meta-row {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Đường kẻ dọc phân cách */
+.kanji-v-divider {
+  width: 1px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+/* --- Cột phải: Danh sách từ ghép --- */
+.kanji-compounds-col {
+  flex: 1;
+  padding: 32px 36px;
+  position: relative;
+  background: #ffffff;
+}
+
+.kanji-compounds-col::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(61, 112, 104, 0.07) 0%, rgba(61, 112, 104, 0.03) 45%, rgba(61, 112, 104, 0.01) 70%, transparent 100%),
+              repeating-radial-gradient(circle, transparent, transparent 40px, rgba(61, 112, 104, 0.035) 41px, rgba(61, 112, 104, 0.035) 43px);
+  pointer-events: none;
+}
+
+.kanji-compounds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.kanji-compound-entry {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+
+.kanji-compound-word-wrap {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kanji-compound-furigana {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #d97736;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  letter-spacing: 2px;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+}
+
+.kanji-compound-word {
+  font-size: 2.35rem;
+  font-weight: 700;
+  color: #23534b;
+  line-height: 1.15;
+  letter-spacing: 2.5px;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+}
+
+.kanji-compound-meaning {
+  flex: 1;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #c06c39;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .kanji-study-shell {
+    flex-direction: column;
+  }
+  .kanji-overview-col {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .kanji-v-divider {
+    display: none;
+  }
+  .kanji-compounds-col {
+    padding: 24px 16px;
+  }
+  .kanji-compound-entry {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .kanji-compound-word-wrap {
+    width: 100%;
+  }
+}
+
+/* ==================== GRAMMAR STUDY BOARD (THEO MẪU THIẾT KẾ IMAGE 2) ==================== */
+.grammar-study-board {
+  margin-bottom: 24px;
+}
+
+.grammar-study-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  padding: 44px 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+.grammar-study-card::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(61, 112, 104, 0.07) 0%, rgba(61, 112, 104, 0.03) 45%, rgba(61, 112, 104, 0.01) 70%, transparent 100%),
+              repeating-radial-gradient(circle, transparent, transparent 40px, rgba(61, 112, 104, 0.035) 41px, rgba(61, 112, 104, 0.035) 43px);
+  pointer-events: none;
+}
+
+.grammar-formation-box {
+  max-width: 640px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.grammar-formation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grammar-formation-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 36px;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.grammar-f-col1 {
+  text-align: right;
+  flex: 1;
+}
+
+.grammar-f-col2 {
+  text-align: left;
+  flex: 1;
+}
+
+.grammar-accent {
+  color: #b83226;
+  font-weight: 750;
+}
+
+.grammar-formation-single {
+  text-align: center;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.grammar-dashed-line {
+  width: 82%;
+  border: none;
+  border-top: 1.5px dashed #c0d8d0;
+  margin: 32px auto;
+  position: relative;
+  z-index: 1;
+}
+
+.grammar-meaning-wrap {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.grammar-meaning-label {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1a202c;
+  margin-right: 8px;
+}
+
+.grammar-meaning-val {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #b83226;
+}
+
+.grammar-notes-box {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+}
+
+.grammar-note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1a202c;
+  line-height: 1.7;
+}
+
+.grammar-note-bullet {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  color: #1a202c;
+  flex-shrink: 0;
+}
+
+.grammar-note-text {
+  flex: 1;
+}
+
+.grammar-examples-box {
+  max-width: 760px;
+  margin: 32px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+}
+
+.grammar-examples-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.grammar-ex-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 1.12rem;
+  line-height: 1.6;
+}
+
+.grammar-ex-bullet {
+  color: #2563eb;
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+.grammar-ex-jp {
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+  color: #1e293b;
+}
+
+.grammar-ex-vi {
+  font-style: italic;
+  color: #4a5568;
+  margin-left: 8px;
+}
+
+/* ==================== VOCABULARY STUDY BOARD (THEO MẪU THIẾT KẾ IMAGE 1) ==================== */
+.vocab-study-board {
+  margin-bottom: 24px;
+}
+
+.vocab-table-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.vocab-entry-row {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid #e2e8f0;
+  min-height: 90px;
+}
+
+.vocab-entry-row:last-child {
+  border-bottom: none;
+}
+
+.vocab-entry-row.is-odd {
+  background: #ffffff;
+}
+
+.vocab-entry-row.is-even {
+  background: #f4f8f7; /* Nền xanh bạc hà nhạt xen kẽ chuẩn theo thiết kế */
+}
+
+.vocab-info-col {
+  width: 360px;
+  flex-shrink: 0;
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.vocab-header-line {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.vocab-word {
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a202c;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  line-height: 1.2;
+}
+
+.vocab-pos {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.vocab-hanviet {
+  margin-left: auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #2b3a36;
+  letter-spacing: 0.8px;
+}
+
+.vocab-reading-line {
+  margin-top: 4px;
+}
+
+.vocab-reading {
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.vocab-meaning-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.vocab-diamond {
+  color: #1a202c;
+  font-size: 0.95rem;
+}
+
+.vocab-meaning {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.vocab-v-divider {
+  width: 1px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.vocab-examples-col {
+  flex: 1;
+  padding: 18px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vocab-examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vocab-example-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.vocab-bullet {
+  font-size: 1.3rem;
+  line-height: 1.2;
+  color: #1a202c;
+  flex-shrink: 0;
+}
+
+.vocab-example-text-wrap {
+  flex: 1;
+}
+
+.vocab-ex-jp {
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.vocab-ex-vi {
+  font-style: italic;
+  font-size: 1.05rem;
+  color: #4a5568;
+  margin-left: 10px;
+}
+
+@media (max-width: 860px) {
+  .vocab-entry-row {
+    flex-direction: column;
+  }
+  .vocab-info-col {
+    width: 100%;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .vocab-v-divider {
+    display: none;
+  }
+  .grammar-formation-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .grammar-f-col1, .grammar-f-col2 {
+    text-align: center;
+  }
+}
+
 .lesson-word-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.6fr) 28px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) 75px minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(0, 1.6fr) minmax(0, 1.6fr) 28px;
   gap: 8px;
   align-items: center;
 }
@@ -1904,7 +2495,9 @@ textarea.lesson-field {
 
   .lesson-field-row.is-name,
   .lesson-field-row.is-pair,
-  .lesson-field-row.is-kanji {
+  .lesson-field-row.is-kanji,
+  .lesson-field-row.is-kanji-header,
+  .lesson-field-row.is-kanji-meta {
     grid-template-columns: minmax(0, 1fr);
   }
 

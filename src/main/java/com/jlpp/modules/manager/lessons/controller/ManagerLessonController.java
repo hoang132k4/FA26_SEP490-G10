@@ -105,8 +105,8 @@ public class ManagerLessonController {
     public Map<Long, List<String>> draftChapterNames() { return new java.util.LinkedHashMap<>(); }
 
     @GetMapping
-    public String workspace(@RequestParam(required = false) Long courseId,
-                            @RequestParam(required = false) String skill,
+    public String workspace(@RequestParam(name = "courseId", required = false) Long courseId,
+                            @RequestParam(name = "skill", required = false) String skill,
                             @RequestParam(name = "edit", required = false) Long editLessonId,
                             @RequestParam(name = "modal", required = false) String modalMode,
                             @RequestParam(name = "tab", required = false) String libraryTab,
@@ -164,9 +164,17 @@ public class ManagerLessonController {
         for (LessonRow lesson : allLessons) {
             SkillTypeEnum skillType = SkillTypeEnum.fromParam(lesson.skillValue());
             List<String> tags = new ArrayList<>();
-            if (skillType != null) tags.add(skillType.getValue());
-            if (flashcardLessonIds.contains(lesson.id())) tags.add("FLASHCARD");
-            if (practiceLessonIds.contains(lesson.id())) tags.add("PRACTICE");
+            String titleLower = lesson.title() == null ? "" : lesson.title().toLowerCase();
+            boolean isFlashcard = flashcardLessonIds.contains(lesson.id())
+                    || titleLower.startsWith("flashcard");
+            boolean isPractice = practiceLessonIds.contains(lesson.id())
+                    || titleLower.startsWith("luyện tập") || titleLower.startsWith("quiz");
+            if (isFlashcard || isPractice) {
+                if (isFlashcard) tags.add("FLASHCARD");
+                if (isPractice) tags.add("PRACTICE");
+            } else if (skillType != null) {
+                tags.add(skillType.getValue());
+            }
             lessonTags.put(lesson.id(), List.copyOf(tags));
         }
 
@@ -240,6 +248,23 @@ public class ManagerLessonController {
 
         LessonRow editingLesson = null;
         if (editLessonId != null) {
+            LessonRow checkLesson = allLessons.stream().filter(l -> l.id() == editLessonId).findFirst().orElse(null);
+            String titleLower = checkLesson != null && checkLesson.title() != null ? checkLesson.title().toLowerCase() : "";
+            if (flashcardLessonIds.contains(editLessonId) || titleLower.startsWith("flashcard")) {
+                List<Flashcard> cards = flashcardRepository.findByLessonId(editLessonId);
+                if (cards != null && !cards.isEmpty()) {
+                    Long fcId = cards.get(0).getFlashcardId() != null ? cards.get(0).getFlashcardId() : cards.get(0).getId();
+                    return "redirect:/manager/flashcards/" + fcId + "/edit";
+                }
+                return "redirect:/manager/flashcards";
+            }
+            if (practiceLessonIds.contains(editLessonId) || titleLower.startsWith("luyện tập") || titleLower.startsWith("quiz")) {
+                Optional<Exercise> ex = exerciseRepository.findByLessonId(editLessonId);
+                if (ex.isPresent()) {
+                    return "redirect:/manager/quizzes/" + ex.get().getExerciseId() + "/edit";
+                }
+                return "redirect:/manager/quizzes?lessonId=" + editLessonId;
+            }
             try {
                 editingLesson = lessonService.findLesson(editLessonId).orElse(null);
             } catch (DataAccessException exception) {
@@ -299,10 +324,16 @@ public class ManagerLessonController {
         } else {
             form = lessonDetailService.buildForm(selectedSkill, libraryEntryId, editingLesson, detail);
         }
-        if (modalOpen && editingLesson == null && requestedSectionName != null) {
-            form.put("sectionName", requestedSectionName);
+        if (modalOpen && editingLesson == null) {
+            if (requestedSectionName != null && !requestedSectionName.isBlank()) {
+                form.put("sectionName", requestedSectionName.trim());
+            } else if ((form.get("sectionName") == null || form.get("sectionName").toString().isBlank()) && !chapterNames.isEmpty()) {
+                String firstChap = chapterNames.stream().filter(c -> !c.equals("Chưa phân chương")).findFirst().orElse(null);
+                if (firstChap != null) form.put("sectionName", firstChap);
+            }
         }
         model.addAttribute("form", form);
+        model.addAttribute("requestedSectionName", form.get("sectionName"));
 
         if (detailId != null && request != null && "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"))) {
             return "pages/manager/lesson/manager-lessons :: lessonDetailContainer";
@@ -332,7 +363,8 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/sections")
-    public String createDraftSection(@RequestParam Long courseId, @RequestParam String sectionName,
+    public String createDraftSection(@RequestParam(name = "courseId") Long courseId,
+                                     @RequestParam(name = "sectionName") String sectionName,
                                      @ModelAttribute("draftChapterNames") Map<Long, List<String>> draftChapterNames,
                                      RedirectAttributes redirectAttributes) {
         String name = sectionName == null ? "" : sectionName.trim();
@@ -351,8 +383,9 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/sections/rename")
-    public String renameSection(@RequestParam Long courseId, @RequestParam String oldName,
-                                @RequestParam String newName,
+    public String renameSection(@RequestParam(name = "courseId") Long courseId,
+                                @RequestParam(name = "oldName") String oldName,
+                                @RequestParam(name = "newName") String newName,
                                 @ModelAttribute("draftChapterNames") Map<Long, List<String>> draftChapterNames,
                                 RedirectAttributes redirectAttributes) {
         String oldValue = oldName == null ? "" : oldName.trim();
@@ -381,7 +414,8 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/sections/delete")
-    public String deleteSection(@RequestParam Long courseId, @RequestParam String sectionName,
+    public String deleteSection(@RequestParam(name = "courseId") Long courseId,
+                                @RequestParam(name = "sectionName") String sectionName,
                                 @ModelAttribute("draftChapterNames") Map<Long, List<String>> draftChapterNames,
                                 RedirectAttributes redirectAttributes) {
         String name = sectionName == null ? "" : sectionName.trim();
@@ -410,7 +444,14 @@ public class ManagerLessonController {
             long createdLessonId = 0;
             try {
                 String title = params.getFirst("title");
-                LessonInput input = new LessonInput(title, params.getFirst("sectionName"), null,
+                String sectionName = params.getFirst("sectionName");
+                if (sectionName == null || sectionName.isBlank()) {
+                    sectionName = lessonService.findLessons(courseId).stream()
+                            .map(LessonRow::sectionName)
+                            .filter(s -> s != null && !s.isBlank() && !"Chưa phân chương".equalsIgnoreCase(s.trim()))
+                            .findFirst().orElse(null);
+                }
+                LessonInput input = new LessonInput(title, sectionName, null,
                         params.getFirst("content"), null, LessonStatusEnum.ACTIVE.name(), null,
                         integerValue(params, "durationMinutes"), booleanValue(params, "freePreview"));
                 createdLessonId = lessonService.createOther(courseId, input);
@@ -435,9 +476,16 @@ public class ManagerLessonController {
         try {
             if (skill == SkillTypeEnum.LISTENING) lessonAudioStorageService.applyQuestionAudioFiles(params, questionAudioFiles);
             String title = params.getFirst("title");
+            String sectionName = params.getFirst("sectionName");
+            if (sectionName == null || sectionName.isBlank()) {
+                sectionName = lessonService.findLessons(courseId).stream()
+                        .map(LessonRow::sectionName)
+                        .filter(s -> s != null && !s.isBlank() && !"Chưa phân chương".equalsIgnoreCase(s.trim()))
+                        .findFirst().orElse(null);
+            }
             LessonInput input = new LessonInput(
                     title,
-                    params.getFirst("sectionName"),
+                    sectionName,
                     params.getFirst("description"),
                     buildLessonContent(skill, params),
                     skill.getValue(),
@@ -465,7 +513,7 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/{lessonId}")
-    public String update(@PathVariable long lessonId,
+    public String update(@PathVariable(name = "lessonId") long lessonId,
                          @RequestParam MultiValueMap<String, String> params,
                          @RequestParam(name = "questionAudioFile", required = false) List<MultipartFile> questionAudioFiles,
                          RedirectAttributes redirectAttributes) {
@@ -477,8 +525,9 @@ public class ManagerLessonController {
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài học cần sửa."));
             if (existing.skillValue() == null || "OTHER".equalsIgnoreCase(params.getFirst("skillType"))) {
                 String title = params.getFirst("title");
-                String sectionName = params.getFirst("sectionName") == null
-                        ? existing.sectionName() : params.getFirst("sectionName");
+                String rawSectionName = params.getFirst("sectionName");
+                String sectionName = (rawSectionName == null || rawSectionName.isBlank())
+                        ? existing.sectionName() : rawSectionName;
                 LessonInput otherInput = new LessonInput(title, sectionName, existing.description(),
                         params.getFirst("content"), null, existing.status().name(), null,
                         integerValue(params, "durationMinutes"), booleanValue(params, "freePreview"));
@@ -497,9 +546,13 @@ public class ManagerLessonController {
 
             String title = params.getFirst("title");
             if (resolvedSkill == SkillTypeEnum.LISTENING) lessonAudioStorageService.applyQuestionAudioFiles(params, questionAudioFiles);
+            String updateSectionName = params.getFirst("sectionName");
+            if (updateSectionName == null || updateSectionName.isBlank()) {
+                updateSectionName = existing.sectionName();
+            }
             LessonInput input = new LessonInput(
                     title,
-                    params.getFirst("sectionName") == null ? existing.sectionName() : params.getFirst("sectionName"),
+                    updateSectionName,
                     params.getFirst("description"),
                     buildLessonContent(resolvedSkill, params),
                     resolvedSkill.getValue(),
@@ -524,9 +577,9 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/{lessonId}/delete")
-    public String delete(@PathVariable long lessonId,
-                         @RequestParam(required = false) Long courseId,
-                         @RequestParam(required = false) String skill,
+    public String delete(@PathVariable(name = "lessonId") long lessonId,
+                         @RequestParam(name = "courseId", required = false) Long courseId,
+                         @RequestParam(name = "skill", required = false) String skill,
                          RedirectAttributes redirectAttributes) {
         try {
             LessonRow lesson = lessonService.findLesson(lessonId).orElse(null);
@@ -542,9 +595,9 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/{lessonId}/duplicate")
-    public String duplicate(@PathVariable long lessonId,
-                            @RequestParam(required = false) Long courseId,
-                            @RequestParam(required = false) String skill,
+    public String duplicate(@PathVariable(name = "lessonId") long lessonId,
+                            @RequestParam(name = "courseId", required = false) Long courseId,
+                            @RequestParam(name = "skill", required = false) String skill,
                             RedirectAttributes redirectAttributes) {
         try {
             LessonRow source = lessonService.findLesson(lessonId).orElse(null);
@@ -563,11 +616,11 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/{lessonId}/status")
-    public String changeStatus(@PathVariable long lessonId,
-                               @RequestParam(required = false) String status,
-                               @RequestParam(required = false) Long courseId,
-                               @RequestParam(required = false) String skill,
-                               @RequestParam(required = false) Long detailId,
+    public String changeStatus(@PathVariable(name = "lessonId") long lessonId,
+                               @RequestParam(name = "status", required = false) String status,
+                               @RequestParam(name = "courseId", required = false) Long courseId,
+                               @RequestParam(name = "skill", required = false) String skill,
+                               @RequestParam(name = "detailId", required = false) Long detailId,
                                RedirectAttributes redirectAttributes) {
         try {
             LessonRow lesson = lessonService.findLesson(lessonId).orElse(null);
@@ -588,12 +641,12 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/{lessonId}/move")
-    public Object move(@PathVariable long lessonId,
-                       @RequestParam(defaultValue = "up") String direction,
-                       @RequestParam(required = false) Long courseId,
-                       @RequestParam(required = false) String skill,
-                       @RequestParam(required = false) String chapter,
-                       @RequestParam(required = false) String column,
+    public Object move(@PathVariable(name = "lessonId") long lessonId,
+                       @RequestParam(name = "direction", defaultValue = "up") String direction,
+                       @RequestParam(name = "courseId", required = false) Long courseId,
+                       @RequestParam(name = "skill", required = false) String skill,
+                       @RequestParam(name = "chapter", required = false) String chapter,
+                       @RequestParam(name = "column", required = false) String column,
                        HttpServletRequest request,
                        RedirectAttributes redirectAttributes) {
         boolean isAjax = isAjaxRequest(request);
@@ -635,11 +688,11 @@ public class ManagerLessonController {
     }
 
     @PostMapping("/reorder")
-    public Object reorder(@RequestParam(required = false) Long courseId,
-                          @RequestParam(required = false) String skill,
-                          @RequestParam(required = false) String chapter,
-                          @RequestParam(required = false) String column,
-                          @RequestParam(required = false) String ids,
+    public Object reorder(@RequestParam(name = "courseId", required = false) Long courseId,
+                          @RequestParam(name = "skill", required = false) String skill,
+                          @RequestParam(name = "chapter", required = false) String chapter,
+                          @RequestParam(name = "column", required = false) String column,
+                          @RequestParam(name = "ids", required = false) String ids,
                           HttpServletRequest request,
                           RedirectAttributes redirectAttributes) {
         boolean isAjax = isAjaxRequest(request);
@@ -713,12 +766,139 @@ public class ManagerLessonController {
      */
     private String buildLessonContent(SkillTypeEnum skill, MultiValueMap<String, String> params) {
         return switch (skill) {
-            case VOCABULARY -> joinCells(params, "word", "wordReading", "wordMeaning");
-            case GRAMMAR -> joinNonBlank(params.getFirst("pattern"), params.getFirst("meaning"));
-            case KANJI -> joinNonBlank(params.getFirst("character"), params.getFirst("kanjiMeaning"));
+            case VOCABULARY -> buildVocabularyLessonContent(params);
+            case GRAMMAR -> buildGrammarLessonContent(params);
+            case KANJI -> buildKanjiLessonContent(params);
             case LISTENING -> params.getFirst("transcript");
             case READING -> params.getFirst("passage");
         };
+    }
+
+    private String buildGrammarLessonContent(MultiValueMap<String, String> params) {
+        String pattern = params.getFirst("pattern");
+        if (pattern == null || pattern.isBlank()) return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append("# ").append(pattern.trim());
+        String meaning = params.getFirst("meaning");
+        if (meaning != null && !meaning.isBlank()) {
+            sb.append(" : ").append(meaning.trim());
+        }
+        sb.append("\n\n");
+        String formation = params.getFirst("formation");
+        if (formation != null && !formation.isBlank()) {
+            sb.append("### Cấu trúc kết hợp\n\n```\n").append(formation.trim()).append("\n```\n\n");
+        }
+        String desc = params.getFirst("description");
+        if (desc != null && !desc.isBlank()) {
+            sb.append("### Cách dùng & Giải thích\n\n").append(desc.trim()).append("\n\n");
+        }
+        List<String> jps = params.get("exampleJp");
+        List<String> vis = params.get("exampleVi");
+        if (jps != null && !jps.isEmpty()) {
+            sb.append("### Ví dụ\n\n");
+            for (int i = 0; i < jps.size(); i++) {
+                String jp = jps.get(i) == null ? "" : jps.get(i).trim();
+                if (jp.isEmpty()) continue;
+                String vi = vis != null && i < vis.size() && vis.get(i) != null ? vis.get(i).trim() : "";
+                sb.append("- **").append(jp).append("**");
+                if (!vi.isEmpty()) sb.append(" (").append(vi).append(")");
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    private String buildVocabularyLessonContent(MultiValueMap<String, String> params) {
+        List<String> words = params.get("word");
+        if (words == null || words.isEmpty()) return "";
+        List<String> readings = params.get("wordReading");
+        List<String> meanings = params.get("wordMeaning");
+        List<String> poses = params.get("partOfSpeech");
+        List<String> hanviets = params.get("hanviet");
+        List<String> exJps = params.get("wordExample");
+        List<String> exVis = params.get("wordExampleVi");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("| Từ vựng | Cách đọc | Từ loại | Hán Việt | Ý nghĩa | Ví dụ |\n");
+        sb.append("| :--- | :--- | :--- | :--- | :--- | :--- |\n");
+        for (int i = 0; i < words.size(); i++) {
+            String w = words.get(i) == null ? "" : words.get(i).trim();
+            if (w.isEmpty()) continue;
+            String r = readings != null && i < readings.size() && readings.get(i) != null ? readings.get(i).trim() : "-";
+            String m = meanings != null && i < meanings.size() && meanings.get(i) != null ? meanings.get(i).trim() : "-";
+            String p = poses != null && i < poses.size() && poses.get(i) != null ? poses.get(i).trim() : "-";
+            String hv = hanviets != null && i < hanviets.size() && hanviets.get(i) != null ? hanviets.get(i).trim() : "-";
+            String ex = exJps != null && i < exJps.size() && exJps.get(i) != null ? exJps.get(i).trim() : "";
+            String exv = exVis != null && i < exVis.size() && exVis.get(i) != null ? exVis.get(i).trim() : "";
+            String exFull = ex.isEmpty() ? "-" : ex + (!exv.isEmpty() ? " (" + exv + ")" : "");
+            sb.append("| **").append(w).append("** | ").append(r).append(" | ").append(p).append(" | ")
+                    .append(hv).append(" | ").append(m).append(" | ").append(exFull).append(" |\n");
+        }
+        return sb.toString();
+    }
+
+    private String buildKanjiLessonContent(MultiValueMap<String, String> params) {
+        String character = params.getFirst("character");
+        if (character == null || character.isBlank()) return "";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("# ").append(character.trim());
+        String hanviet = params.getFirst("hanviet");
+        if (hanviet != null && !hanviet.isBlank()) {
+            sb.append(" (").append(hanviet.trim()).append(")");
+        }
+        String meaning = params.getFirst("kanjiMeaning");
+        if (meaning != null && !meaning.isBlank()) {
+            sb.append(" : ").append(meaning.trim());
+        }
+        sb.append("\n\n");
+
+        sb.append("### Thông tin Hán tự\n\n");
+        String onReading = params.getFirst("onReading");
+        if (onReading != null && !onReading.isBlank()) {
+            sb.append("- **Âm On (Onyomi)**: `").append(onReading.trim()).append("`\n");
+        }
+        String kunReading = params.getFirst("kunReading");
+        if (kunReading != null && !kunReading.isBlank()) {
+            sb.append("- **Âm Kun (Kunyomi)**: `").append(kunReading.trim()).append("`\n");
+        }
+        String strokeCount = params.getFirst("strokeCount");
+        if (strokeCount != null && !strokeCount.isBlank()) {
+            sb.append("- **Số nét**: ").append(strokeCount.trim()).append(" nét\n");
+        }
+        String radical = params.getFirst("radical");
+        if (radical != null && !radical.isBlank()) {
+            sb.append("- **Bộ thủ**: ").append(radical.trim()).append("\n");
+        }
+
+        List<String> compoundWords = params.get("compoundWord");
+        List<String> compoundReadings = params.get("compoundReading");
+        List<String> compoundMeanings = params.get("compoundMeaning");
+        if (compoundWords != null && !compoundWords.isEmpty()) {
+            boolean hasAny = false;
+            for (String cw : compoundWords) {
+                if (cw != null && !cw.isBlank()) {
+                    hasAny = true;
+                    break;
+                }
+            }
+            if (hasAny) {
+                sb.append("\n### Từ ghép thường gặp\n\n");
+                sb.append("| Từ ghép | Cách đọc | Ý nghĩa |\n");
+                sb.append("| :--- | :--- | :--- |\n");
+                for (int i = 0; i < compoundWords.size(); i++) {
+                    String cw = compoundWords.get(i) == null ? "" : compoundWords.get(i).trim();
+                    if (cw.isEmpty()) continue;
+                    String cr = compoundReadings != null && i < compoundReadings.size() && compoundReadings.get(i) != null
+                            ? compoundReadings.get(i).trim() : "";
+                    String cm = compoundMeanings != null && i < compoundMeanings.size() && compoundMeanings.get(i) != null
+                            ? compoundMeanings.get(i).trim() : "";
+                    sb.append("| **").append(cw).append("** | ").append(cr.isEmpty() ? "-" : "`" + cr + "`")
+                            .append(" | ").append(cm.isEmpty() ? "-" : cm).append(" |\n");
+                }
+            }
+        }
+        return sb.toString();
     }
 
     private String joinCells(MultiValueMap<String, String> params, String... keys) {
@@ -881,7 +1061,7 @@ public class ManagerLessonController {
      * - Danh sách thẻ từ vựng / kanji / ngữ pháp trích xuất từ bài học
      */
     @GetMapping("/flashcard/new")
-    public String newFlashcardFromLesson(@RequestParam(required = false) Long lessonId, Model model) {
+    public String newFlashcardFromLesson(@RequestParam(name = "lessonId", required = false) Long lessonId, Model model) {
         ManagerFlashcardSetForm form = new ManagerFlashcardSetForm();
         if (lessonId != null) {
             form.setLessonId(lessonId);
@@ -937,7 +1117,7 @@ public class ManagerLessonController {
      * Hiển thị trang tạo bài luyện tập (quiz) với thông tin bài học đã được chọn sẵn từ lesson workspace.
      */
     @GetMapping({"/quiz/new", "/quizzes/new"})
-    public String newQuizFromLesson(@RequestParam(required = false) Long lessonId, Model model) {
+    public String newQuizFromLesson(@RequestParam(name = "lessonId", required = false) Long lessonId, Model model) {
         ManagerQuizForm form = new ManagerQuizForm();
         if (lessonId != null) {
             form.setLessonId(lessonId);
@@ -968,13 +1148,31 @@ public class ManagerLessonController {
         return "pages/manager/quiz/form";
     }
 
+    @GetMapping("/{lessonId}/flashcard/edit")
+    public String editFlashcardForLesson(@PathVariable(name = "lessonId") long lessonId) {
+        List<Flashcard> cards = flashcardRepository.findByLessonId(lessonId);
+        if (cards != null && !cards.isEmpty()) {
+            return "redirect:/manager/flashcards/" + cards.get(0).getFlashcardId() + "/edit";
+        }
+        return "redirect:/manager/flashcards";
+    }
+
+    @GetMapping("/{lessonId}/quiz/edit")
+    public String editQuizForLesson(@PathVariable(name = "lessonId") long lessonId) {
+        Optional<Exercise> exercise = exerciseRepository.findByLessonId(lessonId);
+        if (exercise.isPresent()) {
+            return "redirect:/manager/quizzes/" + exercise.get().getExerciseId() + "/edit";
+        }
+        return "redirect:/manager/quizzes?lessonId=" + lessonId;
+    }
+
     /**
      * Endpoint AJAX fragment: nạp LessonStudyView và render duy nhất modal chi tiết của 1 bài học.
      */
     @GetMapping({"/{lessonId}/detail-modal", "/detail-modal"})
-    public String detailModalFragment(@PathVariable(required = false) Long lessonId,
-                                      @RequestParam(required = false) Long id,
-                                      @RequestParam(required = false) Long courseId,
+    public String detailModalFragment(@PathVariable(name = "lessonId", required = false) Long lessonId,
+                                      @RequestParam(name = "id", required = false) Long id,
+                                      @RequestParam(name = "courseId", required = false) Long courseId,
                                       Model model) {
         Long targetId = lessonId != null ? lessonId : id;
         if (targetId == null) {
@@ -1035,13 +1233,39 @@ public class ManagerLessonController {
             try {
                 readingQuestions = lessonDetailService.findReadingQuestions(lesson.id());
                 readingPassage = lessonDetailService.findReadingPassage(lesson.id());
+                if ((readingPassage == null || readingPassage.isBlank()) && lesson.content() != null) {
+                    readingPassage = lesson.content();
+                }
             } catch (DataAccessException exception) {
                 log.warn("Could not read reading content for manager lesson {}", lesson.id(), exception);
             }
         }
+        Map<String, Object> kanjiDetail = null;
+        Map<String, Object> grammarDetail = null;
+        Map<String, Object> vocabDetail = null;
+        if (skillType == SkillTypeEnum.KANJI) {
+            try {
+                kanjiDetail = lessonDetailService.findKanjiDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read kanji detail for manager lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.GRAMMAR) {
+            try {
+                grammarDetail = lessonDetailService.findGrammarDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read grammar detail for manager lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.VOCABULARY) {
+            try {
+                vocabDetail = lessonDetailService.findVocabDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read vocab detail for manager lesson {}", lesson.id(), exception);
+            }
+        }
         return new LessonStudyView(lesson,
                 skillType == null ? "Khác" : skillType.getLabel(), materials, flashcards,
-                listeningQuestions, readingPassage, readingQuestions, practiceQuizzes);
+                listeningQuestions, readingPassage, readingQuestions, practiceQuizzes,
+                kanjiDetail, grammarDetail, vocabDetail);
     }
 
     /** Trích xuất thẻ flashcard từ bài học (từ vựng, kanji, hoặc ngữ pháp). */
@@ -1220,6 +1444,8 @@ public class ManagerLessonController {
         Object strokeCount = form.get("strokeCount");
         if (strokeCount == null) strokeCount = form.get("stroke_count");
 
+        String radical = stringValue(form.get("radical"));
+
         if (!character.isBlank()) {
             ManagerFlashcardSetCardForm card = new ManagerFlashcardSetCardForm();
             card.setVocabulary(character);
@@ -1228,8 +1454,16 @@ public class ManagerLessonController {
             if (!kunReading.isBlank()) readings.add("Âm Kun: " + kunReading);
             card.setReading(String.join(" | ", readings));
             card.setMeaning(!kanjiMeaning.isBlank() ? kanjiMeaning : lesson.title());
+            StringBuilder meta = new StringBuilder();
             if (strokeCount != null && !strokeCount.toString().isBlank()) {
-                card.setExampleSentence("Số nét: " + strokeCount);
+                meta.append("Số nét: ").append(strokeCount);
+            }
+            if (!radical.isBlank()) {
+                if (meta.length() > 0) meta.append(" · ");
+                meta.append("Bộ: ").append(radical);
+            }
+            if (meta.length() > 0) {
+                card.setExampleSentence(meta.toString());
             }
             cards.add(card);
         }
@@ -1239,10 +1473,15 @@ public class ManagerLessonController {
             for (Object obj : compList) {
                 if (obj instanceof Map<?, ?> compMap) {
                     String cWord = stringValue(compMap.get("compoundWord"));
+                    if (cWord.isBlank()) cWord = stringValue(compMap.get("word"));
+                    String cReading = stringValue(compMap.get("compoundReading"));
+                    if (cReading.isBlank()) cReading = stringValue(compMap.get("reading"));
                     String cMeaning = stringValue(compMap.get("compoundMeaning"));
+                    if (cMeaning.isBlank()) cMeaning = stringValue(compMap.get("meaning"));
                     if (!cWord.isBlank()) {
                         ManagerFlashcardSetCardForm compCard = new ManagerFlashcardSetCardForm();
                         compCard.setVocabulary(cWord);
+                        compCard.setReading(cReading);
                         compCard.setMeaning(!cMeaning.isBlank() ? cMeaning : cWord);
                         cards.add(compCard);
                     }
