@@ -86,7 +86,11 @@ public final class LessonDtos {
             String meta,
             String reading,
             String meaning,
-            String example) {
+            String example,
+            String exampleVi) {
+        public LibraryItem(long id, String title, String subtitle, String level, String meta, String reading, String meaning, String example) {
+            this(id, title, subtitle, level, meta, reading, meaning, example, null);
+        }
     }
 
     /** One cell of the skill strip: the five skills are always shown, including the empty ones. */
@@ -110,7 +114,28 @@ public final class LessonDtos {
                                   List<StudyMaterial> materials, List<Flashcard> flashcards,
                                   List<Map<String, Object>> listeningQuestions,
                                   String readingPassage, List<Map<String, Object>> readingQuestions,
-                                  List<PracticeQuizView> practiceQuizzes) { }
+                                  List<PracticeQuizView> practiceQuizzes,
+                                  Map<String, Object> kanjiDetail,
+                                  Map<String, Object> grammarDetail,
+                                  Map<String, Object> vocabDetail) {
+
+        public LessonStudyView(LessonRow lesson, String skillLabel,
+                               List<StudyMaterial> materials, List<Flashcard> flashcards,
+                               List<Map<String, Object>> listeningQuestions,
+                               String readingPassage, List<Map<String, Object>> readingQuestions,
+                               List<PracticeQuizView> practiceQuizzes,
+                               Map<String, Object> kanjiDetail) {
+            this(lesson, skillLabel, materials, flashcards, listeningQuestions, readingPassage, readingQuestions, practiceQuizzes, kanjiDetail, null, null);
+        }
+
+        public LessonStudyView(LessonRow lesson, String skillLabel,
+                               List<StudyMaterial> materials, List<Flashcard> flashcards,
+                               List<Map<String, Object>> listeningQuestions,
+                               String readingPassage, List<Map<String, Object>> readingQuestions,
+                               List<PracticeQuizView> practiceQuizzes) {
+            this(lesson, skillLabel, materials, flashcards, listeningQuestions, readingPassage, readingQuestions, practiceQuizzes, null, null, null);
+        }
+    }
 
     public record PracticeQuizView(Exercise exercise, List<QuizQuestionDto> questions) { }
 }

@@ -121,8 +121,16 @@
                                 </div>
                                 <div class="manager-skill-lesson-meta">
                                     <div class="manager-skill-tags" th:if="${lessonTags[item.id] != null and !#lists.isEmpty(lessonTags[item.id])}">
-                                        <span class="lesson-type-tag" th:each="tag : ${lessonTags[item.id]}"
-                                              th:classappend="${' tag-' + #strings.toLowerCase(tag)}" th:text="${tag}">VOCABULARY</span>
+                                        <th:block th:if="${#lists.contains(lessonTags[item.id], 'FLASHCARD') or (item.title != null and #strings.startsWith(#strings.toLowerCase(item.title), 'flashcard'))}">
+                                            <span class="lesson-type-tag tag-flashcard">FLASHCARD</span>
+                                        </th:block>
+                                        <th:block th:if="${#lists.contains(lessonTags[item.id], 'PRACTICE') or (item.title != null and (#strings.startsWith(#strings.toLowerCase(item.title), 'luyện tập') or #strings.startsWith(#strings.toLowerCase(item.title), 'quiz')))}">
+                                            <span class="lesson-type-tag tag-practice">PRACTICE</span>
+                                        </th:block>
+                                        <th:block th:if="${!#lists.contains(lessonTags[item.id], 'FLASHCARD') and !#lists.contains(lessonTags[item.id], 'PRACTICE') and (item.title == null or (!#strings.startsWith(#strings.toLowerCase(item.title), 'flashcard') and !#strings.startsWith(#strings.toLowerCase(item.title), 'luyện tập') and !#strings.startsWith(#strings.toLowerCase(item.title), 'quiz')))}">
+                                            <span class="lesson-type-tag" th:each="tag : ${lessonTags[item.id]}"
+                                                  th:classappend="${' tag-' + #strings.toLowerCase(tag)}" th:text="${tag}">VOCABULARY</span>
+                                        </th:block>
                                     </div>
                                     <span class="manager-skill-lesson-duration"><i class="bi bi-clock"></i><span th:text="|${item.durationMinutes != null ? item.durationMinutes : 0} phút|">20 phút</span></span>
                                     <small class="manager-free-preview" th:if="${item.freePreview}">Miễn phí</small>
@@ -134,7 +142,17 @@
                                    th:href="@{/manager/lessons(courseId=${selectedCourseId}, detailId=${item.id})}"
                                    th:attr="data-lesson-id=${item.id}, data-course-id=${selectedCourseId}, aria-label=|Xem chi tiết ${item.title}|"
                                    title="Xem chi tiết"><i class="bi bi-eye-fill"></i></a>
-                                <a class="manager-lesson-icon-btn" th:href="@{/manager/lessons(courseId=${selectedCourseId}, skill=${item.skillValue}, edit=${item.id})}"
+                                <a th:if="${#lists.contains(lessonTags[item.id], 'FLASHCARD') or (item.title != null and #strings.startsWith(#strings.toLowerCase(item.title), 'flashcard'))}"
+                                   class="manager-lesson-icon-btn"
+                                   th:href="@{/manager/lessons/{id}/flashcard/edit(id=${item.id})}"
+                                   th:attr="aria-label=|Sửa bài Flashcard ${item.title}|" title="Sửa bài Flashcard"><i class="bi bi-pencil-fill"></i></a>
+                                <a th:if="${#lists.contains(lessonTags[item.id], 'PRACTICE') or (item.title != null and (#strings.startsWith(#strings.toLowerCase(item.title), 'luyện tập') or #strings.startsWith(#strings.toLowerCase(item.title), 'quiz')))}"
+                                   class="manager-lesson-icon-btn"
+                                   th:href="@{/manager/lessons/{id}/quiz/edit(id=${item.id})}"
+                                   th:attr="aria-label=|Sửa bài Luyện tập (Quiz) ${item.title}|" title="Sửa bài Luyện tập (Quiz)"><i class="bi bi-pencil-fill"></i></a>
+                                <a th:if="${!#lists.contains(lessonTags[item.id], 'FLASHCARD') and !#lists.contains(lessonTags[item.id], 'PRACTICE') and (item.title == null or (!#strings.startsWith(#strings.toLowerCase(item.title), 'flashcard') and !#strings.startsWith(#strings.toLowerCase(item.title), 'luyện tập') and !#strings.startsWith(#strings.toLowerCase(item.title), 'quiz')))}"
+                                   class="manager-lesson-icon-btn"
+                                   th:href="@{/manager/lessons(courseId=${selectedCourseId}, skill=${item.skillValue}, edit=${item.id})}"
                                    th:attr="aria-label=|Sửa bài học ${item.title}|" title="Sửa bài học"><i class="bi bi-pencil-fill"></i></a>
                                 <form method="post" th:action="@{/manager/lessons/{id}/delete(id=${item.id})}"
                                       onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài học này?')">
@@ -278,20 +296,195 @@
                                 </div>
                             </div>
                             <div th:unless="${detailLesson.skillValue == 'LISTENING' or detailLesson.skillValue == 'READING'}">
-                            <div class="lesson-content-body" th:if="${detailLesson.content != null and !detailLesson.content.isBlank()}">
-                                <div class="manager-markdown-source" style="display:none" th:text="${detailLesson.content}"></div>
-                                <div class="manager-markdown-rendered markdown-body"></div>
-                            </div>
-                            <div th:unless="${detailLesson.content != null and !detailLesson.content.isBlank()}">
-                                <div th:if="${detailLesson.description != null and !detailLesson.description.isBlank()}" class="mb-4">
-                                    <h5 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học</h5>
-                                    <p class="text-muted mb-0" style="line-height:1.8" th:text="${detailLesson.description}">Mô tả bài học</p>
+                                <!-- ================= KANJI DETAIL VIEW (THEO MẪU THIẾT KẾ) ================= -->
+                                <div th:if="${detailLesson.skillValue == 'KANJI'}" class="kanji-study-board">
+                                    <div class="kanji-study-shell">
+                                        <!-- CỘT TRÁI: THÔNG TIN HÁN TỰ -->
+                                        <div class="kanji-overview-col">
+                                            <div class="kanji-stroke-box">
+                                                <span class="kanji-main-char" th:text="${studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character']) ? studyView.kanjiDetail['character'] : detailLesson.title}">回</span>
+                                                <span class="kanji-stroke-badge" th:if="${studyView.kanjiDetail != null and studyView.kanjiDetail['strokeCount'] != null}" th:text="|${studyView.kanjiDetail['strokeCount']} nét|">6 nét</span>
+                                            </div>
+
+                                            <div class="kanji-hanviet-tag" th:if="${studyView.kanjiDetail != null and studyView.kanjiDetail['hanviet'] != null and !#strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
+                                                 th:text="${studyView.kanjiDetail['hanviet']}">Hồi</div>
+                                            <div class="kanji-hanviet-tag" th:if="${studyView.kanjiDetail == null or studyView.kanjiDetail['hanviet'] == null or #strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
+                                                 th:text="${detailLesson.title}">Hồi</div>
+
+                                            <hr class="kanji-col-divider">
+
+                                            <div class="kanji-reading-item" th:if="${studyView.kanjiDetail != null and studyView.kanjiDetail['kunReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['kunReading'])}">
+                                                <span class="kanji-badge-icon is-kun" title="Âm Kun">訓</span>
+                                                <span class="kanji-reading-text" th:text="${studyView.kanjiDetail['kunReading']}">まわ・る、まわ・す</span>
+                                            </div>
+
+                                            <div class="kanji-reading-item" th:if="${studyView.kanjiDetail != null and studyView.kanjiDetail['onReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['onReading'])}">
+                                                <span class="kanji-badge-icon is-on" title="Âm On">音</span>
+                                                <span class="kanji-reading-text" th:text="${studyView.kanjiDetail['onReading']}">カイ、エ</span>
+                                            </div>
+
+                                            <div class="kanji-meta-row" th:if="${studyView.kanjiDetail != null and (studyView.kanjiDetail['radical'] != null or studyView.kanjiDetail['meaning'] != null)}">
+                                                <span class="badge bg-light text-dark border" th:if="${studyView.kanjiDetail['radical'] != null and !#strings.isEmpty(studyView.kanjiDetail['radical'])}" th:text="|Bộ: ${studyView.kanjiDetail['radical']}|">Bộ: 囗</span>
+                                                <span class="badge bg-light text-muted border" th:if="${studyView.kanjiDetail['meaning'] != null and !#strings.isEmpty(studyView.kanjiDetail['meaning'])}" th:text="${studyView.kanjiDetail['meaning']}">xoay quanh</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- PHÂN CÁCH DỌC -->
+                                        <div class="kanji-v-divider"></div>
+
+                                        <!-- CỘT PHẢI: TỪ GHÉP THƯỜNG GẶP -->
+                                        <div class="kanji-compounds-col">
+                                            <div class="kanji-compounds-list" th:if="${studyView.kanjiDetail != null and studyView.kanjiDetail['compounds'] != null and !#lists.isEmpty(studyView.kanjiDetail['compounds'])}">
+                                                <div class="kanji-compound-entry" th:each="comp : ${studyView.kanjiDetail['compounds']}">
+                                                    <div class="kanji-compound-word-wrap">
+                                                        <span class="kanji-compound-furigana" th:text="${comp['compoundReading'] != null and !#strings.isEmpty(comp['compoundReading']) ? comp['compoundReading'] : comp['reading']}">ま わ</span>
+                                                        <span class="kanji-compound-word" th:text="${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['compoundWord'] : comp['word']}">回す</span>
+                                                    </div>
+                                                    <div class="kanji-compound-meaning" th:text="${comp['compoundMeaning'] != null and !#strings.isEmpty(comp['compoundMeaning']) ? comp['compoundMeaning'] : comp['meaning']}">
+                                                        xoay, vặn, chuyền, chuyển
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div th:if="${studyView.kanjiDetail == null or studyView.kanjiDetail['compounds'] == null or #lists.isEmpty(studyView.kanjiDetail['compounds'])}">
+                                                <div class="lesson-content-body" th:if="${detailLesson.content != null and !detailLesson.content.isBlank()}">
+                                                    <div class="manager-markdown-source" style="display:none" th:text="${detailLesson.content}"></div>
+                                                    <div class="manager-markdown-rendered markdown-body"></div>
+                                                </div>
+                                                <div th:unless="${detailLesson.content != null and !detailLesson.content.isBlank()}" class="text-center py-4 text-muted">
+                                                    Chưa có từ ghép hoặc nội dung chi tiết cho bài Hán tự này.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div th:if="${(detailLesson.description == null or detailLesson.description.isBlank()) and (studyView.flashcards == null or studyView.flashcards.isEmpty()) and (studyView.practiceQuizzes == null or studyView.practiceQuizzes.isEmpty())}" class="text-center py-4 text-muted">
-                                    <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                                    <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết.</p>
+
+                                <!-- ================= GRAMMAR DETAIL VIEW (THEO MẪU THIẾT KẾ IMAGE 2) ================= -->
+                                <div th:if="${detailLesson.skillValue == 'GRAMMAR'}" class="grammar-study-board">
+                                    <div class="grammar-study-card">
+                                        <!-- CẤU TRÚC KẾT HỢP -->
+                                        <div class="grammar-formation-box" th:if="${studyView.grammarDetail != null and studyView.grammarDetail['formationRows'] != null and !#lists.isEmpty(studyView.grammarDetail['formationRows'])}">
+                                            <div class="grammar-formation-grid">
+                                                <div class="grammar-formation-row" th:each="fRow : ${studyView.grammarDetail['formationRows']}">
+                                                    <span class="grammar-f-col grammar-f-col1" th:text="${fRow['col1']}">Vば</span>
+                                                    <span class="grammar-f-col grammar-f-col2" th:if="${fRow['col2'] != null and !#strings.isEmpty(fRow['col2'])}" th:text="${fRow['col2']}">Vるほど</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grammar-formation-box" th:if="${studyView.grammarDetail != null and (studyView.grammarDetail['formationRows'] == null or #lists.isEmpty(studyView.grammarDetail['formationRows'])) and studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])}">
+                                            <div class="grammar-formation-single" th:text="${studyView.grammarDetail['formation']}">Noun + は</div>
+                                        </div>
+
+                                        <!-- ĐƯỜNG PHÂN CÁCH NÉT ĐỨT -->
+                                        <hr class="grammar-dashed-line">
+
+                                        <!-- Ý NGHĨA -->
+                                        <div class="grammar-meaning-wrap">
+                                            <span class="grammar-meaning-label">Ý nghĩa:</span>
+                                            <span class="grammar-meaning-val" th:text="${studyView.grammarDetail != null and studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) ? studyView.grammarDetail['meaning'] : detailLesson.title}">Càng ~ càng ~</span>
+                                        </div>
+
+                                        <!-- CÁCH DÙNG & GIẢI THÍCH (❖) -->
+                                        <div class="grammar-notes-box" th:if="${studyView.grammarDetail != null and studyView.grammarDetail['usageNotes'] != null and !#lists.isEmpty(studyView.grammarDetail['usageNotes'])}">
+                                            <div class="grammar-note-item" th:each="note : ${studyView.grammarDetail['usageNotes']}">
+                                                <span class="grammar-note-bullet">❖</span>
+                                                <span class="grammar-note-text" th:text="${note}">Diễn tả việc cùng với sự thay đổi của một hành vi hay trạng thái nào đó...</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- VÍ DỤ NẾU CÓ -->
+                                        <div class="grammar-examples-box" th:if="${studyView.grammarDetail != null and studyView.grammarDetail['examples'] != null and !#lists.isEmpty(studyView.grammarDetail['examples'])}">
+                                            <h6 class="grammar-examples-title"><i class="bi bi-chat-quote me-1"></i>Ví dụ thực tế:</h6>
+                                            <div class="grammar-ex-item" th:each="ex : ${studyView.grammarDetail['examples']}">
+                                                <span class="grammar-ex-bullet">•</span>
+                                                <div class="grammar-ex-content">
+                                                    <strong class="grammar-ex-jp" th:text="${ex['jp']}">日本語は、勉強すればするほど面白くなる。</strong>
+                                                    <span class="grammar-ex-vi" th:if="${ex['vi'] != null and !#strings.isEmpty(ex['vi'])}" th:text="|(${ex['vi']})|">(Càng học tiếng Nhật càng thấy thú vị.)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div th:if="${studyView.grammarDetail == null or ((studyView.grammarDetail['formation'] == null or #strings.isEmpty(studyView.grammarDetail['formation'])) and (studyView.grammarDetail['usageNotes'] == null or #lists.isEmpty(studyView.grammarDetail['usageNotes'])))}">
+                                            <div class="lesson-content-body mt-3" th:if="${detailLesson.content != null and !detailLesson.content.isBlank()}">
+                                                <div class="manager-markdown-source" style="display:none" th:text="${detailLesson.content}"></div>
+                                                <div class="manager-markdown-rendered markdown-body"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+
+                                <!-- ================= VOCABULARY DETAIL VIEW (THEO MẪU THIẾT KẾ IMAGE 1) ================= -->
+                                <div th:if="${detailLesson.skillValue == 'VOCABULARY'}" class="vocab-study-board">
+                                    <div class="vocab-table-card" th:if="${studyView.vocabDetail != null and studyView.vocabDetail['words'] != null and !#lists.isEmpty(studyView.vocabDetail['words'])}">
+                                        <div class="vocab-entry-row" th:each="vWord, vStat : ${studyView.vocabDetail['words']}"
+                                             th:classappend="${vStat.odd} ? ' is-odd' : ' is-even'">
+                                            
+                                            <!-- CỘT TRÁI: THÔNG TIN TỪ VỰNG -->
+                                            <div class="vocab-info-col">
+                                                <div class="vocab-header-line">
+                                                    <span class="vocab-word" th:text="${vWord['word']}">次回</span>
+                                                    <span class="vocab-pos" th:if="${vWord['partOfSpeech'] != null and !#strings.isEmpty(vWord['partOfSpeech'])}" th:text="${vWord['partOfSpeech']}">(N)</span>
+                                                    <span class="vocab-hanviet" th:if="${vWord['hanviet'] != null and !#strings.isEmpty(vWord['hanviet'])}" th:text="${vWord['hanviet']}">THỨ HỒI</span>
+                                                </div>
+                                                <div class="vocab-reading-line" th:if="${vWord['reading'] != null and !#strings.isEmpty(vWord['reading'])}">
+                                                    <span class="vocab-reading" th:text="${vWord['reading']}">じかい</span>
+                                                </div>
+                                                <div class="vocab-meaning-line">
+                                                    <span class="vocab-diamond">◇</span>
+                                                    <span class="vocab-meaning" th:text="${vWord['meaning']}">lần sau, lần tiếp theo</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- PHÂN CÁCH DỌC -->
+                                            <div class="vocab-v-divider"></div>
+
+                                            <!-- CỘT PHẢI: CÂU VÍ DỤ -->
+                                            <div class="vocab-examples-col">
+                                                <div class="vocab-examples-list" th:if="${vWord['examples'] != null and !#lists.isEmpty(vWord['examples'])}">
+                                                    <div class="vocab-example-item" th:each="ex : ${vWord['examples']}">
+                                                        <span class="vocab-bullet">•</span>
+                                                        <div class="vocab-example-text-wrap">
+                                                            <span class="vocab-ex-jp" th:text="${ex['jp']}">次回は気をつけます。</span>
+                                                            <span class="vocab-ex-vi" th:if="${ex['vi'] != null and !#strings.isEmpty(ex['vi'])}" th:text="|(${ex['vi']})|">(Lần sau tôi sẽ chú ý hơn.)</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="vocab-no-examples text-muted small" th:if="${vWord['examples'] == null or #lists.isEmpty(vWord['examples'])}">
+                                                    <em>Chưa có câu ví dụ cho từ này.</em>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- NẾU CHƯA CÓ WORDS, HIỂN THỊ NỘI DUNG MARKDOWN DỰ PHÒNG -->
+                                    <div th:if="${studyView.vocabDetail == null or studyView.vocabDetail['words'] == null or #lists.isEmpty(studyView.vocabDetail['words'])}">
+                                        <div class="lesson-content-body" th:if="${detailLesson.content != null and !detailLesson.content.isBlank()}">
+                                            <div class="manager-markdown-source" style="display:none" th:text="${detailLesson.content}"></div>
+                                            <div class="manager-markdown-rendered markdown-body"></div>
+                                        </div>
+                                        <div th:unless="${detailLesson.content != null and !detailLesson.content.isBlank()}" class="text-center py-4 text-muted">
+                                            Chưa có danh sách từ vựng chi tiết cho bài học này.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- KHÔNG PHẢI KANJI / GRAMMAR / VOCABULARY: GIỮ NGUYÊN MARKDOWN CŨ CHO OTHER -->
+                                <div th:if="${detailLesson.skillValue != 'KANJI' and detailLesson.skillValue != 'GRAMMAR' and detailLesson.skillValue != 'VOCABULARY'}">
+                                    <div class="lesson-content-body" th:if="${detailLesson.content != null and !detailLesson.content.isBlank()}">
+                                        <div class="manager-markdown-source" style="display:none" th:text="${detailLesson.content}"></div>
+                                        <div class="manager-markdown-rendered markdown-body"></div>
+                                    </div>
+                                    <div th:unless="${detailLesson.content != null and !detailLesson.content.isBlank()}">
+                                        <div th:if="${detailLesson.description != null and !detailLesson.description.isBlank()}" class="mb-4">
+                                            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học</h5>
+                                            <p class="text-muted mb-0" style="line-height:1.8" th:text="${detailLesson.description}">Mô tả bài học</p>
+                                        </div>
+                                        <div th:if="${(detailLesson.description == null or detailLesson.description.isBlank()) and (studyView.flashcards == null or studyView.flashcards.isEmpty()) and (studyView.practiceQuizzes == null or studyView.practiceQuizzes.isEmpty())}" class="text-center py-4 text-muted">
+                                            <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                                            <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <section class="manager-lesson-related-data" th:if="${studyView.flashcards != null and !studyView.flashcards.isEmpty()}">
@@ -437,8 +630,16 @@
             <span class="lesson-free-tag" th:if="${lesson.freePreview}">Học thử</span>
         </div>
         <div class="lesson-row-tags" th:if="${lessonTags[lesson.id] != null and !#lists.isEmpty(lessonTags[lesson.id])}">
-            <span class="lesson-type-tag" th:each="tag : ${lessonTags[lesson.id]}"
-                  th:classappend="${' tag-' + #strings.toLowerCase(tag)}" th:text="${tag}">VOCABULARY</span>
+            <th:block th:if="${#lists.contains(lessonTags[lesson.id], 'FLASHCARD') or (lesson.title != null and #strings.startsWith(#strings.toLowerCase(lesson.title), 'flashcard'))}">
+                <span class="lesson-type-tag tag-flashcard">FLASHCARD</span>
+            </th:block>
+            <th:block th:if="${#lists.contains(lessonTags[lesson.id], 'PRACTICE') or (lesson.title != null and (#strings.startsWith(#strings.toLowerCase(lesson.title), 'luyện tập') or #strings.startsWith(#strings.toLowerCase(lesson.title), 'quiz')))}">
+                <span class="lesson-type-tag tag-practice">PRACTICE</span>
+            </th:block>
+            <th:block th:if="${!#lists.contains(lessonTags[lesson.id], 'FLASHCARD') and !#lists.contains(lessonTags[lesson.id], 'PRACTICE') and (lesson.title == null or (!#strings.startsWith(#strings.toLowerCase(lesson.title), 'flashcard') and !#strings.startsWith(#strings.toLowerCase(lesson.title), 'luyện tập') and !#strings.startsWith(#strings.toLowerCase(lesson.title), 'quiz')))}">
+                <span class="lesson-type-tag" th:each="tag : ${lessonTags[lesson.id]}"
+                      th:classappend="${' tag-' + #strings.toLowerCase(tag)}" th:text="${tag}">VOCABULARY</span>
+            </th:block>
         </div>
         <div class="lesson-row-meta" th:if="${lesson.hasMeta()}" th:text="${lesson.meta()}">Chương 1 · 12 phút</div>
     </div>
@@ -553,6 +754,7 @@
                         <p class="lesson-modal-sub">
                             <span th:text="${selectedCourse != null ? selectedCourse.title : 'Khóa học'}">JLPT N5</span> ·
                             <span th:text="${selectedSkillLabel}">Ngữ pháp</span> ·
+                            <span th:if="${form['sectionName'] != null and !#strings.isEmpty(form['sectionName'])}" th:text="${form['sectionName']}">Chương 1</span> ·
                             <span th:if="${!editMode}" th:text="|tự động nối vào cuối kỹ năng, vị trí ${visibleCount + 1}|"></span>
                             <span th:if="${editMode}" th:text="|vị trí ${editingLesson.order} trong ${visibleCount}|"></span>
                         </p>
@@ -575,6 +777,7 @@
                         <input type="hidden" name="modal" value="new">
                         <input type="hidden" name="tab" value="library">
                         <input type="hidden" name="level" th:value="${libraryLevel}">
+                        <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
                         <i class="bi bi-search" aria-hidden="true"></i>
                         <input type="search" name="q" th:value="${libraryQuery}"
                                th:placeholder="|Tìm trong thư viện ${selectedSkillLabel}|"
@@ -582,19 +785,19 @@
                     </form>
 
                     <div class="lesson-library-levels">
-                        <a th:each="level : ${ {'N5', 'N4', 'N3'} }"
+                        <a th:each="level : ${ {'N5', 'N4', 'N3', 'N2', 'N1'} }"
                            class="lesson-library-level"
                            th:classappend="${level == libraryLevel} ? ' is-active' : ''"
                            th:text="${level}"
                            th:href="@{/manager/lessons(courseId=${selectedCourseId}, skill=${selectedSkill.value},
-                                        modal='new', tab='library', level=${level}, q=${libraryQuery})}">N5</a>
+                                        modal='new', tab='library', level=${level}, q=${libraryQuery}, sectionName=${form['sectionName']})}">N5</a>
                     </div>
 
                     <div class="lesson-library-list" th:if="${!#lists.isEmpty(libraryItems)}">
                         <th:block th:each="item : ${libraryItems}">
                         <button th:if="${selectedSkill.value == 'VOCABULARY'}"
                            type="button" class="lesson-library-item lesson-library-pick"
-                           th:attr="data-word=${item.title},data-reading=${item.reading},data-meaning=${item.meaning},data-example=${item.example},data-entry-id=${item.id}"
+                           th:attr="data-word=${item.title},data-reading=${item.reading},data-meaning=${item.meaning},data-example=${item.example},data-example-vi=${item.exampleVi},data-pos=${item.meta},data-entry-id=${item.id}"
                            aria-pressed="false">
                             <span class="lesson-library-row">
                                 <span class="lesson-library-title" th:text="${item.title}">〜てもいいです</span>
@@ -607,7 +810,7 @@
                         <a th:unless="${selectedSkill.value == 'VOCABULARY'}"
                            class="lesson-library-item"
                            th:classappend="${selectedEntryId != null and selectedEntryId == item.id} ? ' is-selected' : ''"
-                           th:href="@{/manager/lessons(courseId=${selectedCourseId}, skill=${selectedSkill.value}, modal='new', tab='library', level=${libraryLevel}, q=${libraryQuery}, entryId=${item.id})}">
+                           th:href="@{/manager/lessons(courseId=${selectedCourseId}, skill=${selectedSkill.value}, modal='new', tab='library', level=${libraryLevel}, q=${libraryQuery}, entryId=${item.id}, sectionName=${form['sectionName']})}">
                             <span class="lesson-library-row">
                                 <span class="lesson-library-title" th:text="${item.title}">項目</span>
                                 <span class="lesson-library-selected" th:if="${selectedEntryId != null and selectedEntryId == item.id}" aria-label="Đã chọn" title="Đã chọn"><i class="bi bi-check-lg" aria-hidden="true"></i></span>
@@ -634,17 +837,34 @@
                         <input type="hidden" name="courseId" th:value="${selectedCourseId}">
                         <input type="hidden" name="skillType" th:value="${selectedSkill.value}">
                         <input type="hidden" name="entryId" th:value="${selectedEntryId}">
-                        <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
-
                         <div class="lesson-modal-scroll">
 
-                            <div class="lesson-field-row is-name">
+                            <div class="lesson-field-row is-name mb-3" th:if="${chapterNames != null and !#lists.isEmpty(chapterNames)}">
+                                <div style="flex: 1 1 55%;">
+                                    <label class="lesson-field-label" for="lessonTitle">Tên bài học <span class="text-danger">*</span></label>
+                                    <input class="lesson-field" id="lessonTitle" name="title" type="text"
+                                           required maxlength="255" th:value="${form['title']}"
+                                           placeholder="Ví dụ: Bài 5: Đồ vật trong lớp học">
+                                </div>
+                                <div style="flex: 1 1 45%;">
+                                    <label class="lesson-field-label" for="lessonSectionName">Chương / Phần <span class="text-danger">*</span></label>
+                                    <select class="lesson-field" id="lessonSectionName" name="sectionName" required>
+                                        <option th:each="chName : ${chapterNames}"
+                                                th:if="${chName != 'Chưa phân chương'}"
+                                                th:value="${chName}"
+                                                th:text="${chName}"
+                                                th:selected="${chName == form['sectionName']}">Chương 1</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="lesson-field-row is-name" th:if="${chapterNames == null or #lists.isEmpty(chapterNames)}">
                                 <div>
                                     <label class="lesson-field-label" for="lessonTitle">Tên bài học <span class="text-danger">*</span></label>
                                     <input class="lesson-field" id="lessonTitle" name="title" type="text"
                                            required maxlength="255" th:value="${form['title']}"
                                            placeholder="Ví dụ: Bài 5: Đồ vật trong lớp học">
                                 </div>
+                                <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
                             </div>
 
                             <!-- ============ NGỮ PHÁP ============ -->
@@ -661,10 +881,15 @@
                                                type="text" maxlength="255" th:value="${form['meaning']}">
                                     </div>
                                 </div>
+                                <div class="mb-3">
+                                    <label class="lesson-field-label" for="grammarFormation">Cấu trúc kết hợp</label>
+                                    <textarea class="lesson-field is-japanese" id="grammarFormation" name="formation" rows="4"
+                                              th:text="${form['formation']}" placeholder="VD:&#10;Vば&#9;Vるほど&#10;Aいければ&#9;Aいほど&#10;Aな/Nなら&#9;Aな/Nほど"></textarea>
+                                </div>
                                 <div>
-                                    <label class="lesson-field-label" for="grammarUsage">Cách dùng</label>
-                                    <textarea class="lesson-field" id="grammarUsage" name="description" rows="2"
-                                              maxlength="500" th:text="${form['description']}"></textarea>
+                                    <label class="lesson-field-label" for="grammarUsage">Cách dùng &amp; Giải thích (mỗi dòng một ý ❖)</label>
+                                    <textarea class="lesson-field" id="grammarUsage" name="description" rows="3"
+                                              maxlength="1000" th:text="${form['description']}"></textarea>
                                 </div>
                                 <div>
                                     <div class="lesson-modal-rowhead">
@@ -676,9 +901,11 @@
                                     <div class="lesson-repeat" data-repeat="examples">
                                         <div class="lesson-example-row" th:each="row : ${form['examples']}">
                                             <input class="lesson-field is-japanese" name="exampleJp" type="text"
-                                                   th:value="${row['jp']}" aria-label="Câu ví dụ tiếng Nhật">
+                                                   th:value="${row['exampleJp'] != null and !#strings.isEmpty(row['exampleJp']) ? row['exampleJp'] : row['jp']}"
+                                                   aria-label="Ví dụ (Nhật)" placeholder="Ví dụ (Nhật)">
                                             <input class="lesson-field" name="exampleVi" type="text"
-                                                   th:value="${row['vi']}" aria-label="Nghĩa của ví dụ">
+                                                   th:value="${row['exampleVi'] != null and !#strings.isEmpty(row['exampleVi']) ? row['exampleVi'] : row['vi']}"
+                                                   aria-label="Ví dụ (Việt)" placeholder="Ví dụ (Việt)">
                                             <button type="button" class="lesson-remove-row" aria-label="Xoá ví dụ">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
@@ -702,18 +929,24 @@
                                         </button>
                                     </div>
                                     <div class="lesson-word-grid lesson-word-head" aria-hidden="true">
-                                        <span>Từ</span><span>Cách đọc</span><span>Nghĩa</span><span>Ví dụ</span><span></span>
+                                        <span>Từ</span><span>Cách đọc</span><span>Từ loại</span><span>Hán Việt</span><span>Nghĩa</span><span>Ví dụ (Nhật)</span><span>Ví dụ (Việt)</span><span></span>
                                     </div>
                                     <div class="lesson-repeat" data-repeat="words">
                                         <div class="lesson-word-grid" th:each="row : ${form['words']}">
                                             <input class="lesson-field is-japanese" name="word" type="text"
-                                                   th:value="${row['word']}" aria-label="Từ">
+                                                   th:value="${row['word']}" aria-label="Từ" placeholder="Từ (VD: 次回)">
                                             <input class="lesson-field is-japanese" name="wordReading" type="text"
-                                                   th:value="${row['reading']}" aria-label="Cách đọc">
+                                                   th:value="${row['wordReading'] != null and !#strings.isEmpty(row['wordReading']) ? row['wordReading'] : row['reading']}" aria-label="Cách đọc" placeholder="Cách đọc (VD: じかい)">
+                                            <input class="lesson-field" name="partOfSpeech" type="text"
+                                                   th:value="${row['partOfSpeech'] != null and !#strings.isEmpty(row['partOfSpeech']) ? row['partOfSpeech'] : '(N)'}" aria-label="Từ loại" placeholder="(N)" style="max-width:70px">
+                                            <input class="lesson-field" name="hanviet" type="text"
+                                                   th:value="${row['hanviet']}" aria-label="Hán Việt" placeholder="VD: THỨ HỒI">
                                             <input class="lesson-field" name="wordMeaning" type="text"
-                                                   th:value="${row['meaning']}" aria-label="Nghĩa">
+                                                   th:value="${row['wordMeaning'] != null and !#strings.isEmpty(row['wordMeaning']) ? row['wordMeaning'] : row['meaning']}" aria-label="Nghĩa" placeholder="Nghĩa">
                                             <input class="lesson-field is-japanese" name="wordExample" type="text"
-                                                   th:value="${row['example']}" aria-label="Câu ví dụ">
+                                                   th:value="${row['wordExample'] != null and !#strings.isEmpty(row['wordExample']) ? row['wordExample'] : row['example']}" aria-label="Ví dụ (Nhật)" placeholder="Ví dụ (Nhật)">
+                                            <input class="lesson-field" name="wordExampleVi" type="text"
+                                                   th:value="${row['wordExampleVi'] != null and !#strings.isEmpty(row['wordExampleVi']) ? row['wordExampleVi'] : row['exampleVi']}" aria-label="Ví dụ (Việt)" placeholder="Ví dụ (Việt)">
                                             <button type="button" class="lesson-remove-row" aria-label="Xoá từ">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
@@ -724,24 +957,29 @@
 
                             <!-- ============ HÁN TỰ ============ -->
                             <th:block th:if="${selectedSkill.value == 'KANJI'}">
-                                <div class="lesson-field-row is-kanji">
+                                <div class="lesson-field-row is-kanji-header">
                                     <div>
                                         <label class="lesson-field-label" for="kanjiCharacter">Chữ Hán <span class="text-danger">*</span></label>
                                         <input class="lesson-field is-japanese lesson-kanji-input" id="kanjiCharacter"
                                                name="character" type="text" maxlength="8" th:value="${form['character']}">
                                     </div>
                                     <div>
+                                        <label class="lesson-field-label" for="kanjiHanviet">Âm Hán Việt</label>
+                                        <input class="lesson-field" id="kanjiHanviet" name="hanviet"
+                                               type="text" maxlength="64" th:value="${form['hanviet']}" placeholder="VD: Hồi">
+                                    </div>
+                                    <div>
                                         <label class="lesson-field-label" for="kanjiOn">Âm On</label>
                                         <input class="lesson-field is-japanese" id="kanjiOn" name="onReading"
-                                               type="text" th:value="${form['onReading']}">
+                                               type="text" th:value="${form['onReading']}" placeholder="VD: カイ">
                                     </div>
                                     <div>
                                         <label class="lesson-field-label" for="kanjiKun">Âm Kun</label>
                                         <input class="lesson-field is-japanese" id="kanjiKun" name="kunReading"
-                                               type="text" th:value="${form['kunReading']}">
+                                               type="text" th:value="${form['kunReading']}" placeholder="VD: まわ・る">
                                     </div>
                                 </div>
-                                <div class="lesson-field-row is-pair">
+                                <div class="lesson-field-row is-kanji-meta">
                                     <div>
                                         <label class="lesson-field-label" for="kanjiMeaning">Nghĩa</label>
                                         <input class="lesson-field" id="kanjiMeaning" name="kanjiMeaning"
@@ -751,6 +989,11 @@
                                         <label class="lesson-field-label" for="kanjiStrokes">Số nét</label>
                                         <input class="lesson-field" id="kanjiStrokes" name="strokeCount"
                                                type="number" min="1" max="64" th:value="${form['strokeCount']}">
+                                    </div>
+                                    <div>
+                                        <label class="lesson-field-label" for="kanjiRadical">Bộ thủ</label>
+                                        <input class="lesson-field is-japanese" id="kanjiRadical" name="radical"
+                                               type="text" maxlength="32" th:value="${form['radical']}">
                                     </div>
                                 </div>
                                 <div>
@@ -763,9 +1006,11 @@
                                     <div class="lesson-repeat" data-repeat="compounds">
                                         <div class="lesson-compound-row" th:each="row : ${form['compounds']}">
                                             <input class="lesson-field is-japanese" name="compoundWord" type="text"
-                                                   th:value="${row['word']}" aria-label="Từ ghép">
+                                                   th:value="${row['compoundWord'] != null and !#strings.isEmpty(row['compoundWord']) ? row['compoundWord'] : row['word']}" aria-label="Từ ghép" placeholder="Từ ghép (VD: 回す)">
+                                            <input class="lesson-field is-japanese" name="compoundReading" type="text"
+                                                   th:value="${row['compoundReading'] != null and !#strings.isEmpty(row['compoundReading']) ? row['compoundReading'] : row['reading']}" aria-label="Cách đọc / Furigana" placeholder="Cách đọc (VD: まわす)">
                                             <input class="lesson-field" name="compoundMeaning" type="text"
-                                                   th:value="${row['meaning']}" aria-label="Nghĩa của từ ghép">
+                                                   th:value="${row['compoundMeaning'] != null and !#strings.isEmpty(row['compoundMeaning']) ? row['compoundMeaning'] : row['meaning']}" aria-label="Nghĩa của từ ghép" placeholder="Nghĩa (VD: xoay, vặn)">
                                             <button type="button" class="lesson-remove-row" aria-label="Xoá từ ghép">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
@@ -850,7 +1095,8 @@
                                         </div>
                                     </div>
                                     <div class="reading-rich-editor lesson-field is-japanese" id="readingPassage" contenteditable="true"
-                                         role="textbox" aria-multiline="true" aria-label="Đoạn văn" data-rich-editor></div>
+                                         role="textbox" aria-multiline="true" aria-label="Đoạn văn" data-rich-editor
+                                         th:utext="${form['passage']}"></div>
                                     <textarea class="reading-rich-value" name="passage" data-rich-value th:text="${form['passage']}"></textarea>
                                 </div>
                                 <div>
@@ -945,24 +1191,28 @@
     <!-- Row templates cloned by manager-lessons.js -->
     <template id="exampleRowTemplate">
         <div class="lesson-example-row">
-            <input class="lesson-field is-japanese" name="exampleJp" type="text" aria-label="Câu ví dụ tiếng Nhật">
-            <input class="lesson-field" name="exampleVi" type="text" aria-label="Nghĩa của ví dụ">
+            <input class="lesson-field is-japanese" name="exampleJp" type="text" aria-label="Ví dụ (Nhật)" placeholder="Ví dụ (Nhật)">
+            <input class="lesson-field" name="exampleVi" type="text" aria-label="Ví dụ (Việt)" placeholder="Ví dụ (Việt)">
             <button type="button" class="lesson-remove-row" aria-label="Xoá ví dụ"><i class="bi bi-x-circle"></i></button>
         </div>
     </template>
     <template id="wordRowTemplate">
         <div class="lesson-word-grid">
-            <input class="lesson-field is-japanese" name="word" type="text" aria-label="Từ">
-            <input class="lesson-field is-japanese" name="wordReading" type="text" aria-label="Cách đọc">
-            <input class="lesson-field" name="wordMeaning" type="text" aria-label="Nghĩa">
-            <input class="lesson-field is-japanese" name="wordExample" type="text" aria-label="Câu ví dụ">
+            <input class="lesson-field is-japanese" name="word" type="text" aria-label="Từ" placeholder="Từ (VD: 次回)">
+            <input class="lesson-field is-japanese" name="wordReading" type="text" aria-label="Cách đọc" placeholder="Cách đọc (VD: じかい)">
+            <input class="lesson-field" name="partOfSpeech" type="text" aria-label="Từ loại" placeholder="(N)" style="max-width:70px">
+            <input class="lesson-field" name="hanviet" type="text" aria-label="Hán Việt" placeholder="VD: THỨ HỒI">
+            <input class="lesson-field" name="wordMeaning" type="text" aria-label="Nghĩa" placeholder="Nghĩa">
+            <input class="lesson-field is-japanese" name="wordExample" type="text" aria-label="Ví dụ (Nhật)" placeholder="Ví dụ (Nhật)">
+            <input class="lesson-field" name="wordExampleVi" type="text" aria-label="Ví dụ (Việt)" placeholder="Ví dụ (Việt)">
             <button type="button" class="lesson-remove-row" aria-label="Xoá từ"><i class="bi bi-x-circle"></i></button>
         </div>
     </template>
     <template id="compoundRowTemplate">
         <div class="lesson-compound-row">
-            <input class="lesson-field is-japanese" name="compoundWord" type="text" aria-label="Từ ghép">
-            <input class="lesson-field" name="compoundMeaning" type="text" aria-label="Nghĩa của từ ghép">
+            <input class="lesson-field is-japanese" name="compoundWord" type="text" aria-label="Từ ghép" placeholder="Từ ghép (VD: 回す)">
+            <input class="lesson-field is-japanese" name="compoundReading" type="text" aria-label="Cách đọc / Furigana" placeholder="Cách đọc (VD: まわす)">
+            <input class="lesson-field" name="compoundMeaning" type="text" aria-label="Nghĩa của từ ghép" placeholder="Nghĩa (VD: xoay, vặn)">
             <button type="button" class="lesson-remove-row" aria-label="Xoá từ ghép"><i class="bi bi-x-circle"></i></button>
         </div>
     </template>
@@ -1038,10 +1288,28 @@
                               th:action="${editingLesson != null} ? @{/manager/lessons/{id}(id=${editingLesson.id})} : @{/manager/lessons}">
                             <input type="hidden" name="courseId" th:value="${selectedCourseId}">
                             <input type="hidden" name="skillType" value="OTHER">
-                            <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
                             <div class="lesson-modal-scroll">
-                                <label class="lesson-field-label" for="otherLessonTitle">Tên bài học <span class="text-danger">*</span></label>
-                                <input class="lesson-field mb-3" id="otherLessonTitle" name="title" type="text" maxlength="255" required th:value="${form['title']}">
+                                <div class="lesson-field-row is-name mb-3" th:if="${chapterNames != null and !#lists.isEmpty(chapterNames)}">
+                                    <div style="flex: 1 1 55%;">
+                                        <label class="lesson-field-label" for="otherLessonTitle">Tên bài học <span class="text-danger">*</span></label>
+                                        <input class="lesson-field" id="otherLessonTitle" name="title" type="text" maxlength="255" required th:value="${form['title']}">
+                                    </div>
+                                    <div style="flex: 1 1 45%;">
+                                        <label class="lesson-field-label" for="otherLessonSectionName">Chương / Phần <span class="text-danger">*</span></label>
+                                        <select class="lesson-field" id="otherLessonSectionName" name="sectionName" required>
+                                            <option th:each="chName : ${chapterNames}"
+                                                    th:if="${chName != 'Chưa phân chương'}"
+                                                    th:value="${chName}"
+                                                    th:text="${chName}"
+                                                    th:selected="${chName == form['sectionName']}">Chương 1</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3" th:if="${chapterNames == null or #lists.isEmpty(chapterNames)}">
+                                    <label class="lesson-field-label" for="otherLessonTitle">Tên bài học <span class="text-danger">*</span></label>
+                                    <input class="lesson-field" id="otherLessonTitle" name="title" type="text" maxlength="255" required th:value="${form['title']}">
+                                    <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
+                                </div>
                                 <label class="lesson-field-label" for="otherLessonContent">Nội dung</label>
                                 <div class="reading-rich-toolbar" role="toolbar" aria-label="Định dạng nội dung">
                                     <div class="reading-rich-toolbar-group">
@@ -1061,7 +1329,8 @@
                                     </div>
                                 </div>
                                 <div class="reading-rich-editor lesson-field mb-3" id="otherLessonContent" contenteditable="true"
-                                     role="textbox" aria-multiline="true" aria-label="Nội dung" data-rich-editor style="min-height:10rem"></div>
+                                     role="textbox" aria-multiline="true" aria-label="Nội dung" data-rich-editor style="min-height:10rem"
+                                     th:utext="${form['content']}"></div>
                                 <textarea class="reading-rich-value" name="content" data-rich-value th:text="${form['content']}"></textarea>
                                 <label class="lesson-field-label" for="otherLessonDuration">Thời lượng (phút)</label>
                                 <input class="lesson-field" id="otherLessonDuration" name="durationMinutes" type="number" min="0" max="600" th:value="${form['durationMinutes']}">
@@ -1128,5 +1397,40 @@
         </div>
     </div>
     <script th:src="@{/js/manager-lessons.js}"></script>
+    <script>
+        (function () {
+            function syncAllRichEditors() {
+                var editors = document.querySelectorAll('[data-rich-editor]');
+                editors.forEach(function (ed) {
+                    var form = ed.closest('form');
+                    var vf = form ? form.querySelector('[data-rich-value]') : (ed.parentElement ? ed.parentElement.querySelector('[data-rich-value]') : null);
+                    if (!vf) return;
+                    if (!ed.innerHTML.trim() && vf.value) {
+                        ed.innerHTML = vf.value;
+                    } else if (ed.innerHTML.trim() && !vf.value) {
+                        vf.value = ed.innerHTML;
+                    }
+                    var update = function () { vf.value = ed.innerHTML; };
+                    ed.addEventListener('input', update);
+                    ed.addEventListener('blur', update);
+                    if (form) form.addEventListener('submit', update);
+                });
+                document.querySelectorAll('button[type="submit"]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        document.querySelectorAll('[data-rich-editor]').forEach(function (ed) {
+                            var form = ed.closest('form');
+                            var vf = form ? form.querySelector('[data-rich-value]') : (ed.parentElement ? ed.parentElement.querySelector('[data-rich-value]') : null);
+                            if (vf) vf.value = ed.innerHTML;
+                        });
+                    });
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', syncAllRichEditors);
+            } else {
+                syncAllRichEditors();
+            }
+        })();
+    </script>
 </div>
 </div>

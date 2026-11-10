@@ -325,7 +325,23 @@
         var editor = document.querySelector('[data-rich-editor]');
         var valueField = document.querySelector('[data-rich-value]');
         if (editor && valueField) {
-            editor.innerHTML = sanitizeRichHtml(valueField.value);
+            if (!editor.innerHTML.trim() && valueField.value) {
+                editor.innerHTML = sanitizeRichHtml(valueField.value);
+            } else if (editor.innerHTML.trim() && !valueField.value) {
+                valueField.value = sanitizeRichHtml(editor.innerHTML);
+            }
+            var syncFn = function () {
+                valueField.value = sanitizeRichHtml(editor.innerHTML);
+            };
+            editor.addEventListener('input', syncFn);
+            editor.addEventListener('blur', syncFn);
+            var formEl = editor.closest('form');
+            if (formEl) {
+                formEl.addEventListener('submit', syncFn);
+            }
+            document.querySelectorAll('button[type="submit"][form="' + (formEl ? formEl.id : 'lessonForm') + '"]').forEach(function (btn) {
+                btn.addEventListener('click', syncFn);
+            });
             var savedRange = null;
             document.addEventListener('selectionchange', function () {
                 var selection = window.getSelection();
@@ -341,9 +357,6 @@
                     selection.addRange(savedRange);
                 }
             }
-            editor.closest('form').addEventListener('submit', function () {
-                valueField.value = sanitizeRichHtml(editor.innerHTML);
-            });
             document.querySelectorAll('.reading-rich-toolbar [data-rich-command]').forEach(function (button) {
                 button.addEventListener('mousedown', function (event) { event.preventDefault(); });
                 button.addEventListener('click', function () {
@@ -417,6 +430,17 @@
                 target.innerHTML = sanitizeRichHtml(source.textContent);
                 target.classList.add('markdown-body');
                 target.dataset.rendered = 'true';
+            }
+        });
+
+        // Tô màu điểm ngữ pháp đỏ cho bảng cấu trúc kết hợp
+        container.querySelectorAll('.grammar-f-col, .grammar-formation-single').forEach(function (col) {
+            if (col.dataset.accented === 'true') return;
+            var text = col.textContent;
+            var regex = /(あるほど|であれば|ければ|ほど|なら|ば|ではない|ではないか|てはいけない|てもいい|なくてもいい|かもしれない|ばかり|たばかり|ところ|にする|になる)/g;
+            if (regex.test(text)) {
+                col.innerHTML = text.replace(regex, '<span class="grammar-accent">$1</span>');
+                col.dataset.accented = 'true';
             }
         });
     }
@@ -514,8 +538,16 @@
                 row.dataset.libraryEntry = entryId;
                 row.querySelector('[name="word"]').value = libraryPick.dataset.word || '';
                 row.querySelector('[name="wordReading"]').value = libraryPick.dataset.reading || '';
+                var posInput = row.querySelector('[name="partOfSpeech"]');
+                if (posInput && libraryPick.dataset.pos) {
+                    posInput.value = libraryPick.dataset.pos;
+                }
                 row.querySelector('[name="wordMeaning"]').value = libraryPick.dataset.meaning || '';
                 row.querySelector('[name="wordExample"]').value = libraryPick.dataset.example || '';
+                var exViInput = row.querySelector('[name="wordExampleVi"]');
+                if (exViInput && libraryPick.dataset.exampleVi) {
+                    exViInput.value = libraryPick.dataset.exampleVi;
+                }
                 vocabRows.appendChild(fragment);
                 libraryPick.classList.add('is-selected');
                 libraryPick.setAttribute('aria-pressed', 'true');
