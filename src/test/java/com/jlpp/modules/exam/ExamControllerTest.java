@@ -6,6 +6,7 @@ import com.jlpp.modules.exam.dto.ExamHistoryDto;
 import com.jlpp.modules.exam.dto.ExamResultResponse;
 import com.jlpp.modules.exam.dto.ExamTakeResponse;
 import com.jlpp.modules.exam.service.ExamService;
+import com.jlpp.modules.notification.service.NotificationService;
 import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +49,9 @@ public class ExamControllerTest {
 
     @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
@@ -274,7 +278,7 @@ public class ExamControllerTest {
 
         when(examService.evaluateSubmission(eq(8L), any(), any())).thenReturn(result);
 
-        mockMvc.perform(get("/exams/result/8"))
+        mockMvc.perform(get("/exams/result/8").sessionAttr("EXAM_RESULT_8", result))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/exam/result"))
                 .andExpect(model().attributeExists("result"));

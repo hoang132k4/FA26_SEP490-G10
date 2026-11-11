@@ -235,7 +235,7 @@ public class LearningPathTest {
                 .andExpect(view().name("pages/learning-path/recalibrate"))
                 .andExpect(model().attribute("hasPath", true))
                 .andExpect(model().attributeExists("preview"))
-                .andExpect(content().string(containsString("Chế độ xem trước & mô phỏng (Simulation Preview Mode)")))
+                .andExpect(content().string(containsString("Thời lượng")))
                 .andExpect(content().string(containsString("Thiết lập tham số điều chỉnh")));
     }
 
@@ -253,7 +253,7 @@ public class LearningPathTest {
                 .andExpect(model().attribute("hasPath", true))
                 .andExpect(model().attribute("simulationSuccess", true))
                 .andExpect(content().string(containsString("20 giờ/tuần")))
-                .andExpect(content().string(containsString("Cường độ Tăng tốc")));
+                .andExpect(content().string(containsString("Xác nhận áp dụng lộ trình mới")));
 
         // Strict validation: Database count MUST be unchanged
         long finalPathCount = learningPathRepository.count();

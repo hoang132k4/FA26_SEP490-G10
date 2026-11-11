@@ -30,6 +30,15 @@ public class ExamController {
     private final CurrentUserSession currentUserSession;
     private final UserRepository userRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jlpp.modules.learningpath.service.LessonProgressService lessonProgressService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jlpp.modules.course.repository.LessonRepository lessonRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jlpp.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
+
     private boolean isAuthenticated(HttpSession session, Principal principal) {
         return principal != null || (session != null && currentUserSession.isAuthenticated(session));
     }
@@ -153,11 +162,22 @@ public class ExamController {
      */
     @GetMapping("/exams/milestone/{id}")
     public String startMilestoneExam(@PathVariable Long id,
+                                     @RequestParam(value = "courseId", required = false) Long courseId,
+                                     @RequestParam(value = "lessonId", required = false) Long lessonId,
                                      HttpSession session,
                                      Model model,
                                      Principal principal) {
         if (!isAuthenticated(session, principal)) {
             return "redirect:/auth/login?continue=/exams/milestone/" + id;
+        }
+
+        if (session != null) {
+            if (courseId != null) {
+                session.setAttribute("ACTIVE_MILESTONE_COURSE_ID", courseId);
+            }
+            if (lessonId != null) {
+                session.setAttribute("ACTIVE_MILESTONE_LESSON_ID", lessonId);
+            }
         }
 
         ExamTakeResponse examData = examService.getMilestoneExamForTaking(id);
@@ -172,11 +192,21 @@ public class ExamController {
      */
     @GetMapping("/exams/milestones")
     public String milestoneListPage(@RequestParam(value = "courseId", required = false) Long courseId,
+                                    @RequestParam(value = "lessonId", required = false) Long lessonId,
                                     HttpSession session,
                                     Model model,
                                     Principal principal) {
         if (!isAuthenticated(session, principal)) {
             return "redirect:/auth/login?continue=/exams/milestones";
+        }
+
+        if (session != null) {
+            if (courseId != null) {
+                session.setAttribute("ACTIVE_MILESTONE_COURSE_ID", courseId);
+            }
+            if (lessonId != null) {
+                session.setAttribute("ACTIVE_MILESTONE_LESSON_ID", lessonId);
+            }
         }
 
         List<ExamCardDto> exams = examService.getMilestoneExams(courseId);
@@ -222,10 +252,52 @@ public class ExamController {
         ExamResultResponse result = examService.evaluateAndSaveSubmission(id, userId, allParams, timeSpentSeconds);
         session.setAttribute("EXAM_RESULT_" + id, result);
 
+        if (userId != null && result != null && "MILESTONE".equalsIgnoreCase(result.getExamType())) {
+            markMilestoneLessonCompletedIfApplicable(userId, session);
+        }
+
         if (result.getResultId() != null) {
             return "redirect:/exams/result/" + id + "?resultId=" + result.getResultId();
         }
         return "redirect:/exams/result/" + id;
+    }
+
+    private void markMilestoneLessonCompletedIfApplicable(Long userId, HttpSession session) {
+        if (lessonProgressService == null || lessonRepository == null) {
+            return;
+        }
+        try {
+            Long courseId = session != null && session.getAttribute("ACTIVE_MILESTONE_COURSE_ID") instanceof Long c ? c : null;
+            Long lessonId = session != null && session.getAttribute("ACTIVE_MILESTONE_LESSON_ID") instanceof Long l ? l : null;
+
+            if (courseId != null && lessonId != null) {
+                lessonProgressService.markLessonCompleted(userId, courseId, lessonId);
+                return;
+            }
+            if (courseId != null) {
+                for (var lesson : lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId)) {
+                    if (lesson.isMilestoneExam()) {
+                        lessonProgressService.markLessonCompleted(userId, courseId, lesson.getId());
+                        break;
+                    }
+                }
+                return;
+            }
+            if (courseRegistrationRepository != null) {
+                for (var reg : courseRegistrationRepository.findByUserIdWithCourse(userId)) {
+                    if (reg.getCourse() != null && reg.getCourse().getId() != null) {
+                        Long enrolledCourseId = reg.getCourse().getId();
+                        for (var lesson : lessonRepository.findByCourseIdOrderByOrderIndexAsc(enrolledCourseId)) {
+                            if (lesson.isMilestoneExam()) {
+                                lessonProgressService.markLessonCompleted(userId, enrolledCourseId, lesson.getId());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     /**

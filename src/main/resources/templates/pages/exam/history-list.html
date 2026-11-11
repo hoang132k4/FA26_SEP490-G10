@@ -5,23 +5,6 @@
 )}">
 
     <div id="mainContent">
-        <!-- 1. Breadcrumb: Trang chủ / Đánh giá năng lực / Lịch sử làm bài -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb small">
-                <li class="breadcrumb-item">
-                    <a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--medium-blue);">
-                        <i class="bi bi-house-door me-1"></i>Trang chủ
-                    </a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a th:href="@{/exams}" class="text-decoration-none" style="color: var(--medium-blue);">
-                        Đánh giá năng lực
-                    </a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">Lịch sử làm bài</li>
-            </ol>
-        </nav>
-
         <!-- 2. Top Banner -->
         <section class="card kotoba-card p-4 p-lg-5 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
             <div class="row align-items-center g-3">
@@ -149,6 +132,18 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination Footer -->
+            <div class="border-top pt-3 mt-3 d-flex flex-wrap justify-content-between align-items-center gap-3" id="historyPaginationFooter" style="border-color: #E2E8F0 !important;">
+                <div class="small text-secondary fw-medium" id="historyPaginationInfo">
+                    Hiển thị <span class="fw-bold text-dark" id="historyStartItem">1</span> - <span class="fw-bold text-dark" id="historyEndItem">6</span> trong tổng số <span class="fw-bold text-dark" id="historyTotalItem" th:text="${#lists.size(historyList)}">0</span> bài thi
+                </div>
+                <nav aria-label="History navigation">
+                    <ul class="pagination pagination-sm mb-0 gap-1" id="historyPaginationControls">
+                        <!-- Populated dynamically by JavaScript -->
+                    </ul>
+                </nav>
+            </div>
         </div>
 
         <!-- 5. Empty State (Khi học viên chưa có lịch sử thi nào) -->
@@ -172,10 +167,15 @@
             </div>
         </div>
 
-        <!-- 6. Client Script for Category Filtering -->
+        <!-- 6. Client Script for Category Filtering & Pagination -->
         <script>
+            var currentFilter = 'ALL';
+            var currentPage = 1;
+            var pageSize = 6;
+
             document.addEventListener('DOMContentLoaded', function () {
                 initHistoryCounts();
+                applyFilterAndPagination();
             });
 
             function initHistoryCounts() {
@@ -210,31 +210,135 @@
                     btn.classList.remove('btn-primary', 'shadow-sm');
                     btn.classList.add('btn-light', 'border', 'text-muted');
                 });
-                btnElement.classList.remove('btn-light', 'border', 'text-muted');
-                btnElement.classList.add('btn-primary', 'shadow-sm');
+                if (btnElement) {
+                    btnElement.classList.remove('btn-light', 'border', 'text-muted');
+                    btnElement.classList.add('btn-primary', 'shadow-sm');
+                }
 
-                var rows = document.querySelectorAll('.history-row');
-                var visibleCount = 0;
+                currentFilter = type;
+                currentPage = 1;
+                applyFilterAndPagination();
+            }
 
-                rows.forEach(function (row) {
+            function applyFilterAndPagination() {
+                var allRows = Array.from(document.querySelectorAll('.history-row'));
+                var filteredRows = allRows.filter(function (row) {
                     var rowType = row.getAttribute('data-exam-type');
-                    if (type === 'ALL' || rowType === type) {
-                        row.style.display = '';
-                        visibleCount++;
-                    } else {
-                        row.style.display = 'none';
-                    }
+                    return currentFilter === 'ALL' || rowType === currentFilter;
                 });
 
-                var emptyRow = document.getElementById('emptyFilterRow');
-                if (emptyRow) {
-                    emptyRow.style.display = (visibleCount === 0) ? '' : 'none';
-                }
-
+                var totalFiltered = filteredRows.length;
                 var countDisplay = document.getElementById('visibleCount');
                 if (countDisplay) {
-                    countDisplay.textContent = visibleCount;
+                    countDisplay.textContent = totalFiltered;
                 }
+
+                var emptyRow = document.getElementById('emptyFilterRow');
+                var paginationFooter = document.getElementById('historyPaginationFooter');
+
+                if (totalFiltered === 0) {
+                    allRows.forEach(function (r) { r.style.display = 'none'; });
+                    if (emptyRow) emptyRow.style.display = '';
+                    if (paginationFooter) paginationFooter.style.display = 'none';
+                    return;
+                }
+
+                if (emptyRow) emptyRow.style.display = 'none';
+                if (paginationFooter) paginationFooter.style.display = 'flex';
+
+                var totalPages = Math.ceil(totalFiltered / pageSize);
+                if (currentPage > totalPages) currentPage = totalPages;
+                if (currentPage < 1) currentPage = 1;
+
+                var start = (currentPage - 1) * pageSize;
+                var end = Math.min(start + pageSize, totalFiltered);
+
+                // Hide all rows first
+                allRows.forEach(function (r) { r.style.display = 'none'; });
+
+                // Show only matching rows for current page
+                for (var i = start; i < end; i++) {
+                    filteredRows[i].style.display = '';
+                }
+
+                // Update info numbers
+                var startSpan = document.getElementById('historyStartItem');
+                var endSpan = document.getElementById('historyEndItem');
+                var totalSpan = document.getElementById('historyTotalItem');
+                if (startSpan) startSpan.textContent = (start + 1).toString();
+                if (endSpan) endSpan.textContent = end.toString();
+                if (totalSpan) totalSpan.textContent = totalFiltered.toString();
+
+                renderPaginationControls(totalPages);
+            }
+
+            function renderPaginationControls(totalPages) {
+                var controls = document.getElementById('historyPaginationControls');
+                if (!controls) return;
+                controls.innerHTML = '';
+
+                // Previous button
+                var prevLi = document.createElement('li');
+                prevLi.className = 'page-item ' + (currentPage === 1 ? 'disabled' : '');
+                var prevBtn = document.createElement('button');
+                prevBtn.type = 'button';
+                prevBtn.className = 'page-link rounded-2 px-3 py-1 fw-semibold text-secondary';
+                prevBtn.innerHTML = '&laquo; Trước';
+                if (currentPage === 1) {
+                    prevBtn.setAttribute('tabindex', '-1');
+                    prevBtn.setAttribute('aria-disabled', 'true');
+                } else {
+                    prevBtn.onclick = function () {
+                        currentPage--;
+                        applyFilterAndPagination();
+                        var tbl = document.getElementById('historyTable');
+                        if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    };
+                }
+                prevLi.appendChild(prevBtn);
+                controls.appendChild(prevLi);
+
+                // Number buttons
+                for (var p = 1; p <= totalPages; p++) {
+                    (function (pageNumber) {
+                        var pageLi = document.createElement('li');
+                        pageLi.className = 'page-item ' + (pageNumber === currentPage ? 'active' : '');
+                        var pageBtn = document.createElement('button');
+                        pageBtn.type = 'button';
+                        pageBtn.className = 'page-link rounded-2 px-3 py-1 fw-semibold ' + 
+                            (pageNumber === currentPage ? 'bg-primary text-white border-primary shadow-sm' : 'text-dark');
+                        pageBtn.textContent = pageNumber;
+                        pageBtn.onclick = function () {
+                            currentPage = pageNumber;
+                            applyFilterAndPagination();
+                            var tbl = document.getElementById('historyTable');
+                            if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        };
+                        pageLi.appendChild(pageBtn);
+                        controls.appendChild(pageLi);
+                    })(p);
+                }
+
+                // Next button
+                var nextLi = document.createElement('li');
+                nextLi.className = 'page-item ' + (currentPage === totalPages ? 'disabled' : '');
+                var nextBtn = document.createElement('button');
+                nextBtn.type = 'button';
+                nextBtn.className = 'page-link rounded-2 px-3 py-1 fw-semibold text-secondary';
+                nextBtn.innerHTML = 'Sau &raquo;';
+                if (currentPage === totalPages) {
+                    nextBtn.setAttribute('tabindex', '-1');
+                    nextBtn.setAttribute('aria-disabled', 'true');
+                } else {
+                    nextBtn.onclick = function () {
+                        currentPage++;
+                        applyFilterAndPagination();
+                        var tbl = document.getElementById('historyTable');
+                        if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    };
+                }
+                nextLi.appendChild(nextBtn);
+                controls.appendChild(nextLi);
             }
         </script>
     </div>

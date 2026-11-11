@@ -6,9 +6,12 @@ import com.jlpp.modules.exam.reader.LearnerExamResultReader;
 import com.jlpp.modules.exam.reader.LearnerQuestionReader;
 import com.jlpp.modules.exam.repository.ExamRepository;
 import com.jlpp.modules.exam.service.ExamService;
+import com.jlpp.modules.exam.service.JlptExamStructure;
 import com.jlpp.modules.exam.writer.LearnerExamResultWriter;
+import com.jlpp.modules.exam.service.AssessmentScoringService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.NoTransactionException;
@@ -25,13 +28,33 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ExamServiceImpl implements ExamService {
 
     private final ExamRepository examRepository;
     private final LearnerQuestionReader questionReader;
     private final LearnerExamResultWriter resultWriter;
     private final LearnerExamResultReader resultReader;
+    private final AssessmentScoringService scoringService;
+
+    public ExamServiceImpl(ExamRepository examRepository,
+                           LearnerQuestionReader questionReader,
+                           LearnerExamResultWriter resultWriter,
+                           LearnerExamResultReader resultReader) {
+        this(examRepository, questionReader, resultWriter, resultReader, new AssessmentScoringServiceImpl());
+    }
+
+    @Autowired
+    public ExamServiceImpl(ExamRepository examRepository,
+                           LearnerQuestionReader questionReader,
+                           LearnerExamResultWriter resultWriter,
+                           LearnerExamResultReader resultReader,
+                           AssessmentScoringService scoringService) {
+        this.examRepository = examRepository;
+        this.questionReader = questionReader;
+        this.resultWriter = resultWriter;
+        this.resultReader = resultReader;
+        this.scoringService = scoringService;
+    }
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -87,12 +110,9 @@ public class ExamServiceImpl implements ExamService {
         List<QuestionDto> vocabGrammar = new ArrayList<>();
         List<QuestionDto> reading = new ArrayList<>();
         List<QuestionDto> listening = new ArrayList<>();
-        int totalPoints = 0;
+        int totalPoints = 180; // thang JLPT cố định
 
         for (QuestionDto q : questions) {
-            int points = q.getPoints() != null ? q.getPoints() : 2;
-            totalPoints += points;
-
             String skillGroup = q.getSkillGroup() != null ? q.getSkillGroup() : "VOCAB_GRAMMAR";
             switch (skillGroup) {
                 case "VOCAB_GRAMMAR" -> vocabGrammar.add(q);
@@ -162,6 +182,13 @@ public class ExamServiceImpl implements ExamService {
                 ? examRepository.findByCourseIdAndExamTypeIgnoreCase(courseId, "MILESTONE")
                 : examRepository.findByExamTypeIgnoreCase("MILESTONE");
 
+        if ((exams == null || exams.isEmpty()) && courseId != null) {
+            exams = examRepository.findByExamTypeIgnoreCase("MILESTONE");
+        }
+        if (exams == null) {
+            exams = Collections.emptyList();
+        }
+
         List<ExamCardDto> result = new ArrayList<>();
         for (Exam exam : exams) {
             long count = questionReader.countQuestionsByExamId(exam.getExamId());
@@ -178,6 +205,56 @@ public class ExamServiceImpl implements ExamService {
                     .build());
         }
         return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String resolveMilestoneExamUrl(Long courseId, String courseLevel, Long lessonId) {
+        List<Exam> candidates = new ArrayList<>();
+        if (courseId != null) {
+            List<Exam> byCourse = examRepository.findByCourseIdAndExamTypeIgnoreCase(courseId, "MILESTONE");
+            if (byCourse != null && !byCourse.isEmpty()) {
+                candidates.addAll(byCourse);
+            }
+        }
+        if (candidates.isEmpty() && courseLevel != null && !courseLevel.isBlank()) {
+            List<Exam> byLevel = examRepository.findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase("MILESTONE", courseLevel.trim());
+            if (byLevel != null && !byLevel.isEmpty()) {
+                candidates.addAll(byLevel);
+            }
+        }
+        if (candidates.isEmpty()) {
+            List<Exam> allMilestones = examRepository.findByExamTypeIgnoreCase("MILESTONE");
+            if (allMilestones != null && !allMilestones.isEmpty()) {
+                candidates.addAll(allMilestones);
+            }
+        }
+
+        Exam selected = null;
+        for (Exam exam : candidates) {
+            if (exam != null && exam.getExamId() != null && questionReader.countQuestionsByExamId(exam.getExamId()) > 0) {
+                selected = exam;
+                break;
+            }
+        }
+        if (selected == null && !candidates.isEmpty()) {
+            selected = candidates.get(0);
+        }
+
+        StringBuilder query = new StringBuilder();
+        if (courseId != null) {
+            query.append("?courseId=").append(courseId);
+            if (lessonId != null) {
+                query.append("&lessonId=").append(lessonId);
+            }
+        } else if (lessonId != null) {
+            query.append("?lessonId=").append(lessonId);
+        }
+
+        if (selected != null && selected.getExamId() != null) {
+            return "/exams/milestone/" + selected.getExamId() + query;
+        }
+        return "/exams/milestones" + query;
     }
 
     @Override
@@ -206,147 +283,168 @@ public class ExamServiceImpl implements ExamService {
 
         List<QuestionDto> questions = questionReader.findQuestionsForEvaluation(examId);
 
-        int totalPossibleScore = 0;
-        int earnedScore = 0;
         int correctCount = 0;
         int incorrectCount = 0;
         int unansweredCount = 0;
 
-        // Skill accumulators: [0]: earnedPoints, [1]: totalPoints, [2]: correctCount, [3]: totalQuestions
-        Map<String, int[]> skillStats = new LinkedHashMap<>();
-        skillStats.put("VOCAB_GRAMMAR", new int[]{0, 0, 0, 0});
-        skillStats.put("READING", new int[]{0, 0, 0, 0});
-        skillStats.put("LISTENING", new int[]{0, 0, 0, 0});
-
-        List<QuestionDto> reviewQuestions = new ArrayList<>();
+        Map<String, Integer> correctMap = new HashMap<>();
+        Map<String, Integer> totalMap = new HashMap<>();
 
         for (QuestionDto q : questions) {
-            int qPoints = q.getPoints() != null ? q.getPoints() : 2;
-            totalPossibleScore += qPoints;
-
             String skillGroup = q.getSkillGroup() != null ? q.getSkillGroup() : "VOCAB_GRAMMAR";
-            int[] stats = skillStats.computeIfAbsent(skillGroup, k -> new int[]{0, 0, 0, 0});
-            stats[1] += qPoints; // total points
-            stats[3] += 1;       // total questions
+            totalMap.put(skillGroup, totalMap.getOrDefault(skillGroup, 0) + 1);
 
-            String userOptionParam = formParams != null ? formParams.get("answer_" + q.getId()) : null;
+            String userOptionParam = extractUserOptionParam(formParams, q.getId());
+            OptionDto selectedOption = null;
             Long userOptionId = null;
+
             if (userOptionParam != null && !userOptionParam.trim().isEmpty()) {
                 try {
                     userOptionId = Long.parseLong(userOptionParam.trim());
-                } catch (NumberFormatException ignored) {}
-            }
-
-            OptionDto correctOption = null;
-            if (q.getOptions() != null) {
-                for (OptionDto opt : q.getOptions()) {
-                    if (Boolean.TRUE.equals(opt.getCorrect())) {
-                        correctOption = opt;
-                        break;
+                    if (q.getOptions() != null) {
+                        for (OptionDto opt : q.getOptions()) {
+                            if (opt.getId() != null && opt.getId().equals(userOptionId)) {
+                                selectedOption = opt;
+                                break;
+                            }
+                        }
                     }
+                } catch (NumberFormatException ignored) {
                 }
             }
 
             boolean isCorrect = false;
-            if (userOptionId != null) {
-                if (correctOption != null && userOptionId.equals(correctOption.getId())) {
+            boolean isUnanswered = (userOptionParam == null || userOptionParam.trim().isEmpty() || selectedOption == null);
+
+            if (isUnanswered) {
+                unansweredCount++;
+            } else {
+                if (Boolean.TRUE.equals(selectedOption.getCorrect())) {
                     isCorrect = true;
-                    earnedScore += qPoints;
                     correctCount++;
-                    stats[0] += qPoints;
-                    stats[2] += 1;
+                    correctMap.put(skillGroup, correctMap.getOrDefault(skillGroup, 0) + 1);
                 } else {
                     incorrectCount++;
                 }
-            } else {
-                unansweredCount++;
             }
 
-            reviewQuestions.add(QuestionDto.builder()
-                    .id(q.getId())
-                    .points(qPoints)
-                    .category(q.getCategory())
-                    .skillGroup(skillGroup)
-                    .skillGroupLabel(q.getSkillGroupLabel())
-                    .content(q.getContent())
-                    .audioUrl(q.getAudioUrl())
-                    .explanation(q.getExplanation())
-                    .orderIndex(q.getOrderIndex())
-                    .userAnswerId(userOptionId)
-                    .isUserCorrect(isCorrect)
-                    .options(q.getOptions())
+            q.setUserAnswerId(userOptionId);
+            q.setIsUserCorrect(isCorrect);
+        }
+
+        JlptExamStructure jlpt = JlptExamStructure.of(exam.getJlptLevel());
+
+        // Xây nhóm chấm
+        record Group(String name, int max, String... skills) {
+            int correct(Map<String, Integer> correctMap) {
+                int sum = 0;
+                for (String s : skills) sum += correctMap.getOrDefault(s, 0);
+                return sum;
+            }
+            int total(Map<String, Integer> totalMap) {
+                int sum = 0;
+                for (String s : skills) sum += totalMap.getOrDefault(s, 0);
+                return sum;
+            }
+        }
+
+        List<Group> groups = jlpt.languageReadingCombined()
+            ? List.of(new Group("Ngôn ngữ + Đọc hiểu", 120, "VOCAB_GRAMMAR", "READING"),
+                      new Group("Nghe hiểu", 60, "LISTENING"))
+            : List.of(new Group("Kiến thức ngôn ngữ", 60, "VOCAB_GRAMMAR"),
+                      new Group("Đọc hiểu", 60, "READING"),
+                      new Group("Nghe hiểu", 60, "LISTENING"));
+
+        // Bỏ nhóm không có câu nào (đề milestone thiếu phần)
+        List<Group> present = groups.stream().filter(g -> g.total(totalMap) > 0).toList();
+        int presentMax = present.stream().mapToInt(Group::max).sum();
+        if (presentMax == 0) {
+            presentMax = JlptExamStructure.TOTAL_SCORE;
+        }
+
+        int score = 0;
+        boolean allAboveMin = true;
+        List<ExamResultResponse.SkillScoreDto> breakdown = new ArrayList<>();
+        String failedMinSection = null;
+        int failedMinEarned = 0;
+        int failedMinRequired = 0;
+
+        for (Group g : present) {
+            int max = g.max() * JlptExamStructure.TOTAL_SCORE / presentMax;  // chia lại nếu thiếu nhóm
+            int earned = g.total(totalMap) > 0
+                    ? (int) Math.round(g.correct(correctMap) * (double) max / g.total(totalMap))
+                    : 0;
+            int min = (int) Math.ceil(max * JlptExamStructure.SECTION_MIN_SCORE / 60.0);
+            score += earned;
+            if (earned < min) {
+                allAboveMin = false;
+                if (failedMinSection == null) {
+                    failedMinSection = g.name();
+                    failedMinEarned = earned;
+                    failedMinRequired = min;
+                }
+            }
+
+            BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0)
+                    .setScale(1, RoundingMode.HALF_UP);
+
+            breakdown.add(ExamResultResponse.SkillScoreDto.builder()
+                    .skillGroup(String.join("+", g.skills()))
+                    .skillName(g.name())
+                    .earnedPoints(earned)
+                    .totalPoints(max)
+                    .correctCount(g.correct(correctMap))
+                    .totalQuestions(g.total(totalMap))
+                    .percentage(pct)
                     .build());
         }
 
-        BigDecimal percentage = BigDecimal.ZERO;
-        if (totalPossibleScore > 0) {
-            percentage = BigDecimal.valueOf((earnedScore * 100.0) / totalPossibleScore)
-                    .setScale(1, RoundingMode.HALF_UP);
-        }
+        int totalPossibleScore = 180;  // LUÔN là 180
+        BigDecimal percentage = BigDecimal.valueOf(score * 100.0 / 180).setScale(1, RoundingMode.HALF_UP);
 
         boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(exam.getExamType());
         boolean isMilestone = "MILESTONE".equalsIgnoreCase(exam.getExamType());
+        int defaultPassing = defaultPassingScore(exam.getJlptLevel(), isMilestone);
+        int passingScore = exam.getPassingScore() != null ? exam.getPassingScore() : defaultPassing;
+        boolean passed = isPlacement || (score >= passingScore && allAboveMin);
 
-        int passingScore = exam.getPassingScore() != null ? exam.getPassingScore() : defaultPassingScore(exam.getJlptLevel(), isMilestone);
-        boolean passed = isPlacement || (earnedScore >= passingScore);
+        // strongestSkill / weakestSkill: so sánh percentage trong breakdown
+        // Chỉ ghi nhận "Kỹ năng tốt nhất" (strongestSkill) khi học viên có điểm > 0% ở kỹ năng đó
+        String strongestSkill = null;
+        String weakestSkill = null;
+        BigDecimal maxPct = BigDecimal.ZERO;
+        BigDecimal minPct = BigDecimal.valueOf(101);
+
+        for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+            BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
+            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(maxPct) > 0) {
+                maxPct = p;
+                strongestSkill = skill.getSkillName();
+            }
+            if (p.compareTo(minPct) < 0) {
+                minPct = p;
+                weakestSkill = skill.getSkillName();
+            }
+        }
+        if (strongestSkill != null && strongestSkill.equals(weakestSkill) && minPct.compareTo(BigDecimal.valueOf(70)) >= 0) {
+            weakestSkill = null;
+        }
 
         int safeTime = timeSpentSeconds != null && timeSpentSeconds >= 0 ? timeSpentSeconds : 0;
         int minutes = safeTime / 60;
         int seconds = safeTime % 60;
         String formattedTime = String.format("%02d:%02d", minutes, seconds);
 
-        // Build skill breakdown
-        List<ExamResultResponse.SkillScoreDto> breakdown = new ArrayList<>();
-        String strongestSkill = null;
-        String weakestSkill = null;
-        BigDecimal maxPct = BigDecimal.valueOf(-1);
-        BigDecimal minPct = BigDecimal.valueOf(101);
-
-        for (Map.Entry<String, int[]> entry : skillStats.entrySet()) {
-            String group = entry.getKey();
-            int[] s = entry.getValue();
-            if (s[3] == 0) continue; // Skip skill groups with no questions in this exam
-
-            BigDecimal skillPct = BigDecimal.ZERO;
-            if (s[1] > 0) {
-                skillPct = BigDecimal.valueOf((s[0] * 100.0) / s[1]).setScale(1, RoundingMode.HALF_UP);
-            }
-
-            String skillName = switch (group) {
-                case "VOCAB_GRAMMAR" -> "Kiến thức ngôn ngữ (Từ vựng • Ngữ pháp • Kanji)";
-                case "READING" -> "Đọc hiểu (Reading)";
-                case "LISTENING" -> "Nghe hiểu (Listening)";
-                default -> "Kiến thức tổng hợp";
-            };
-
-            breakdown.add(ExamResultResponse.SkillScoreDto.builder()
-                    .skillGroup(group)
-                    .skillName(skillName)
-                    .earnedPoints(s[0])
-                    .totalPoints(s[1])
-                    .correctCount(s[2])
-                    .totalQuestions(s[3])
-                    .percentage(skillPct)
-                    .build());
-
-            if (skillPct.compareTo(maxPct) > 0) {
-                maxPct = skillPct;
-                strongestSkill = skillName;
-            }
-            if (skillPct.compareTo(minPct) < 0) {
-                minPct = skillPct;
-                weakestSkill = skillName;
-            }
-        }
-
-        String aiFeedback = generateConstructiveFeedback(exam.getExamType(), passed, percentage, strongestSkill, weakestSkill, exam.getJlptLevel());
+        String feedback = generateConstructiveFeedback(exam.getExamType(), passed, percentage,
+                strongestSkill, weakestSkill, exam.getJlptLevel(),
+                failedMinSection, failedMinEarned, failedMinRequired, score, passingScore);
 
         return ExamResultResponse.builder()
                 .examId(exam.getExamId())
                 .examTitle(exam.getExamTitle() != null ? exam.getExamTitle() : exam.getTitle())
                 .examType(exam.getExamType())
                 .jlptLevel(exam.getJlptLevel())
-                .score(earnedScore)
+                .score(score)
                 .totalPossibleScore(totalPossibleScore)
                 .percentage(percentage)
                 .passed(passed)
@@ -359,12 +457,13 @@ public class ExamServiceImpl implements ExamService {
                 .totalQuestions(questions.size())
                 .strongestSkill(strongestSkill)
                 .weakestSkill(weakestSkill)
-                .aiFeedback(aiFeedback)
+                .aiFeedback(feedback)
+                .recommendation(generateRecommendation(exam.getExamType(), passed, weakestSkill))
                 .persistentSaved(false)
                 .detailsAvailable(true)
                 .statusNotice(resolveStatusNotice(exam.getExamType(), passed))
                 .skillBreakdown(breakdown)
-                .questions(reviewQuestions)
+                .questions(questions)
                 .build();
     }
 
@@ -456,10 +555,20 @@ public class ExamServiceImpl implements ExamService {
             if (res.getExamId() != null) {
                 List<QuestionDto> questions = questionReader.findQuestionsForEvaluation(res.getExamId());
                 Map<Long, String> selectedAnswers = resultReader.findSelectedOptionsByResultId(resultId);
-                int totalPoints = 0;
+
+                res.setTotalPossibleScore(180);
+                int correctCount = 0;
+                int incorrectCount = 0;
+                int unansweredCount = 0;
+
+                Map<String, Integer> correctMap = new HashMap<>();
+                Map<String, Integer> totalMap = new HashMap<>();
+
                 for (QuestionDto q : questions) {
-                    if (q.getPoints() != null) totalPoints += q.getPoints();
-                    String selectedOpt = selectedAnswers.get(q.getId());
+                    String skillGroup = q.getSkillGroup() != null ? q.getSkillGroup() : "VOCAB_GRAMMAR";
+                    totalMap.put(skillGroup, totalMap.getOrDefault(skillGroup, 0) + 1);
+
+                    String selectedOpt = (selectedAnswers != null) ? selectedAnswers.get(q.getId()) : null;
                     if (selectedOpt != null && !selectedOpt.isBlank()) {
                         try {
                             Long optId = Long.parseLong(selectedOpt.trim());
@@ -467,12 +576,112 @@ public class ExamServiceImpl implements ExamService {
                             boolean correct = q.getOptions() != null && q.getOptions().stream()
                                     .anyMatch(o -> o.getId().equals(optId) && Boolean.TRUE.equals(o.getCorrect()));
                             q.setIsUserCorrect(correct);
+                            if (correct) {
+                                correctCount++;
+                                correctMap.put(skillGroup, correctMap.getOrDefault(skillGroup, 0) + 1);
+                            } else {
+                                incorrectCount++;
+                            }
                         } catch (NumberFormatException ignored) {
+                            unansweredCount++;
                         }
+                    } else {
+                        unansweredCount++;
                     }
                 }
+
                 res.setQuestions(questions);
-                res.setTotalPossibleScore(totalPoints);
+                res.setTotalQuestions(questions.size());
+                res.setCorrectCount(correctCount);
+                res.setIncorrectCount(incorrectCount);
+                res.setUnansweredCount(unansweredCount);
+
+                // Build JLPT breakdown for historical view
+                JlptExamStructure jlpt = JlptExamStructure.of(res.getJlptLevel());
+                record Group(String name, int max, String... skills) {
+                    int correct(Map<String, Integer> correctMap) {
+                        int sum = 0;
+                        for (String s : skills) sum += correctMap.getOrDefault(s, 0);
+                        return sum;
+                    }
+                    int total(Map<String, Integer> totalMap) {
+                        int sum = 0;
+                        for (String s : skills) sum += totalMap.getOrDefault(s, 0);
+                        return sum;
+                    }
+                }
+
+                List<Group> groups = jlpt.languageReadingCombined()
+                        ? List.of(new Group("Ngôn ngữ + Đọc hiểu", 120, "VOCAB_GRAMMAR", "READING"),
+                                  new Group("Nghe hiểu", 60, "LISTENING"))
+                        : List.of(new Group("Kiến thức ngôn ngữ", 60, "VOCAB_GRAMMAR"),
+                                  new Group("Đọc hiểu", 60, "READING"),
+                                  new Group("Nghe hiểu", 60, "LISTENING"));
+
+                List<Group> present = groups.stream().filter(g -> g.total(totalMap) > 0).toList();
+                int presentMax = present.stream().mapToInt(Group::max).sum();
+                if (presentMax == 0) presentMax = JlptExamStructure.TOTAL_SCORE;
+
+                List<ExamResultResponse.SkillScoreDto> breakdown = new ArrayList<>();
+                String failedMinSection = null;
+                int failedMinEarned = 0;
+                int failedMinRequired = 0;
+
+                for (Group g : present) {
+                    int max = g.max() * JlptExamStructure.TOTAL_SCORE / presentMax;
+                    int minScore = (int) Math.ceil(max * (double) JlptExamStructure.SECTION_MIN_SCORE / 60.0);
+                    int earned = g.total(totalMap) > 0 ? (int) Math.round(g.correct(correctMap) * (double) max / g.total(totalMap)) : 0;
+                    if (earned < minScore && failedMinSection == null) {
+                        failedMinSection = g.name();
+                        failedMinEarned = earned;
+                        failedMinRequired = minScore;
+                    }
+                    BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0).setScale(1, RoundingMode.HALF_UP);
+                    breakdown.add(ExamResultResponse.SkillScoreDto.builder()
+                            .skillGroup(String.join("+", g.skills()))
+                            .skillName(g.name())
+                            .earnedPoints(earned)
+                            .totalPoints(max)
+                            .correctCount(g.correct(correctMap))
+                            .totalQuestions(g.total(totalMap))
+                            .percentage(pct)
+                            .build());
+                }
+
+                String strongestSkill = null;
+                String weakestSkill = null;
+                BigDecimal maxPct = BigDecimal.ZERO;
+                BigDecimal minPct = BigDecimal.valueOf(101);
+                for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+                    BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
+                    if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(maxPct) > 0) {
+                        maxPct = p;
+                        strongestSkill = skill.getSkillName();
+                    }
+                    if (p.compareTo(minPct) < 0) {
+                        minPct = p;
+                        weakestSkill = skill.getSkillName();
+                    }
+                }
+                if (strongestSkill != null && strongestSkill.equals(weakestSkill) && minPct.compareTo(BigDecimal.valueOf(70)) >= 0) {
+                    weakestSkill = null;
+                }
+
+                int histScore = res.getScore() != null ? res.getScore() : 0;
+                BigDecimal histPct = res.getPercentage() != null ? res.getPercentage() : BigDecimal.ZERO;
+                boolean histPassed = Boolean.TRUE.equals(res.getPassed());
+                boolean isMilestone = "MILESTONE".equalsIgnoreCase(res.getExamType());
+                int histPassingScore = res.getPassingScore() != null
+                        ? res.getPassingScore()
+                        : defaultPassingScore(res.getJlptLevel(), isMilestone);
+
+                res.setStrongestSkill(strongestSkill);
+                res.setWeakestSkill(weakestSkill);
+                res.setAiFeedback(generateConstructiveFeedback(res.getExamType(), histPassed, histPct,
+                        strongestSkill, weakestSkill, res.getJlptLevel(),
+                        failedMinSection, failedMinEarned, failedMinRequired, histScore, histPassingScore));
+                res.setRecommendation(generateRecommendation(res.getExamType(), histPassed, weakestSkill));
+                res.setSkillBreakdown(breakdown);
                 res.setDetailsAvailable(!questions.isEmpty());
                 res.setStatusNotice("Kết quả và chi tiết câu hỏi bài thi được tải từ cơ sở dữ liệu Supabase.");
             }
@@ -501,17 +710,45 @@ public class ExamServiceImpl implements ExamService {
 
     private int defaultPassingScore(String jlptLevel, boolean isMilestone) {
         if (isMilestone) return 50;
-        return switch (jlptLevel != null ? jlptLevel.toUpperCase() : "") {
-            case "N5" -> 80;
-            case "N4" -> 90;
-            case "N3" -> 95;
-            case "N2" -> 90;
-            case "N1" -> 100;
-            default -> 80;
-        };
+        return JlptExamStructure.of(jlptLevel).passingScore();
     }
 
-    private String generateConstructiveFeedback(String examType, boolean passed, BigDecimal percentage, String strongest, String weakest, String level) {
+    private String extractUserOptionParam(Map<String, String> formParams, Long questionId) {
+        if (formParams == null || questionId == null) {
+            return null;
+        }
+        String[] possibleKeys = {
+                "answer_" + questionId,
+                "answer[" + questionId + "]",
+                "q_" + questionId,
+                "question_" + questionId,
+                String.valueOf(questionId)
+        };
+        for (String key : possibleKeys) {
+            if (formParams.containsKey(key)) {
+                return formParams.get(key);
+            }
+        }
+        return null;
+    }
+
+    private String generateRecommendation(String examType, boolean passed, String weakest) {
+        if ("PLACEMENT_TEST".equalsIgnoreCase(examType)) {
+            return "Xem lộ trình học tập gợi ý dựa trên kết quả đánh giá năng lực.";
+        }
+        if (passed) {
+            return "Tiếp tục duy trì phong độ và luyện tập thêm các đề thi cấp độ cao hơn.";
+        }
+        if (weakest != null) {
+            return "Tập trung ôn luyện thêm kỹ năng " + weakest + " trước khi thi lại.";
+        }
+        return "Ôn tập lại các phần kiến thức chưa đạt và thử sức lại với đề thi này.";
+    }
+
+    private String generateConstructiveFeedback(String examType, boolean passed, BigDecimal percentage,
+                                                String strongest, String weakest, String level,
+                                                String failedMinSection, int failedMinEarned, int failedMinRequired,
+                                                int score, int passingScore) {
         StringBuilder sb = new StringBuilder();
 
         if ("PLACEMENT_TEST".equalsIgnoreCase(examType)) {
@@ -519,6 +756,8 @@ public class ExamServiceImpl implements ExamService {
             sb.append("Điểm số thực tế này phản ánh năng lực hiện tại của bạn. ");
             if (strongest != null) {
                 sb.append("Thế mạnh của bạn nằm ở: ").append(strongest).append(". ");
+            } else {
+                sb.append("Hiện chưa có câu trả lời đúng nào để xác định thế mạnh nổi bật. ");
             }
             if (weakest != null) {
                 sb.append("Khu vực cần bổ trợ thêm là: ").append(weakest).append(". ");
@@ -531,8 +770,17 @@ public class ExamServiceImpl implements ExamService {
             sb.append("Chúc mừng bạn đã đạt yêu cầu bài thi ").append(level != null ? level : "").append("! ");
             sb.append("Bạn đạt tỷ lệ chính xác ").append(percentage).append("%. ");
         } else {
-            sb.append("Bạn chưa đạt điểm sàn bài thi ").append(level != null ? level : "").append(" lần này. ");
-            sb.append("Điểm số của bạn đạt ").append(percentage).append("% tổng điểm. ");
+            if (failedMinSection != null && score >= passingScore) {
+                sb.append("Bạn chưa đạt điểm sàn bài thi ").append(level != null ? level : "").append(" lần này. ");
+                sb.append("Tổng điểm của bạn đạt ").append(score).append("/180 (đủ điểm đỗ ").append(passingScore)
+                  .append("), nhưng phần ").append(failedMinSection).append(" chỉ đạt ")
+                  .append(failedMinEarned).append(" điểm, chưa đạt mức tối thiểu ")
+                  .append(failedMinRequired).append(" điểm.");
+                return sb.toString();
+            } else {
+                sb.append("Bạn chưa đạt điểm sàn bài thi ").append(level != null ? level : "").append(" lần này. ");
+                sb.append("Điểm số của bạn đạt ").append(percentage).append("% tổng điểm. ");
+            }
         }
 
         if (strongest != null) {

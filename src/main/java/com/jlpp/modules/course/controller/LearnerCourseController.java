@@ -49,6 +49,8 @@ public class LearnerCourseController {
     private final CourseRegistrationRepository courseRegistrationRepository;
     private final StudyMaterialService studyMaterialService;
     private final FlashcardRepository flashcardRepository;
+    private final com.jlpp.modules.learningpath.service.LessonProgressService lessonProgressService;
+    private final com.jlpp.modules.exam.service.ExamService examService;
 
     /**
      * Helper to get active learner (from Security Principal, Session, or default Supabase account)
@@ -297,6 +299,27 @@ public class LearnerCourseController {
         int progress = (registration != null && registration.getProgressPercent() != null) ? registration.getProgressPercent() : 0;
         int completedLessonsCount = (int) Math.round((courseLessons.size() * progress) / 100.0);
 
+        // Enforce Milestone exam gate: if there is an uncompleted Milestone lesson before this lesson, require taking it first
+        for (int i = 0; i < currentIdx; i++) {
+            Lesson prev = courseLessons.get(i);
+            if (prev.isMilestoneExam()) {
+                boolean prevDone = lessonProgressService.isLessonCompleted(
+                        learner.getId(), course.getId(), prev.getId(), i + 1, courseLessons.size(), progress);
+                if (!prevDone) {
+                    session.setAttribute("ACTIVE_MILESTONE_COURSE_ID", course.getId());
+                    session.setAttribute("ACTIVE_MILESTONE_LESSON_ID", prev.getId());
+                    return "redirect:" + examService.resolveMilestoneExamUrl(course.getId(), course.getLevel(), prev.getId());
+                }
+            }
+        }
+
+        // If the requested lesson itself is a Milestone exam, redirect directly to the Milestone exam page
+        if (lesson.isMilestoneExam()) {
+            session.setAttribute("ACTIVE_MILESTONE_COURSE_ID", course.getId());
+            session.setAttribute("ACTIVE_MILESTONE_LESSON_ID", lesson.getId());
+            return "redirect:" + examService.resolveMilestoneExamUrl(course.getId(), course.getLevel(), lesson.getId());
+        }
+
         model.addAttribute("learner", learner);
         model.addAttribute("lesson", lesson);
         model.addAttribute("course", course);
@@ -338,18 +361,12 @@ public class LearnerCourseController {
             }
         }
 
-        CourseRegistration registration = registrationService.getRegistration(learner.getId(), course.getId());
-        if (registration != null) {
-            int newCompletedCount = Math.max(
-                    (int) Math.round((courseLessons.size() * (registration.getProgressPercent() != null ? registration.getProgressPercent() : 0)) / 100.0),
-                    currentIdx + 1
-            );
-            int newPercent = Math.min(100, (int) Math.round((newCompletedCount * 100.0) / courseLessons.size()));
-            registration.setProgressPercent(newPercent);
-            if (newPercent >= 100) {
-                registration.setStatus("COMPLETED");
-            }
-            courseRegistrationRepository.save(registration);
+        // Record granular lesson completion in Learning Path & synchronize course registration progress
+        try {
+            lessonProgressService.markLessonCompleted(learner.getId(), course.getId(), lesson.getId());
+        } catch (Exception e) {
+            log.warn("Could not mark granular lesson completion for userId={}, lessonId={}: {}",
+                    learner.getId(), lesson.getId(), e.getMessage());
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Chúc mừng bạn đã hoàn thành bài học: " + lesson.getTitle() + "!");

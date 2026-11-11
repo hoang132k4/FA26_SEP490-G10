@@ -112,7 +112,7 @@ public class GoogleOAuth2IntegrationTest {
                         .param("username", "google_learner@jeps.edu.vn")
                         .param("password", "Password123@"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/learning/dashboard"));
+                .andExpect(redirectedUrl("/"));
     }
 
     @Test
@@ -142,7 +142,7 @@ public class GoogleOAuth2IntegrationTest {
     }
 
     @Test
-    @DisplayName("Profile 2: Google user submits phone number and completes profile to reach dashboard")
+    @DisplayName("Profile 2: Google user submits phone number and completes profile to reach home page")
     void testCompleteProfile_SubmitPhone_Success() throws Exception {
         User incompleteUser = User.builder()
                 .fullName("OAuth Need Phone")
@@ -166,7 +166,7 @@ public class GoogleOAuth2IntegrationTest {
                         .param("fullName", "OAuth Need Phone")
                         .param("phone", "0934567890"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/learning/dashboard"));
+                .andExpect(redirectedUrl("/"));
 
         User updated = userRepository.findByEmailIgnoreCase("needphone@gmail.com").orElseThrow();
         assertThat(updated.getPhone()).isEqualTo("0934567890");

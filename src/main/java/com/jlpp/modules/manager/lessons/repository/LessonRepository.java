@@ -99,6 +99,8 @@ public class LessonRepository {
         if (lessonId == null) {
             throw new IllegalStateException("Không lấy được mã bài học mới từ sequence của bảng lessons.");
         }
+        String skillType = input.skill();
+        String lessonType = (skillType != null && !skillType.isBlank()) ? skillType : "EXAM";
         jdbcTemplate.update("""
                         INSERT INTO lessons (lesson_id, id, course_id,
                                              lesson_title, title,
@@ -111,7 +113,7 @@ public class LessonRepository {
                         """,
                 lessonId, lessonId, courseId,
                 input.title(), input.title(),
-                input.skill(), input.skill(),
+                skillType, lessonType,
                 orderIndex, orderIndex,
                 input.description(), input.content(), input.sectionName(),
                 input.durationMinutes(), input.freePreview(), input.status());
@@ -119,6 +121,8 @@ public class LessonRepository {
     }
 
     public void update(long lessonId, LessonInput input, int orderIndex) {
+        String skillType = input.skill();
+        String lessonType = (skillType != null && !skillType.isBlank()) ? skillType : "EXAM";
         jdbcTemplate.update("""
                         UPDATE lessons
                         SET lesson_title = ?, title = ?,
@@ -130,7 +134,7 @@ public class LessonRepository {
                         WHERE lesson_id = ?
                         """,
                 input.title(), input.title(),
-                input.skill(), input.skill(),
+                skillType, lessonType,
                 orderIndex, orderIndex,
                 input.description(), input.content(), input.sectionName(),
                 input.durationMinutes(), input.freePreview(), input.status(),

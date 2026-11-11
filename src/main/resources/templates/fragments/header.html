@@ -97,6 +97,13 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'placement'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/exams/placement}">
+                            <i class="bi bi-card-checklist me-1"></i>Đánh giá đầu vào
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
                            th:classappend="${curActive == 'about'} ? 'active fw-bold text-primary' : ''" 
                            th:href="@{/about}">
                             <i class="bi bi-info-circle me-1"></i>Giới thiệu
@@ -171,9 +178,16 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
-                           th:classappend="${curActive == 'exams' or curActive == 'placement'} ? 'active fw-bold text-primary' : ''" 
-                           th:href="@{/exams}">
-                            <i class="bi bi-award me-1"></i>Đánh giá năng lực
+                           th:classappend="${curActive == 'mock-exam' or curActive == 'exams'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/mock-exam}">
+                            <i class="bi bi-pencil-square me-1"></i>Thi thử JLPT
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'placement'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/exams/placement}">
+                            <i class="bi bi-card-checklist me-1"></i>Đánh giá đầu vào
                         </a>
                     </li>
                     <li class="nav-item">
@@ -348,12 +362,6 @@
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider my-1" style="border-color: #F1F5F9;"></li>
-                                <li>
-                                    <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark" th:href="@{/auth/change-password}">
-                                        <i class="bi bi-shield-lock text-secondary fs-6" style="width: 20px;"></i>
-                                        <span>Đổi mật khẩu</span>
-                                    </a>
-                                </li>
                                 <li>
                                     <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-danger" th:href="@{/auth/logout}">
                                         <i class="bi bi-box-arrow-right text-danger fs-6" style="width: 20px;"></i>

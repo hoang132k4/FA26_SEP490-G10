@@ -140,6 +140,7 @@
                                            th:text="${lesson.title}">
                                             Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
                                         </a>
+                                        <span th:if="${lesson.milestoneExam}" class="badge bg-warning bg-opacity-25 text-dark border border-warning small px-2 fw-bold"><i class="bi bi-award-fill me-1 text-warning"></i>Milestone</span>
                                         <span th:if="${lesson.isFreePreview}" class="badge bg-info-subtle text-info border border-info-subtle small px-2">Học thử miễn phí</span>
                                     </div>
                                     <div class="d-flex align-items-center gap-3 text-muted small" style="font-size: 0.78rem;">
@@ -154,9 +155,12 @@
 
                             <!-- Right: Actions -->
                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}" class="btn btn-sm btn-outline-primary px-3 rounded-pill d-flex align-items-center gap-1.5">
-                                    <span>Vào học</span>
-                                    <i class="bi bi-arrow-right"></i>
+                                <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}"
+                                   class="btn btn-sm px-3 rounded-pill d-flex align-items-center gap-1.5"
+                                   th:classappend="${lesson.milestoneExam ? 'btn-primary fw-semibold' : 'btn-outline-primary'}">
+                                    <i th:if="${lesson.milestoneExam}" class="bi bi-pencil-square"></i>
+                                    <span th:text="${lesson.milestoneExam ? 'Làm bài' : 'Vào học'}">Vào học</span>
+                                    <i th:if="${!lesson.milestoneExam}" class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
                         </div>

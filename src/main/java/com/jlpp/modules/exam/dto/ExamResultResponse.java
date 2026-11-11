@@ -32,6 +32,7 @@ public class ExamResultResponse {
     private String strongestSkill;
     private String weakestSkill;
     private String aiFeedback;
+    private String recommendation;
     private boolean persistentSaved;
     private Long resultId;
     private String examType;
@@ -43,6 +44,9 @@ public class ExamResultResponse {
     private List<SkillScoreDto> skillBreakdown = new ArrayList<>();
 
     @Builder.Default
+    private List<SkillScoreDto> canonicalSkills = new ArrayList<>();
+
+    @Builder.Default
     private List<QuestionDto> questions = new ArrayList<>();
 
     @Data
@@ -50,12 +54,14 @@ public class ExamResultResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SkillScoreDto {
-        private String skillGroup;      // VOCAB_GRAMMAR, READING, LISTENING
-        private String skillName;       // e.g. "Kiến thức ngôn ngữ (Từ vựng • Ngữ pháp)", "Đọc hiểu", "Nghe hiểu"
+        private String skillGroup;      // e.g. KANJI, VOCABULARY, GRAMMAR, READING, LISTENING, VOCAB_GRAMMAR
+        private String skillName;       // e.g. "Chữ Hán (Kanji)", "Từ vựng (Vocabulary)", "Ngữ pháp (Grammar)"
         private Integer earnedPoints;
         private Integer totalPoints;
         private int correctCount;
         private int totalQuestions;
         private BigDecimal percentage;
+        @Builder.Default
+        private String status = "ASSESSED"; // "ASSESSED" or "NOT_ASSESSED"
     }
 }

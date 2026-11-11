@@ -4,23 +4,6 @@
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <!-- 1. Breadcrumb: Trang chủ / Đánh giá năng lực / Đánh giá cột mốc -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb small">
-                <li class="breadcrumb-item">
-                    <a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--medium-blue);">
-                        <i class="bi bi-house-door me-1"></i>Trang chủ
-                    </a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a th:href="@{/exams}" class="text-decoration-none" style="color: var(--medium-blue);">
-                        Đánh giá năng lực
-                    </a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">Đánh giá cột mốc</li>
-            </ol>
-        </nav>
-
         <!-- 2. Header Banner -->
         <section class="card kotoba-card p-4 p-lg-5 mb-4 border-0 shadow-sm"
                  style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
