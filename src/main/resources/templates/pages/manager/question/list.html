@@ -37,38 +37,20 @@
                 <input class="form-control" name="search" th:value="${search}" placeholder="Tìm nội dung...">
             </div>
             <div class="col-md-4 col-lg-2">
-                <select class="form-select" name="category">
-                    <option value="">Category</option>
-                    <option th:each="item : ${options.categories}" th:value="${item}" th:text="${item}" th:selected="${item == category}"></option>
-                </select>
-            </div>
-            <div class="col-md-4 col-lg-1">
-                <select class="form-select" name="questionType">
-                    <option value="">Loại</option>
-                    <option th:each="item : ${options.questionTypes}" th:value="${item}" th:text="${item}" th:selected="${item == questionType}"></option>
-                </select>
-            </div>
-            <div class="col-md-4 col-lg-1">
                 <select class="form-select" name="jlptLevel">
-                    <option value="">Level</option>
+                    <option value="">Tất cả Level</option>
                     <option th:each="item : ${options.jlptLevels}" th:value="${item}" th:text="${item}" th:selected="${item == jlptLevel}"></option>
                 </select>
             </div>
             <div class="col-md-4 col-lg-2">
                 <select class="form-select" name="skillType">
-                    <option value="">Kỹ năng</option>
+                    <option value="">Tất cả kỹ năng</option>
                     <option th:each="item : ${options.skillTypes}" th:value="${item}" th:text="${item}" th:selected="${item == skillType}"></option>
                 </select>
             </div>
             <div class="col-md-4 col-lg-1">
-                <select class="form-select" name="difficulty">
-                    <option value="">Độ khó</option>
-                    <option th:each="item : ${options.difficulties}" th:value="${item}" th:text="${item}" th:selected="${item == difficulty}"></option>
-                </select>
-            </div>
-            <div class="col-md-4 col-lg-1">
                 <select class="form-select" name="status">
-                    <option value="">T.thái</option>
+                    <option value="">Tất cả T.thái</option>
                     <option th:each="item : ${options.statuses}" th:value="${item}" th:text="${item}" th:selected="${item == status}"></option>
                 </select>
             </div>
@@ -90,10 +72,8 @@
                 <tr>
                     <th class="ps-4">ID</th>
                     <th>Nội dung</th>
-                    <th>Loại</th>
                     <th>Level</th>
                     <th>Kỹ năng</th>
-                    <th>Độ khó</th>
                     <th>Trạng thái</th>
                     <th>Sử dụng</th>
                     <th class="pe-4">Thao tác</th>
@@ -105,18 +85,11 @@
                     <td style="min-width:250px;max-width:400px;">
                         <div class="text-truncate" style="max-width:400px;" th:text="${question.content}"></div>
                     </td>
-                    <td>
-                        <span class="badge"
-                              th:classappend="${question.questionType == 'PASSAGE' ? 'bg-info' : (question.questionType == 'MULTI_CHOICE' ? 'bg-warning text-dark' : 'bg-primary')}"
-                              th:text="${question.questionType}"></span>
-                    </td>
                     <td th:text="${question.jlptLevel ?: '-'}"></td>
-                    <td th:text="${question.skillType ?: '-'}"></td>
                     <td>
-                        <span th:if="${question.difficulty != null}" class="badge"
-                              th:classappend="${question.difficulty == 'EASY' ? 'bg-success' : (question.difficulty == 'HARD' ? 'bg-danger' : 'bg-secondary')}"
-                              th:text="${question.difficulty}"></span>
-                        <span th:if="${question.difficulty == null}">-</span>
+                        <span th:text="${question.skillType ?: '-'}"></span>
+                        <span th:if="${question.questionType == 'PASSAGE'}" class="badge bg-info ms-1"
+                              th:text="'Passage (' + ${question.childCount} + ' câu)'"></span>
                     </td>
                     <td>
                         <span class="badge"
@@ -134,7 +107,7 @@
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(questions)}">
-                    <td colspan="9" class="text-center text-muted py-5">Không tìm thấy câu hỏi.</td>
+                    <td colspan="7" class="text-center text-muted py-5">Không tìm thấy câu hỏi.</td>
                 </tr>
                 </tbody>
             </table>
