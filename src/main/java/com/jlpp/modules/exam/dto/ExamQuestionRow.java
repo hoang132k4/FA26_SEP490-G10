@@ -6,8 +6,6 @@ public record ExamQuestionRow(
         String questionType,
         String jlptLevel,
         String skillType,
-        String difficulty,
         String section,
-        Integer orderIndex,
-        Integer points
+        Integer orderIndex
 ) {}

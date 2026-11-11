@@ -31,6 +31,15 @@ public class Exam {
     @Column(name = "total_questions")
     private Integer totalQuestions;
 
+    @Column(name = "language_questions")
+    private Integer languageQuestions;
+
+    @Column(name = "reading_questions")
+    private Integer readingQuestions;
+
+    @Column(name = "listening_questions")
+    private Integer listeningQuestions;
+
     @Column(name = "passing_score")
     private Integer passingScore;
 
@@ -74,6 +83,9 @@ public class Exam {
     public String getLevel() { return jlptLevel; }
     public Integer getDurationMinutes() { return durationMinutes; }
     public Integer getTotalQuestions() { return totalQuestions; }
+    public Integer getLanguageQuestions() { return languageQuestions; }
+    public Integer getReadingQuestions() { return readingQuestions; }
+    public Integer getListeningQuestions() { return listeningQuestions; }
     public Integer getPassingScore() { return passingScore; }
     public String getStatus() { return status; }
     public String getDescription() { return description; }
@@ -84,6 +96,9 @@ public class Exam {
     public void setJlptLevel(String jlptLevel) { this.jlptLevel = jlptLevel; }
     public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
     public void setTotalQuestions(Integer totalQuestions) { this.totalQuestions = totalQuestions; }
+    public void setLanguageQuestions(Integer languageQuestions) { this.languageQuestions = languageQuestions; }
+    public void setReadingQuestions(Integer readingQuestions) { this.readingQuestions = readingQuestions; }
+    public void setListeningQuestions(Integer listeningQuestions) { this.listeningQuestions = listeningQuestions; }
     public void setPassingScore(Integer passingScore) { this.passingScore = passingScore; }
     public void setStatus(String status) { this.status = status; }
     public void setDescription(String description) { this.description = description; }

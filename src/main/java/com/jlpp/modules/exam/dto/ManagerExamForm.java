@@ -24,10 +24,20 @@ public class ManagerExamForm {
     @NotBlank(message = "Vui lòng chọn cấp độ JLPT.")
     private String jlptLevel;
 
-    @NotNull(message = "Số câu hỏi không được để trống.")
-    @Min(value = 1, message = "Số câu hỏi phải lớn hơn 0.")
-    @Max(value = 500, message = "Số câu hỏi không được vượt quá 500.")
-    private Integer totalQuestions;
+    @NotNull(message = "Nhập số câu phần Kiến thức ngôn ngữ.")
+    @Min(value = 0, message = "Số câu không được âm.")
+    @Max(value = 200, message = "Mỗi phần tối đa 200 câu.")
+    private Integer languageQuestions;
+
+    @NotNull(message = "Nhập số câu phần Đọc hiểu.")
+    @Min(value = 0, message = "Số câu không được âm.")
+    @Max(value = 200, message = "Mỗi phần tối đa 200 câu.")
+    private Integer readingQuestions;
+
+    @NotNull(message = "Nhập số câu phần Nghe hiểu.")
+    @Min(value = 0, message = "Số câu không được âm.")
+    @Max(value = 200, message = "Mỗi phần tối đa 200 câu.")
+    private Integer listeningQuestions;
 
     @NotBlank(message = "Vui lòng chọn trạng thái.")
     private String status;
