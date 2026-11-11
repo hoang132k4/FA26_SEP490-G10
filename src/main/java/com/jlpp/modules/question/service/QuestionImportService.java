@@ -18,9 +18,9 @@ import java.util.*;
 public class QuestionImportService {
 
     public static final List<String> BASE_COLUMNS = List.of(
-            "group", "question_type", "content", "jlpt_level", "skill_type", "difficulty", "category",
+            "group", "question_type", "content", "jlpt_level", "skill_type",
             "option_a", "option_b", "option_c", "option_d", "answer", "explanation", "audio_url", "status");
-    public static final List<String> EXAM_COLUMNS = List.of("section", "points");
+    public static final List<String> EXAM_COLUMNS = List.of("section");
 
     private static final int MAX_ROWS = 1000;
 
@@ -89,14 +89,14 @@ public class QuestionImportService {
         if (includeExamColumns) columns.addAll(EXAM_COLUMNS);
 
         String[][] samples = {
-                {"", "SINGLE_CHOICE", "日本語の新聞を＿＿ことができます。", "N4", "VOCABULARY", "EASY", "", "読む", "書く", "聞く", "話す", "A", "「新聞を読む」が自然です。", "", "DRAFT"},
-                {"", "MULTI_CHOICE", "正しい文をすべて選んでください。", "N5", "GRAMMAR", "MEDIUM", "", "私は学生です。", "私が学生ですか。", "これは本です。", "あれ本です。", "A,C", "", "", "DRAFT"},
-                {"1", "PASSAGE", "次の文章を読んで、質問に答えてください。\n日本には四季があります。春には桜が咲き、多くの人が花見をします。", "N4", "READING", "MEDIUM", "", "", "", "", "", "", "", "", "DRAFT"},
-                {"1", "SINGLE_CHOICE", "この文章のテーマは何ですか。", "N4", "READING", "MEDIUM", "", "季節", "食べ物", "旅行", "仕事", "A", "", "", "DRAFT"},
-                {"1", "SINGLE_CHOICE", "春に何が咲きますか。", "N4", "READING", "EASY", "", "桜", "梅", "菊", "ひまわり", "A", "", "", "DRAFT"},
+                {"", "MULTI_CHOICE", "日本語の新聞を＿＿ことができます。", "N4", "VOCABULARY", "読む", "書く", "聞く", "話す", "A", "「新聞を読む」が自然です。", "", "DRAFT"},
+                {"", "MULTI_CHOICE", "正しい文をすべて選んでください。", "N5", "GRAMMAR", "私は学生です。", "私が学生ですか。", "これは本です。", "あれ本です。", "A", "", "", "DRAFT"},
+                {"1", "PASSAGE", "次の文章を読んで、質問に答えてください。\n日本には四季があります。春には桜が咲き、多くの人が花見をします。", "N4", "READING", "", "", "", "", "", "", "", "DRAFT"},
+                {"1", "MULTI_CHOICE", "この文章のテーマは何ですか。", "N4", "READING", "季節", "食べ物", "旅行", "仕事", "A", "", "", "DRAFT"},
+                {"1", "MULTI_CHOICE", "春に何が咲きますか。", "N4", "READING", "桜", "梅", "菊", "ひまわり", "A", "", "", "DRAFT"},
         };
         String[][] examExtras = {
-                {"LANGUAGE", "1"}, {"LANGUAGE", "2"}, {"READING", ""}, {"READING", "2"}, {"READING", "2"},
+                {"LANGUAGE"}, {"LANGUAGE"}, {""}, {"READING"}, {""},
         };
 
         try (XSSFWorkbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -152,11 +152,11 @@ public class QuestionImportService {
                 "HƯỚNG DẪN IMPORT CÂU HỎI",
                 "- Giữ nguyên dòng tiêu đề (dòng 1) của sheet Questions, xoá các dòng ví dụ rồi nhập dữ liệu. Chỉ đọc sheet đầu tiên.",
                 "- Nếu có bất kỳ dòng nào lỗi, toàn bộ file sẽ KHÔNG được lưu. Hệ thống báo lỗi theo số dòng.",
-                "- question_type: SINGLE_CHOICE (mặc định nếu để trống) | MULTI_CHOICE | PASSAGE",
+                "- question_type: MULTI_CHOICE (mặc định nếu để trống) | PASSAGE",
                 "- content: bắt buộc. Với PASSAGE là toàn bộ đoạn văn.",
-                "- jlpt_level: N1..N5 | skill_type: VOCABULARY, GRAMMAR, READING, LISTENING | difficulty: EASY, MEDIUM, HARD (có thể để trống)",
+                "- jlpt_level: N1..N5 | skill_type: VOCABULARY, GRAMMAR, READING, LISTENING",
                 "- option_a, option_b: bắt buộc với câu trắc nghiệm; option_c, option_d: tuỳ chọn. PASSAGE để trống các cột đáp án.",
-                "- answer: chữ cái đáp án đúng, ví dụ A. MULTI_CHOICE có thể nhiều đáp án: A,C",
+                "- answer: chữ cái đáp án đúng, ví dụ A.",
                 "- audio_url: link file nghe đã upload sẵn (có thể để trống rồi bổ sung sau ở trang sửa câu hỏi).",
                 "",
                 "BÀI ĐỌC HIỂU / BÀI NGHE NHIỀU CÂU HỎI (cột group)",
@@ -167,7 +167,9 @@ public class QuestionImportService {
             lines.add("");
             lines.add("CỘT RIÊNG CHO ĐỀ THI");
             lines.add("- section: LANGUAGE | READING | LISTENING. Để trống: tự suy ra từ skill_type (READING→READING, LISTENING→LISTENING, còn lại LANGUAGE).");
-            lines.add("- points: điểm của câu (số nguyên >= 1), mặc định 1. Dòng PASSAGE không được gắn vào đề nên bỏ qua 2 cột này.");
+            lines.add("- Dòng PASSAGE không được gắn vào đề nên bỏ qua cột section.");
+            lines.add("- Số câu mỗi phần không được vượt số câu đã cấu hình cho đề (vượt thì cả file bị từ chối).");
+            lines.add("- Không cần nhập điểm: điểm được quy đổi tự động theo phần, thang 180 điểm như JLPT.");
             lines.add("- Khi import vào đề thi, cột status bị bỏ qua: câu hỏi được lưu ACTIVE vào ngân hàng và gắn luôn vào đề.");
         } else {
             lines.add("");
@@ -178,7 +180,7 @@ public class QuestionImportService {
 
     private ManagerQuestionForm toForm(Map<String, String> row, String forcedStatus) {
         String type = upper(row.get("question_type"));
-        if (type.isEmpty()) type = "SINGLE_CHOICE";
+        if (type.isEmpty()) type = "MULTI_CHOICE";
         String content = row.getOrDefault("content", "");
         if (content.isBlank()) throw new IllegalArgumentException("Cột content không được để trống.");
 
@@ -187,8 +189,6 @@ public class QuestionImportService {
         form.setContent(content);
         form.setJlptLevel(upper(row.get("jlpt_level")));
         form.setSkillType(upper(row.get("skill_type")));
-        form.setDifficulty(upper(row.get("difficulty")));
-        form.setCategory(row.get("category"));
         form.setExplanation(row.get("explanation"));
         form.setAudioUrl(row.get("audio_url"));
         String status = forcedStatus != null ? forcedStatus : upper(row.get("status"));

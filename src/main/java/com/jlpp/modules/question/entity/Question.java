@@ -29,7 +29,7 @@ public class Question extends BaseEntity {
 
     @Column(name = "question_type", nullable = false, length = 20)
     @Builder.Default
-    private String questionType = "SINGLE_CHOICE";
+    private String questionType = "MULTI_CHOICE";
 
     @Column(name = "jlpt_level", length = 5)
     private String jlptLevel;

@@ -3,6 +3,7 @@ package com.jlpp.modules.question.controller;
 import com.jlpp.modules.question.dto.ManagerQuestionForm;
 import com.jlpp.modules.question.dto.QuestionImportException;
 import com.jlpp.modules.question.service.ManagerQuestionService;
+import com.jlpp.modules.question.service.QuestionAudioStorageService;
 import com.jlpp.modules.question.service.QuestionImportService;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataAccessException;
@@ -22,29 +23,28 @@ public class ManagerQuestionController {
 
     private final ManagerQuestionService managerQuestionService;
     private final QuestionImportService questionImportService;
+    private final QuestionAudioStorageService audioStorageService;
 
     public ManagerQuestionController(ManagerQuestionService managerQuestionService,
-                                     QuestionImportService questionImportService) {
+                                     QuestionImportService questionImportService,
+                                     QuestionAudioStorageService audioStorageService) {
         this.managerQuestionService = managerQuestionService;
         this.questionImportService = questionImportService;
+        this.audioStorageService = audioStorageService;
     }
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "") String search,
-                       @RequestParam(defaultValue = "") String category,
                        @RequestParam(defaultValue = "") String questionType,
                        @RequestParam(defaultValue = "") String jlptLevel,
                        @RequestParam(defaultValue = "") String skillType,
-                       @RequestParam(defaultValue = "") String difficulty,
                        @RequestParam(defaultValue = "") String status,
                        Model model) {
-        model.addAttribute("questions", managerQuestionService.search(search, category, questionType, jlptLevel, skillType, difficulty, status));
+        model.addAttribute("questions", managerQuestionService.search(search, questionType, jlptLevel, skillType, status));
         model.addAttribute("search", search);
-        model.addAttribute("category", category);
         model.addAttribute("questionType", questionType);
         model.addAttribute("jlptLevel", jlptLevel);
         model.addAttribute("skillType", skillType);
-        model.addAttribute("difficulty", difficulty);
         model.addAttribute("status", status);
         addOptions(model);
         model.addAttribute("questionCount", managerQuestionService.count());
@@ -55,8 +55,11 @@ public class ManagerQuestionController {
     public String createPage(@RequestParam(required = false) Long parentId, Model model) {
         ManagerQuestionForm form = new ManagerQuestionForm();
         if (parentId != null) {
+            var parent = managerQuestionService.findById(parentId);
             form.setParentId(parentId);
-            form.setQuestionType("SINGLE_CHOICE");
+            form.setQuestionType("MULTI_CHOICE");
+            form.setJlptLevel(parent.getJlptLevel());
+            form.setSkillType(parent.getSkillType());
         }
         model.addAttribute("questionForm", form);
         addOptions(model);
@@ -84,13 +87,19 @@ public class ManagerQuestionController {
 
     @PostMapping
     public String create(@Valid @ModelAttribute("questionForm") ManagerQuestionForm form,
-                         BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+                         BindingResult result,
+                         @RequestParam(value = "audioFile", required = false) MultipartFile audioFile,
+                         Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) return formPage(form, model, false);
         try {
+            handleAudioUpload(form, audioFile);
             managerQuestionService.create(form);
             redirectAttributes.addFlashAttribute("questionSuccess", "Đã thêm câu hỏi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
             model.addAttribute("questionError", exception.getMessage());
+            return formPage(form, model, false);
+        } catch (java.io.IOException exception) {
+            model.addAttribute("questionError", "Lỗi upload file audio: " + exception.getMessage());
             return formPage(form, model, false);
         }
         return "redirect:/manager/questions";
@@ -98,16 +107,29 @@ public class ManagerQuestionController {
 
     @PostMapping("/{id}")
     public String update(@PathVariable long id, @Valid @ModelAttribute("questionForm") ManagerQuestionForm form,
-                         BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+                         BindingResult result,
+                         @RequestParam(value = "audioFile", required = false) MultipartFile audioFile,
+                         Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) return formPage(form, model, true);
         try {
+            handleAudioUpload(form, audioFile);
             managerQuestionService.update(id, form);
             redirectAttributes.addFlashAttribute("questionSuccess", "Đã cập nhật câu hỏi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
             model.addAttribute("questionError", exception.getMessage());
             return formPage(form, model, true);
+        } catch (java.io.IOException exception) {
+            model.addAttribute("questionError", "Lỗi upload file audio: " + exception.getMessage());
+            return formPage(form, model, true);
         }
         return "redirect:/manager/questions";
+    }
+
+    private void handleAudioUpload(ManagerQuestionForm form, MultipartFile audioFile) throws java.io.IOException {
+        if (audioFile != null && !audioFile.isEmpty()) {
+            String url = audioStorageService.store(audioFile);
+            form.setAudioUrl(url);
+        }
     }
 
     @PostMapping("/{id}/delete")
@@ -155,7 +177,6 @@ public class ManagerQuestionController {
     }
 
     private void addOptions(Model model) {
-        model.addAttribute("categories", managerQuestionService.categories());
         model.addAttribute("options", managerQuestionService.options());
     }
 }

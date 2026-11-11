@@ -6,10 +6,10 @@ public record QuestionListRow(
         String questionType,
         String jlptLevel,
         String skillType,
-        String difficulty,
         String status,
         long examCount,
-        long quizCount
+        long quizCount,
+        long childCount
 ) {
     public long totalUsages() { return examCount + quizCount; }
 }

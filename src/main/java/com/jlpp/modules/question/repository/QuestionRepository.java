@@ -15,21 +15,17 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("""
             select q from Question q
             where (:search = '' or lower(q.content) like lower(concat('%', :search, '%')))
-              and (:category = '' or lower(q.category) = lower(:category))
               and (:questionType = '' or q.questionType = :questionType)
               and (:jlptLevel = '' or q.jlptLevel = :jlptLevel)
               and (:skillType = '' or q.skillType = :skillType)
-              and (:difficulty = '' or q.difficulty = :difficulty)
               and (:status = '' or q.status = :status)
               and (q.parentId is null)
             order by q.id desc
             """)
     List<Question> searchForManager(@Param("search") String search,
-                                    @Param("category") String category,
                                     @Param("questionType") String questionType,
                                     @Param("jlptLevel") String jlptLevel,
                                     @Param("skillType") String skillType,
-                                    @Param("difficulty") String difficulty,
                                     @Param("status") String status);
 
     @Query("select distinct q.category from Question q where q.category is not null and q.category <> '' order by q.category")
@@ -83,4 +79,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query(value = "SELECT question_id, COUNT(*) FROM exercise_questions WHERE question_id IN (:ids) GROUP BY question_id", nativeQuery = true)
     List<Object[]> batchCountQuizUsages(@Param("ids") List<Long> ids);
+
+    @Query(value = "SELECT parent_id, COUNT(*) FROM questions WHERE parent_id IN (:ids) GROUP BY parent_id", nativeQuery = true)
+    List<Object[]> batchCountChildren(@Param("ids") List<Long> ids);
 }
