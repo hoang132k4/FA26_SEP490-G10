@@ -459,9 +459,11 @@ public class ManagerLessonController {
             } catch (IllegalArgumentException exception) {
                 deleteQuietly(createdLessonId);
                 redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
+                redirectAttributes.addAttribute("modal", "new");
             } catch (DataAccessException exception) {
                 deleteQuietly(createdLessonId);
                 redirectAttributes.addFlashAttribute("lessonError", "Không lưu được bài học: " + describe(exception));
+                redirectAttributes.addAttribute("modal", "new");
             }
             redirectAttributes.addAttribute("courseId", courseId);
             redirectAttributes.addAttribute("skill", "OTHER");
@@ -475,6 +477,7 @@ public class ManagerLessonController {
         long createdLessonId = 0;
         try {
             if (skill == SkillTypeEnum.LISTENING) lessonAudioStorageService.applyQuestionAudioFiles(params, questionAudioFiles);
+            lessonDetailService.validateDetail(skill, params);
             String title = params.getFirst("title");
             String sectionName = params.getFirst("sectionName");
             if (sectionName == null || sectionName.isBlank()) {
@@ -502,12 +505,15 @@ public class ManagerLessonController {
         } catch (IllegalArgumentException exception) {
             deleteQuietly(createdLessonId);
             redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
+            redirectAttributes.addAttribute("modal", "new");
         } catch (DataAccessException exception) {
             deleteQuietly(createdLessonId);
             redirectAttributes.addFlashAttribute("lessonError", "Không lưu được bài học: " + describe(exception));
+            redirectAttributes.addAttribute("modal", "new");
         } catch (java.io.IOException exception) {
             deleteQuietly(createdLessonId);
             redirectAttributes.addFlashAttribute("lessonError", "Không thể lưu file nghe đã chọn. Vui lòng thử lại.");
+            redirectAttributes.addAttribute("modal", "new");
         }
         return redirectToWorkspace(courseId, skill.getValue(), redirectAttributes);
     }
@@ -519,7 +525,8 @@ public class ManagerLessonController {
                          RedirectAttributes redirectAttributes) {
 
         Long courseId = longValue(params, "courseId");
-        SkillTypeEnum skill = SkillTypeEnum.fromParam(params.getFirst("skillType"));
+        String requestedSkill = params.getFirst("skillType");
+        SkillTypeEnum skill = SkillTypeEnum.fromParam(requestedSkill);
         try {
             LessonRow existing = lessonService.findLesson(lessonId)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài học cần sửa."));
@@ -546,6 +553,7 @@ public class ManagerLessonController {
 
             String title = params.getFirst("title");
             if (resolvedSkill == SkillTypeEnum.LISTENING) lessonAudioStorageService.applyQuestionAudioFiles(params, questionAudioFiles);
+            lessonDetailService.validateDetail(resolvedSkill, params);
             String updateSectionName = params.getFirst("sectionName");
             if (updateSectionName == null || updateSectionName.isBlank()) {
                 updateSectionName = existing.sectionName();
@@ -568,12 +576,16 @@ public class ManagerLessonController {
             return redirectToWorkspace(courseId, resolvedSkill.getValue(), redirectAttributes);
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
+            redirectAttributes.addAttribute("edit", lessonId);
         } catch (DataAccessException exception) {
             redirectAttributes.addFlashAttribute("lessonError", "Không lưu được bài học: " + describe(exception));
+            redirectAttributes.addAttribute("edit", lessonId);
         } catch (java.io.IOException exception) {
             redirectAttributes.addFlashAttribute("lessonError", "Không thể lưu file nghe đã chọn. Vui lòng thử lại.");
+            redirectAttributes.addAttribute("edit", lessonId);
         }
-        return redirectToWorkspace(courseId, skill == null ? null : skill.getValue(), redirectAttributes);
+        String redirectSkill = skill != null ? skill.getValue() : requestedSkill;
+        return redirectToWorkspace(courseId, redirectSkill, redirectAttributes);
     }
 
     @PostMapping("/{lessonId}/delete")

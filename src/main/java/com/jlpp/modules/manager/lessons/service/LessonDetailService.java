@@ -753,6 +753,7 @@ public class LessonDetailService {
 
     public Long save(long lessonId, SkillTypeEnum skill, Long sourceEntryId,
                      MultiValueMap<String, String> params, boolean saveToLibrary, String level) {
+        validateDetail(skill, params);
         Long entryId = sourceEntryId;
         if (saveToLibrary && supportsLibrary(skill)) entryId = createLibraryEntry(skill, params, level);
         Map<String, Object> payload = payload(params, skill);
@@ -935,6 +936,198 @@ public class LessonDetailService {
             case KANJI -> libraryRepository.findKanjiEntry(id);
             default -> Optional.empty();
         };
+    }
+
+    public void validateDetail(SkillTypeEnum skill, MultiValueMap<String, String> params) {
+        if (skill == null || params == null) return;
+        switch (skill) {
+            case VOCABULARY -> validateVocabulary(params);
+            case KANJI -> validateKanji(params);
+            case GRAMMAR -> validateGrammar(params);
+            case READING -> validateReading(params);
+            case LISTENING -> validateListening(params);
+        }
+    }
+
+    private void validateVocabulary(MultiValueMap<String, String> params) {
+        List<String> words = params.get("word");
+        List<String> readings = params.get("wordReading") != null ? params.get("wordReading") : params.get("reading");
+        List<String> meanings = params.get("wordMeaning") != null ? params.get("wordMeaning") : params.get("meaning");
+        List<String> examples = params.get("wordExample") != null ? params.get("wordExample") : params.get("example");
+        List<String> exampleVis = params.get("wordExampleVi") != null ? params.get("wordExampleVi") : params.get("exampleVi");
+
+        boolean hasWord = false;
+        int count = words == null ? 0 : words.size();
+        for (int i = 0; i < count; i++) {
+            String w = words.get(i) == null ? "" : words.get(i).trim();
+            if (w.isBlank()) continue;
+            hasWord = true;
+            if (w.length() > 50) {
+                throw new IllegalArgumentException("Từ vựng thứ " + (i + 1) + " tối đa 50 ký tự.");
+            }
+            String reading = readings != null && i < readings.size() ? value(readings.get(i)).trim() : "";
+            if (reading.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập cách đọc cho từ: “" + w + "”.");
+            }
+            if (reading.length() > 50) {
+                throw new IllegalArgumentException("Cách đọc của từ “" + w + "” tối đa 50 ký tự.");
+            }
+            String meaning = meanings != null && i < meanings.size() ? value(meanings.get(i)).trim() : "";
+            if (meaning.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập ý nghĩa cho từ: “" + w + "”.");
+            }
+            if (meaning.length() > 255) {
+                throw new IllegalArgumentException("Ý nghĩa của từ “" + w + "” tối đa 255 ký tự.");
+            }
+            String exJp = examples != null && i < examples.size() ? value(examples.get(i)).trim() : "";
+            String exVi = exampleVis != null && i < exampleVis.size() ? value(exampleVis.get(i)).trim() : "";
+            if (!exJp.isBlank() && exVi.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập câu dịch tiếng Việt cho ví dụ của từ: “" + w + "”.");
+            }
+        }
+        if (!hasWord) {
+            throw new IllegalArgumentException("Bài học Từ vựng phải có ít nhất 1 từ vựng.");
+        }
+    }
+
+    private void validateKanji(MultiValueMap<String, String> params) {
+        String character = first(params, "character").trim();
+        if (character.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập chữ Hán (Kanji).");
+        }
+        if (character.codePointCount(0, character.length()) != 1) {
+            throw new IllegalArgumentException("Chữ Hán chỉ được nhập đúng 1 ký tự.");
+        }
+
+        String hanviet = first(params, "hanviet").trim();
+        if (hanviet.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập âm Hán Việt cho chữ Hán.");
+        }
+        if (hanviet.length() > 50) {
+            throw new IllegalArgumentException("Âm Hán Việt tối đa 50 ký tự.");
+        }
+
+        String strokeStr = first(params, "strokeCount").trim();
+        if (strokeStr.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập số nét của chữ Hán.");
+        }
+        try {
+            int strokes = Integer.parseInt(strokeStr);
+            if (strokes < 1 || strokes > 40) {
+                throw new IllegalArgumentException("Số nét chữ Hán phải từ 1 đến 40 nét.");
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Số nét chữ Hán không hợp lệ.");
+        }
+
+        String meaning = first(params, "kanjiMeaning").trim();
+        if (meaning.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập nghĩa của chữ Hán.");
+        }
+        if (meaning.length() > 200) {
+            throw new IllegalArgumentException("Nghĩa chữ Hán tối đa 200 ký tự.");
+        }
+
+        String on = first(params, "onReading").trim();
+        String kun = first(params, "kunReading").trim();
+        if (on.isBlank() && kun.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập ít nhất một âm On hoặc âm Kun cho chữ Hán.");
+        }
+    }
+
+    private void validateGrammar(MultiValueMap<String, String> params) {
+        String pattern = first(params, "pattern").trim();
+        if (pattern.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập mẫu ngữ pháp (ví dụ: 〜てはいけない).");
+        }
+        if (pattern.length() > 100) {
+            throw new IllegalArgumentException("Mẫu ngữ pháp tối đa 100 ký tự.");
+        }
+
+        String meaning = first(params, "meaning").trim();
+        if (meaning.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập ý nghĩa của mẫu ngữ pháp.");
+        }
+        if (meaning.length() > 255) {
+            throw new IllegalArgumentException("Ý nghĩa mẫu ngữ pháp tối đa 255 ký tự.");
+        }
+
+        String formation = first(params, "formation").trim();
+        if (formation.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập cấu trúc kết hợp ngữ pháp.");
+        }
+        if (formation.length() > 500) {
+            throw new IllegalArgumentException("Cấu trúc kết hợp tối đa 500 ký tự.");
+        }
+
+        List<String> exJpList = params.get("exampleJp");
+        List<String> exViList = params.get("exampleVi");
+        if (exJpList != null) {
+            for (int i = 0; i < exJpList.size(); i++) {
+                String jp = exJpList.get(i) == null ? "" : exJpList.get(i).trim();
+                String vi = exViList != null && i < exViList.size() && exViList.get(i) != null ? exViList.get(i).trim() : "";
+                if (!jp.isBlank() && vi.isBlank()) {
+                    throw new IllegalArgumentException("Vui lòng nhập bản dịch tiếng Việt cho câu ví dụ " + (i + 1) + ": “" + jp + "”.");
+                }
+            }
+        }
+    }
+
+    private void validateReading(MultiValueMap<String, String> params) {
+        String passage = first(params, "passage");
+        String stripped = passage.replaceAll("<[^>]*>", "").replaceAll("&nbsp;", " ").trim();
+        if (stripped.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập nội dung đoạn văn cho bài Đọc hiểu.");
+        }
+        if (passage.length() > 20000) {
+            throw new IllegalArgumentException("Nội dung đoạn văn tối đa 20.000 ký tự.");
+        }
+
+        List<String> questions = params.get("questionText");
+        List<String> optA = params.get("optionA");
+        List<String> optB = params.get("optionB");
+        List<String> optC = params.get("optionC");
+        List<String> optD = params.get("optionD");
+
+        boolean hasQuestion = false;
+        int qCount = questions == null ? 0 : questions.size();
+        for (int i = 0; i < qCount; i++) {
+            String qText = questions.get(i) == null ? "" : questions.get(i).trim();
+            if (qText.isBlank()) continue;
+            hasQuestion = true;
+            String a = optA != null && i < optA.size() ? value(optA.get(i)).trim() : "";
+            String b = optB != null && i < optB.size() ? value(optB.get(i)).trim() : "";
+            String c = optC != null && i < optC.size() ? value(optC.get(i)).trim() : "";
+            String d = optD != null && i < optD.size() ? value(optD.get(i)).trim() : "";
+            if (a.isBlank() || b.isBlank() || c.isBlank() || d.isBlank()) {
+                throw new IllegalArgumentException("Câu hỏi số " + (i + 1) + " phải nhập đủ cả 4 phương án A, B, C, D.");
+            }
+        }
+        if (!hasQuestion) {
+            throw new IllegalArgumentException("Bài Đọc hiểu phải có ít nhất 1 câu hỏi.");
+        }
+    }
+
+    private void validateListening(MultiValueMap<String, String> params) {
+        // Lưu ý: Người dùng yêu cầu không giới hạn dung lượng file nghe
+        List<String> questions = params.get("questionText");
+        List<String> optA = params.get("optionA");
+        List<String> optB = params.get("optionB");
+        List<String> optC = params.get("optionC");
+        List<String> optD = params.get("optionD");
+
+        int qCount = questions == null ? 0 : questions.size();
+        for (int i = 0; i < qCount; i++) {
+            String qText = questions.get(i) == null ? "" : questions.get(i).trim();
+            if (qText.isBlank()) continue;
+            String a = optA != null && i < optA.size() ? value(optA.get(i)).trim() : "";
+            String b = optB != null && i < optB.size() ? value(optB.get(i)).trim() : "";
+            String c = optC != null && i < optC.size() ? value(optC.get(i)).trim() : "";
+            String d = optD != null && i < optD.size() ? value(optD.get(i)).trim() : "";
+            if (a.isBlank() || b.isBlank() || c.isBlank() || d.isBlank()) {
+                throw new IllegalArgumentException("Câu hỏi nghe số " + (i + 1) + " phải nhập đủ cả 4 phương án A, B, C, D.");
+            }
+        }
     }
 
     private String first(MultiValueMap<String, String> params, String key) { return value(params.getFirst(key)); }

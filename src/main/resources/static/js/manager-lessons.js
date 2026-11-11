@@ -619,34 +619,406 @@
         });
     }
 
-    /* ------------------------------------------------------- unsaved-changes guard */
-    var editorForm = document.querySelector('[data-lesson-editor]');
-    if (editorForm) {
+    /* ------------------------------------------------------- unsaved-changes guard & validation */
+    function clearFieldFeedback(field) {
+        if (!field) return;
+        field.classList.remove('is-invalid');
+        var container = field.closest('.lesson-field-unit')
+            || field.closest('.lesson-audio-row')
+            || field;
+        var parent = container.parentElement;
+        if (parent) {
+            var fb = parent.querySelector(':scope > .lesson-field-feedback');
+            if (fb) fb.remove();
+        }
+    }
+
+    function showFieldError(field, message) {
+        if (!field) return;
+        field.classList.add('is-invalid');
+
+        var targetToInsertAfter = field;
+        if (field.closest('.lesson-field-unit')) {
+            targetToInsertAfter = field.closest('.lesson-field-unit');
+        } else if (field.closest('.lesson-audio-row')) {
+            targetToInsertAfter = field.closest('.lesson-audio-row');
+        }
+
+        var parent = targetToInsertAfter.parentElement;
+        if (parent) {
+            var existing = parent.querySelector(':scope > .lesson-field-feedback');
+            if (existing) {
+                var textEl = existing.querySelector('.feedback-text');
+                if (textEl) textEl.textContent = message;
+                else existing.textContent = message;
+            } else {
+                var div = document.createElement('div');
+                div.className = 'lesson-field-feedback text-danger small mt-1';
+                div.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i><span class="feedback-text">' + message + '</span>';
+                targetToInsertAfter.insertAdjacentElement('afterend', div);
+            }
+        }
+
+        var clearHandler = function () {
+            clearFieldFeedback(field);
+            field.removeEventListener('input', clearHandler);
+            field.removeEventListener('change', clearHandler);
+        };
+        field.addEventListener('input', clearHandler);
+        field.addEventListener('change', clearHandler);
+    }
+
+    function clearAllErrors(form) {
+        form.querySelectorAll('.is-invalid').forEach(function (el) {
+            el.classList.remove('is-invalid');
+        });
+        form.querySelectorAll('.lesson-field-feedback').forEach(function (el) {
+            el.remove();
+        });
+        var clientAlert = form.querySelector('.lesson-client-alert');
+        if (clientAlert) {
+            clientAlert.style.display = 'none';
+            clientAlert.textContent = '';
+        }
+    }
+
+    var editorForms = document.querySelectorAll('[data-lesson-editor]');
+    editorForms.forEach(function (editorForm) {
+        // Tắt validation mặc định của trình duyệt để sử dụng thông báo trực tiếp tại field
+        editorForm.setAttribute('novalidate', 'novalidate');
+
         var dirty = false;
         editorForm.addEventListener('input', function () {
             dirty = true;
         });
-        editorForm.addEventListener('submit', function (event) {
-            var listeningCards = editorForm.querySelectorAll('.listening-question-card');
-            for (var index = 0; index < listeningCards.length; index++) {
-                var card = listeningCards[index];
-                var mode = card.querySelector('[name="questionAudioMode"]');
-                var audioFile = card.querySelector('[name="questionAudioFile"]');
-                var audioUrl = card.querySelector('[name="questionAudioUrl"]');
-                var fileMode = mode && mode.value === 'file';
-                var missingAudio = fileMode
-                    ? (!audioFile || !audioFile.files || audioFile.files.length === 0)
-                    : (!audioUrl || !audioUrl.value.trim());
-                if (missingAudio) {
-                    event.preventDefault();
-                    window.alert('Câu hỏi nghe #' + (index + 1) + (fileMode ? ' cần chọn file nghe.' : ' cần nhập URL bài nghe.'));
-                    if (fileMode && audioFile) audioFile.focus();
-                    else if (audioUrl) audioUrl.focus();
-                    return;
+
+        // Nếu server trả về lỗi (ví dụ trùng tên bài học), highlight ngay trường tên bài học
+        var serverAlert = editorForm.querySelector('.lesson-modal-alert');
+        if (serverAlert && serverAlert.textContent.trim()) {
+            var alertMsg = serverAlert.textContent.trim();
+            if (alertMsg.toLowerCase().includes('tên bài học') || alertMsg.toLowerCase().includes('đã tồn tại')) {
+                var titleInput = editorForm.querySelector('#lessonTitle, #otherLessonTitle, input[name="title"]');
+                if (titleInput) {
+                    showFieldError(titleInput, alertMsg);
                 }
             }
+        }
+
+        editorForm.addEventListener('submit', function (event) {
+            clearAllErrors(editorForm);
+            var firstInvalid = null;
+
+            function flagError(field, message) {
+                if (!field) return;
+                showFieldError(field, message);
+                if (!firstInvalid) {
+                    firstInvalid = field;
+                }
+            }
+
+            // Đồng bộ nội dung rich editor trước khi kiểm tra
+            editorForm.querySelectorAll('[data-rich-editor]').forEach(function (ed) {
+                var vf = editorForm.querySelector('[data-rich-value]') || (ed.parentElement ? ed.parentElement.querySelector('[data-rich-value]') : null);
+                if (vf) vf.value = ed.innerHTML;
+            });
+
+            // 1. Validate Tiêu đề bài học (bắt buộc, tối đa 150 ký tự)
+            var titleInput = editorForm.querySelector('#lessonTitle, #otherLessonTitle, input[name="title"]');
+            if (titleInput) {
+                var titleVal = titleInput.value.trim();
+                if (!titleVal) {
+                    flagError(titleInput, 'Vui lòng nhập tên bài học.');
+                } else if (titleVal.length > 150) {
+                    flagError(titleInput, 'Tên bài học không được vượt quá 150 ký tự (hiện tại: ' + titleVal.length + ').');
+                }
+            }
+
+            // 2. Validate Chương / Phần
+            var sectionSelect = editorForm.querySelector('#lessonSectionName, #otherLessonSectionName, select[name="sectionName"]');
+            if (sectionSelect && sectionSelect.offsetParent !== null) {
+                var sectionVal = sectionSelect.value.trim();
+                if (!sectionVal) {
+                    flagError(sectionSelect, 'Vui lòng chọn chương / phần.');
+                }
+            }
+
+            // 3. Validate Thời lượng ước tính (0 - 360 phút)
+            var durationInput = editorForm.querySelector('#lessonDuration, input[name="durationMinutes"]');
+            if (durationInput && durationInput.value.trim() !== '') {
+                var durVal = Number(durationInput.value.trim());
+                if (isNaN(durVal) || durVal < 0 || durVal > 360) {
+                    flagError(durationInput, 'Thời lượng ước tính phải từ 0 đến 360 phút.');
+                }
+            }
+
+            // 4. Validate Nội dung bài học khác (tối đa 50.000 ký tự)
+            var otherContent = editorForm.querySelector('#otherLessonContent, textarea[name="content"], [data-rich-value][name="content"]');
+            if (otherContent && otherContent.value && otherContent.value.length > 50000) {
+                flagError(otherContent, 'Nội dung bài học không được vượt quá 50.000 ký tự.');
+            }
+
+            // 5. Validate Kỹ năng Từ vựng (VOCABULARY)
+            var wordRepeat = editorForm.querySelector('[data-repeat="words"]');
+            if (wordRepeat) {
+                var wordRows = wordRepeat.querySelectorAll('.lesson-word-grid:not(.lesson-word-head)');
+                if (wordRows.length === 0) {
+                    var addWordBtn = editorForm.querySelector('[data-add-row="wordRowTemplate"]');
+                    flagError(addWordBtn || wordRepeat, 'Vui lòng thêm ít nhất một từ vựng.');
+                } else {
+                    wordRows.forEach(function (row, idx) {
+                        var wordInput = row.querySelector('input[name="word"]');
+                        var readingInput = row.querySelector('input[name="wordReading"]');
+                        var meaningInput = row.querySelector('input[name="wordMeaning"]');
+                        var exJpInput = row.querySelector('input[name="wordExample"]');
+                        var exViInput = row.querySelector('input[name="wordExampleVi"]');
+
+                        if (wordInput) {
+                            var wVal = wordInput.value.trim();
+                            if (!wVal) {
+                                flagError(wordInput, 'Vui lòng nhập từ vựng (dòng #' + (idx + 1) + ').');
+                            } else if (wVal.length > 50) {
+                                flagError(wordInput, 'Từ vựng không vượt quá 50 ký tự.');
+                            }
+                        }
+                        if (readingInput) {
+                            var rVal = readingInput.value.trim();
+                            if (!rVal) {
+                                flagError(readingInput, 'Vui lòng nhập cách đọc (dòng #' + (idx + 1) + ').');
+                            } else if (rVal.length > 50) {
+                                flagError(readingInput, 'Cách đọc không vượt quá 50 ký tự.');
+                            }
+                        }
+                        if (meaningInput) {
+                            var mVal = meaningInput.value.trim();
+                            if (!mVal) {
+                                flagError(meaningInput, 'Vui lòng nhập ý nghĩa (dòng #' + (idx + 1) + ').');
+                            } else if (mVal.length > 150) {
+                                flagError(meaningInput, 'Ý nghĩa không vượt quá 150 ký tự.');
+                            }
+                        }
+                        if (exJpInput && exViInput) {
+                            var jpVal = exJpInput.value.trim();
+                            var viVal = exViInput.value.trim();
+                            if (jpVal && !viVal) {
+                                flagError(exViInput, 'Vui lòng nhập bản dịch tiếng Việt cho ví dụ (dòng #' + (idx + 1) + ').');
+                            } else if (viVal && !jpVal) {
+                                flagError(exJpInput, 'Vui lòng nhập câu ví dụ tiếng Nhật (dòng #' + (idx + 1) + ').');
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 6. Validate Kỹ năng Chữ Hán (KANJI)
+            var kanjiChar = editorForm.querySelector('#kanjiCharacter');
+            if (kanjiChar) {
+                var charVal = kanjiChar.value.trim();
+                if (!charVal) {
+                    flagError(kanjiChar, 'Vui lòng nhập chữ Hán (Kanji).');
+                } else if (charVal.length !== 1) {
+                    flagError(kanjiChar, 'Chữ Hán (Kanji) phải đúng 1 ký tự.');
+                }
+
+                var hanviet = editorForm.querySelector('#kanjiHanviet');
+                if (hanviet) {
+                    var hvVal = hanviet.value.trim();
+                    if (!hvVal) {
+                        flagError(hanviet, 'Vui lòng nhập âm Hán Việt.');
+                    } else if (hvVal.length > 50) {
+                        flagError(hanviet, 'Âm Hán Việt tối đa 50 ký tự.');
+                    }
+                }
+
+                var kanjiMeaning = editorForm.querySelector('#kanjiMeaning');
+                if (kanjiMeaning) {
+                    var kmVal = kanjiMeaning.value.trim();
+                    if (!kmVal) {
+                        flagError(kanjiMeaning, 'Vui lòng nhập ý nghĩa của chữ Hán.');
+                    } else if (kmVal.length > 200) {
+                        flagError(kanjiMeaning, 'Ý nghĩa chữ Hán tối đa 200 ký tự.');
+                    }
+                }
+
+                var kanjiStrokes = editorForm.querySelector('#kanjiStrokes');
+                if (kanjiStrokes) {
+                    var stVal = kanjiStrokes.value.trim();
+                    var stNum = Number(stVal);
+                    if (!stVal || isNaN(stNum) || stNum < 1 || stNum > 40) {
+                        flagError(kanjiStrokes, 'Số nét của chữ Hán phải từ 1 đến 40.');
+                    }
+                }
+
+                var kanjiOn = editorForm.querySelector('#kanjiOn');
+                var kanjiKun = editorForm.querySelector('#kanjiKun');
+                if (kanjiOn && kanjiKun && !kanjiOn.value.trim() && !kanjiKun.value.trim()) {
+                    flagError(kanjiOn, 'Chữ Hán cần có ít nhất một âm On hoặc âm Kun.');
+                }
+
+                var compoundRows = editorForm.querySelectorAll('[data-repeat="compounds"] .lesson-compound-row');
+                compoundRows.forEach(function (row, idx) {
+                    var cpWord = row.querySelector('input[name="compoundWord"]');
+                    var cpRead = row.querySelector('input[name="compoundReading"]');
+                    var cpMean = row.querySelector('input[name="compoundMeaning"]');
+                    var w = cpWord ? cpWord.value.trim() : '';
+                    var r = cpRead ? cpRead.value.trim() : '';
+                    var m = cpMean ? cpMean.value.trim() : '';
+                    if (w || r || m) {
+                        if (!w && cpWord) flagError(cpWord, 'Vui lòng nhập từ ghép (dòng #' + (idx + 1) + ').');
+                        if (!r && cpRead) flagError(cpRead, 'Vui lòng nhập cách đọc từ ghép (dòng #' + (idx + 1) + ').');
+                        if (!m && cpMean) flagError(cpMean, 'Vui lòng nhập nghĩa từ ghép (dòng #' + (idx + 1) + ').');
+                    }
+                });
+            }
+
+            // 7. Validate Kỹ năng Ngữ pháp (GRAMMAR)
+            var grammarPattern = editorForm.querySelector('#grammarPattern');
+            if (grammarPattern) {
+                var gpVal = grammarPattern.value.trim();
+                if (!gpVal) {
+                    flagError(grammarPattern, 'Vui lòng nhập mẫu câu ngữ pháp.');
+                } else if (gpVal.length > 100) {
+                    flagError(grammarPattern, 'Mẫu câu không vượt quá 100 ký tự.');
+                }
+
+                var grammarMeaning = editorForm.querySelector('#grammarMeaning');
+                if (grammarMeaning) {
+                    var gmVal = grammarMeaning.value.trim();
+                    if (!gmVal) {
+                        flagError(grammarMeaning, 'Vui lòng nhập ý nghĩa của ngữ pháp.');
+                    } else if (gmVal.length > 255) {
+                        flagError(grammarMeaning, 'Ý nghĩa không vượt quá 255 ký tự.');
+                    }
+                }
+
+                var grammarFormation = editorForm.querySelector('#grammarFormation');
+                if (grammarFormation) {
+                    var gfVal = grammarFormation.value.trim();
+                    if (!gfVal) {
+                        flagError(grammarFormation, 'Vui lòng nhập cấu trúc kết hợp của ngữ pháp.');
+                    } else if (gfVal.length > 500) {
+                        flagError(grammarFormation, 'Cấu trúc kết hợp không vượt quá 500 ký tự.');
+                    }
+                }
+
+                var grammarUsage = editorForm.querySelector('#grammarUsage');
+                if (grammarUsage && grammarUsage.value && grammarUsage.value.length > 1000) {
+                    flagError(grammarUsage, 'Giải thích cách dùng tối đa 1.000 ký tự.');
+                }
+
+                var exampleRows = editorForm.querySelectorAll('[data-repeat="examples"] .lesson-example-row');
+                exampleRows.forEach(function (row, idx) {
+                    var exJp = row.querySelector('input[name="exampleJp"]');
+                    var exVi = row.querySelector('input[name="exampleVi"]');
+                    if (exJp && exVi) {
+                        var jp = exJp.value.trim();
+                        var vi = exVi.value.trim();
+                        if (jp && !vi) {
+                            flagError(exVi, 'Vui lòng nhập bản dịch tiếng Việt cho ví dụ #' + (idx + 1) + '.');
+                        } else if (vi && !jp) {
+                            flagError(exJp, 'Vui lòng nhập câu ví dụ tiếng Nhật cho ví dụ #' + (idx + 1) + '.');
+                        }
+                    }
+                });
+            }
+
+            // 8. Validate Kỹ năng Đọc hiểu (READING)
+            var readingEditor = editorForm.querySelector('#readingPassage');
+            var readingVal = editorForm.querySelector('textarea[name="passage"]');
+            if (readingEditor || readingVal) {
+                var text = (readingEditor ? readingEditor.innerText : (readingVal ? readingVal.value : '')).trim();
+                if (!text) {
+                    flagError(readingEditor || readingVal, 'Vui lòng nhập nội dung đoạn văn cho bài Đọc hiểu.');
+                }
+
+                var readingQuestions = editorForm.querySelectorAll('[data-repeat="questions"] .lesson-question');
+                if (readingQuestions.length === 0) {
+                    var addQBtn = editorForm.querySelector('[data-add-row="questionRowTemplate"]');
+                    flagError(addQBtn || readingEditor, 'Bài đọc hiểu cần ít nhất một câu hỏi.');
+                } else {
+                    readingQuestions.forEach(function (card, idx) {
+                        var qText = card.querySelector('input[name="questionText"]');
+                        var optA = card.querySelector('input[name="optionA"]');
+                        var optB = card.querySelector('input[name="optionB"]');
+                        var optC = card.querySelector('input[name="optionC"]');
+                        var optD = card.querySelector('input[name="optionD"]');
+
+                        if (qText && !qText.value.trim()) {
+                            flagError(qText, 'Vui lòng nhập nội dung câu hỏi #' + (idx + 1) + '.');
+                        }
+                        if (optA && !optA.value.trim()) flagError(optA, 'Vui lòng nhập phương án A (câu #' + (idx + 1) + ').');
+                        if (optB && !optB.value.trim()) flagError(optB, 'Vui lòng nhập phương án B (câu #' + (idx + 1) + ').');
+                        if (optC && !optC.value.trim()) flagError(optC, 'Vui lòng nhập phương án C (câu #' + (idx + 1) + ').');
+                        if (optD && !optD.value.trim()) flagError(optD, 'Vui lòng nhập phương án D (câu #' + (idx + 1) + ').');
+                    });
+                }
+            }
+
+            // 9. Validate Kỹ năng Nghe hiểu (LISTENING)
+            var listeningCards = editorForm.querySelectorAll('.listening-question-card');
+            if (editorForm.querySelector('.listening-question-section')) {
+                if (listeningCards.length === 0) {
+                    var addListeningBtn = editorForm.querySelector('[data-add-row="listeningQuestionRowTemplate"]');
+                    flagError(addListeningBtn || editorForm.querySelector('.listening-question-section'), 'Bài nghe hiểu cần ít nhất một câu hỏi.');
+                } else {
+                    listeningCards.forEach(function (card, idx) {
+                        var mode = card.querySelector('[name="questionAudioMode"]');
+                        var audioFile = card.querySelector('[name="questionAudioFile"]');
+                        var audioUrl = card.querySelector('[name="questionAudioUrl"]');
+                        var fileMode = mode && mode.value === 'file';
+
+                        var hasFile = audioFile && audioFile.files && audioFile.files.length > 0;
+                        var hasUrl = audioUrl && audioUrl.value.trim().length > 0;
+
+                        if (fileMode) {
+                            if (!hasFile && !hasUrl) {
+                                flagError(audioFile, 'Vui lòng chọn file nghe cho câu hỏi #' + (idx + 1) + '.');
+                            }
+                        } else {
+                            if (!hasUrl) {
+                                flagError(audioUrl, 'Vui lòng nhập URL bài nghe cho câu hỏi #' + (idx + 1) + '.');
+                            }
+                        }
+
+                        var qText = card.querySelector('input[name="questionText"]');
+                        var optA = card.querySelector('input[name="optionA"]');
+                        var optB = card.querySelector('input[name="optionB"]');
+                        var optC = card.querySelector('input[name="optionC"]');
+                        var optD = card.querySelector('input[name="optionD"]');
+
+                        if (qText && !qText.value.trim()) {
+                            flagError(qText, 'Vui lòng nhập nội dung câu hỏi #' + (idx + 1) + '.');
+                        }
+                        if (optA && !optA.value.trim()) flagError(optA, 'Vui lòng nhập phương án A (câu #' + (idx + 1) + ').');
+                        if (optB && !optB.value.trim()) flagError(optB, 'Vui lòng nhập phương án B (câu #' + (idx + 1) + ').');
+                        if (optC && !optC.value.trim()) flagError(optC, 'Vui lòng nhập phương án C (câu #' + (idx + 1) + ').');
+                        if (optD && !optD.value.trim()) flagError(optD, 'Vui lòng nhập phương án D (câu #' + (idx + 1) + ').');
+                    });
+                }
+            }
+
+            // Nếu có bất kỳ trường nào sai validate
+            if (firstInvalid) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                var clientAlert = editorForm.querySelector('.lesson-client-alert');
+                if (clientAlert) {
+                    clientAlert.style.display = 'block';
+                    clientAlert.textContent = 'Vui lòng kiểm tra và sửa lại các trường thông tin bị lỗi bên dưới.';
+                }
+
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(function () {
+                    try {
+                        firstInvalid.focus();
+                    } catch (e) {}
+                }, 150);
+                return false;
+            }
+
             dirty = false;
         });
+
         window.addEventListener('beforeunload', function (event) {
             if (!dirty) {
                 return;
@@ -654,5 +1026,5 @@
             event.preventDefault();
             event.returnValue = '';
         });
-    }
+    });
 })();
