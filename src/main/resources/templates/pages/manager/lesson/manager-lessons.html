@@ -16,8 +16,31 @@
         </div>
     </div>
 
+    <style>
+        .lesson-field.is-invalid,
+        .reading-rich-editor.is-invalid {
+            border-color: #dc3545 !important;
+            background-color: #fff8f8 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15) !important;
+        }
+        .lesson-field-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.8125rem;
+            color: #dc3545;
+            font-weight: 500;
+        }
+        .lesson-modal-alert {
+            border-left: 4px solid #dc3545;
+        }
+        .lesson-client-alert {
+            border-left: 4px solid #dc3545;
+        }
+    </style>
+
     <div class="alert alert-success py-2" role="status" th:if="${lessonSuccess}" th:text="${lessonSuccess}"></div>
-    <div class="alert alert-danger py-2" role="alert" th:if="${lessonError}" th:text="${lessonError}"></div>
+    <div class="alert alert-danger py-2" role="alert" th:if="${lessonError != null and !modalOpen}" th:text="${lessonError}"></div>
     <div class="alert alert-warning py-2" role="alert" th:if="${loadError}" th:text="${loadError}"></div>
     <div class="alert alert-warning py-2" role="alert" th:if="${libraryError}" th:text="${libraryError}"></div>
 
@@ -838,12 +861,14 @@
                         <input type="hidden" name="skillType" th:value="${selectedSkill.value}">
                         <input type="hidden" name="entryId" th:value="${selectedEntryId}">
                         <div class="lesson-modal-scroll">
+                            <div class="alert alert-danger py-2 mb-3 lesson-modal-alert" role="alert" th:if="${lessonError}" th:text="${lessonError}"></div>
+                            <div class="alert alert-danger py-2 mb-3 lesson-client-alert" role="alert" style="display:none;"></div>
 
                             <div class="lesson-field-row is-name mb-3" th:if="${chapterNames != null and !#lists.isEmpty(chapterNames)}">
                                 <div style="flex: 1 1 55%;">
                                     <label class="lesson-field-label" for="lessonTitle">Tên bài học <span class="text-danger">*</span></label>
                                     <input class="lesson-field" id="lessonTitle" name="title" type="text"
-                                           required maxlength="255" th:value="${form['title']}"
+                                           required maxlength="150" th:value="${form['title']}"
                                            placeholder="Ví dụ: Bài 5: Đồ vật trong lớp học">
                                 </div>
                                 <div style="flex: 1 1 45%;">
@@ -861,7 +886,7 @@
                                 <div>
                                     <label class="lesson-field-label" for="lessonTitle">Tên bài học <span class="text-danger">*</span></label>
                                     <input class="lesson-field" id="lessonTitle" name="title" type="text"
-                                           required maxlength="255" th:value="${form['title']}"
+                                           required maxlength="150" th:value="${form['title']}"
                                            placeholder="Ví dụ: Bài 5: Đồ vật trong lớp học">
                                 </div>
                                 <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
@@ -873,18 +898,18 @@
                                     <div>
                                         <label class="lesson-field-label" for="grammarPattern">Mẫu câu <span class="text-danger">*</span></label>
                                         <input class="lesson-field is-japanese" id="grammarPattern" name="pattern"
-                                               type="text" maxlength="120" th:value="${form['pattern']}">
+                                               type="text" maxlength="100" required th:value="${form['pattern']}">
                                     </div>
                                     <div>
-                                        <label class="lesson-field-label" for="grammarMeaning">Ý nghĩa</label>
+                                        <label class="lesson-field-label" for="grammarMeaning">Ý nghĩa <span class="text-danger">*</span></label>
                                         <input class="lesson-field" id="grammarMeaning" name="meaning"
-                                               type="text" maxlength="255" th:value="${form['meaning']}">
+                                               type="text" maxlength="255" required th:value="${form['meaning']}">
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="lesson-field-label" for="grammarFormation">Cấu trúc kết hợp</label>
+                                    <label class="lesson-field-label" for="grammarFormation">Cấu trúc kết hợp <span class="text-danger">*</span></label>
                                     <textarea class="lesson-field is-japanese" id="grammarFormation" name="formation" rows="4"
-                                              th:text="${form['formation']}" placeholder="VD:&#10;Vば&#9;Vるほど&#10;Aいければ&#9;Aいほど&#10;Aな/Nなら&#9;Aな/Nほど"></textarea>
+                                              maxlength="500" required th:text="${form['formation']}" placeholder="VD:&#10;Vば&#9;Vるほど&#10;Aいければ&#9;Aいほど&#10;Aな/Nなら&#9;Aな/Nほど"></textarea>
                                 </div>
                                 <div>
                                     <label class="lesson-field-label" for="grammarUsage">Cách dùng &amp; Giải thích (mỗi dòng một ý ❖)</label>
@@ -961,12 +986,12 @@
                                     <div>
                                         <label class="lesson-field-label" for="kanjiCharacter">Chữ Hán <span class="text-danger">*</span></label>
                                         <input class="lesson-field is-japanese lesson-kanji-input" id="kanjiCharacter"
-                                               name="character" type="text" maxlength="8" th:value="${form['character']}">
+                                               name="character" type="text" maxlength="1" required th:value="${form['character']}">
                                     </div>
                                     <div>
-                                        <label class="lesson-field-label" for="kanjiHanviet">Âm Hán Việt</label>
+                                        <label class="lesson-field-label" for="kanjiHanviet">Âm Hán Việt <span class="text-danger">*</span></label>
                                         <input class="lesson-field" id="kanjiHanviet" name="hanviet"
-                                               type="text" maxlength="64" th:value="${form['hanviet']}" placeholder="VD: Hồi">
+                                               type="text" maxlength="50" required th:value="${form['hanviet']}" placeholder="VD: Hồi">
                                     </div>
                                     <div>
                                         <label class="lesson-field-label" for="kanjiOn">Âm On</label>
@@ -981,14 +1006,14 @@
                                 </div>
                                 <div class="lesson-field-row is-kanji-meta">
                                     <div>
-                                        <label class="lesson-field-label" for="kanjiMeaning">Nghĩa</label>
+                                        <label class="lesson-field-label" for="kanjiMeaning">Nghĩa <span class="text-danger">*</span></label>
                                         <input class="lesson-field" id="kanjiMeaning" name="kanjiMeaning"
-                                               type="text" maxlength="255" th:value="${form['kanjiMeaning']}">
+                                               type="text" maxlength="200" required th:value="${form['kanjiMeaning']}">
                                     </div>
                                     <div>
-                                        <label class="lesson-field-label" for="kanjiStrokes">Số nét</label>
+                                        <label class="lesson-field-label" for="kanjiStrokes">Số nét <span class="text-danger">*</span></label>
                                         <input class="lesson-field" id="kanjiStrokes" name="strokeCount"
-                                               type="number" min="1" max="64" th:value="${form['strokeCount']}">
+                                               type="number" min="1" max="40" required th:value="${form['strokeCount']}">
                                     </div>
                                     <div>
                                         <label class="lesson-field-label" for="kanjiRadical">Bộ thủ</label>
@@ -1145,7 +1170,7 @@
                                     <label class="lesson-field-label" for="lessonDuration">Thời lượng</label>
                                     <div class="lesson-field-unit">
                                         <input class="lesson-field" id="lessonDuration" name="durationMinutes"
-                                               type="number" min="0" max="600" th:value="${form['durationMinutes']}">
+                                               type="number" min="0" max="360" th:value="${form['durationMinutes']}">
                                         <span class="lesson-unit">phút</span>
                                     </div>
                                 </div>
@@ -1289,10 +1314,12 @@
                             <input type="hidden" name="courseId" th:value="${selectedCourseId}">
                             <input type="hidden" name="skillType" value="OTHER">
                             <div class="lesson-modal-scroll">
+                            <div class="alert alert-danger py-2 mb-3 lesson-modal-alert" role="alert" th:if="${lessonError}" th:text="${lessonError}"></div>
+                            <div class="alert alert-danger py-2 mb-3 lesson-client-alert" role="alert" style="display:none;"></div>
                                 <div class="lesson-field-row is-name mb-3" th:if="${chapterNames != null and !#lists.isEmpty(chapterNames)}">
                                     <div style="flex: 1 1 55%;">
                                         <label class="lesson-field-label" for="otherLessonTitle">Tên bài học <span class="text-danger">*</span></label>
-                                        <input class="lesson-field" id="otherLessonTitle" name="title" type="text" maxlength="255" required th:value="${form['title']}">
+                                        <input class="lesson-field" id="otherLessonTitle" name="title" type="text" maxlength="150" required th:value="${form['title']}">
                                     </div>
                                     <div style="flex: 1 1 45%;">
                                         <label class="lesson-field-label" for="otherLessonSectionName">Chương / Phần <span class="text-danger">*</span></label>
@@ -1307,7 +1334,7 @@
                                 </div>
                                 <div class="mb-3" th:if="${chapterNames == null or #lists.isEmpty(chapterNames)}">
                                     <label class="lesson-field-label" for="otherLessonTitle">Tên bài học <span class="text-danger">*</span></label>
-                                    <input class="lesson-field" id="otherLessonTitle" name="title" type="text" maxlength="255" required th:value="${form['title']}">
+                                    <input class="lesson-field" id="otherLessonTitle" name="title" type="text" maxlength="150" required th:value="${form['title']}">
                                     <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
                                 </div>
                                 <label class="lesson-field-label" for="otherLessonContent">Nội dung</label>
@@ -1333,7 +1360,7 @@
                                      th:utext="${form['content']}"></div>
                                 <textarea class="reading-rich-value" name="content" data-rich-value th:text="${form['content']}"></textarea>
                                 <label class="lesson-field-label" for="otherLessonDuration">Thời lượng (phút)</label>
-                                <input class="lesson-field" id="otherLessonDuration" name="durationMinutes" type="number" min="0" max="600" th:value="${form['durationMinutes']}">
+                                <input class="lesson-field" id="otherLessonDuration" name="durationMinutes" type="number" min="0" max="360" th:value="${form['durationMinutes']}">
                                 <label class="lesson-check mt-3">
                                     <input type="checkbox" name="freePreview" value="true" th:checked="${form['freePreview']}">
                                     <span>Cho học thử miễn phí</span>
