@@ -1,0 +1,214 @@
+<mxfile host="app.diagrams.net" modified="2026-11-11T14:11:12.199Z" agent="Antigravity/JEPS" version="21.0.0" type="device">
+  <diagram id="diagram_1794406272199" name="BF-02: JLPT Mock Exam Registration and Assessment">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3250" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lane_learner" value="Learner" style="swimlane;horizontal=0;startSize=42;fillColor=#F8FAFC;strokeColor=#CBD5E1;fontStyle=1;fontSize=14;fontColor=#173B57;whiteSpace=wrap;html=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="50" y="70" width="3100" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_system" value="System" style="swimlane;horizontal=0;startSize=42;fillColor=#FFFDF7;strokeColor=#CBD5E1;fontStyle=1;fontSize=14;fontColor=#173B57;whiteSpace=wrap;html=1;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="50" y="410" width="3100" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="start_02" value="Start" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;strokeWidth=2;fontColor=#155724;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="120" y="175" width="85" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="n1_browse_catalog" value="Browse Mock Catalog" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="235" y="170" width="145" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n2_filter_level" value="Filter by JLPT Level" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="405" y="170" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n3_fetch_exams" value="Retrieve Published Exams" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="405" y="495" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n4_select_exam" value="Select Mock Exam" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="575" y="170" width="145" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n5_click_start" value="Initiate Exam Start" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="745" y="170" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_is_auth_mock" value="Is Learner Authenticated?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFE8D6;strokeColor=#FD7E14;strokeWidth=1.5;fontColor=#495057;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="490" width="130" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n6_redirect_auth" value="Redirect to Auth" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="745" y="620" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n7_login_reg" value="Log In or Register" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="915" y="170" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n7b_resume_exam" value="Return to Selected Exam" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="915" y="495" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n8_load_exam" value="Retrieve Exam Questions" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="495" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_has_questions" value="Questions Configured?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFE8D6;strokeColor=#FD7E14;strokeWidth=1.5;fontColor=#495057;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1245" y="490" width="125" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n9_empty_alert_mock" value="Display Warning Alert" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="620" width="135" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="end_fail_02" value="Exam Not Ready" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F8D7DA;strokeColor=#DC3545;strokeWidth=2;fontColor=#721C24;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="285" width="135" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="n11_init_focus" value="Initialize Focus Room" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="495" width="145" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n12_take_exam" value="Answer Exam Questions" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="170" width="145" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n13_save_progress" value="Save Exam Progress" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="495" width="145" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_how_submit" value="How Is Exam Submitted?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFE8D6;strokeColor=#FD7E14;strokeWidth=1.5;fontColor=#495057;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1745" y="165" width="125" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="n14_open_modal" value="Open Submit Modal" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1895" y="120" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d3b_confirm_modal" value="Confirm Submission?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFE8D6;strokeColor=#FD7E14;strokeWidth=1.5;fontColor=#495057;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="2060" y="115" width="125" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n15_timeout_submit" value="Auto-submit on Timeout" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1895" y="260" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n16_receive_submit" value="Receive Exam Submission" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2055" y="495" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n17_grade_exam" value="Evaluate Answers &amp; Scores" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2220" y="495" width="145" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n18_ai_feedback" value="Generate AI Breakdown" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="495" width="145" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n19_persist_result" value="Save Exam Results" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2560" y="495" width="145" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n20_view_results" value="Display Exam Results" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2560" y="170" width="145" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n21_review_solutions" value="Review Question Solutions" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2730" y="170" width="145" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_post_choice" value="Post-Exam Action?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFE8D6;strokeColor=#FD7E14;strokeWidth=1.5;fontColor=#495057;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="2900" y="165" width="125" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="n22_view_history" value="View Exam History" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C757D;strokeWidth=1.5;fontColor=#212529;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2895" y="285" width="135" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="n23_fetch_history" value="Verify Ownership &amp; History" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;strokeWidth=1.5;fontColor=#856404;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="2895" y="495" width="135" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="end_success_02" value="Mock Exam Completed" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;strokeWidth=2;fontColor=#155724;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="3055" y="175" width="135" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="start_02" target="n1_browse_catalog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n1_browse_catalog" target="n2_filter_level">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n2_filter_level" target="n3_fetch_exams">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n3_fetch_exams" target="n4_select_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n4_select_exam" target="n5_click_start">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n5_click_start" target="d1_is_auth_mock">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_6" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d1_is_auth_mock" target="n6_redirect_auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n6_redirect_auth" target="n7_login_reg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n7_login_reg" target="n7b_resume_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n7b_resume_exam" target="n8_load_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_10" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d1_is_auth_mock" target="n8_load_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n8_load_exam" target="d2_has_questions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_12" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d2_has_questions" target="n9_empty_alert_mock">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n9_empty_alert_mock" target="end_fail_02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_14" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d2_has_questions" target="n11_init_focus">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n11_init_focus" target="n12_take_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n12_take_exam" target="n13_save_progress">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n13_save_progress" target="d3_how_submit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_18" value="Manual" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d3_how_submit" target="n14_open_modal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n14_open_modal" target="d3b_confirm_modal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_20" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d3b_confirm_modal" target="n12_take_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_21" value="Confirm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d3b_confirm_modal" target="n16_receive_submit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_22" value="Timeout" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d3_how_submit" target="n15_timeout_submit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n15_timeout_submit" target="n16_receive_submit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n16_receive_submit" target="n17_grade_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_25" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n17_grade_exam" target="n18_ai_feedback">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_26" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n18_ai_feedback" target="n19_persist_result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_27" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n19_persist_result" target="n20_view_results">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n20_view_results" target="n21_review_solutions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_29" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n21_review_solutions" target="d4_post_choice">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_30" value="Retake" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d4_post_choice" target="n12_take_exam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_31" value="History" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d4_post_choice" target="n22_view_history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_32" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n22_view_history" target="n23_fetch_history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_33" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="n23_fetch_history" target="end_success_02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_34" value="Finish" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.6;endArrow=classic;endFill=1;fontSize=10;fontColor=#333333;" edge="1" parent="1" source="d4_post_choice" target="end_success_02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

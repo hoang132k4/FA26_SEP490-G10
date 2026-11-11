@@ -1,0 +1,326 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3400 830" width="3400" height="830">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#333333" />
+    </marker>
+    <marker id="arrow-dashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#666666" />
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="3400" height="830" fill="#FFFFFF" />
+  <g id="header">
+    <text x="40" y="38" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#173B57">BF-03: Course and Assessment Management</text>
+    <text x="40" y="58" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#5A6A80">End-to-End Business Flow for Managing Courses, Lessons, Materials, and Assessments in JEPS</text>
+  </g>
+  <!-- Phase: DOMAIN 1: Course &amp; Curriculum Management Lifecycle -->
+  <rect x="100" y="70" width="1530" height="710" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="4,4" rx="6" />
+  <rect x="100" y="70" width="1530" height="28" fill="#E2E8F0" rx="6" />
+  <text x="116" y="89" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#1E3A8A">DOMAIN 1: Course &amp; Curriculum Management Lifecycle</text>
+  <!-- Phase: DOMAIN 2: Assessment &amp; Question Bank Management Lifecycle -->
+  <rect x="1650" y="70" width="1690" height="710" fill="#FFFDF7" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="4,4" rx="6" />
+  <rect x="1650" y="70" width="1690" height="28" fill="#E2E8F0" rx="6" />
+  <text x="1666" y="89" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#1E3A8A">DOMAIN 2: Assessment &amp; Question Bank Management Lifecycle</text>
+  <!-- Lane: Manager / Admin -->
+  <rect x="50" y="100" width="3300" height="320" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" />
+  <rect x="50" y="100" width="42" height="320" fill="#173B57" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="76" y="260" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" transform="rotate(-90 76 260)">Manager / Admin</text>
+  <!-- Lane: System -->
+  <rect x="50" y="420" width="3300" height="350" fill="#FFFDF7" stroke="#CBD5E1" stroke-width="1.5" />
+  <rect x="50" y="420" width="42" height="350" fill="#173B57" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="76" y="595" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" transform="rotate(-90 76 595)">System</text>
+  <!-- Connectors -->
+  <path d="M 205 212.5 L 235 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 305 245 L 305 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 375 530 L 390 530 L 390 212.5 L 405 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 530 212.5 L 560 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="515.25" y="203.5" width="59.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="545" y="216.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Courses</text>
+  <path d="M 632.5 245 L 632.5 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 705 530 L 720 530 L 720 212.5 L 735 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 797.5 250 L 797.5 290" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="748.25" y="261" width="98.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="797.5" y="274" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Toggle Status</text>
+  <path d="M 797.5 350 L 797.5 625" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 797.5 690 L 797.5 725 L 632.5 725 L 632.5 245" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="586.5" y="716" width="92" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="632.5" y="729" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Updated List</text>
+  <path d="M 860 212.5 L 890 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="825.75" y="203.5" width="98.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="875" y="216.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Create / Edit</text>
+  <path d="M 965 245 L 965 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1040 530 L 1070 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1132.5 570 L 1132.5 625" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1119" y="588.5" width="27" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1132.5" y="601.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">No</text>
+  <path d="M 1132.5 690 L 1132.5 725 L 965 725 L 965 245" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1195 530 L 1225 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1193.25" y="521" width="33.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1210" y="534" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Yes</text>
+  <path d="M 1295 495 L 1295 245" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1365 212.5 L 1377.5 212.5 L 1377.5 530 L 1390 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1462.5 495 L 1462.5 245" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1535 212.5 L 1547.5 212.5 L 1547.5 530 L 1560 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1630 495 L 1630 250" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1695 212.5 L 1707.5 212.5 L 1707.5 530 L 1720 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1677.75" y="521" width="59.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1707.5" y="534" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Publish</text>
+  <path d="M 1790 495 L 1790 240" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1565 212.5 L 705 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1095.5" y="203.5" width="79" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1135" y="216.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Save Draft</text>
+  <path d="M 530 212.5 L 1880 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1181.75" y="203.5" width="46.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1205" y="216.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Exams</text>
+  <path d="M 1952.5 245 L 1952.5 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2025 530 L 2037.5 530 L 2037.5 212.5 L 2050 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2175 212.5 L 2200 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2148" y="203.5" width="79" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2187.5" y="216.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">New / Edit</text>
+  <path d="M 2272.5 245 L 2272.5 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2345 530 L 2357.5 530 L 2357.5 212.5 L 2370 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2515 212.5 L 2540 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2665 212.5 L 2677.5 212.5 L 2677.5 150 L 2690 150" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2651" y="141" width="53" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2677.5" y="154" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Q-Bank</text>
+  <path d="M 2665 212.5 L 2677.5 212.5 L 2677.5 230 L 2690 230" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2631.5" y="221" width="92" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2677.5" y="234" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Excel Import</text>
+  <path d="M 2665 212.5 L 2677.5 212.5 L 2677.5 310 L 2690 310" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2634.75" y="301" width="85.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2677.5" y="314" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Manual CRUD</text>
+  <path d="M 2762.5 180 L 2762.5 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2762.5 260 L 2762.5 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2762.5 340 L 2762.5 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2835 530 L 2860 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2922.5 570 L 2922.5 625" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2909" y="588.5" width="27" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2922.5" y="601.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">No</text>
+  <path d="M 2922.5 690 L 2922.5 725 L 2442.5 725 L 2442.5 245" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2985 530 L 2920 530 L 2920 212.5 L 2855 212.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2903.25" y="203.5" width="33.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2920" y="216.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Yes</text>
+  <path d="M 2995 212.5 L 3007.5 212.5 L 3007.5 530 L 3020 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 3087.5 570 L 3087.5 625" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="3074" y="588.5" width="27" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="3087.5" y="601.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">No</text>
+  <path d="M 3087.5 690 L 3087.5 725 L 2442.5 725 L 2442.5 245" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 3155 530 L 3185 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="3153.25" y="521" width="33.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="3170" y="534" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Yes</text>
+  <path d="M 3257.5 495 L 3257.5 240" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <g id="start_03" filter="url(#shadow)">
+    <ellipse cx="162.5" cy="212.5" rx="42.5" ry="27.5" fill="#D4EDDA" stroke="#28A745" stroke-width="2" />
+    <text x="162.5" y="216.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Start</text>
+  </g>
+  <g id="n1_manager_login" filter="url(#shadow)">
+    <rect x="235" y="180" width="140" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="305" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Log In with Manager /</text>
+    <text x="305" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Admin Account</text>
+  </g>
+  <g id="n2_auth_role" filter="url(#shadow)">
+    <rect x="235" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="305" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Verify Manager / Admin</text>
+    <text x="305" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Role Authorization</text>
+  </g>
+  <g id="d1_domain_choice" filter="url(#shadow)">
+    <polygon points="467.5,175 530,212.5 467.5,250 405,212.5" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="467.5" y="208.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Management</text>
+    <text x="467.5" y="222.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Domain?</text>
+  </g>
+  <g id="n3_course_dash" filter="url(#shadow)">
+    <rect x="560" y="180" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="632.5" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Access Course Management</text>
+    <text x="632.5" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Dashboard</text>
+  </g>
+  <g id="n4_query_courses" filter="url(#shadow)">
+    <rect x="560" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="632.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Retrieve Courses with</text>
+    <text x="632.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Status (DRAFT/PUBLISHED)</text>
+  </g>
+  <g id="d2_course_action" filter="url(#shadow)">
+    <polygon points="797.5,175 860,212.5 797.5,250 735,212.5" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="797.5" y="208.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Course</text>
+    <text x="797.5" y="222.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Action?</text>
+  </g>
+  <g id="n5_toggle_status" filter="url(#shadow)">
+    <rect x="725" y="290" width="145" height="60" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="797.5" y="316.1666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Request Course Status</text>
+    <text x="797.5" y="331.1666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Cycle (DRAFT/PUB/ARCH)</text>
+  </g>
+  <g id="n6_cycle_status" filter="url(#shadow)">
+    <rect x="725" y="625" width="145" height="65" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="797.5" y="653.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Cycle Course Status &amp;</text>
+    <text x="797.5" y="668.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Update Database Record</text>
+  </g>
+  <g id="n7_course_form" filter="url(#shadow)">
+    <rect x="890" y="180" width="150" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="965" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Input Title, Code, Level,</text>
+    <text x="965" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Price, Objectives &amp; Image</text>
+  </g>
+  <g id="n8_validate_course" filter="url(#shadow)">
+    <rect x="890" y="495" width="150" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="965" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Validate Mandatory Fields</text>
+    <text x="965" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; Code Uniqueness</text>
+  </g>
+  <g id="d3_course_valid" filter="url(#shadow)">
+    <polygon points="1132.5,490 1195,530 1132.5,570 1070,530" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="1132.5" y="526.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Course Data</text>
+    <text x="1132.5" y="540.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Valid?</text>
+  </g>
+  <g id="n9_course_err" filter="url(#shadow)">
+    <rect x="1065" y="625" width="135" height="65" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1132.5" y="653.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Render Field Errors</text>
+    <text x="1132.5" y="668.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">on Course Form</text>
+  </g>
+  <g id="n10_save_course" filter="url(#shadow)">
+    <rect x="1225" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1295" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Store Thumbnail Image &amp;</text>
+    <text x="1295" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Save Course (Status=DRAFT)</text>
+  </g>
+  <g id="n11_open_lessons" filter="url(#shadow)">
+    <rect x="1225" y="180" width="140" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="1295" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Access Lesson Management</text>
+    <text x="1295" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">for Selected Course</text>
+  </g>
+  <g id="n12_query_lessons" filter="url(#shadow)">
+    <rect x="1390" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1462.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Retrieve Lessons Grouped</text>
+    <text x="1462.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">by Chapter &amp; 5 Skills</text>
+  </g>
+  <g id="n13_author_content" filter="url(#shadow)">
+    <rect x="1390" y="180" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="1462.5" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Add Lessons, Audio, PDF,</text>
+    <text x="1462.5" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Flashcards &amp; Quizzes</text>
+  </g>
+  <g id="n14_save_lessons" filter="url(#shadow)">
+    <rect x="1560" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1630" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Commit Lessons, Materials</text>
+    <text x="1630" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; Quizzes to Database</text>
+  </g>
+  <g id="d3b_publish_course" filter="url(#shadow)">
+    <polygon points="1630,175 1695,212.5 1630,250 1565,212.5" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="1630" y="208.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Publish</text>
+    <text x="1630" y="222.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Course?</text>
+  </g>
+  <g id="n15_pub_course" filter="url(#shadow)">
+    <rect x="1720" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1790" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Update Status=PUBLISHED</text>
+    <text x="1790" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; Make Publicly Visible</text>
+  </g>
+  <g id="end_course_pub" filter="url(#shadow)">
+    <ellipse cx="1790" cy="212.5" rx="65" ry="27.5" fill="#D4EDDA" stroke="#28A745" stroke-width="2" />
+    <text x="1790" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Course &amp; Lessons</text>
+    <text x="1790" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Published to Learners</text>
+  </g>
+  <g id="n16_exam_dash" filter="url(#shadow)">
+    <rect x="1880" y="180" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="1952.5" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Access Exam Management</text>
+    <text x="1952.5" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Dashboard</text>
+  </g>
+  <g id="n17_query_exams" filter="url(#shadow)">
+    <rect x="1880" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1952.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Query Exams by Type</text>
+    <text x="1952.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">(Placement/Mock/Milestone)</text>
+  </g>
+  <g id="d4_exam_action" filter="url(#shadow)">
+    <polygon points="2112.5,175 2175,212.5 2112.5,250 2050,212.5" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="2112.5" y="208.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Exam</text>
+    <text x="2112.5" y="222.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Action?</text>
+  </g>
+  <g id="n18_exam_form" filter="url(#shadow)">
+    <rect x="2200" y="180" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2272.5" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Input Title, Type, Level,</text>
+    <text x="2272.5" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Duration &amp; Passing Score</text>
+  </g>
+  <g id="n19_save_exam" filter="url(#shadow)">
+    <rect x="2200" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2272.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Validate Metadata &amp;</text>
+    <text x="2272.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Save Exam (Status=DRAFT)</text>
+  </g>
+  <g id="n20_manage_questions" filter="url(#shadow)">
+    <rect x="2370" y="180" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2442.5" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Open Question Association</text>
+    <text x="2442.5" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Workspace</text>
+  </g>
+  <g id="d5_assign_method" filter="url(#shadow)">
+    <polygon points="2602.5,175 2665,212.5 2602.5,250 2540,212.5" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="2602.5" y="208.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Question Link</text>
+    <text x="2602.5" y="222.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Method?</text>
+  </g>
+  <g id="n21_link_qbank" filter="url(#shadow)">
+    <rect x="2690" y="120" width="145" height="60" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2762.5" y="146.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Select Available Questions,</text>
+    <text x="2762.5" y="161.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Set Points &amp; Reorder</text>
+  </g>
+  <g id="n22_excel_import" filter="url(#shadow)">
+    <rect x="2690" y="200" width="145" height="60" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2762.5" y="226.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Upload Question Excel</text>
+    <text x="2762.5" y="241.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Template Batch</text>
+  </g>
+  <g id="n23_qbank_crud" filter="url(#shadow)">
+    <rect x="2690" y="280" width="145" height="60" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2762.5" y="306.1666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Create Standalone Questions</text>
+    <text x="2762.5" y="321.1666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">&amp; Link to Exam</text>
+  </g>
+  <g id="n24_validate_excel" filter="url(#shadow)">
+    <rect x="2690" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2762.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Validate Syntax, Options &amp;</text>
+    <text x="2762.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Insert Exam Questions</text>
+  </g>
+  <g id="d6_excel_valid" filter="url(#shadow)">
+    <polygon points="2922.5,490 2985,530 2922.5,570 2860,530" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="2922.5" y="526.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Questions Data</text>
+    <text x="2922.5" y="540.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Valid?</text>
+  </g>
+  <g id="n25_excel_err" filter="url(#shadow)">
+    <rect x="2855" y="625" width="135" height="65" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2922.5" y="653.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Rollback Batch &amp; Display</text>
+    <text x="2922.5" y="668.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Row-by-Row Errors</text>
+  </g>
+  <g id="n26_request_publish" filter="url(#shadow)">
+    <rect x="2855" y="180" width="140" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2925" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Review Total Points &amp;</text>
+    <text x="2925" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Request Status=PUBLISHED</text>
+  </g>
+  <g id="d7_publish_ready" filter="url(#shadow)">
+    <polygon points="3087.5,490 3155,530 3087.5,570 3020,530" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="3087.5" y="526.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Linked Questions</text>
+    <text x="3087.5" y="540.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">&gt;= Total Questions?</text>
+  </g>
+  <g id="n27_reject_publish" filter="url(#shadow)">
+    <rect x="3015" y="625" width="145" height="65" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="3087.5" y="653.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Throw Validation Error &amp;</text>
+    <text x="3087.5" y="668.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Keep Exam in DRAFT</text>
+  </g>
+  <g id="n28_publish_exam" filter="url(#shadow)">
+    <rect x="3185" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="3257.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Update Status=PUBLISHED</text>
+    <text x="3257.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; Make Active to Students</text>
+  </g>
+  <g id="end_exam_pub" filter="url(#shadow)">
+    <ellipse cx="3257.5" cy="212.5" rx="67.5" ry="27.5" fill="#D4EDDA" stroke="#28A745" stroke-width="2" />
+    <text x="3257.5" y="208.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Assessment Successfully</text>
+    <text x="3257.5" y="223.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Published to Students</text>
+  </g>
+  <!-- Legend -->
+  <g id="legend" transform="translate(60, 794)">
+    <text x="0" y="16" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333333">Legend:</text>
+    <ellipse cx="75" cy="12" rx="14" ry="10" fill="#D4EDDA" stroke="#28A745" stroke-width="1.5" />
+    <text x="96" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Start / Success End</text>
+    <rect x="220" y="2" width="24" height="18" rx="4" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="250" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Human Activity</text>
+    <rect x="350" y="2" width="24" height="18" rx="4" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="380" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">System Operation</text>
+    <polygon points="560,2 572,11 560,20 548,11" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="580" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Business Decision</text>
+    <ellipse cx="700" cy="12" rx="14" ry="10" fill="#F8D7DA" stroke="#DC3545" stroke-width="1.5" />
+    <text x="720" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Unsuccessful / Rejected End</text>
+    <line x1="880" y1="11" x2="910" y2="11" stroke="#333333" stroke-width="1.6" marker-end="url(#arrow)" />
+    <text x="918" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Sequence Flow</text>
+    <line x1="1020" y1="11" x2="1050" y2="11" stroke="#666666" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#arrow-dashed)" />
+    <text x="1058" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Supporting Interaction</text>
+  </g>
+</svg>

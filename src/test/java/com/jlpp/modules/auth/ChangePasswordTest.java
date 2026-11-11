@@ -229,7 +229,7 @@ public class ChangePasswordTest {
                         .param("username", testEmail)
                         .param("password", "SuccessNewPass123@"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/learning/dashboard"));
+                .andExpect(redirectedUrl("/"));
     }
 
     @Test
@@ -246,11 +246,18 @@ public class ChangePasswordTest {
     }
 
     @Test
-    @DisplayName("CP-14: CSRF attack - Request without CSRF token is rejected with 403")
+    @DisplayName("CP-14: CSRF attack - Request without or with invalid CSRF token is rejected with 403")
     @WithMockUser(username = "learner_cp@jeps.edu.vn", roles = {"LEARNER"})
     void testCP14_CsrfProtectionEnforced() throws Exception {
         mockMvc.perform(post("/profile/change-password")
                         // Notice: NO csrf() token provided
+                        .param("currentPassword", originalPassword)
+                        .param("newPassword", "NewPass123@")
+                        .param("confirmPassword", "NewPass123@"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/profile/change-password")
+                        .with(csrf().useInvalidToken())
                         .param("currentPassword", originalPassword)
                         .param("newPassword", "NewPass123@")
                         .param("confirmPassword", "NewPass123@"))

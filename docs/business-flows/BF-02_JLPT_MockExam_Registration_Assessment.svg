@@ -1,0 +1,256 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3250 820" width="3250" height="820">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#333333" />
+    </marker>
+    <marker id="arrow-dashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#666666" />
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="3250" height="820" fill="#FFFFFF" />
+  <g id="header">
+    <text x="40" y="38" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#173B57">BF-02: JLPT Mock Exam Registration and Assessment</text>
+    <text x="40" y="58" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#5A6A80">End-to-End Business Flow from Catalog Browsing to Timed Examination, Grading &amp; Solutions Review</text>
+  </g>
+  <!-- Lane: Learner -->
+  <rect x="50" y="70" width="3100" height="340" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <rect x="50" y="70" width="42" height="340" fill="#173B57" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="76" y="240" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" transform="rotate(-90 76 240)">Learner</text>
+  <!-- Lane: System -->
+  <rect x="50" y="410" width="3100" height="360" fill="#FFFDF7" stroke="#CBD5E1" stroke-width="1.5" />
+  <rect x="50" y="410" width="42" height="360" fill="#173B57" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="76" y="590" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle" transform="rotate(-90 76 590)">System</text>
+  <!-- Connectors -->
+  <path d="M 205 202.5 L 235 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 380 202.5 L 405 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 475 235 L 475 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 545 530 L 560 530 L 560 202.5 L 575 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 720 202.5 L 745 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 815 235 L 815 490" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 815 570 L 815 620" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="801.5" y="586" width="27" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="815" y="599" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">No</text>
+  <path d="M 885 652.5 L 900 652.5 L 900 202.5 L 915 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 985 235 L 985 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1055 530 L 1080 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 880 530 L 1080 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="963.25" y="521" width="33.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="980" y="534" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Yes</text>
+  <path d="M 1220 530 L 1245 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1307.5 570 L 1307.5 620" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1294" y="586" width="27" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1307.5" y="599" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">No</text>
+  <path d="M 1307.5 620 L 1307.5 340" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1370 530 L 1400 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1368.25" y="521" width="33.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1385" y="534" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Yes</text>
+  <path d="M 1472.5 495 L 1472.5 235" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1545 202.5 L 1557.5 202.5 L 1557.5 530 L 1570 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1715 530 L 1730 530 L 1730 202.5 L 1745 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 1870 202.5 L 1882.5 202.5 L 1882.5 150 L 1895 150" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1856" y="141" width="53" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1882.5" y="154" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Manual</text>
+  <path d="M 2035 150 L 2060 150" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2122.5 185 L 2122.5 270 L 1472.5 270 L 1472.5 235" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1446" y="261" width="53" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1472.5" y="274" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Cancel</text>
+  <path d="M 2185 150 L 2120 150 L 2120 530 L 2055 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2090.25" y="521" width="59.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2120" y="534" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Confirm</text>
+  <path d="M 1870 202.5 L 1882.5 202.5 L 1882.5 292.5 L 1895 292.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="1852.75" y="283.5" width="59.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="1882.5" y="296.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Timeout</text>
+  <path d="M 2035 292.5 L 2045 292.5 L 2045 530 L 2055 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2195 530 L 2220 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2365 530 L 2390 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2535 530 L 2560 530" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2632.5 495 L 2632.5 235" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2705 202.5 L 2730 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2875 202.5 L 2900 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 2900 202.5 L 1545 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2196" y="193.5" width="53" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2222.5" y="206.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Retake</text>
+  <path d="M 2962.5 240 L 2962.5 285" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="2932.75" y="253.5" width="59.5" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="2962.5" y="266.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">History</text>
+  <path d="M 2962.5 345 L 2962.5 495" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 3030 530 L 3042.5 530 L 3042.5 202.5 L 3055 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <path d="M 3025 202.5 L 3055 202.5" fill="none" stroke="#333333" stroke-width="1.6"  marker-end="url(#arrow)" />
+  <rect x="3013.5" y="193.5" width="53" height="18" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="0.8" rx="4" />
+  <text x="3040" y="206.5" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333333" text-anchor="middle">Finish</text>
+  <g id="start_02" filter="url(#shadow)">
+    <ellipse cx="162.5" cy="202.5" rx="42.5" ry="27.5" fill="#D4EDDA" stroke="#28A745" stroke-width="2" />
+    <text x="162.5" y="206.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Start</text>
+  </g>
+  <g id="n1_browse_catalog" filter="url(#shadow)">
+    <rect x="235" y="170" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="307.5" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Browse JLPT Mock</text>
+    <text x="307.5" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Exam Catalog</text>
+  </g>
+  <g id="n2_filter_level" filter="url(#shadow)">
+    <rect x="405" y="170" width="140" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="475" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Filter by JLPT Level</text>
+    <text x="475" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">(ALL, N5 - N1)</text>
+  </g>
+  <g id="n3_fetch_exams" filter="url(#shadow)">
+    <rect x="405" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="475" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Retrieve Published</text>
+    <text x="475" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Mock Exams</text>
+  </g>
+  <g id="n4_select_exam" filter="url(#shadow)">
+    <rect x="575" y="170" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="647.5" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Select Desired Mock Exam</text>
+    <text x="647.5" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">&amp; View Exam Details</text>
+  </g>
+  <g id="n5_click_start" filter="url(#shadow)">
+    <rect x="745" y="170" width="140" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="815" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Click &quot;Start Exam&quot;</text>
+    <text x="815" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">to Begin Attempt</text>
+  </g>
+  <g id="d1_is_auth_mock" filter="url(#shadow)">
+    <polygon points="815,490 880,530 815,570 750,530" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="815" y="526.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Is Learner</text>
+    <text x="815" y="540.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Authenticated?</text>
+  </g>
+  <g id="n6_redirect_auth" filter="url(#shadow)">
+    <rect x="745" y="620" width="140" height="65" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="815" y="648.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Redirect to Registration /</text>
+    <text x="815" y="663.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Login with Return URL</text>
+  </g>
+  <g id="n7_login_reg" filter="url(#shadow)">
+    <rect x="915" y="170" width="140" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="985" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Register Account or</text>
+    <text x="985" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Log In Successfully</text>
+  </g>
+  <g id="n7b_resume_exam" filter="url(#shadow)">
+    <rect x="915" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="985" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Return User Directly to</text>
+    <text x="985" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Selected Exam Start</text>
+  </g>
+  <g id="n8_load_exam" filter="url(#shadow)">
+    <rect x="1080" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1150" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Retrieve Exam Metadata</text>
+    <text x="1150" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; Questions from DB</text>
+  </g>
+  <g id="d2_has_questions" filter="url(#shadow)">
+    <polygon points="1307.5,490 1370,530 1307.5,570 1245,530" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="1307.5" y="526.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Questions</text>
+    <text x="1307.5" y="540.3333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Configured?</text>
+  </g>
+  <g id="n9_empty_alert_mock" filter="url(#shadow)">
+    <rect x="1240" y="620" width="135" height="65" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1307.5" y="648.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Render &quot;Chưa có câu hỏi&quot;</text>
+    <text x="1307.5" y="663.6666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Warning Alert</text>
+  </g>
+  <g id="end_fail_02" filter="url(#shadow)">
+    <ellipse cx="1307.5" cy="312.5" rx="67.5" ry="27.5" fill="#F8D7DA" stroke="#DC3545" stroke-width="2" />
+    <text x="1307.5" y="308.6666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#721C24" text-anchor="middle">Exam Content</text>
+    <text x="1307.5" y="323.6666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#721C24" text-anchor="middle">Not Ready</text>
+  </g>
+  <g id="n11_init_focus" filter="url(#shadow)">
+    <rect x="1400" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1472.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Initialize Focus Mode,</text>
+    <text x="1472.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Timer &amp; Palette</text>
+  </g>
+  <g id="n12_take_exam" filter="url(#shadow)">
+    <rect x="1400" y="170" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="1472.5" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Answer Questions &amp;</text>
+    <text x="1472.5" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Filter by Skill Tabs</text>
+  </g>
+  <g id="n13_save_progress" filter="url(#shadow)">
+    <rect x="1570" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1642.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Save Exam Progress &amp;</text>
+    <text x="1642.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Track Remaining Time</text>
+  </g>
+  <g id="d3_how_submit" filter="url(#shadow)">
+    <polygon points="1807.5,165 1870,202.5 1807.5,240 1745,202.5" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="1807.5" y="198.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">How Is Exam</text>
+    <text x="1807.5" y="212.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Submitted?</text>
+  </g>
+  <g id="n14_open_modal" filter="url(#shadow)">
+    <rect x="1895" y="120" width="140" height="60" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="1965" y="146.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Click &quot;Nộp bài thi&quot;</text>
+    <text x="1965" y="161.16666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">&amp; Open Modal</text>
+  </g>
+  <g id="d3b_confirm_modal" filter="url(#shadow)">
+    <polygon points="2122.5,115 2185,150 2122.5,185 2060,150" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="2122.5" y="146.33333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Confirm</text>
+    <text x="2122.5" y="160.33333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Submission?</text>
+  </g>
+  <g id="n15_timeout_submit" filter="url(#shadow)">
+    <rect x="1895" y="260" width="140" height="65" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="1965" y="288.6666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Timer Reaches 00:00 -&gt;</text>
+    <text x="1965" y="303.6666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Trigger Auto-submit</text>
+  </g>
+  <g id="n16_receive_submit" filter="url(#shadow)">
+    <rect x="2055" y="495" width="140" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2125" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Receive Exam Submission</text>
+    <text x="2125" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; Time Spent</text>
+  </g>
+  <g id="n17_grade_exam" filter="url(#shadow)">
+    <rect x="2220" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2292.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Evaluate Option Correctness</text>
+    <text x="2292.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; Compute Total Score</text>
+  </g>
+  <g id="n18_ai_feedback" filter="url(#shadow)">
+    <rect x="2390" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2462.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Compute Skill Breakdown</text>
+    <text x="2462.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">&amp; AI Recommendations</text>
+  </g>
+  <g id="n19_persist_result" filter="url(#shadow)">
+    <rect x="2560" y="495" width="145" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2632.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Persist Exam Results &amp;</text>
+    <text x="2632.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Store in User Session</text>
+  </g>
+  <g id="n20_view_results" filter="url(#shadow)">
+    <rect x="2560" y="170" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2632.5" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Display Results, Gauges</text>
+    <text x="2632.5" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">&amp; Pass/Fail Status</text>
+  </g>
+  <g id="n21_review_solutions" filter="url(#shadow)">
+    <rect x="2730" y="170" width="145" height="65" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2802.5" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Review Question Solutions</text>
+    <text x="2802.5" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">&amp; Detailed Explanations</text>
+  </g>
+  <g id="d4_post_choice" filter="url(#shadow)">
+    <polygon points="2962.5,165 3025,202.5 2962.5,240 2900,202.5" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="2962.5" y="198.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Post-Exam</text>
+    <text x="2962.5" y="212.83333333333334" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#495057" text-anchor="middle">Action?</text>
+  </g>
+  <g id="n22_view_history" filter="url(#shadow)">
+    <rect x="2895" y="285" width="135" height="60" rx="8" ry="8" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="2962.5" y="311.1666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">Access Exam History</text>
+    <text x="2962.5" y="326.1666666666667" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#212529" text-anchor="middle">&amp; Previous Attempts</text>
+  </g>
+  <g id="n23_fetch_history" filter="url(#shadow)">
+    <rect x="2895" y="495" width="135" height="70" rx="8" ry="8" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="2962.5" y="526.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Verify Ownership &amp;</text>
+    <text x="2962.5" y="541.1666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#856404" text-anchor="middle">Query History Details</text>
+  </g>
+  <g id="end_success_02" filter="url(#shadow)">
+    <ellipse cx="3122.5" cy="202.5" rx="67.5" ry="27.5" fill="#D4EDDA" stroke="#28A745" stroke-width="2" />
+    <text x="3122.5" y="198.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Mock Exam Completed &amp;</text>
+    <text x="3122.5" y="213.66666666666666" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#155724" text-anchor="middle">Results Available</text>
+  </g>
+  <!-- Legend -->
+  <g id="legend" transform="translate(60, 784)">
+    <text x="0" y="16" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333333">Legend:</text>
+    <ellipse cx="75" cy="12" rx="14" ry="10" fill="#D4EDDA" stroke="#28A745" stroke-width="1.5" />
+    <text x="96" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Start / Success End</text>
+    <rect x="220" y="2" width="24" height="18" rx="4" fill="#FFFFFF" stroke="#6C757D" stroke-width="1.5" />
+    <text x="250" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Human Activity</text>
+    <rect x="350" y="2" width="24" height="18" rx="4" fill="#FFF3CD" stroke="#FFC107" stroke-width="1.5" />
+    <text x="380" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">System Operation</text>
+    <polygon points="560,2 572,11 560,20 548,11" fill="#FFE8D6" stroke="#FD7E14" stroke-width="1.5" />
+    <text x="580" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Business Decision</text>
+    <ellipse cx="700" cy="12" rx="14" ry="10" fill="#F8D7DA" stroke="#DC3545" stroke-width="1.5" />
+    <text x="720" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Unsuccessful / Rejected End</text>
+    <line x1="880" y1="11" x2="910" y2="11" stroke="#333333" stroke-width="1.6" marker-end="url(#arrow)" />
+    <text x="918" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Sequence Flow</text>
+    <line x1="1020" y1="11" x2="1050" y2="11" stroke="#666666" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#arrow-dashed)" />
+    <text x="1058" y="16" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#333333">Supporting Interaction</text>
+  </g>
+</svg>

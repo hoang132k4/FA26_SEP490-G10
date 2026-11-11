@@ -83,14 +83,14 @@ public class LoginAndSecurityTest {
     // ==================== LOGIN TESTS (LG-01 to LG-12) ====================
 
     @Test
-    @DisplayName("LG-01: Valid Learner credentials - Login succeeds and redirects to Learner Dashboard")
+    @DisplayName("LG-01: Valid Learner credentials - Login succeeds and redirects to Home Page (/)")
     void testLG01_ValidLearnerLogin() throws Exception {
         mockMvc.perform(post("/auth/login")
                         .with(csrf())
                         .param("username", "learner@jeps.edu.vn")
                         .param("password", "LearnerPass123!"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/learning/dashboard"));
+                .andExpect(redirectedUrl("/"));
     }
 
     @Test

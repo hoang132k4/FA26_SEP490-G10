@@ -53,7 +53,7 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
         if (examId == null) return new ArrayList<>();
 
         String sqlWithJunction = """
-            SELECT q.id AS q_id, q.category, q.content, q.audio_url, eq.points, q.explanation, eq.order_index,
+            SELECT q.id AS q_id, q.category, q.content, q.audio_url, eq.points, q.explanation, eq.order_index, eq.section,
                    o.id AS opt_id, o.label, o.option_text, o.is_correct
             FROM exam_questions eq
             JOIN questions q ON q.id = eq.question_id
@@ -63,7 +63,7 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
             """;
 
         String fallbackSql = """
-            SELECT q.id AS q_id, q.category, q.content, q.audio_url, q.points, q.explanation, q.order_index,
+            SELECT q.id AS q_id, q.category, q.content, q.audio_url, q.points, q.explanation, q.order_index, NULL AS section,
                    o.id AS opt_id, o.label, o.option_text, o.is_correct
             FROM questions q
             LEFT JOIN question_options o ON o.question_id = q.id
@@ -93,11 +93,23 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
                     try {
                         String cat = rs.getString("category");
                         String audio = rs.getString("audio_url");
-                        String skillGroup = resolveSkillGroup(cat, audio);
+                        String sec = rs.getString("section");
+                        String skillGroup;
+                        if (sec != null && !sec.trim().isEmpty()) {
+                            skillGroup = switch (sec.trim().toUpperCase()) {
+                                case "LANGUAGE" -> "VOCAB_GRAMMAR";
+                                case "READING" -> "READING";
+                                case "LISTENING" -> "LISTENING";
+                                default -> "VOCAB_GRAMMAR";
+                            };
+                        } else {
+                            skillGroup = resolveSkillGroup(cat, audio);
+                        }
                         return QuestionDto.builder()
                                 .id(id)
                                 .points(rs.getObject("points") != null ? rs.getInt("points") : 2)
                                 .category(cat)
+                                .section(sec)
                                 .skillGroup(skillGroup)
                                 .skillGroupLabel(resolveSkillGroupLabel(skillGroup))
                                 .content(rs.getString("content"))

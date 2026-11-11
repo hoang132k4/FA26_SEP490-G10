@@ -1,7 +1,9 @@
 package com.jlpp.modules.course.repository;
 
 import com.jlpp.modules.course.entity.CourseRegistration;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,6 +15,10 @@ import java.util.Optional;
 public interface CourseRegistrationRepository extends JpaRepository<CourseRegistration, Long> {
 
     Optional<CourseRegistration> findByUserIdAndCourseId(Long userId, Long courseId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM CourseRegistration r WHERE r.user.id = :userId AND r.course.id = :courseId")
+    Optional<CourseRegistration> findForUpdateByUserIdAndCourseId(@Param("userId") Long userId, @Param("courseId") Long courseId);
 
     boolean existsByUserIdAndCourseId(Long userId, Long courseId);
 

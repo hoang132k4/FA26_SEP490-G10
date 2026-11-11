@@ -5,6 +5,8 @@ import com.jlpp.modules.exam.entity.Exam;
 import com.jlpp.modules.exam.reader.LearnerExamResultReader;
 import com.jlpp.modules.exam.reader.LearnerQuestionReader;
 import com.jlpp.modules.exam.repository.ExamRepository;
+import com.jlpp.modules.exam.service.AssessmentScoringService;
+import com.jlpp.modules.exam.service.impl.AssessmentScoringServiceImpl;
 import com.jlpp.modules.exam.service.impl.ExamServiceImpl;
 import com.jlpp.modules.exam.writer.LearnerExamResultWriter;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,6 +39,9 @@ public class ExamServiceTest {
 
     @Mock
     private LearnerExamResultReader resultReader;
+
+    @Spy
+    private AssessmentScoringService scoringService = new AssessmentScoringServiceImpl();
 
     @InjectMocks
     private ExamServiceImpl examService;
@@ -195,7 +201,7 @@ public class ExamServiceTest {
 
         assertEquals(8L, response.getExamId());
         assertEquals(3, response.getTotalQuestions());
-        assertEquals(45, response.getTotalPoints());
+        assertEquals(180, response.getTotalPoints());
 
         // Verify 3 skill groups are separated
         assertEquals(1, response.getVocabGrammarQuestions().size());
@@ -245,15 +251,15 @@ public class ExamServiceTest {
 
         ExamResultResponse result = examService.evaluateSubmission(8L, answers, 120);
 
-        assertEquals(45, result.getScore());
-        assertEquals(45, result.getTotalPossibleScore());
+        assertEquals(180, result.getScore());
+        assertEquals(180, result.getTotalPossibleScore());
         assertEquals(new BigDecimal("100.0"), result.getPercentage());
         assertTrue(result.getPassed());
         assertEquals(3, result.getCorrectCount());
         assertEquals(0, result.getIncorrectCount());
         assertEquals(0, result.getUnansweredCount());
         assertEquals("02:00", result.getFormattedTimeSpent());
-        assertEquals(3, result.getSkillBreakdown().size());
+        assertEquals(2, result.getSkillBreakdown().size()); // N4 language + reading combined
 
         // Review mode check: correct options and explanations MUST be exposed now
         assertTrue(result.getQuestions().get(0).getOptions().get(0).getCorrect());
@@ -274,8 +280,8 @@ public class ExamServiceTest {
 
         ExamResultResponse result = examService.evaluateSubmission(8L, answers, 75);
 
-        assertEquals(15, result.getScore());
-        assertEquals(45, result.getTotalPossibleScore());
+        assertEquals(60, result.getScore());
+        assertEquals(180, result.getTotalPossibleScore());
         assertEquals(new BigDecimal("33.3"), result.getPercentage());
         assertFalse(result.getPassed()); // passing score is 35, 15 < 35 -> false
         assertEquals(1, result.getCorrectCount());
@@ -383,7 +389,7 @@ public class ExamServiceTest {
         assertTrue(response.isPersistentSaved());
         assertEquals(55L, response.getResultId());
         assertNotNull(response.getCompletionDate());
-        verify(resultWriter, times(1)).saveExamResultSummary(eq(1L), eq(8L), eq(45), eq(new BigDecimal("100.0")), eq(true), eq("PASSED"), eq(100));
+        verify(resultWriter, times(1)).saveExamResultSummary(eq(1L), eq(8L), eq(180), eq(new BigDecimal("100.0")), eq(true), eq("PASSED"), eq(100));
         verify(resultWriter, times(1)).saveExamResultDetails(eq(55L), anyList());
     }
 
@@ -539,6 +545,182 @@ public class ExamServiceTest {
 
         assertEquals(404, ex.getStatusCode().value());
         assertTrue(ex.getReason().contains("Không tìm thấy"));
+    }
+
+    // --- JLPT 180-POINT SCORING SPECIFICATION TESTS ---
+
+    private List<QuestionDto> buildMockQuestions(int langCorrect, int langTotal,
+                                                 int readCorrect, int readTotal,
+                                                 int listenCorrect, int listenTotal) {
+        List<QuestionDto> list = new ArrayList<>();
+        long id = 1;
+        id = appendQuestions(list, id, "VOCAB_GRAMMAR", "LANGUAGE", langCorrect, langTotal);
+        id = appendQuestions(list, id, "READING", "READING", readCorrect, readTotal);
+        appendQuestions(list, id, "LISTENING", "LISTENING", listenCorrect, listenTotal);
+        return list;
+    }
+
+    private long appendQuestions(List<QuestionDto> list, long startId, String skillGroup, String section, int correct, int total) {
+        for (int i = 0; i < total; i++) {
+            long qId = startId++;
+            boolean isCorrectQuestion = i < correct;
+            list.add(QuestionDto.builder()
+                    .id(qId)
+                    .category(skillGroup)
+                    .section(section)
+                    .skillGroup(skillGroup)
+                    .points(1)
+                    .orderIndex((int) qId)
+                    .explanation("Giải thích")
+                    .options(List.of(
+                            OptionDto.builder().id(qId * 10 + 1).label("1").text("Opt 1").correct(isCorrectQuestion).build(),
+                            OptionDto.builder().id(qId * 10 + 2).label("2").text("Opt 2").correct(!isCorrectQuestion).build()
+                    ))
+                    .build());
+        }
+        return startId;
+    }
+
+    private Map<String, String> buildAllAnswers(List<QuestionDto> questions) {
+        Map<String, String> map = new HashMap<>();
+        for (QuestionDto q : questions) {
+            // Option 1 is chosen by the learner for every question
+            map.put("answer_" + q.getId(), String.valueOf(q.getId() * 10 + 1));
+        }
+        return map;
+    }
+
+    @Test
+    @DisplayName("Test 1: N5 đỗ - Language 25/43, Reading 5/5, Listening 15/24 -> 113/180 ĐỖ")
+    void testJlpt180_Test1_N5_Pass() {
+        Exam examN5 = new Exam(501L, "JLPT N5 Mock Exam", "JLPT_MOCK", "N5", 100, 72, 80, "ACTIVE", "N5 Mock");
+        List<QuestionDto> questions = buildMockQuestions(25, 43, 5, 5, 15, 24);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(501L)).thenReturn(Optional.of(examN5));
+        when(questionReader.findQuestionsForEvaluation(501L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(501L, answers, 3600);
+
+        // Language + Reading combined (120): 30/48 -> round(30*120/48) = 75 (sàn 38)
+        // Listening (60): 15/24 -> round(15*60/24) = 38 (sàn 19)
+        // Total = 113 >= 80 -> ĐỖ
+        assertEquals(113, result.getScore());
+        assertEquals(180, result.getTotalPossibleScore());
+        assertEquals(new BigDecimal("62.8"), result.getPercentage());
+        assertTrue(result.getPassed());
+
+        assertEquals(2, result.getSkillBreakdown().size());
+        assertEquals(75, result.getSkillBreakdown().get(0).getEarnedPoints());
+        assertEquals(120, result.getSkillBreakdown().get(0).getTotalPoints());
+        assertEquals(38, result.getSkillBreakdown().get(1).getEarnedPoints());
+        assertEquals(60, result.getSkillBreakdown().get(1).getTotalPoints());
+    }
+
+    @Test
+    @DisplayName("Test 2: N5 đỗ (ví dụ bàn giao) - Language+Reading 30/43, Listening 15/24 -> 122/180 ĐỖ")
+    void testJlpt180_Test2_N5_Pass_HandoverExample() {
+        Exam examN5 = new Exam(502L, "JLPT N5 Mock Exam", "JLPT_MOCK", "N5", 100, 67, 80, "ACTIVE", "N5 Mock");
+        List<QuestionDto> questions = buildMockQuestions(30, 43, 0, 0, 15, 24);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(502L)).thenReturn(Optional.of(examN5));
+        when(questionReader.findQuestionsForEvaluation(502L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(502L, answers, 3600);
+
+        // Language+Reading: 30/43 -> round(30*120/43) = 84 (sàn 38)
+        // Listening: 15/24 -> round(15*60/24) = 38 (sàn 19)
+        // Total = 122 >= 80 -> ĐỖ
+        assertEquals(122, result.getScore());
+        assertEquals(180, result.getTotalPossibleScore());
+        assertTrue(result.getPassed());
+        assertEquals(84, result.getSkillBreakdown().get(0).getEarnedPoints());
+        assertEquals(38, result.getSkillBreakdown().get(1).getEarnedPoints());
+    }
+
+    @Test
+    @DisplayName("Test 3: N3 trượt vì điểm sàn - Language 50/58 (52), Reading 15/16 (56), Listening 8/28 (17 < 19) -> TRƯỢT")
+    void testJlpt180_Test3_N3_Fail_SectionMinScore() {
+        Exam examN3 = new Exam(503L, "JLPT N3 Mock Exam", "JLPT_MOCK", "N3", 140, 102, 95, "ACTIVE", "N3 Mock");
+        List<QuestionDto> questions = buildMockQuestions(50, 58, 15, 16, 8, 28);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(503L)).thenReturn(Optional.of(examN3));
+        when(questionReader.findQuestionsForEvaluation(503L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(503L, answers, 3600);
+
+        // Language: 50/58 -> round(50*60/58) = 52
+        // Reading: 15/16 -> round(15*60/16) = 56
+        // Listening: 8/28 -> round(8*60/28) = 17 (< 19)
+        // Total = 125 >= 95 nhưng Nghe hiểu 17 < 19 -> TRƯỢT
+        assertEquals(125, result.getScore());
+        assertEquals(180, result.getTotalPossibleScore());
+        assertFalse(result.getPassed());
+
+        // Kiểm tra thông điệp phản hồi nêu rõ lý do điểm sàn
+        assertNotNull(result.getAiFeedback());
+        assertTrue(result.getAiFeedback().contains("Bạn chưa đạt điểm sàn bài thi N3 lần này"));
+        assertTrue(result.getAiFeedback().contains("Tổng điểm của bạn đạt 125/180 (đủ điểm đỗ 95)"));
+        assertTrue(result.getAiFeedback().contains("Nghe hiểu chỉ đạt 17 điểm, chưa đạt mức tối thiểu 19 điểm"));
+    }
+
+    @Test
+    @DisplayName("Test 4: N3 thiếu phần Nghe (milestone) - Language 10/10 (90), Reading 5/10 (45) -> 135/180 ĐỖ")
+    void testJlpt180_Test4_N3_Milestone_MissingListening() {
+        Exam milestoneN3 = new Exam(504L, "Milestone N3 Course", "MILESTONE", "N3", 90, 20, 95, "ACTIVE", "Milestone N3");
+        List<QuestionDto> questions = buildMockQuestions(10, 10, 5, 10, 0, 0);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(504L)).thenReturn(Optional.of(milestoneN3));
+        when(questionReader.findQuestionsForEvaluation(504L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(504L, answers, 2400);
+
+        // Present max = 60 + 60 = 120. New max each = 60*180/120 = 90.
+        // Language: 10/10 -> 90. Reading: 5/10 -> 45. Sàn mỗi nhóm = ceil(90*19/60) = 29.
+        // Total = 135 >= 95 -> ĐỖ
+        assertEquals(135, result.getScore());
+        assertEquals(180, result.getTotalPossibleScore());
+        assertTrue(result.getPassed());
+        assertEquals(2, result.getSkillBreakdown().size());
+        assertEquals(90, result.getSkillBreakdown().get(0).getTotalPoints());
+        assertEquals(90, result.getSkillBreakdown().get(0).getEarnedPoints());
+        assertEquals(90, result.getSkillBreakdown().get(1).getTotalPoints());
+        assertEquals(45, result.getSkillBreakdown().get(1).getEarnedPoints());
+    }
+
+    @Test
+    @DisplayName("Test 5: PLACEMENT_TEST luôn passed = true dù điểm thấp")
+    void testJlpt180_Test5_PlacementTest_AlwaysPassed() {
+        Exam placement = new Exam(505L, "Placement Assessment", "PLACEMENT_TEST", "N5", 60, 40, null, "ACTIVE", "Placement");
+        List<QuestionDto> questions = buildMockQuestions(2, 20, 1, 10, 1, 10);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(505L)).thenReturn(Optional.of(placement));
+        when(questionReader.findQuestionsForEvaluation(505L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(505L, answers, 1800);
+
+        assertTrue(result.getPassed());
+        assertNull(result.getPassingScore());
+    }
+
+    @Test
+    @DisplayName("Test 6: Bỏ trống hết -> 0 điểm, TRƯỢT")
+    void testJlpt180_Test6_AllUnanswered_ZeroScore_Fail() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, Collections.emptyMap(), 0);
+
+        assertEquals(0, result.getScore());
+        assertEquals(180, result.getTotalPossibleScore());
+        assertEquals(new BigDecimal("0.0"), result.getPercentage());
+        assertFalse(result.getPassed());
+        assertEquals(0, result.getCorrectCount());
+        assertEquals(3, result.getUnansweredCount());
     }
 }
 

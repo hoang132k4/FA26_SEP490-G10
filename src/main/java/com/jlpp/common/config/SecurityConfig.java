@@ -165,8 +165,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                             boolean isAnonymous = (auth == null || auth instanceof AnonymousAuthenticationToken);
-                            boolean isCsrf = accessDeniedException instanceof CsrfException;
-                            if (isAnonymous || isCsrf) {
+                            if (isAnonymous) {
                                 response.sendRedirect(request.getContextPath() + "/auth/login?sessionExpired=true");
                             } else {
                                 response.sendError(403, "Access Denied: You do not have permission to access this resource.");

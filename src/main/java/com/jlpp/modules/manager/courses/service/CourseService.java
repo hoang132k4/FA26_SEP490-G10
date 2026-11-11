@@ -1,7 +1,11 @@
 package com.jlpp.modules.manager.courses.service;
 
+import com.jlpp.common.constants.LessonStatusEnum;
 import com.jlpp.modules.manager.courses.dto.CourseOption;
 import com.jlpp.modules.manager.courses.repository.CourseRepository;
+import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonInput;
+import com.jlpp.modules.manager.lessons.repository.LessonRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +21,15 @@ public class CourseService {
     private static final Set<String> VALID_STATUSES = Set.of("DRAFT", "PUBLISHED", "ARCHIVED");
 
     private final CourseRepository courseRepository;
+    private LessonRepository lessonRepository;
 
     public CourseService(CourseRepository courseRepository) {
         this.courseRepository = courseRepository;
+    }
+
+    @Autowired(required = false)
+    public void setLessonRepository(LessonRepository lessonRepository) {
+        this.lessonRepository = lessonRepository;
     }
 
     @Transactional(readOnly = true)
@@ -51,8 +61,26 @@ public class CourseService {
     public long createCourse(String title, String code, String level, Double price, Double discountPrice,
                              String shortDescription, String description, String thumbnailUrl, String objectives,
                              String prerequisites, String targetAudience) {
-        return courseRepository.insert(title, code, level, "DRAFT", price, discountPrice,
+        long courseId = courseRepository.insert(title, code, level, "DRAFT", price, discountPrice,
                 shortDescription, description, thumbnailUrl, objectives, prerequisites, targetAudience);
+        if (lessonRepository != null) {
+            try {
+                LessonInput milestoneLesson = new LessonInput(
+                        "Bài thi giữa kì: Đánh giá năng lực giai đoạn 1",
+                        "Kiểm tra & Đánh giá định kỳ",
+                        "Bài kiểm tra cột mốc định kỳ bắt buộc để đánh giá năng lực học viên.",
+                        "Hoàn thành bài kiểm tra cột mốc để đánh giá mức độ tiếp thu kiến thức và mở khóa giai đoạn tiếp theo.",
+                        "EXAM",
+                        LessonStatusEnum.ACTIVE.name(),
+                        1,
+                        35,
+                        false
+                );
+                lessonRepository.insert(courseId, milestoneLesson, 1);
+            } catch (Exception ignored) {
+            }
+        }
+        return courseId;
     }
 
     @Transactional

@@ -5,23 +5,56 @@
 )}">
 
     <div id="mainContent">
+        <!-- Styling for exam take form matching reference design -->
+        <style>
+            .option-item {
+                border: 1.5px solid #E2E8F0;
+                background-color: #FFFFFF;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .option-item:hover {
+                border-color: #93C5FD;
+                background-color: #F8FAFC;
+            }
+            .option-item.selected-option,
+            .option-item:has(input[type="radio"]:checked) {
+                border: 2px solid #2563EB !important;
+                background-color: #EFF6FF !important;
+            }
+            #skillGroupTabs .nav-link {
+                color: #475569;
+                background-color: transparent;
+                transition: all 0.2s ease;
+            }
+            #skillGroupTabs .nav-link.active {
+                background-color: #173B57 !important;
+                color: #FFFFFF !important;
+            }
+            .question-palette-item.palette-answered {
+                background-color: #10B981 !important;
+                border-color: #10B981 !important;
+                color: #FFFFFF !important;
+            }
+        </style>
+
         <!-- Top Focus Mode Exam Banner -->
         <div class="card p-4 p-lg-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #173B57 0%, #204B6E 100%); color: white; border-radius: 16px;">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
                     <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-                        <span th:if="${exam.examType == 'PLACEMENT_TEST'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
-                            <i class="bi bi-compass me-1"></i> Đánh giá năng lực đầu vào
+                        <span th:if="${exam.examType == 'PLACEMENT_TEST'}" class="badge rounded-pill bg-white text-dark px-3 py-1.5 fs-7 fw-semibold shadow-sm">
+                            <i class="bi bi-compass text-primary me-1"></i> Đánh giá năng lực đầu vào <span th:if="${exam.jlptLevel != null}" th:text="'(' + ${exam.jlptLevel} + ')'"></span>
                         </span>
-                        <span th:if="${exam.examType == 'MILESTONE'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
-                            <i class="bi bi-flag-fill me-1"></i> Kiểm tra cột mốc <span th:if="${exam.jlptLevel != null}" th:text="'(' + ${exam.jlptLevel} + ')'"></span>
+                        <span th:if="${exam.examType == 'MILESTONE'}" class="badge rounded-pill bg-white text-dark px-3 py-1.5 fs-7 fw-semibold shadow-sm">
+                            <i class="bi bi-flag-fill text-warning me-1"></i> Kiểm tra cột mốc <span th:if="${exam.jlptLevel != null}" th:text="'(' + ${exam.jlptLevel} + ')'"></span>
                         </span>
-                        <span th:if="${exam.examType != 'PLACEMENT_TEST' and exam.examType != 'MILESTONE'}" class="badge rounded-pill px-3 py-1 fs-6 fw-bold" style="background-color: #EBF4FA; color: var(--navy-dark);">
-                            <i class="bi bi-award me-1"></i> <span th:text="${exam.jlptLevel != null ? exam.jlptLevel : 'JLPT'}">N4</span>
+                        <span th:if="${exam.examType != 'PLACEMENT_TEST' and exam.examType != 'MILESTONE'}" class="badge rounded-pill bg-white text-dark px-3 py-1.5 fs-7 fw-semibold shadow-sm">
+                            <i class="bi bi-trophy-fill text-warning me-1"></i> Thi thử JLPT <span th:if="${exam.jlptLevel != null}" th:text="'(' + ${exam.jlptLevel} + ')'"></span>
                         </span>
 
-                        <span class="badge bg-white bg-opacity-15 text-white rounded-pill px-3 py-1">
-                            <i class="bi bi-shield-check text-success me-1"></i> Chế độ thi tập trung (Focus Mode)
+                        <span class="badge rounded-pill bg-white text-dark px-3 py-1.5 fs-7 fw-semibold shadow-sm">
+                            <i class="bi bi-shield-check text-primary me-1"></i> Chế độ thi tập trung (Focus Mode)
                         </span>
                     </div>
                     <h2 class="fw-bold mb-1 text-white" th:text="${exam.examTitle}">Đề thi</h2>
@@ -68,7 +101,7 @@
                     </li>
                 <li class="nav-item" th:if="${!exam.vocabGrammarQuestions.isEmpty()}">
                     <button class="nav-link rounded-pill px-4 py-2 fw-semibold" id="tab-vocab" data-filter="VOCAB_GRAMMAR" type="button">
-                        <i class="bi bi-translate me-1"></i> Từ vựng • Ngữ pháp (<span th:text="${exam.vocabGrammarQuestions.size()}">0</span>)
+                        <i class="bi bi-translate me-1"></i> Kiến thức ngôn ngữ (Ngữ pháp • Từ vựng • Chữ Hán) (<span th:text="${exam.vocabGrammarQuestions.size()}">0</span>)
                     </button>
                 </li>
                 <li class="nav-item" th:if="${!exam.readingQuestions.isEmpty()}">
@@ -100,16 +133,6 @@
                             )}"></div>
                         </div>
                     </div>
-
-                    <!-- Bottom Bar -->
-                    <div class="card p-3 mb-5 border-0 shadow-sm d-flex flex-row justify-content-between align-items-center bg-white rounded-4">
-                        <div class="text-muted small">
-                            <i class="bi bi-cloud-check text-success me-1"></i> Đáp án tự động lưu tạm trên trình duyệt của bạn.
-                        </div>
-                        <button type="button" class="btn btn-steel rounded-pill px-5 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
-                            <i class="bi bi-check2-circle me-1"></i> Nộp bài thi
-                        </button>
-                    </div>
                 </form>
             </div>
 
@@ -135,8 +158,8 @@
                         <a th:each="q, stat : ${exam.questions}" 
                            th:href="'#question-' + ${q.id}"
                            th:id="'palette-btn-' + ${q.id}"
-                           class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center question-palette-item shadow-sm"
-                           style="width: 38px; height: 38px; font-weight: 600; text-decoration: none;"
+                           class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center question-palette-item shadow-sm border"
+                           style="width: 38px; height: 38px; font-weight: 600; text-decoration: none; border-color: #CBD5E1; color: #475569; background-color: #FFFFFF;"
                            th:text="${stat.count}">1</a>
                     </div>
 
@@ -152,8 +175,8 @@
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-steel w-100 rounded-pill py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
-                        <i class="bi bi-send-check me-1"></i> Nộp bài thi
+                    <button type="button" class="btn text-white w-100 rounded-pill py-2.5 fw-bold shadow-sm" style="background-color: #244C6B;" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                        <i class="bi bi-check2-circle me-1"></i> Nộp bài thi
                     </button>
                 </div>
             </div>
@@ -278,10 +301,23 @@
                         progressBar.style.width = pct + '%';
                     }
 
+                    // Update selected styling on option items
+                    document.querySelectorAll('.option-item').forEach(item => {
+                        const radio = item.querySelector('input[type="radio"]');
+                        if (radio && radio.checked) {
+                            item.classList.add('selected-option');
+                        } else {
+                            item.classList.remove('selected-option');
+                        }
+                    });
+
                     // Reset palette
                     document.querySelectorAll('.question-palette-item').forEach(btn => {
-                        btn.classList.remove('btn-success', 'text-white');
-                        btn.classList.add('btn-outline-secondary');
+                        btn.classList.remove('palette-answered', 'btn-success', 'text-white');
+                        btn.classList.add('btn-light', 'border');
+                        btn.style.backgroundColor = '#FFFFFF';
+                        btn.style.borderColor = '#CBD5E1';
+                        btn.style.color = '#475569';
                     });
 
                     // Save answers map and highlight palette
@@ -291,8 +327,11 @@
                         currentAnswers[qId] = input.value;
                         const paletteBtn = document.getElementById('palette-btn-' + qId);
                         if (paletteBtn) {
-                            paletteBtn.classList.remove('btn-outline-secondary');
-                            paletteBtn.classList.add('btn-success', 'text-white');
+                            paletteBtn.classList.remove('btn-light', 'border');
+                            paletteBtn.classList.add('palette-answered');
+                            paletteBtn.style.backgroundColor = '#10B981';
+                            paletteBtn.style.borderColor = '#10B981';
+                            paletteBtn.style.color = '#FFFFFF';
                         }
                     });
 
@@ -303,6 +342,17 @@
 
                 document.querySelectorAll('input[type="radio"][name^="answer_"]').forEach(radio => {
                     radio.addEventListener('change', updateProgress);
+                });
+
+                // Click anywhere on option-item to toggle radio
+                document.querySelectorAll('.option-item').forEach(item => {
+                    item.addEventListener('click', function (e) {
+                        const radio = this.querySelector('input[type="radio"]');
+                        if (radio && !radio.disabled && e.target !== radio) {
+                            radio.checked = true;
+                            radio.dispatchEvent(new Event('change'));
+                        }
+                    });
                 });
 
                 // Initial progress update

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-    <div th:fragment="questionItem(q, index, showSolution)" class="card p-4 mb-4 kotoba-card question-box" th:id="'question-' + ${q.id}" th:data-skill-group="${q.skillGroup}">
-        <!-- Question Header -->
+    <div th:fragment="questionItem(q, index, showSolution)" class="card p-4 mb-4 kotoba-card question-box" th:id="'question-' + ${q.id}" th:data-skill-group="${q.skillGroup}" style="border-radius: 16px;">
+        <!-- Question Header (Image Style) -->
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
-            <h6 class="fw-bold mb-0" style="color: var(--sakura-accent)">
-                <span th:text="'Câu hỏi ' + ${index}">Câu 1</span>
-                <span th:if="${q.points != null}" class="badge bg-light text-muted ms-2" th:text="${q.points} + ' điểm'"></span>
-            </h6>
-            <span class="badge px-3 py-1 rounded-pill" style="background-color: var(--sakura-soft); color: var(--sakura-dark-accent);" th:text="${q.category}">Từ vựng (Goi)</span>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-bold fs-7" th:text="'Câu ' + ${index}">Câu 1</span>
+                <span th:if="${q.points != null}" class="text-muted ms-2 small fw-semibold" th:text="${q.points} + ' điểm'">5.0 điểm</span>
+            </div>
+            <span class="badge rounded-pill px-3 py-1.5 fw-medium" style="background-color: #EBF4FA; color: #173B57;" th:text="${q.skillGroupLabel != null ? q.skillGroupLabel : (q.category != null ? q.category : 'Tổng hợp')}">Từ vựng - Ngữ pháp</span>
         </div>
 
         <!-- Question Content -->
@@ -44,7 +44,7 @@
                            th:disabled="${showSolution}">
                     <label class="form-check-label w-100 cursor-pointer d-flex align-items-center justify-content-between" th:for="'opt_' + ${opt.id}">
                         <div>
-                            <span class="fw-bold me-2" style="color: var(--sakura-accent)" th:text="${opt.label}">1.</span>
+                            <span class="fw-bold me-2 text-dark" th:text="${opt.label != null ? (opt.label.endsWith('.') ? opt.label : opt.label + '.') : ''}">A.</span>
                             <span class="text-dark" th:text="${opt.text}">Lựa chọn</span>
                         </div>
                         <div th:if="${showSolution}">

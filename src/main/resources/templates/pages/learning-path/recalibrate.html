@@ -8,10 +8,9 @@
         <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
             <div>
                 <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-1">
-                        <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a th:href="@{/learning-path}" class="text-decoration-none" style="color: var(--fuji-blue)">Lộ trình học tập</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Điều chỉnh lịch học</li>
+                    <ol class="breadcrumb mb-1 small">
+                        <li class="breadcrumb-item"><a th:href="@{/learning-path}" class="text-decoration-none fw-semibold" style="color: #2563EB;">Lộ trình học tập</a></li>
+                        <li class="breadcrumb-item active fw-medium" aria-current="page" style="color: #475569;">Điều chỉnh lịch học</li>
                     </ol>
                 </nav>
                 <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Điều chỉnh lịch trình lộ trình học tập (Recalibrate Schedule)</h3>
@@ -44,18 +43,6 @@
 
         <!-- STATE 2: RECALIBRATE SIMULATION (Khi đã có Learning Path) -->
         <div th:if="${hasPath}">
-            <!-- Strict Simulation / Preview Notice Banner -->
-            <div class="alert alert-info border-0 shadow-sm rounded-4 p-4 mb-4 d-flex align-items-start gap-3 bg-white border-start border-4 border-info">
-                <div class="fs-3 text-info mt-1"><i class="bi bi-info-circle-fill"></i></div>
-                <div>
-                    <h6 class="fw-bold mb-1 text-dark">Chế độ xem trước & mô phỏng (Simulation Preview Mode)</h6>
-                    <p class="mb-0 text-secondary small" style="line-height: 1.6;">
-                        Chức năng này giúp bạn thử nghiệm thay đổi cường độ học tập (số giờ học mỗi tuần) để xem trước ngày hoàn thành dự kiến mới và kế hoạch phân bổ bài học.
-                        Sau khi xem kết quả mô phỏng, bạn có thể <strong>xác nhận áp dụng</strong> để hệ thống chính thức cập nhật lại lộ trình của bạn.
-                    </p>
-                </div>
-            </div>
-
             <!-- Recalibration Parameter Form -->
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <h5 class="fw-bold mb-3" style="color: var(--navy-dark)">
@@ -127,16 +114,6 @@
                     </div>
                 </div>
 
-                <!-- Pace Analysis Card -->
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
-                    <h6 class="fw-bold mb-2" style="color: var(--navy-dark)">
-                        <i class="bi bi-speedometer2 me-2 text-warning"></i> Đánh giá nhịp độ học tập đề xuất
-                    </h6>
-                    <p class="text-secondary mb-0 small" style="line-height: 1.6;" th:text="${preview.paceAnalysisText}">
-                        Cường độ học tập Tiêu chuẩn (Standard): Phân bổ 10 giờ/tuần là nhịp độ cân bằng và bền vững nhất để tiếp thu sâu kiến thức ngữ pháp và luyện nghe đều đặn.
-                    </p>
-                </div>
-
                 <!-- Apply Recalibrated Schedule Action Card -->
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-4 border-success">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -165,7 +142,7 @@
                         <h5 class="fw-bold mb-0" style="color: var(--navy-dark)">
                             <i class="bi bi-calendar-range me-2 text-primary"></i> Lịch học đề xuất chi tiết (Preview Schedule)
                         </h5>
-                        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill">Dự kiến xong trong <span th:text="${preview.weeksNeeded}">6</span> tuần</span>
+                        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill">Dự kiến xong: <span th:text="${preview.weeksNeeded} + ' tuần'">6 tuần</span></span>
                     </div>
 
                     <div class="table-responsive">
@@ -174,7 +151,7 @@
                                 <tr>
                                     <th scope="col" class="ps-4 py-3" style="width: 80px;">STT</th>
                                     <th scope="col" class="py-3">Bài học / Cột mốc</th>
-                                    <th scope="col" class="py-3" style="width: 140px;">Tuần học</th>
+                                    <th scope="col" class="py-3" style="width: 140px;">Thời lượng</th>
                                     <th scope="col" class="py-3" style="width: 160px;">Ngày học dự kiến mới</th>
                                     <th scope="col" class="text-end pe-4 py-3" style="width: 150px;">Trạng thái</th>
                                 </tr>
@@ -184,10 +161,25 @@
                                     <td class="ps-4 py-3 text-muted" th:text="${item.orderIndex}">1</td>
                                     <td class="py-3">
                                         <strong class="d-block text-dark" th:text="${item.title}">Bài 1: Từ vựng</strong>
-                                        <span class="text-muted small" th:text="${item.sectionName}">Chương 1</span>
+                                        <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
+                                            <span class="text-muted small" th:text="${item.sectionName}">Chương 1</span>
+                                            <span class="badge rounded-pill border" style="font-size: 11px; background-color: #F8FAFC; color: #475569;" th:text="${item.skillDisplayName}">Kỹ năng</span>
+                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'WEAK'}"
+                                                  class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size: 10px;">
+                                                Trọng tâm [x1.5]
+                                            </span>
+                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'STRONG'}"
+                                                  class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10px;">
+                                                Nền tảng vững [x0.75]
+                                            </span>
+                                        </div>
                                     </td>
                                     <td class="py-3">
-                                        <span class="badge bg-light text-dark border px-2 py-1" th:text="'Tuần ' + ${item.targetWeek}">Tuần 1</span>
+                                        <span class="badge bg-light text-dark border px-2 py-1" th:text="${item.durationFormatted}">1 giờ</span>
+                                        <div th:if="${item.recommendedDurationMinutes != item.durationMinutes}" class="small mt-1" style="font-size: 11px;">
+                                            <span th:classappend="${item.recommendedDurationMinutes > item.durationMinutes} ? 'text-danger fw-semibold' : 'text-success fw-semibold'"
+                                                  th:text="'Gợi ý: ' + ${item.recommendedDurationFormatted}">Gợi ý: 45p</span>
+                                        </div>
                                     </td>
                                     <td class="py-3 text-primary fw-semibold" th:text="${item.plannedDateFormatted}">
                                         01/10/2026

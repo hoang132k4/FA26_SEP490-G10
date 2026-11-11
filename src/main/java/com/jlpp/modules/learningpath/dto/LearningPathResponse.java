@@ -37,5 +37,6 @@ public class LearningPathResponse {
     @Builder.Default
     private List<LearningPathTimelineItemDto> items = new ArrayList<>();
 
+    private SkillProfileDto skillProfile;
     private String emptyStateMessage;
 }

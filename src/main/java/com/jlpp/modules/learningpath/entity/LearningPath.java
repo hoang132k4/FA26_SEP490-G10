@@ -3,6 +3,9 @@ package com.jlpp.modules.learningpath.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -44,4 +47,8 @@ public class LearningPath {
 
     @Column(name = "scheduled_date", nullable = false)
     private LocalDate scheduledDate;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "lesson_progress", columnDefinition = "jsonb")
+    private String lessonProgress;
 }

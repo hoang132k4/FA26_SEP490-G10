@@ -41,6 +41,16 @@ public interface ExamService {
     ExamTakeResponse getMilestoneExamForTaking(Long examId);
 
     /**
+     * Xác định đường dẫn bài kiểm tra cột mốc (Milestone Exam) cho khóa học (bao gồm khóa học mới tạo).
+     */
+    default String resolveMilestoneExamUrl(Long courseId, String courseLevel, Long lessonId) {
+        if (courseId != null && lessonId != null) {
+            return "/exams/milestones?courseId=" + courseId + "&lessonId=" + lessonId;
+        }
+        return courseId != null ? "/exams/milestones?courseId=" + courseId : "/exams/milestones";
+    }
+
+    /**
      * Chấm điểm bài thi thực tế từ các câu hỏi và đáp án đúng trong database.
      */
     ExamResultResponse evaluateSubmission(Long examId, Map<String, String> formParams, Integer timeSpentSeconds);

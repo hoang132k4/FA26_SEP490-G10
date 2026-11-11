@@ -14,4 +14,16 @@ public class OptionDto {
     private String label;
     private String text;
     private Boolean correct; // null/false during exam, populated true/false during review
+
+    public String getDisplayLabel() {
+        if (label == null || label.isBlank()) {
+            return "";
+        }
+        String trimmed = label.trim();
+        return trimmed.endsWith(".") ? trimmed : trimmed + ".";
+    }
+
+    public String getCleanText() {
+        return text != null ? text.trim() : "";
+    }
 }
