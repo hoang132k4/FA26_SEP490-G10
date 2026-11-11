@@ -30,11 +30,14 @@ public class ManagerQuizController {
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "") String search,
-                       @RequestParam(required = false) Long lessonId,
+                       @RequestParam(defaultValue = "") String level,
+                       @RequestParam(defaultValue = "") String section,
                        @RequestParam(defaultValue = "") String status, Model model) {
-        model.addAttribute("quizzes", managerQuizService.search(search, lessonId, status));
+        model.addAttribute("quizzes", managerQuizService.search(search, level, section, status));
         model.addAttribute("search", search);
-        model.addAttribute("lessonId", lessonId);
+        model.addAttribute("level", level);
+        model.addAttribute("section", section);
+        model.addAttribute("levelSections", managerQuizService.levelSections());
         model.addAttribute("status", status);
         addOptions(model);
         model.addAttribute("quizCount", managerQuizService.count());
@@ -171,7 +174,7 @@ public class ManagerQuizController {
     // ── Helpers ──
 
     private void addOptions(Model model) {
-        model.addAttribute("lessons", managerQuizService.lessons());
+        model.addAttribute("lessonGroups", managerQuizService.lessonGroups());
         model.addAttribute("statuses", managerQuizService.statuses());
     }
 }
