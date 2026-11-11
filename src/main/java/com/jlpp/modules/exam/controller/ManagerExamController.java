@@ -1,10 +1,10 @@
 package com.jlpp.modules.exam.controller;
 
-import com.jlpp.common.constants.ExamSectionEnum;
 import com.jlpp.common.constants.JlptLevelEnum;
 import com.jlpp.common.constants.SkillTypeEnum;
 import com.jlpp.modules.exam.dto.ExamQuestionForm;
 import com.jlpp.modules.exam.dto.ManagerExamForm;
+import com.jlpp.modules.exam.service.JlptExamStructure;
 import com.jlpp.modules.exam.service.ManagerExamService;
 import com.jlpp.modules.question.controller.ManagerQuestionController;
 import com.jlpp.modules.question.dto.QuestionImportException;
@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Controller
 @RequestMapping("/manager/exams")
@@ -52,22 +53,13 @@ public class ManagerExamController {
 
     @GetMapping("/new")
     public String createPage(Model model) {
-        model.addAttribute("examForm", new ManagerExamForm());
-        model.addAttribute("options", managerExamService.options());
-        model.addAttribute("isEdit", false);
-        return "pages/manager/exam/form";
+        return formPage(managerExamService.newForm(), model, null);
     }
 
     @GetMapping("/{examId}/edit")
     public String editPage(@PathVariable long examId, Model model, RedirectAttributes redirectAttributes) {
         try {
-            model.addAttribute("examForm", managerExamService.toForm(managerExamService.findById(examId)));
-            model.addAttribute("options", managerExamService.options());
-            model.addAttribute("isEdit", true);
-            var examQuestions = managerExamService.getExamQuestions(examId);
-            model.addAttribute("linkedCount", managerExamService.countExamQuestions(examId));
-            model.addAttribute("totalPoints", examQuestions.stream().mapToInt(eq -> eq.points() != null ? eq.points() : 0).sum());
-            return "pages/manager/exam/form";
+            return formPage(managerExamService.toForm(managerExamService.findById(examId)), model, examId);
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("examError", exception.getMessage());
             return "redirect:/manager/exams";
@@ -77,13 +69,13 @@ public class ManagerExamController {
     @PostMapping
     public String create(@Valid @ModelAttribute("examForm") ManagerExamForm form,
                          BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        if (result.hasErrors()) return formPage(form, model, false);
+        if (result.hasErrors()) return formPage(form, model, null);
         try {
             managerExamService.create(form);
             redirectAttributes.addFlashAttribute("examSuccess", "Đã tạo đề thi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
             model.addAttribute("examError", exception.getMessage());
-            return formPage(form, model, false);
+            return formPage(form, model, null);
         }
         return "redirect:/manager/exams";
     }
@@ -91,13 +83,14 @@ public class ManagerExamController {
     @PostMapping("/{examId}")
     public String update(@PathVariable long examId, @Valid @ModelAttribute("examForm") ManagerExamForm form,
                          BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        if (result.hasErrors()) return formPage(form, model, true);
+        form.setExamId(examId);
+        if (result.hasErrors()) return formPage(form, model, examId);
         try {
             managerExamService.update(examId, form);
             redirectAttributes.addFlashAttribute("examSuccess", "Đã cập nhật đề thi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
             model.addAttribute("examError", exception.getMessage());
-            return formPage(form, model, true);
+            return formPage(form, model, examId);
         }
         return "redirect:/manager/exams";
     }
@@ -115,7 +108,7 @@ public class ManagerExamController {
             model.addAttribute("examQuestions", managerExamService.getExamQuestions(examId));
             model.addAttribute("availableQuestions", managerExamService.findAvailableQuestions(examId, jlptLevel, skillType));
             model.addAttribute("addForm", new ExamQuestionForm());
-            model.addAttribute("sections", Arrays.stream(ExamSectionEnum.values()).map(Enum::name).toList());
+            model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
             model.addAttribute("jlptLevels", Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList());
             model.addAttribute("skillTypes", Arrays.stream(SkillTypeEnum.values()).map(Enum::name).toList());
             model.addAttribute("filterJlptLevel", jlptLevel);
@@ -140,26 +133,17 @@ public class ManagerExamController {
         return "redirect:/manager/exams/" + examId + "/questions";
     }
 
-    @PostMapping("/{examId}/questions/{questionId}/move-up")
-    public String moveUp(@PathVariable long examId, @PathVariable long questionId,
-                          RedirectAttributes redirectAttributes) {
+    @PostMapping("/{examId}/questions/reorder")
+    @ResponseBody
+    public ResponseEntity<String> reorderQuestions(@PathVariable long examId,
+                                                   @RequestParam String section,
+                                                   @RequestParam(name = "questionIds", required = false) List<Long> questionIds) {
         try {
-            managerExamService.moveQuestion(examId, questionId, "up");
-        } catch (IllegalArgumentException exception) {
-            redirectAttributes.addFlashAttribute("examError", exception.getMessage());
+            managerExamService.reorderSection(examId, section, questionIds == null ? List.of() : questionIds);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            return ResponseEntity.badRequest().body(exception.getMessage());
         }
-        return "redirect:/manager/exams/" + examId + "/questions";
-    }
-
-    @PostMapping("/{examId}/questions/{questionId}/move-down")
-    public String moveDown(@PathVariable long examId, @PathVariable long questionId,
-                            RedirectAttributes redirectAttributes) {
-        try {
-            managerExamService.moveQuestion(examId, questionId, "down");
-        } catch (IllegalArgumentException exception) {
-            redirectAttributes.addFlashAttribute("examError", exception.getMessage());
-        }
-        return "redirect:/manager/exams/" + examId + "/questions";
     }
 
     @PostMapping("/{examId}/questions/{questionId}/remove")
@@ -196,10 +180,14 @@ public class ManagerExamController {
 
     // ── Helpers ──
 
-    private String formPage(ManagerExamForm form, Model model, boolean isEdit) {
+    private String formPage(ManagerExamForm form, Model model, Long examId) {
         model.addAttribute("examForm", form);
         model.addAttribute("options", managerExamService.options());
-        model.addAttribute("isEdit", isEdit);
+        model.addAttribute("jlptStructures", JlptExamStructure.all());
+        model.addAttribute("isEdit", examId != null);
+        if (examId != null) {
+            model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
+        }
         return "pages/manager/exam/form";
     }
 }

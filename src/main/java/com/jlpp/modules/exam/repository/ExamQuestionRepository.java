@@ -21,6 +21,9 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Exam
     @Query("select count(eq) from ExamQuestion eq where eq.id.examId = :examId")
     long countByExamId(@Param("examId") Long examId);
 
+    @Query("select count(eq) from ExamQuestion eq where eq.id.examId = :examId and eq.section = :section")
+    long countByExamIdAndSection(@Param("examId") Long examId, @Param("section") String section);
+
     @Query("select coalesce(max(eq.orderIndex), 0) from ExamQuestion eq where eq.id.examId = :examId and eq.section = :section")
     int maxOrderIndex(@Param("examId") Long examId, @Param("section") String section);
 
