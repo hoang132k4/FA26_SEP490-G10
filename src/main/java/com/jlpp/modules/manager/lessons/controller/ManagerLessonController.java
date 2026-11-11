@@ -1144,16 +1144,15 @@ public class ManagerLessonController {
                 log.warn("Could not pre-fill lesson data for quiz form (lessonId={})", lessonId, exception);
             }
             form.setStatus("PUBLISHED");
-            form.setTotalQuestions(10);
             form.setPassingScore(80);
         }
         model.addAttribute("quizForm", form);
         try {
-            model.addAttribute("lessons", managerQuizService.lessons());
+            model.addAttribute("lessonGroups", managerQuizService.lessonGroups());
             model.addAttribute("statuses", managerQuizService.statuses());
         } catch (DataAccessException | TransactionException exception) {
             log.error("Could not load options for quiz prefill form", exception);
-            model.addAttribute("lessons", List.of());
+            model.addAttribute("lessonGroups", java.util.Map.of());
             model.addAttribute("statuses", List.of("DRAFT", "PUBLISHED", "ARCHIVED"));
         }
         model.addAttribute("isEdit", false);

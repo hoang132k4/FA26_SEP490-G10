@@ -10,8 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ManagerQuizService {
@@ -25,12 +28,21 @@ public class ManagerQuizService {
     }
 
     @Transactional(readOnly = true)
-    public List<QuizOption> search(String search, Long lessonId, String status) {
-        return repository.search(search == null ? "" : search.trim(), lessonId, status == null ? "" : status.trim());
+    public List<QuizOption> search(String search, String level, String section, String status) {
+        return repository.search(norm(search), norm(level), norm(section), norm(status));
     }
 
     @Transactional(readOnly = true)
-    public List<LessonOption> lessons() { return repository.findLessons(); }
+    public Map<String, List<String>> levelSections() { return repository.findLevelSections(); }
+
+    @Transactional(readOnly = true)
+    public Map<String, List<LessonOption>> lessonGroups() {
+        Map<String, List<LessonOption>> groups = new LinkedHashMap<>();
+        for (LessonOption lesson : repository.findLessons()) {
+            groups.computeIfAbsent(lesson.group(), k -> new ArrayList<>()).add(lesson);
+        }
+        return groups;
+    }
 
     @Transactional(readOnly = true)
     public List<String> statuses() { return Arrays.stream(ExerciseStatusEnum.values()).map(Enum::name).toList(); }
@@ -47,14 +59,14 @@ public class ManagerQuizService {
     public void create(ManagerQuizForm form) {
         validate(form);
         validatePublishReady(null, form);
-        repository.insert(form.getLessonId(), clean(form.getTitle()), form.getTotalQuestions(), form.getPassingScore(), form.getStatus());
+        repository.insert(form.getLessonId(), clean(form.getTitle()), form.getPassingScore(), form.getStatus());
     }
 
     @Transactional
     public void update(long id, ManagerQuizForm form) {
         validate(form);
         validatePublishReady(id, form);
-        if (repository.update(id, form.getLessonId(), clean(form.getTitle()), form.getTotalQuestions(), form.getPassingScore(), form.getStatus()) == 0) {
+        if (repository.update(id, form.getLessonId(), clean(form.getTitle()), form.getPassingScore(), form.getStatus()) == 0) {
             throw new IllegalArgumentException("Không tìm thấy quiz cần sửa.");
         }
     }
@@ -64,7 +76,6 @@ public class ManagerQuizService {
         form.setId(quiz.id());
         form.setLessonId(quiz.lessonId());
         form.setTitle(quiz.title());
-        form.setTotalQuestions(quiz.totalQuestions());
         form.setPassingScore(quiz.passingScore());
         form.setStatus(quiz.status());
         return form;
@@ -84,10 +95,8 @@ public class ManagerQuizService {
         if (quizId == null) {
             throw new IllegalArgumentException("Không thể tạo quiz với trạng thái PUBLISHED. Hãy tạo ở trạng thái DRAFT trước, gắn câu hỏi, rồi chuyển trạng thái.");
         }
-        long linked = repository.countExerciseQuestions(quizId);
-        int required = form.getTotalQuestions();
-        if (linked < required) {
-            throw new IllegalArgumentException("Không thể chuyển sang PUBLISHED: quiz cần " + required + " câu hỏi nhưng mới gắn " + linked + " câu. Hãy thêm câu hỏi vào quiz trước.");
+        if (repository.countExerciseQuestions(quizId) == 0) {
+            throw new IllegalArgumentException("Không thể chuyển sang PUBLISHED: quiz chưa có câu hỏi nào. Hãy gắn câu hỏi vào quiz trước.");
         }
     }
 
@@ -127,6 +136,7 @@ public class ManagerQuizService {
             }
             repository.insertExerciseQuestion(quizId, questionId);
         }
+        repository.syncTotalQuestions(quizId);
     }
 
     @Transactional
@@ -134,7 +144,7 @@ public class ManagerQuizService {
         findById(quizId);
         List<Long> ids = questionImportService.importFile(file, "ACTIVE").stream()
                 .map(QuestionImportService.ImportedRow::question)
-                .filter(q -> !"PASSAGE".equals(q.getQuestionType()))
+                .filter(q -> !"PASSAGE".equals(q.getQuestionType()) && q.getParentId() == null)
                 .map(Question::getId)
                 .toList();
         if (ids.isEmpty()) {
@@ -152,9 +162,14 @@ public class ManagerQuizService {
 
     @Transactional
     public void removeQuestionFromQuiz(long quizId, long questionId) {
+        QuizOption quiz = findById(quizId);
+        if ("PUBLISHED".equals(quiz.status()) && repository.countExerciseQuestions(quizId) <= 1) {
+            throw new IllegalArgumentException("Không thể gỡ câu hỏi cuối cùng của quiz đang PUBLISHED. Hãy chuyển quiz về DRAFT trước.");
+        }
         if (repository.deleteExerciseQuestion(quizId, questionId) == 0) {
             throw new IllegalArgumentException("Câu hỏi này không nằm trong quiz.");
         }
+        repository.syncTotalQuestions(quizId);
     }
 
     public QuizQuestionOptions questionFilterOptions() {
