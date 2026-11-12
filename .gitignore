@@ -41,4 +41,9 @@ uploads/**
 application-local.yml
 *.bak
 
+# Temporary / Scratch artifacts
+scratch/
+unpacked_*/
+*_Export/
+
 

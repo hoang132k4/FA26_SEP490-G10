@@ -90,17 +90,35 @@
                     <span class="small text-muted">Học phí tham khảo</span>
                     <p class="fs-3 fw-bold mb-3" style="color: var(--steel-blue);"
                        th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</p>
-                    <a th:if="${!isAuthenticated}" th:href="@{/auth/register(continue=${'/learning/courses/' + course.id + '/register'})}" class="btn btn-sakura w-100 mb-2 fw-bold">
-                        <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học ngay
-                    </a>
-                    <a th:if="${isAuthenticated}" th:href="@{/learning/courses/{id}/register(id=${course.id})}" class="btn btn-sakura w-100 mb-2 fw-bold">
-                        <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học ngay
-                    </a>
-                    <a th:if="${isAuthenticated}" th:href="@{/learning/courses/{id}(id=${course.id})}" class="btn btn-steel-outline w-100 mb-2">
-                        <i class="bi bi-eye me-1"></i> Xem chi tiết khóa học
-                    </a>
-                    <a th:if="${!isAuthenticated}" th:href="@{/courses}" class="btn btn-steel-outline w-100">
-                        <i class="bi bi-arrow-left me-1"></i> Danh sách khóa học
+                    
+                    <!-- When enrolled: Action to Learning Path & Study Lessons -->
+                    <div th:if="${isEnrolled}" class="mb-3">
+                        <div class="alert alert-success border-0 rounded-3 py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                            <span class="fw-semibold">Bạn đã sở hữu khóa học này! Lộ trình đã được kích hoạt.</span>
+                        </div>
+                        <a th:href="@{/learning-path}" class="btn btn-primary w-100 mb-2 py-2.5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-diagram-3-fill"></i>
+                            <span>Xem Lộ trình học tập (Learning Path)</span>
+                        </a>
+                        <a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}" class="btn btn-success w-100 mb-2 py-2.5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-play-circle-fill"></i>
+                            <span>Vào học ngay</span>
+                        </a>
+                    </div>
+
+                    <!-- When NOT enrolled: Register/Buy Course button -->
+                    <div th:if="${!isEnrolled}">
+                        <a th:if="${!isAuthenticated}" th:href="@{/auth/register(continue=${'/learning/courses/' + course.id + '/register'})}" class="btn btn-sakura w-100 mb-2 fw-bold py-2.5">
+                            <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học ngay
+                        </a>
+                        <a th:if="${isAuthenticated}" th:href="@{/learning/courses/{id}/register(id=${course.id})}" class="btn btn-sakura w-100 mb-2 fw-bold py-2.5">
+                            <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học ngay
+                        </a>
+                    </div>
+
+                    <a th:href="@{/courses}" class="btn btn-steel-outline w-100">
+                        <i class="bi bi-arrow-left me-1"></i> Danh sách tất cả khóa học
                     </a>
                     <p class="small text-muted mt-3 mb-0">Nội dung bài học chỉ dành cho tài khoản đã đăng ký và sở hữu khóa học.</p>
                 </div>
