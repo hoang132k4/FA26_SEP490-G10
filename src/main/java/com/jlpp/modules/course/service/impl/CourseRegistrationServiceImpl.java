@@ -26,6 +26,9 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jlpp.modules.learningpath.repository.LearningPathRepository learningPathRepository;
+
     @Override
     @Transactional
     public CourseRegistration registerCourse(Long userId, CourseRegistrationRequest request) {
@@ -60,6 +63,35 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
         // Update enrollment count on course
         course.setEnrollmentCount((course.getEnrollmentCount() != null ? course.getEnrollmentCount() : 0) + 1);
         courseRepository.save(course);
+
+        // Auto-generate or activate personalized Learning Path for this user & course
+        try {
+            if (learningPathRepository != null) {
+                var existingLp = learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(user.getId(), course.getId());
+                if (existingLp.isEmpty()) {
+                    String courseLevel = (course.getLevel() != null && !course.getLevel().isBlank()) ? course.getLevel() : "N4";
+                    String currentLvl = (user.getCurrentJlptLevel() != null && !user.getCurrentJlptLevel().isBlank()) ? user.getCurrentJlptLevel() : "N5";
+
+                    com.jlpp.modules.learningpath.entity.LearningPath newLp = com.jlpp.modules.learningpath.entity.LearningPath.builder()
+                            .userId(user.getId())
+                            .courseId(course.getId())
+                            .dailyHoursSetup(java.math.BigDecimal.valueOf(1.5))
+                            .targetLevel(courseLevel)
+                            .currentLevel(currentLvl)
+                            .pathStatus("ACTIVE")
+                            .scheduledDate(java.time.LocalDate.now())
+                            .build();
+                    learningPathRepository.save(newLp);
+                    log.info("Auto-generated LearningPath for user ID: {} upon registering course ID: {}", user.getId(), course.getId());
+                }
+            }
+            if (course.getLevel() != null && !course.getLevel().isBlank()) {
+                user.setTargetJlptLevel(course.getLevel());
+                userRepository.save(user);
+            }
+        } catch (Exception ex) {
+            log.warn("Could not auto-generate LearningPath on course registration: {}", ex.getMessage());
+        }
 
         log.info("Successfully enrolled user ID: {} to course ID: {} ({})", user.getId(), course.getId(), course.getTitle());
         return saved;

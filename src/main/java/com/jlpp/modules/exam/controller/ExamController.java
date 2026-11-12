@@ -39,6 +39,12 @@ public class ExamController {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.jlpp.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jlpp.modules.course.repository.CourseRepository courseRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jlpp.modules.course.service.CourseRecommendationService courseRecommendationService;
+
     private boolean isAuthenticated(HttpSession session, Principal principal) {
         return principal != null || (session != null && currentUserSession.isAuthenticated(session));
     }
@@ -313,9 +319,10 @@ public class ExamController {
             return "redirect:/auth/register?continue=/exams/result/" + id;
         }
 
+        Long userId = getAuthenticatedUserId(session, principal);
+
         ExamResultResponse result = (ExamResultResponse) session.getAttribute("EXAM_RESULT_" + id);
         if (result == null) {
-            Long userId = getAuthenticatedUserId(session, principal);
             if (resultId != null && userId != null) {
                 result = examService.getHistoricalResult(resultId, userId);
             } else {
@@ -325,7 +332,145 @@ public class ExamController {
         }
 
         model.addAttribute("result", result);
-        model.addAttribute("activeMenu", (result != null && "PLACEMENT_TEST".equalsIgnoreCase(result.getExamType())) ? "placement" : "exams");
+        boolean isPlacement = result != null && ("PLACEMENT_TEST".equalsIgnoreCase(result.getExamType())
+                || (result.getExamTitle() != null && result.getExamTitle().toLowerCase().contains("đầu vào"))
+                || (result.getExamTitle() != null && result.getExamTitle().toLowerCase().contains("placement")));
+
+        model.addAttribute("activeMenu", isPlacement ? "placement" : "exams");
+
+        if (isPlacement) {
+            String targetLevel = (session != null) ? (String) session.getAttribute("placement_target_level") : null;
+            String hasStudied = (session != null) ? (String) session.getAttribute("placement_has_studied") : null;
+            String assignedLevel = (session != null) ? (String) session.getAttribute("placement_assigned_level") : null;
+
+            // Fallback to user profile if session attributes expired (e.g. historical link direct visit)
+            if (userId != null && userRepository != null) {
+                var userOpt = userRepository.findById(userId);
+                if (userOpt.isPresent()) {
+                    var u = userOpt.get();
+                    if (targetLevel == null || targetLevel.isBlank()) {
+                        targetLevel = u.getTargetJlptLevel();
+                    }
+                }
+            }
+
+            if (assignedLevel == null || assignedLevel.isBlank()) {
+                assignedLevel = (result.getJlptLevel() != null && !result.getJlptLevel().isBlank()) ? result.getJlptLevel().trim().toUpperCase() : "N4";
+            } else {
+                assignedLevel = assignedLevel.trim().toUpperCase();
+            }
+
+            if (targetLevel == null || targetLevel.isBlank()) {
+                if ("YES".equalsIgnoreCase(hasStudied)) {
+                    targetLevel = assignedLevel;
+                } else {
+                    targetLevel = switch (assignedLevel) {
+                        case "N5" -> "N4";
+                        case "N4" -> "N3";
+                        case "N3" -> "N2";
+                        case "N2" -> "N1";
+                        default -> assignedLevel;
+                    };
+                }
+            } else {
+                targetLevel = targetLevel.trim().toUpperCase();
+            }
+
+            if (hasStudied == null || hasStudied.isBlank()) {
+                if (assignedLevel.equalsIgnoreCase(targetLevel)) {
+                    hasStudied = "YES";
+                } else {
+                    hasStudied = "NO";
+                }
+            } else {
+                hasStudied = hasStudied.trim().toUpperCase();
+            }
+
+            int percentage = (result.getPercentage() != null) ? result.getPercentage().intValue() : 0;
+            // Đánh giá đạt chuẩn nền tảng nếu đạt từ 60% trở lên
+            boolean isAssessmentOk = percentage >= 60;
+
+            com.jlpp.modules.course.entity.Course targetCourse = null;
+            com.jlpp.modules.course.entity.Course foundationCourse = null;
+
+            if (courseRepository != null) {
+                List<com.jlpp.modules.course.entity.Course> targetList = courseRepository.findByLevelAndStatus(targetLevel, "PUBLISHED");
+                if (!targetList.isEmpty()) {
+                    targetCourse = targetList.get(0);
+                } else {
+                    final String tl = targetLevel;
+                    targetCourse = courseRepository.findAll().stream().filter(c -> tl.equalsIgnoreCase(c.getLevel())).findFirst().orElse(null);
+                }
+
+                if (assignedLevel != null) {
+                    List<com.jlpp.modules.course.entity.Course> foundationList = courseRepository.findByLevelAndStatus(assignedLevel, "PUBLISHED");
+                    if (!foundationList.isEmpty()) {
+                        foundationCourse = foundationList.get(0);
+                    } else {
+                        final String al = assignedLevel;
+                        foundationCourse = courseRepository.findAll().stream().filter(c -> al.equalsIgnoreCase(c.getLevel())).findFirst().orElse(null);
+                    }
+                }
+            }
+
+            com.jlpp.modules.course.entity.Course recommendedCourse;
+            if ("NO".equalsIgnoreCase(hasStudied) && !isAssessmentOk) {
+                // Trường hợp 1A: Thi -1 bậc, bị yếu ở đâu -> gợi ý học củng cố phần yếu và học khóa nền tảng
+                recommendedCourse = (foundationCourse != null) ? foundationCourse : targetCourse;
+            } else {
+                // Trường hợp 1B & 2: Thi -1 bậc mà oke hết HOẶC thi đúng level -> Khuyên học đúng level đã chọn!
+                recommendedCourse = (targetCourse != null) ? targetCourse : foundationCourse;
+            }
+
+            if (recommendedCourse == null && courseRepository != null) {
+                var anyCourse = courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED");
+                if (!anyCourse.isEmpty()) {
+                    recommendedCourse = anyCourse.get(0);
+                } else {
+                    var all = courseRepository.findAll();
+                    if (!all.isEmpty()) recommendedCourse = all.get(0);
+                }
+            }
+
+            boolean isRecommendedEnrolled = false;
+            if (userId != null && courseRegistrationRepository != null && recommendedCourse != null) {
+                isRecommendedEnrolled = courseRegistrationRepository.existsByUserIdAndCourseId(userId, recommendedCourse.getId());
+            }
+
+            // Đồng bộ mục tiêu JLPT và trình độ vào User profile để phục vụ sinh Lộ trình
+            if (userId != null) {
+                try {
+                    final String finalTarget = targetLevel;
+                    final String finalAssigned = assignedLevel;
+                    userRepository.findById(userId).ifPresent(u -> {
+                        boolean modified = false;
+                        if (finalTarget != null && !finalTarget.equals(u.getTargetJlptLevel())) {
+                            u.setTargetJlptLevel(finalTarget);
+                            modified = true;
+                        }
+                        if (finalAssigned != null && (u.getCurrentJlptLevel() == null || u.getCurrentJlptLevel().isBlank() || "UNKNOWN".equalsIgnoreCase(u.getCurrentJlptLevel()))) {
+                            u.setCurrentJlptLevel(finalAssigned);
+                            modified = true;
+                        }
+                        if (modified) {
+                            userRepository.save(u);
+                        }
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync user target level: {}", e.getMessage());
+                }
+            }
+
+            model.addAttribute("targetLevel", targetLevel);
+            model.addAttribute("hasStudied", hasStudied);
+            model.addAttribute("assignedLevel", assignedLevel);
+            model.addAttribute("isAssessmentOk", isAssessmentOk);
+            model.addAttribute("recommendedCourse", recommendedCourse);
+            model.addAttribute("foundationCourse", foundationCourse);
+            model.addAttribute("targetCourse", targetCourse);
+            model.addAttribute("isRecommendedCourseEnrolled", isRecommendedEnrolled);
+        }
+
         return "pages/exam/result";
     }
 

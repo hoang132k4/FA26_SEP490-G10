@@ -196,6 +196,177 @@
             </div>
         </div>
 
+        <!-- NEW: RECOMMENDATION SECTION (Khóa học đề xuất & Điều hướng mua khóa học / Lộ trình) -->
+        <div th:if="${recommendedCourse != null or result.examType == 'PLACEMENT_TEST' or activeMenu == 'placement'}" 
+             class="card p-4 p-lg-4 border-0 shadow-sm mb-4 rounded-4" 
+             style="background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%); border-left: 6px solid #173B57 !important;">
+            
+            <!-- Header banner with badges -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom">
+                <div>
+                    <span class="badge px-3 py-1.5 rounded-pill fw-bold text-white mb-2" style="background-color: #173B57; font-size: 0.85rem;">
+                        <i class="bi bi-stars me-1 text-warning"></i> ĐỀ XUẤT KHÓA HỌC &amp; LỘ TRÌNH HỌC TẬP PHÙ HỢP
+                    </span>
+                    <h4 class="fw-bold text-dark mb-1">Khóa học được hệ thống JEPS đề xuất cho bạn</h4>
+                    <p class="text-muted small mb-0">Căn cứ vào kết quả đánh giá đầu vào và mục tiêu học tập bạn đã chọn.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span th:if="${targetLevel != null}" class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
+                        Mục tiêu: <strong class="text-primary" th:text="'JLPT ' + ${targetLevel}">JLPT N3</strong>
+                    </span>
+                    <span th:if="${hasStudied != null}" class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
+                        Tiền sử: <strong th:class="${hasStudied == 'YES' ? 'text-success' : 'text-secondary'}" 
+                                         th:text="${hasStudied == 'YES' ? 'Đã từng học' : 'Chưa từng học'}">Chưa từng học</strong>
+                    </span>
+                    <span th:if="${assignedLevel != null}" class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
+                        Đề thi đánh giá: <strong class="text-dark" th:text="'JLPT ' + ${assignedLevel}">JLPT N4</strong>
+                    </span>
+                    <span th:if="${isAssessmentOk != null}" 
+                          th:class="${isAssessmentOk ? 'badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-bold' : 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill small fw-bold'}"
+                          th:text="${isAssessmentOk ? 'Nền tảng Đạt chuẩn' : 'Cần củng cố thêm'}">
+                        Nền tảng Đạt chuẩn
+                    </span>
+                </div>
+            </div>
+
+            <!-- Contextual Evaluation Message: 3 CASES -->
+            <!-- CASE 1: Thi -1 bậc & Bị yếu (hasStudied == 'NO' && !isAssessmentOk) -->
+            <div th:if="${hasStudied == 'NO' and !isAssessmentOk}" class="alert alert-warning border-0 rounded-3 p-3 mb-4 shadow-sm">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-dark">Kết quả kiểm tra nền tảng chưa đạt yêu cầu để học thẳng <span th:text="'JLPT ' + ${targetLevel}">JLPT N3</span></h6>
+                        <p class="mb-2 text-dark small" style="line-height: 1.6;">
+                            Bạn chọn mục tiêu <strong th:text="'JLPT ' + ${targetLevel}">JLPT N3</strong> và chưa từng học cấp độ này. Qua bài kiểm tra nền tảng <strong th:text="'JLPT ' + ${assignedLevel}">JLPT N4</strong>, bạn đạt <strong th:text="${result.percentage != null ? result.percentage + '%' : '0%'}">40%</strong> và còn yếu ở kỹ năng <strong class="text-danger" th:text="${result.weakestSkill != null ? result.weakestSkill : 'Kiến thức chung'}">Ngữ pháp</strong>.
+                        </p>
+                        <div class="small fw-semibold text-primary">
+                            👉 <strong>Khuyến nghị:</strong> Bạn nên học củng cố lại các kỹ năng còn yếu và hoàn thành khóa học nền tảng <strong th:text="'JLPT ' + ${assignedLevel}">JLPT N4</strong> trước khi bước vào học <span th:text="'JLPT ' + ${targetLevel}">JLPT N3</span> để đảm bảo nền móng vững chắc nhất.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CASE 2: Thi -1 bậc & Đã Oke hết (hasStudied == 'NO' && isAssessmentOk) -->
+            <div th:if="${hasStudied == 'NO' and isAssessmentOk}" class="alert alert-success border-0 rounded-3 p-3 mb-4 shadow-sm" style="background-color: #ECFDF5;">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="bi bi-patch-check-fill fs-3 text-success"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-success">Xuất sắc! Nền tảng của bạn rất vững chắc để vào học ngay <span th:text="'JLPT ' + ${targetLevel}">JLPT N3</span></h6>
+                        <p class="mb-2 text-dark small" style="line-height: 1.6;">
+                            Bạn hoàn thành bài kiểm tra nền tảng <strong th:text="'JLPT ' + ${assignedLevel}">JLPT N4</strong> với kết quả xuất sắc <strong class="text-success" th:text="${(result.score != null ? result.score : 0) + '/' + (result.totalPossibleScore != null ? result.totalPossibleScore : 180) + ' điểm (' + (result.percentage != null ? result.percentage : 0) + '%)'}">85%</strong>. Nền tảng ngữ pháp, từ vựng và đọc hiểu của bạn hoàn toàn đáp ứng chuẩn đầu vào.
+                        </p>
+                        <div class="small fw-semibold text-success">
+                            👉 <strong>Khuyến nghị:</strong> Hệ thống đề xuất bạn vào học đúng khóa học mục tiêu <strong th:text="'JLPT ' + ${targetLevel}">JLPT N3</strong>. Hãy đăng ký ngay để hệ thống tự động khởi tạo Lộ trình học tập cá nhân hóa cho bạn!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CASE 3: Thi đúng level (hasStudied == 'YES') -->
+            <div th:if="${hasStudied == 'YES'}" class="alert alert-primary border-0 rounded-3 p-3 mb-4 shadow-sm" style="background-color: #EFF6FF;">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="bi bi-compass-fill fs-3 text-primary"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-primary">Nhận xét đánh giá năng lực trình độ <span th:text="'JLPT ' + ${targetLevel}">JLPT N3</span></h6>
+                        <p class="mb-2 text-dark small" style="line-height: 1.6;">
+                            Bạn đã từng học qua cấp độ này và đạt kết quả kiểm tra <strong class="text-primary" th:text="${(result.score != null ? result.score : 0) + '/' + (result.totalPossibleScore != null ? result.totalPossibleScore : 180) + ' điểm (' + (result.percentage != null ? result.percentage : 0) + '%)'}">60%</strong>. Kỹ năng mạnh nhất: <strong class="text-success" th:text="${result.strongestSkill != null ? result.strongestSkill : 'Đọc hiểu'}">Đọc hiểu</strong>; kỹ năng cần nâng cao: <strong class="text-danger" th:text="${result.weakestSkill != null ? result.weakestSkill : 'Ngữ pháp'}">Ngữ pháp</strong>.
+                        </p>
+                        <div class="small fw-semibold text-primary">
+                            👉 <strong>Khuyến nghị:</strong> Khóa học <strong th:text="'JLPT ' + ${targetLevel}">JLPT N3</strong> được thiết kế tối ưu giúp bạn bù đắp ngay các kỹ năng còn yếu, giải đề thực chiến và tự tin vượt qua kỳ thi chính thức!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECOMMENDED COURSE CARD -->
+            <div th:if="${recommendedCourse != null}" class="card border rounded-4 overflow-hidden shadow-sm" style="background-color: #FFFFFF; border-color: #E2E8F0 !important;">
+                <div class="row g-0 align-items-center">
+                    <div class="col-md-4 position-relative">
+                        <img th:src="${recommendedCourse.thumbnailUrl != null and !recommendedCourse.thumbnailUrl.isBlank() ? recommendedCourse.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                             class="img-fluid h-100 w-100" 
+                             th:alt="${recommendedCourse.title}"
+                             style="min-height: 220px; max-height: 260px; object-fit: cover;">
+                        <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1.5 rounded-pill shadow-sm" 
+                              style="background-color: #173B57; color: white; font-weight: 700;"
+                              th:text="${'JLPT ' + recommendedCourse.level}">JLPT N3</span>
+                    </div>
+
+                    <div class="col-md-8 p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill small fw-semibold">
+                                <i class="bi bi-check2-circle me-1"></i> Khóa học phù hợp nhất với năng lực của bạn
+                            </span>
+                            <span class="fs-4 fw-bold text-danger" 
+                                  th:text="${recommendedCourse.price != null and recommendedCourse.price > 0 ? (#numbers.formatDecimal(recommendedCourse.price, 0, 'COMMA', 0, 'POINT') + ' đ') : 'Miễn phí'}">
+                                499,000 đ
+                            </span>
+                        </div>
+
+                        <h4 class="fw-bold text-dark mb-2" th:text="${recommendedCourse.title}">Khóa học Tiếng Nhật Trung Cấp JLPT N3</h4>
+                        <p class="text-secondary small mb-3" style="line-height: 1.6;" th:text="${recommendedCourse.shortDescription}">
+                            Khóa học trang bị đầy đủ kiến thức Từ vựng, Ngữ pháp, Đọc hiểu và Nghe hiểu theo chuẩn format đề thi thật JLPT.
+                        </p>
+
+                        <div class="d-flex flex-wrap gap-3 text-muted small mb-4">
+                            <span th:if="${recommendedCourse.lessonCount != null}"><i class="bi bi-book-half text-primary me-1"></i> <strong class="text-dark" th:text="${recommendedCourse.lessonCount}">30</strong> bài học</span>
+                            <span th:if="${recommendedCourse.durationHours != null}"><i class="bi bi-clock text-warning me-1"></i> <strong class="text-dark" th:text="${recommendedCourse.durationHours} + ' giờ'">40 giờ</strong> học</span>
+                            <span th:if="${recommendedCourse.coveredSkills != null}"><i class="bi bi-layers text-success me-1"></i> <span th:text="${recommendedCourse.coveredSkills}">Từ vựng, Ngữ pháp, Đọc hiểu</span></span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <!-- Case: Not Enrolled -> Button to Register/Buy -->
+                            <a th:if="${!isRecommendedCourseEnrolled}" 
+                               th:href="@{/learning/courses/{id}/register(id=${recommendedCourse.id})}" 
+                               class="btn rounded-pill px-4 py-2.5 fw-bold text-white shadow-sm d-inline-flex align-items-center gap-2"
+                               style="background-color: #E11D48; border-color: #E11D48; font-size: 1rem;">
+                                <i class="bi bi-cart-check-fill fs-5"></i>
+                                <span>Chuyển qua khóa học này để đăng ký / mua ngay</span>
+                            </a>
+
+                            <!-- Case: Already Enrolled -> Button to Study & View Learning Path -->
+                            <a th:if="${isRecommendedCourseEnrolled}" 
+                               th:href="@{/learning/courses/{id}/lessons(id=${recommendedCourse.id})}" 
+                               class="btn btn-success rounded-pill px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                                <i class="bi bi-play-circle-fill fs-5"></i>
+                                <span>Bạn đã sở hữu khóa này &bull; Vào học ngay</span>
+                            </a>
+                            <a th:if="${isRecommendedCourseEnrolled}" 
+                               th:href="@{/learning-path}" 
+                               class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                                <i class="bi bi-diagram-3-fill fs-5"></i>
+                                <span>Xem Lộ trình học tập (Learning Path)</span>
+                            </a>
+
+                            <!-- Course Detail Link -->
+                            <a th:href="@{/courses/{id}(id=${recommendedCourse.id})}" 
+                               class="btn btn-outline-secondary rounded-pill px-3 py-2.5 fw-medium">
+                                <i class="bi bi-eye me-1"></i> Xem chi tiết khóa học
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alternative option for Case 1A: if tested lower & failed, but still curious about target course -->
+            <div th:if="${hasStudied == 'NO' and !isAssessmentOk and targetCourse != null and targetCourse.id != recommendedCourse.id}" 
+                 class="mt-3 p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="small text-muted">
+                    <i class="bi bi-info-circle text-primary me-1"></i>
+                    Bạn vẫn muốn tham khảo khóa học mục tiêu ban đầu <strong class="text-dark" th:text="${targetCourse.title}">JLPT N3</strong>?
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/courses/{id}(id=${targetCourse.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        Xem khóa học <span th:text="${targetCourse.level}">N3</span>
+                    </a>
+                    <a th:href="@{/learning/courses/{id}/register(id=${targetCourse.id})}" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                        Mua khóa <span th:text="${targetCourse.level}">N3</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
         <!-- Review Answers & Detailed Solutions Section (Image 3 Style) -->
         <div class="card p-4 p-lg-4 border-0 shadow-sm mb-4 bg-white rounded-4">
             <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
@@ -301,7 +472,17 @@
                     &larr; Quay về danh sách đề thi
                 </a>
 
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    <a th:if="${recommendedCourse != null and !isRecommendedCourseEnrolled}" 
+                       th:href="@{/learning/courses/{id}/register(id=${recommendedCourse.id})}"
+                       class="btn rounded-pill px-4 shadow-sm fw-bold text-white" style="background-color: #E11D48;">
+                        <i class="bi bi-cart-check-fill me-1"></i> Chuyển qua khóa học đề xuất để mua
+                    </a>
+                    <a th:if="${isRecommendedCourseEnrolled}" 
+                       th:href="@{/learning-path}"
+                       class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold text-white">
+                        <i class="bi bi-diagram-3-fill me-1"></i> Xem Lộ trình học tập
+                    </a>
                     <a th:if="${result.examType == 'PLACEMENT_TEST'}" th:href="@{/exams/placement}"
                        class="btn rounded-pill px-4 shadow-sm fw-bold text-white" style="background-color: #173B57;">
                         <i class="bi bi-arrow-repeat me-1"></i> Làm lại bài thi này
