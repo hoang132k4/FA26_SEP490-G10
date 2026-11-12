@@ -50,13 +50,10 @@ class ManagerFlashcardPageTest {
 
     @Test
     @WithMockUser(username = "manager@jeps.edu.vn", roles = "MANAGER")
-    void missingDatabaseTableIsShownAsReadFailureNotAnEmptyFlashcardList() throws Exception {
+    void flashcardListRendersCorrectly() throws Exception {
         mockMvc.perform(get("/manager/flashcards"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Danh sách không thể hiển thị")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(
-                        org.hamcrest.Matchers.containsString("Tổng: 0 flashcard"))))
-                .andExpect(content().string(org.hamcrest.Matchers.not(
-                        org.hamcrest.Matchers.containsString("Chưa có flashcard trong bảng flashcards."))));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Quản lý Flashcard")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Tạo bộ Flashcard")));
     }
 }

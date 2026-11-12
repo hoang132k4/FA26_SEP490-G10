@@ -408,27 +408,10 @@ public class ExamServiceImpl implements ExamService {
         int passingScore = exam.getPassingScore() != null ? exam.getPassingScore() : defaultPassing;
         boolean passed = isPlacement || (score >= passingScore && allAboveMin);
 
-        // strongestSkill / weakestSkill: so sánh percentage trong breakdown
-        // Chỉ ghi nhận "Kỹ năng tốt nhất" (strongestSkill) khi học viên có điểm > 0% ở kỹ năng đó
-        String strongestSkill = null;
-        String weakestSkill = null;
-        BigDecimal maxPct = BigDecimal.ZERO;
-        BigDecimal minPct = BigDecimal.valueOf(101);
-
-        for (ExamResultResponse.SkillScoreDto skill : breakdown) {
-            BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
-            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(maxPct) > 0) {
-                maxPct = p;
-                strongestSkill = skill.getSkillName();
-            }
-            if (p.compareTo(minPct) < 0) {
-                minPct = p;
-                weakestSkill = skill.getSkillName();
-            }
-        }
-        if (strongestSkill != null && strongestSkill.equals(weakestSkill) && minPct.compareTo(BigDecimal.valueOf(70)) >= 0) {
-            weakestSkill = null;
-        }
+        // strongestSkill / weakestSkill: phân tích chính xác theo tỷ lệ % và các kỹ năng thực tế của bài thi
+        SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown);
+        String strongestSkill = skillAnalysis.strongestSkill();
+        String weakestSkill = skillAnalysis.weakestSkill();
 
         int safeTime = timeSpentSeconds != null && timeSpentSeconds >= 0 ? timeSpentSeconds : 0;
         int minutes = safeTime / 60;
@@ -648,24 +631,9 @@ public class ExamServiceImpl implements ExamService {
                             .build());
                 }
 
-                String strongestSkill = null;
-                String weakestSkill = null;
-                BigDecimal maxPct = BigDecimal.ZERO;
-                BigDecimal minPct = BigDecimal.valueOf(101);
-                for (ExamResultResponse.SkillScoreDto skill : breakdown) {
-                    BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
-                    if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(maxPct) > 0) {
-                        maxPct = p;
-                        strongestSkill = skill.getSkillName();
-                    }
-                    if (p.compareTo(minPct) < 0) {
-                        minPct = p;
-                        weakestSkill = skill.getSkillName();
-                    }
-                }
-                if (strongestSkill != null && strongestSkill.equals(weakestSkill) && minPct.compareTo(BigDecimal.valueOf(70)) >= 0) {
-                    weakestSkill = null;
-                }
+                SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown);
+                String strongestSkill = skillAnalysis.strongestSkill();
+                String weakestSkill = skillAnalysis.weakestSkill();
 
                 int histScore = res.getScore() != null ? res.getScore() : 0;
                 BigDecimal histPct = res.getPercentage() != null ? res.getPercentage() : BigDecimal.ZERO;
@@ -792,4 +760,65 @@ public class ExamServiceImpl implements ExamService {
         sb.append("Hãy xem lại phần giải thích chi tiết bên dưới cho từng câu hỏi để củng cố kiến thức.");
         return sb.toString();
     }
+
+    private SkillAnalysisResult analyzeSkills(List<ExamResultResponse.SkillScoreDto> breakdown) {
+        if (breakdown == null || breakdown.isEmpty()) {
+            return new SkillAnalysisResult(null, null);
+        }
+
+        // 1. Tìm maxPct (Kỹ năng tốt nhất)
+        BigDecimal maxPct = BigDecimal.ZERO;
+        for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+            BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
+            if (p.compareTo(maxPct) > 0) {
+                maxPct = p;
+            }
+        }
+
+        String strongestSkill = null;
+        if (maxPct.compareTo(BigDecimal.ZERO) > 0) {
+            List<String> strongList = new ArrayList<>();
+            for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+                BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
+                if (p.compareTo(maxPct) == 0) {
+                    strongList.add(skill.getSkillName());
+                }
+            }
+            strongestSkill = String.join(", ", strongList);
+        }
+
+        // 2. Tìm minPct (Kỹ năng thấp nhất)
+        BigDecimal minPct = BigDecimal.valueOf(101);
+        for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+            BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
+            if (p.compareTo(minPct) < 0) {
+                minPct = p;
+            }
+        }
+
+        String weakestSkill = null;
+        // Nếu tất cả các kỹ năng đều đạt >= 75%: không có kỹ năng yếu
+        if (minPct.compareTo(BigDecimal.valueOf(75)) >= 0) {
+            weakestSkill = null;
+        } else {
+            List<String> weakList = new ArrayList<>();
+            for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+                BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
+                if (p.compareTo(minPct) == 0) {
+                    weakList.add(skill.getSkillName());
+                }
+            }
+
+            // Nếu TẤT CẢ các kỹ năng đều có điểm bằng nhau và < 75% (đặc biệt khi đều 0%)
+            if (weakList.size() == breakdown.size() && breakdown.size() > 1) {
+                weakestSkill = "Toàn diện các kỹ năng (" + String.join(", ", weakList) + ")";
+            } else {
+                weakestSkill = String.join(", ", weakList);
+            }
+        }
+
+        return new SkillAnalysisResult(strongestSkill, weakestSkill);
+    }
+
+    private record SkillAnalysisResult(String strongestSkill, String weakestSkill) {}
 }

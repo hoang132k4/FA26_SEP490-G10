@@ -721,6 +721,44 @@ public class ExamServiceTest {
         assertFalse(result.getPassed());
         assertEquals(0, result.getCorrectCount());
         assertEquals(3, result.getUnansweredCount());
+
+        // Kiểm tra phần cần cải thiện khi tất cả các kỹ năng đều 0%
+        assertNull(result.getStrongestSkill());
+        assertEquals("Toàn diện các kỹ năng (Ngôn ngữ + Đọc hiểu, Nghe hiểu)", result.getWeakestSkill());
+        assertTrue(result.getAiFeedback().contains("Toàn diện các kỹ năng (Ngôn ngữ + Đọc hiểu, Nghe hiểu)"));
+    }
+
+    @Test
+    @DisplayName("Test 7: WeakestSkill chỉ ra chính xác kỹ năng bị điểm thấp nhất")
+    void testWeakestSkill_IdentifiesTrueWeakestSkill() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        // Học viên trả lời đúng câu 1 (Vocab: 15đ) và câu 2 (Reading: 15đ), nhưng trả lời sai câu 3 (Listening)
+        Map<String, String> answers = Map.of(
+                "answer_101", "1001", // correct (Vocab)
+                "answer_102", "1004", // correct (Reading)
+                "answer_103", "1006"  // incorrect (Listening)
+        );
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, answers, 180);
+
+        assertEquals("Ngôn ngữ + Đọc hiểu", result.getStrongestSkill());
+        assertEquals("Nghe hiểu", result.getWeakestSkill());
+        assertTrue(result.getRecommendation().contains("Nghe hiểu"));
+    }
+
+    @Test
+    @DisplayName("Test 8: N3 phân tích 3 kỹ năng độc lập, khi sai hết báo cáo toàn diện các kỹ năng")
+    void testWeakestSkill_N3_AllZero_ReportsAllSections() {
+        when(examRepository.findById(9L)).thenReturn(Optional.of(mockExamN3));
+        when(questionReader.findQuestionsForEvaluation(9L)).thenReturn(evaluationQuestions);
+
+        ExamResultResponse result = examService.evaluateSubmission(9L, Collections.emptyMap(), 0);
+
+        assertEquals(3, result.getSkillBreakdown().size());
+        assertNull(result.getStrongestSkill());
+        assertEquals("Toàn diện các kỹ năng (Kiến thức ngôn ngữ, Đọc hiểu, Nghe hiểu)", result.getWeakestSkill());
     }
 }
 
