@@ -94,17 +94,7 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
                         String cat = rs.getString("category");
                         String audio = rs.getString("audio_url");
                         String sec = rs.getString("section");
-                        String skillGroup;
-                        if (sec != null && !sec.trim().isEmpty()) {
-                            skillGroup = switch (sec.trim().toUpperCase()) {
-                                case "LANGUAGE" -> "VOCAB_GRAMMAR";
-                                case "READING" -> "READING";
-                                case "LISTENING" -> "LISTENING";
-                                default -> "VOCAB_GRAMMAR";
-                            };
-                        } else {
-                            skillGroup = resolveSkillGroup(cat, audio);
-                        }
+                        String skillGroup = resolveSkillGroup(cat, audio, sec);
                         return QuestionDto.builder()
                                 .id(id)
                                 .points(rs.getObject("points") != null ? rs.getInt("points") : 2)
@@ -140,20 +130,40 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
         }, examId);
     }
 
-    private String resolveSkillGroup(String category, String audioUrl) {
+    private String resolveSkillGroup(String category, String audioUrl, String section) {
+        // 1. Ưu tiên cao nhất: Câu hỏi có file audio chắc chắn là Nghe hiểu (LISTENING)
         if (audioUrl != null && !audioUrl.trim().isEmpty()) {
             return "LISTENING";
         }
-        if (category == null) {
-            return "VOCAB_GRAMMAR";
+
+        // 2. Kiểm tra danh mục câu hỏi (category)
+        if (category != null && !category.trim().isEmpty()) {
+            String catLower = category.toLowerCase().trim();
+            if (catLower.contains("nghe") || catLower.contains("choukai") || catLower.contains("listening")) {
+                return "LISTENING";
+            }
+            if (catLower.contains("đọc") || catLower.contains("doc") || catLower.contains("dokkai") ||
+                catLower.contains("reading") || catLower.contains("trung văn") || catLower.contains("đoản văn") ||
+                catLower.contains("trường văn") || catLower.contains("thông báo")) {
+                return "READING";
+            }
+            if (catLower.contains("từ vựng") || catLower.contains("tu vung") || catLower.contains("goi") ||
+                catLower.contains("ngữ pháp") || catLower.contains("ngu phap") || catLower.contains("bunpou") ||
+                catLower.contains("kanji") || catLower.contains("hán tự") || catLower.contains("han tu") ||
+                catLower.contains("chữ hán") || catLower.contains("kính ngữ") || catLower.contains("phó từ")) {
+                return "VOCAB_GRAMMAR";
+            }
         }
-        String catLower = category.toLowerCase();
-        if (catLower.contains("nghe") || catLower.contains("choukai") || catLower.contains("listening")) {
-            return "LISTENING";
+
+        // 3. Fallback theo section nếu category chưa rõ ràng
+        if (section != null && !section.trim().isEmpty()) {
+            return switch (section.trim().toUpperCase()) {
+                case "READING" -> "READING";
+                case "LISTENING" -> "LISTENING";
+                default -> "VOCAB_GRAMMAR";
+            };
         }
-        if (catLower.contains("đọc") || catLower.contains("doc") || catLower.contains("dokkai") || catLower.contains("reading")) {
-            return "READING";
-        }
+
         return "VOCAB_GRAMMAR";
     }
 
