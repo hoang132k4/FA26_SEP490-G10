@@ -33,12 +33,36 @@ class LessonDetailServiceTest {
     @Mock
     private LessonLibraryRepository libraryRepository;
 
+    @Mock
+    private com.jlpp.modules.course.service.StudyMaterialService studyMaterialService;
+
+    @Mock
+    private com.jlpp.modules.flashcard.repository.FlashcardRepository flashcardRepository;
+
+    @Mock
+    private com.jlpp.modules.quiz.repository.ExerciseRepository exerciseRepository;
+
+    @Mock
+    private com.jlpp.modules.quiz.service.QuizService quizService;
+
+    @Mock
+    private com.jlpp.modules.manager.lessons.repository.LessonRepository managerLessonRepository;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private LessonDetailService detailService;
 
     @BeforeEach
     void setUp() {
-        detailService = new LessonDetailService(detailRepository, libraryRepository, objectMapper);
+        detailService = new LessonDetailService(
+                detailRepository,
+                libraryRepository,
+                objectMapper,
+                studyMaterialService,
+                flashcardRepository,
+                exerciseRepository,
+                quizService,
+                managerLessonRepository
+        );
     }
 
     @Test
