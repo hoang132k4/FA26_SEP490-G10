@@ -58,6 +58,10 @@ public class ExamResultResponse {
         private String skillName;       // e.g. "Chữ Hán (Kanji)", "Từ vựng (Vocabulary)", "Ngữ pháp (Grammar)"
         private Integer earnedPoints;
         private Integer totalPoints;
+        private Integer scaledScore;    // Điểm quy đổi JLPT (thang 180)
+        private Integer scaledMaxScore; // Điểm tối đa theo chuẩn JLPT (60 hoặc 120)
+        private Integer minRequired;    // Điểm sàn tối thiểu / điểm liệt (19/60 hoặc 38/120)
+        private Boolean belowMinimum;   // Đánh dấu dính điểm liệt
         private int correctCount;
         private int totalQuestions;
         private BigDecimal percentage;

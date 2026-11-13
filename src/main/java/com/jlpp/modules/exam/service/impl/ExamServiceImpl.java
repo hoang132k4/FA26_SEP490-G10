@@ -388,22 +388,46 @@ public class ExamServiceImpl implements ExamService {
             BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0)
                     .setScale(1, RoundingMode.HALF_UP);
 
+            boolean belowMin = (earned < min);
             breakdown.add(ExamResultResponse.SkillScoreDto.builder()
                     .skillGroup(String.join("+", g.skills()))
                     .skillName(g.name())
                     .earnedPoints(earned)
                     .totalPoints(max)
+                    .scaledScore(earned)
+                    .scaledMaxScore(max)
+                    .minRequired(min)
+                    .belowMinimum(belowMin)
                     .correctCount(g.correct(correctMap))
                     .totalQuestions(g.total(totalMap))
                     .percentage(pct)
                     .build());
         }
 
-        int totalPossibleScore = 180;  // LUÔN là 180
+        int totalPossibleScore = 180;  // Mặc định thang JLPT chuẩn là 180
         BigDecimal percentage = BigDecimal.valueOf(score * 100.0 / 180).setScale(1, RoundingMode.HALF_UP);
 
         boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(exam.getExamType());
         boolean isMilestone = "MILESTONE".equalsIgnoreCase(exam.getExamType());
+        boolean hasJlptLevel = exam.getJlptLevel() != null && !exam.getJlptLevel().trim().isEmpty();
+
+        // Đề PLACEMENT_TEST nếu không gắn jlptLevel thì giữ nguyên điểm thô (diagnostic)
+        if (isPlacement && !hasJlptLevel) {
+            int rawScore = 0;
+            int rawTotal = 0;
+            for (QuestionDto q : questions) {
+                int pts = q.getPoints() != null ? q.getPoints() : 2;
+                rawTotal += pts;
+                if (Boolean.TRUE.equals(q.getIsUserCorrect())) {
+                    rawScore += pts;
+                }
+            }
+            score = rawScore;
+            totalPossibleScore = rawTotal > 0 ? rawTotal : 100;
+            percentage = BigDecimal.valueOf(rawTotal > 0 ? rawScore * 100.0 / rawTotal : 0)
+                    .setScale(1, RoundingMode.HALF_UP);
+        }
+
         int defaultPassing = defaultPassingScore(exam.getJlptLevel(), isMilestone);
         int passingScore = exam.getPassingScore() != null ? exam.getPassingScore() : defaultPassing;
         boolean passed = isPlacement || (score >= passingScore && allAboveMin);
@@ -620,11 +644,16 @@ public class ExamServiceImpl implements ExamService {
                         failedMinRequired = minScore;
                     }
                     BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0).setScale(1, RoundingMode.HALF_UP);
+                    boolean belowMin = (earned < minScore);
                     breakdown.add(ExamResultResponse.SkillScoreDto.builder()
                             .skillGroup(String.join("+", g.skills()))
                             .skillName(g.name())
                             .earnedPoints(earned)
                             .totalPoints(max)
+                            .scaledScore(earned)
+                            .scaledMaxScore(max)
+                            .minRequired(minScore)
+                            .belowMinimum(belowMin)
                             .correctCount(g.correct(correctMap))
                             .totalQuestions(g.total(totalMap))
                             .percentage(pct)
