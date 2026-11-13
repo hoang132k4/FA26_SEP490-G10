@@ -142,19 +142,30 @@
                     <div class="mb-4" th:each="skill : ${result.skillBreakdown}">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-semibold text-dark small" th:text="${skill.skillName}">Từ vựng - Ngữ pháp</span>
-                            <span class="small text-muted">
+                            <span class="small text-muted d-flex align-items-center gap-1.5">
                                 <strong th:text="${skill.earnedPoints}">0</strong>/<span th:text="${skill.totalPoints}">75</span> điểm 
                                 (<span th:text="${skill.percentage} + '%'">0%</span>)
+                                <span th:if="${skill.belowMinimum != null and skill.belowMinimum}" 
+                                      class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5 rounded-pill fw-bold" 
+                                      style="font-size: 0.72rem;">
+                                    <i class="bi bi-exclamation-triangle-fill me-0.5"></i> Điểm liệt (sàn: <span th:text="${skill.minRequired}">19</span>đ)
+                                </span>
                             </span>
                         </div>
                         <div class="progress" style="height: 8px; border-radius: 6px; background-color: #E2E8F0;">
                             <div class="progress-bar"
                                  role="progressbar"
-                                 th:style="'width: ' + ${skill.percentage} + '%; background-color: var(--steel-blue);'"
+                                 th:style="'width: ' + ${skill.percentage} + '%; background-color: ' + (${skill.belowMinimum != null and skill.belowMinimum} ? '#DC2626' : 'var(--steel-blue)') + ';'"
                                  th:aria-valuenow="${skill.percentage}"
                                  aria-valuemin="0"
                                  aria-valuemax="100"></div>
                         </div>
+                    </div>
+
+                    <!-- Ghi chú quy đổi chuẩn JLPT -->
+                    <div class="small text-muted fst-italic mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        <i class="bi bi-info-circle me-1 text-primary"></i> 
+                        Điểm số được quy đổi xấp xỉ tuyến tính theo chuẩn JLPT thang 180 điểm (kỳ thi JLPT chính thức sử dụng thang chuẩn hóa IRT không công bố công thức).
                     </div>
 
                     <!-- Aligned Badges Row at Bottom -->
@@ -422,11 +433,24 @@
                      class="card p-4 border rounded-4 shadow-none question-review-box"
                      style="border-color: #E2E8F0 !important; background-color: #FFFFFF;">
                     
-                    <!-- Question Top Header: Number, Points, Skill Category -->
-                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
+                    <!-- Question Top Header: Number, Points, Skill Category, Answer Status -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
                             <span class="fw-bold fs-6" style="color: #E11D48;" th:text="'Câu hỏi ' + ${stat.count}">Câu hỏi 1</span>
                             <span class="badge text-secondary fw-normal px-2 py-1" style="background-color: #F1F5F9;" th:text="${q.points != null ? q.points + ' điểm' : '2 điểm'}">30 điểm</span>
+                            <!-- Trạng thái làm bài của thí sinh -->
+                            <span th:if="${q.userAnswerId != null and q.isUserCorrect == true}" 
+                                  class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small fw-bold">
+                                <i class="bi bi-check-circle-fill me-1"></i> Chính xác
+                            </span>
+                            <span th:if="${q.userAnswerId != null and (q.isUserCorrect == null or !q.isUserCorrect)}" 
+                                  class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill small fw-bold">
+                                <i class="bi bi-x-circle-fill me-1"></i> Sai
+                            </span>
+                            <span th:if="${q.userAnswerId == null}" 
+                                  class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill small fw-medium">
+                                <i class="bi bi-dash-circle me-1"></i> Chưa trả lời
+                            </span>
                         </div>
                         <span class="text-secondary small fw-medium" th:text="${q.category != null ? q.category : (q.skillGroupLabel != null ? q.skillGroupLabel : 'Từ vựng (Goi)')}">Từ vựng (Goi)</span>
                     </div>
@@ -451,12 +475,19 @@
                             
                             <div class="d-flex align-items-center gap-2">
                                 <!-- Radio indicator icon -->
-                                <span th:if="${opt.correct == true}" class="text-success d-flex align-items-center">
-                                    <i class="bi bi-record-circle-fill fs-5"></i>
+                                <!-- Thí sinh chọn đúng: Hiện dấu check tròn xanh -->
+                                <span th:if="${q.userAnswerId != null && q.userAnswerId == opt.id && opt.correct == true}" class="text-success d-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill fs-5"></i>
                                 </span>
+                                <!-- Thí sinh chọn sai: Hiện dấu X tròn đỏ -->
                                 <span th:if="${q.userAnswerId != null && q.userAnswerId == opt.id && !opt.correct}" class="text-danger d-flex align-items-center">
                                     <i class="bi bi-x-circle-fill fs-5"></i>
                                 </span>
+                                <!-- Đáp án đúng nhưng thí sinh không chọn (hoặc bỏ trống): Hiện vòng tròn xanh không tích -->
+                                <span th:if="${opt.correct == true && (q.userAnswerId == null || q.userAnswerId != opt.id)}" class="text-success d-flex align-items-center">
+                                    <i class="bi bi-record-circle fs-5"></i>
+                                </span>
+                                <!-- Option sai thông thường: Vòng tròn xám rỗng -->
                                 <span th:if="${!opt.correct && (q.userAnswerId == null || q.userAnswerId != opt.id)}" class="d-inline-block rounded-circle border me-1" style="width: 18px; height: 18px; border-color: #CBD5E1;"></span>
 
                                 <!-- Option Label & Text -->
@@ -467,12 +498,15 @@
                             </div>
 
                             <!-- Right Status Badge -->
-                            <div>
-                                <span th:if="${opt.correct == true}" class="badge bg-success text-white px-2.5 py-1.5 rounded-pill small fw-semibold">
-                                    <i class="bi bi-check-lg me-1"></i> Đáp án đúng
+                            <div class="d-flex align-items-center gap-2">
+                                <span th:if="${q.userAnswerId != null && q.userAnswerId == opt.id && opt.correct == true}" class="badge bg-success text-white px-2.5 py-1.5 rounded-pill small fw-semibold">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Đáp án của bạn (Đúng)
                                 </span>
                                 <span th:if="${q.userAnswerId != null && q.userAnswerId == opt.id && !opt.correct}" class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill small fw-semibold">
                                     <i class="bi bi-x-lg me-1"></i> Đáp án của bạn
+                                </span>
+                                <span th:if="${opt.correct == true && (q.userAnswerId == null || q.userAnswerId != opt.id)}" class="badge bg-success text-white px-2.5 py-1.5 rounded-pill small fw-semibold">
+                                    <i class="bi bi-check-lg me-1"></i> Đáp án đúng
                                 </span>
                             </div>
                         </div>
