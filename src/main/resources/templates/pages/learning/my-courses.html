@@ -92,7 +92,8 @@
                     <div class="card h-100 kotoba-card overflow-hidden d-flex flex-column shadow-sm border-0">
                         <!-- Thumbnail & Level Badge -->
                         <div class="position-relative">
-                            <img th:src="${reg.course.thumbnailUrl != null and !reg.course.thumbnailUrl.isBlank() ? reg.course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                            <img th:src="${reg.course.thumbnailUrl != null and !reg.course.thumbnailUrl.isBlank() ? reg.course.thumbnailUrl : 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop'}" 
+                                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop';"
                                  class="card-img-top" 
                                  th:alt="${reg.course.title}" 
                                  style="height: 180px; object-fit: cover;">

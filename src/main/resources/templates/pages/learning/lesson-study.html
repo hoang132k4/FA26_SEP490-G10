@@ -81,10 +81,161 @@
                         hướng học tập</p>
                 </div>
 
+                <!-- ================= 0. COURSERA GRADED ASSESSMENT HUB ================= -->
+                <div th:if="${lesson.isExam() or effectiveSkill == 'EXAM' or exam != null}" 
+                    class="card p-0 kotoba-card mb-4 border-0 shadow-sm overflow-hidden lesson-exam-card" 
+                     style="border-radius: 20px; background: #FFFFFF;">
+                    <!-- Top Hero Banner (Coursera Deep Navy Gradient) -->
+                    <div class="p-4 p-md-5 lesson-exam-hero" style="background: linear-gradient(135deg, #0F2744 0%, #173B57 50%, #204B6E 100%); color: white;">
+                        <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                            <span class="badge rounded-pill px-3 py-1.5 fw-bold shadow-sm" style="background: #FEE2E2; color: #991B1B; font-size: 0.85rem;">
+                                <i class="bi bi-award-fill me-1 text-danger"></i> GRADED ASSESSMENT &bull; ĐÁNH GIÁ CÓ TÍNH ĐIỂM
+                            </span>
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5" th:if="${course != null}" th:text="'Khóa học: ' + ${course.title}">
+                                Khóa học JLPT
+                            </span>
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5" th:if="${course != null}" th:text="'Cấp độ: ' + ${course.level}">
+                                Cấp độ: N4
+                            </span>
+                        </div>
+
+                        <h2 class="fw-bold mb-3 text-white" th:text="${lesson.title}">Bài thi đánh giá giữa kì (Midterm Assessment)</h2>
+                        <p class="text-white-50 mb-0" style="font-size: 1.05rem; line-height: 1.6; max-width: 750px;" 
+                           th:text="${lesson.description != null ? lesson.description : 'Bài kiểm tra năng lực chính thức của khóa học nhằm đánh giá toàn diện trình độ tiếng Nhật (Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu). Điểm số sẽ được ghi nhận vào bảng kết quả học tập.'}">
+                            Bài kiểm tra năng lực chính thức của khóa học.
+                        </p>
+                    </div>
+
+                    <!-- 4 Key Coursera Spec Tiles -->
+                    <div class="p-4 border-bottom bg-light">
+                        <div class="row g-3">
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
+                                    <div class="text-muted small mb-1"><i class="bi bi-clock-history text-warning me-1"></i> Thời lượng thi</div>
+                                    <div class="fs-4 fw-bold text-dark font-monospace" th:text="${(exam != null ? exam.durationMinutes : (lesson.durationMinutes != null ? lesson.durationMinutes : 35)) + ' phút'}">35 phút</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Đếm ngược tự động</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
+                                    <div class="text-muted small mb-1"><i class="bi bi-check2-circle text-success me-1"></i> Yêu cầu đạt</div>
+                                    <div class="fs-4 fw-bold text-success font-monospace" th:text="${(exam != null && exam.passingScore != null ? exam.passingScore : 50) + '%'}">50%</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Điểm sàn qua môn</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
+                                    <div class="text-muted small mb-1"><i class="bi bi-question-circle text-primary me-1"></i> Định dạng đề</div>
+                                    <div class="fs-4 fw-bold text-primary font-monospace" th:text="${(exam != null && exam.totalQuestions != null ? exam.totalQuestions : 10) + ' câu'}">10 câu</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Trắc nghiệm chuẩn JLPT</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
+                                    <div class="text-muted small mb-1"><i class="bi bi-shield-check text-info me-1"></i> Chế độ thi</div>
+                                    <div class="fs-5 fw-bold text-dark mt-1">Phòng thi ảo</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Tập trung (Focus Mode)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Body: Instructions & CTA Button -->
+                    <div class="p-4 p-md-5">
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>Hướng dẫn quy chế thi &amp; Tiêu chuẩn hoàn thành
+                        </h5>
+                        <div class="p-3.5 rounded-3 mb-4" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; line-height: 1.8;">
+                            <ul class="mb-0 text-secondary ps-3 small" style="font-size: 0.95rem;">
+                                <li><b>Chuẩn bị:</b> Đảm bảo đường truyền internet ổn định và không gian yên tĩnh trước khi nhấn nút bắt đầu.</li>
+                                <li><b>Quy trình làm bài:</b> Hệ thống sẽ đưa bạn vào <b>Phòng thi ảo chuyên dụng</b> (tương tự như kỳ thi thử JLPT và Đánh giá đầu vào). Bạn có thể tự do di chuyển giữa các câu hỏi, đặt cờ các câu khó để xem lại trước khi nộp.</li>
+                                <li><b>Thời gian làm bài:</b> Đồng hồ sẽ tự động đếm ngược. Khi hết giờ làm bài, hệ thống sẽ tự động thu bài và chấm điểm ngay lập tức.</li>
+                                <li><b>Công nhận kết quả:</b> Điểm số đạt được sẽ được lưu vào cơ sở dữ liệu học tập của bạn để tính điều kiện hoàn thành khóa học và cấp chứng nhận.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Big Coursera CTA Hero Button -->
+                        <div class="text-center py-3">
+                            <a th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}"
+                               class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center gap-3 transition-all"
+                               style="font-size: 1.25rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); border: none;">
+                                <i class="bi bi-mortarboard-fill fs-3"></i>
+                                <span>VÀO PHÒNG THI ẢO NGAY</span>
+                                <i class="bi bi-arrow-right fs-4"></i>
+                            </a>
+                            <div class="text-muted small mt-2">
+                                <i class="bi bi-clock me-1"></i> Nhấp để bắt đầu làm bài và tính giờ phòng thi
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ================= SKILL-SPECIFIC LESSON CONTENT BOARDS ================= -->
 
+                <!-- 0. EXAM HERO BOARD (DÀNH CHO BÀI THI GIỮA KÌ & CUỐI KÌ) -->
+                <div th:if="${false}"
+                    class="card p-4 p-md-5 mb-4 shadow-sm border-0 text-center"
+                    style="background: linear-gradient(135deg, #173B57 0%, #0F2338 100%); color: #FFFFFF; border-radius: 20px;">
+                    <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-3 p-3 rounded-circle"
+                        style="background-color: rgba(239, 68, 68, 0.2); width: 80px; height: 80px;">
+                        <i class="bi bi-pencil-square text-danger fs-1"></i>
+                    </div>
+
+                    <span class="badge bg-danger rounded-pill px-3 py-1.5 fw-bold mx-auto mb-3"
+                        style="font-size: 0.9rem;">
+                        <i class="bi bi-shield-check me-1"></i>PHÒNG THI TRỰC TUYẾN CHÍNH THỨC
+                    </span>
+
+                    <h2 class="fw-bold text-white mb-2" th:text="${lesson.title}">Bài thi đánh giá năng lực</h2>
+                    <p class="text-white-50 mx-auto mb-4" style="max-width: 650px; font-size: 1.05rem;"
+                        th:text="${lesson.description != null && !lesson.description.isBlank() ? lesson.description : 'Bài thi trắc nghiệm trực tuyến có tính giờ, kiểm tra toàn diện các kỹ năng Từ vựng, Ngữ pháp, Đọc hiểu và Hán tự theo chuẩn đề thi JLPT.'}">
+                        Mô tả bài thi...
+                    </p>
+
+                    <!-- Exam Quick Specs Cards -->
+                    <div class="row g-3 justify-content-center mb-4 text-dark text-start">
+                        <div class="col-sm-4">
+                            <div class="card p-3 rounded-3 bg-white h-100 border-0 shadow-sm text-center">
+                                <i class="bi bi-clock-history fs-3 text-primary mb-1"></i>
+                                <span class="text-muted small fw-semibold">Thời gian làm bài</span>
+                                <span class="fw-bold fs-5 text-dark"
+                                    th:text="${lesson.durationMinutes != null ? lesson.durationMinutes + ' phút' : '35 phút'}">35
+                                    phút</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card p-3 rounded-3 bg-white h-100 border-0 shadow-sm text-center">
+                                <i class="bi bi-patch-question fs-3 text-warning mb-1"></i>
+                                <span class="text-muted small fw-semibold">Hình thức đề thi</span>
+                                <span class="fw-bold fs-5 text-dark">Trắc nghiệm JLPT</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card p-3 rounded-3 bg-white h-100 border-0 shadow-sm text-center">
+                                <i class="bi bi-trophy fs-3 text-success mb-1"></i>
+                                <span class="text-muted small fw-semibold">Cấp độ đánh giá</span>
+                                <span class="fw-bold fs-5 text-dark" th:text="${course.level}">N4</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Call To Action Button -->
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a th:href="${lesson.examId != null} ? @{/exams/{id}/start(id=${lesson.examId})} : @{/exams}"
+                            class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center gap-2"
+                            style="font-size: 1.15rem; letter-spacing: 0.5px;">
+                            <i class="bi bi-pencil-square fs-4"></i>
+                            <span>VÀO PHÒNG THI &amp; BẮT ĐẦU LÀM BÀI</span>
+                        </a>
+                    </div>
+                    <small class="text-white-50 mt-3 d-block">
+                        <i class="bi bi-info-circle me-1"></i>Hệ thống sẽ tự động bấm giờ đếm ngược ngay khi bạn bước
+                        vào phòng thi.
+                    </small>
+                </div>
+
                 <!-- 1. KANJI STUDY BOARD -->
-                <div th:if="${effectiveSkill == 'KANJI' or (studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character']))}"
+                <div th:if="${!lesson.isExam() and effectiveSkill != 'EXAM' and exam == null and (effectiveSkill == 'KANJI' or (studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character'])))}"
                     class="kanji-study-board mb-4">
                     <div class="kanji-study-shell">
                         <!-- CỘT TRÁI: THÔNG TIN HÁN TỰ -->
@@ -609,9 +760,16 @@
                             </button>
                         </div>
 
-                        <!-- Quiz Button -->
+                        <!-- Quiz / Exam Button -->
                         <div>
-                            <a th:href="@{/quiz/do(lessonId=${lesson.id})}" 
+                            <a th:if="${lesson.isExam() or exam != null}" 
+                               th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}" 
+                               class="btn btn-danger d-flex align-items-center gap-2 px-4 rounded-pill fw-bold text-white shadow-sm">
+                                <i class="bi bi-mortarboard-fill"></i>
+                                <span>Vào phòng thi ảo</span>
+                            </a>
+                            <a th:unless="${lesson.isExam() or exam != null}" 
+                               th:href="@{/quiz/do(lessonId=${lesson.id})}" 
                                class="btn btn-outline-primary d-flex align-items-center gap-1.5 px-3">
                                 <i class="bi bi-pencil-square"></i>
                                 <span>Làm bài trắc nghiệm</span>
@@ -957,10 +1115,40 @@
                 --bs-gutter-x: 1rem;
             }
 
+            .lesson-study-page .lesson-exam-card,
             .lesson-study-page .lesson-curriculum-card {
                 border: 1px solid #e2e8f0 !important;
                 border-radius: 16px !important;
                 box-shadow: none !important;
+            }
+
+            .lesson-study-page .lesson-exam-hero {
+                padding: 1.2rem 1.4rem !important;
+                border-radius: 15px 15px 0 0;
+            }
+
+            .lesson-study-page .lesson-exam-hero h2 {
+                font-size: clamp(1.25rem, 2.1vw, 1.75rem);
+                line-height: 1.25;
+            }
+
+            .lesson-study-page .lesson-exam-card > .border-bottom {
+                padding: 1rem 1.4rem !important;
+            }
+
+            .lesson-study-page .lesson-exam-card > .border-bottom .card {
+                border: 1px solid #e2e8f0 !important;
+                box-shadow: none !important;
+            }
+
+            .lesson-study-page .lesson-exam-card > .p-4:last-child {
+                padding: 1.2rem 1.4rem 1.45rem !important;
+            }
+
+            .lesson-study-page .lesson-exam-card .btn-danger {
+                min-width: min(100%, 380px);
+                justify-content: center;
+                background: #e66d52 !important;
             }
 
             .lesson-study-page .lesson-curriculum-card {

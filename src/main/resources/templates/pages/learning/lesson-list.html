@@ -7,8 +7,10 @@
         <!-- Breadcrumb & Back navigation -->
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Tổng quan</a></li>
-                <li class="breadcrumb-item"><a th:href="@{/learning/my-courses}" class="text-decoration-none">Khóa học của tôi</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Tổng
+                        quan</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/learning/my-courses}" class="text-decoration-none">Khóa học
+                        của tôi</a></li>
                 <li class="breadcrumb-item active" aria-current="page" th:text="${course.title}">Khóa học</li>
             </ol>
         </nav>
@@ -18,22 +20,33 @@
             <div class="row align-items-center g-4">
                 <div class="col-lg-8">
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="badge px-3 py-1.5 fw-bold" style="background-color: var(--navy-dark); color: white; font-size: 0.85rem;" 
-                              th:text="${course.level}">N4</span>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 small" 
-                              th:if="${registration != null}" th:text="${registration.status == 'COMPLETED' ? 'Đã hoàn thành' : 'Đang học'}">Đang học</span>
-                        <span class="text-muted small">&bull; Giảng viên chuyên gia &bull; Giáo trình chuẩn format JLPT</span>
+                        <span class="badge px-3 py-1.5 fw-bold"
+                            style="background-color: var(--navy-dark); color: white; font-size: 0.85rem;"
+                            th:text="${course.level}">N4</span>
+                        <span
+                            class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 small"
+                            th:if="${registration != null}"
+                            th:text="${registration.status == 'COMPLETED' ? 'Đã hoàn thành' : 'Đang học'}">Đang
+                            học</span>
+                        <span class="text-muted small">&bull; Giảng viên chuyên gia &bull; Giáo trình chuẩn format
+                            JLPT</span>
                     </div>
-                    <h2 class="fw-bold mb-2 text-dark" th:text="${course.title}">Khóa học Tiếng Nhật Sơ Trung Cấp JLPT N4</h2>
+                    <h2 class="fw-bold mb-2 text-dark" th:text="${course.title}">Khóa học Tiếng Nhật Sơ Trung Cấp JLPT
+                        N4</h2>
                     <p class="text-muted mb-3" style="line-height: 1.6;" th:text="${course.shortDescription}">
-                        Khóa học bám sát chương trình thi năng lực tiếng Nhật quốc tế, tối ưu hóa kỹ năng từ vựng, ngữ pháp, đọc hiểu và nghe hiểu.
+                        Khóa học bám sát chương trình thi năng lực tiếng Nhật quốc tế, tối ưu hóa kỹ năng từ vựng, ngữ
+                        pháp, đọc hiểu và nghe hiểu.
                     </p>
 
                     <!-- Quick tags -->
                     <div class="d-flex flex-wrap gap-3 text-muted small">
-                        <div><i class="bi bi-book-half me-1 text-primary"></i> <b class="text-dark" th:text="${totalCount}">12</b> bài học</div>
-                        <div><i class="bi bi-clock me-1 text-warning"></i> <b class="text-dark" th:text="${course.duration}">40 giờ</b> đào tạo</div>
-                        <div><i class="bi bi-star-fill me-1 text-warning"></i> <b class="text-dark" th:text="${course.rating != null ? course.rating + '/5.0' : '5.0/5.0'}">5.0/5.0</b> đánh giá</div>
+                        <div><i class="bi bi-book-half me-1 text-primary"></i> <b class="text-dark"
+                                th:text="${totalCount}">12</b> bài học</div>
+                        <div><i class="bi bi-clock me-1 text-warning"></i> <b class="text-dark"
+                                th:text="${course.duration}">40 giờ</b> đào tạo</div>
+                        <div><i class="bi bi-star-fill me-1 text-warning"></i> <b class="text-dark"
+                                th:text="${course.rating != null ? course.rating + '/5.0' : '5.0/5.0'}">5.0/5.0</b> đánh
+                            giá</div>
                     </div>
                 </div>
 
@@ -45,26 +58,24 @@
                             <span class="fw-bold fs-5 text-primary" th:text="${progressPercent} + '%'">50%</span>
                         </div>
                         <div class="progress progress-kotoba mb-2" style="height: 8px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
-                                 th:style="'width: ' + ${progressPercent} + '%;'"></div>
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                th:style="'width: ' + ${progressPercent} + '%;'"></div>
                         </div>
                         <div class="d-flex justify-content-between text-muted small mb-3">
-                            <span>Đã học: <b class="text-dark" th:text="${completedCount}">6</b>/<span th:text="${totalCount}">12</span> bài</span>
+                            <span>Đã học: <b class="text-dark" th:text="${completedCount}">6</b>/<span
+                                    th:text="${totalCount}">12</span> bài</span>
                             <span th:text="'Còn ' + (${totalCount - completedCount}) + ' bài'">Còn 6 bài</span>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <a th:if="${lessons != null && !lessons.isEmpty()}" 
-                               th:href="@{/learning/lessons/{id}(id=${lessons[completedCount < totalCount ? completedCount : totalCount - 1].id})}" 
-                               class="btn btn-steel d-flex align-items-center justify-content-center gap-2">
+                            <a th:if="${lessons != null && !lessons.isEmpty()}"
+                                th:href="@{/learning/lessons/{id}(id=${lessons[completedCount < totalCount ? completedCount : totalCount - 1].id})}"
+                                class="btn btn-steel d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-play-circle-fill"></i>
                                 <span>Tiếp tục học ngay</span>
                             </a>
-                            <a th:href="@{/learning-path}" class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-2 fw-semibold">
-                                <i class="bi bi-diagram-3-fill"></i>
-                                <span>Xem Lộ trình học tập (Learning Path)</span>
-                            </a>
-                            <a th:href="@{/learning/courses/{id}/materials(id=${course.id})}" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2">
+                            <a th:href="@{/learning/courses/{id}/materials(id=${course.id})}"
+                                class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-folder2-open"></i>
                                 <span>Kho tài liệu khóa học</span>
                             </a>
@@ -80,25 +91,115 @@
                 <i class="bi bi-journal-text me-2 text-primary"></i>Nội dung chương trình đào tạo
             </h4>
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-outline-secondary active filter-btn" data-filter="all">Tất cả bài học</button>
-                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="VIDEO">Lý thuyết</button>
-                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="READING">Đọc hiểu</button>
-                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="PRACTICE">Thực hành</button>
-                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="QUIZ">Trắc nghiệm</button>
+                <button type="button" class="btn btn-outline-secondary active filter-btn" data-filter="all">Tất cả bài
+                    học</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="VIDEO">Lý
+                    thuyết</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="READING">Đọc
+                    hiểu</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="PRACTICE">Thực
+                    hành</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="QUIZ">Trắc
+                    nghiệm</button>
+            </div>
+        </div>
+
+        <!-- Kỳ thi đánh giá năng lực khóa học (Giữa kì & Cuối kì) -->
+        <div class="card p-4 kotoba-card mb-4 shadow-sm border-0"
+            style="background: linear-gradient(135deg, #173B57 0%, #0F2338 100%); color: #FFFFFF; border-radius: 16px;">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold mb-2">
+                        <i class="bi bi-shield-check me-1"></i>ĐÁNH GIÁ CHUẨN JLPT
+                    </span>
+                    <h5 class="fw-bold mb-0 text-white">
+                        <i class="bi bi-award me-2 text-warning"></i>Phòng Thi Trực Tuyến Khóa Học
+                    </h5>
+                </div>
+                <span
+                    class="badge bg-white text-dark border border-light-subtle px-3 py-1.5 rounded-pill small fw-semibold">
+                    Giữa kì &amp; Cuối kì
+                </span>
+            </div>
+            <p class="text-white-50 small mb-3" style="line-height: 1.6;">
+                Học viên hoàn thành bài thi giữa kì và bài thi tổng kết cuối kì để đánh giá mức độ tiến bộ và xếp loại
+                năng lực chuẩn JLPT. Bấm vào nút bên dưới để vào thẳng phòng thi và làm bài.
+            </p>
+
+            <div class="row g-3">
+                <!-- Bài thi giữa kì (Midterm) -->
+                <div class="col-md-6" th:if="${midtermExam != null}">
+                    <div
+                        class="card p-3 h-100 bg-white text-dark rounded-3 shadow-sm border d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-warning text-dark rounded-pill fw-bold small px-2.5 py-1">
+                                    <i class="bi bi-stopwatch me-1"></i>BÀI THI GIỮA KỲ
+                                </span>
+                                <span class="badge bg-light text-muted border small" th:text="${course.level}">N4</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-2"
+                                th:text="${midtermExam.examTitle != null ? midtermExam.examTitle : 'Bài thi đánh giá năng lực giữa kì'}">
+                                Bài thi giữa kì (Midterm Exam)
+                            </h6>
+                            <div class="d-flex gap-3 text-muted small mb-3">
+                                <span><i class="bi bi-clock me-1 text-primary"></i><span
+                                        th:text="${midtermExam.durationMinutes}">35</span> phút</span>
+                                <span><i class="bi bi-check2-circle me-1 text-success"></i>Đạt: <span
+                                        th:text="${midtermExam.passingScore}">50</span>%</span>
+                            </div>
+                        </div>
+                        <a th:href="@{/exams/{id}/start(id=${midtermExam.examId})}"
+                            class="btn btn-danger w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-pencil-square"></i>
+                            <span>Vào phòng thi giữa kì</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Bài thi cuối kì (Final) -->
+                <div class="col-md-6" th:if="${finalExam != null}">
+                    <div
+                        class="card p-3 h-100 bg-white text-dark rounded-3 shadow-sm border d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-danger text-white rounded-pill fw-bold small px-2.5 py-1">
+                                    <i class="bi bi-award-fill me-1"></i>BÀI THI CUỐI KHOÁ
+                                </span>
+                                <span class="badge bg-light text-muted border small" th:text="${course.level}">N4</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-2"
+                                th:text="${finalExam.examTitle != null ? finalExam.examTitle : 'Bài thi đánh giá tổng kết cuối kì'}">
+                                Bài thi cuối kì (Final Exam)
+                            </h6>
+                            <div class="d-flex gap-3 text-muted small mb-3">
+                                <span><i class="bi bi-clock me-1 text-primary"></i><span
+                                        th:text="${finalExam.durationMinutes}">50</span> phút</span>
+                                <span><i class="bi bi-check2-circle me-1 text-success"></i>Đạt: <span
+                                        th:text="${finalExam.passingScore}">60</span>%</span>
+                            </div>
+                        </div>
+                        <a th:href="@{/exams/{id}/start(id=${finalExam.examId})}"
+                            class="btn btn-danger w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-pencil-square"></i>
+                            <span>Vào phòng thi cuối kì</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Grouped Lessons Accordion by Section -->
         <div class="d-flex flex-column gap-4" id="syllabusAccordion">
-            <div th:each="entry, sectionStat : ${groupedLessons}" class="card kotoba-card border-0 shadow-sm overflow-hidden section-card">
+            <div th:each="entry, sectionStat : ${groupedLessons}"
+                class="card kotoba-card border-0 shadow-sm overflow-hidden section-card">
                 <!-- Section Header Banner -->
-                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center" 
-                     style="background: #FDFDFD; cursor: pointer;" 
-                     data-bs-toggle="collapse" 
-                     th:data-bs-target="'#collapseSection' + ${sectionStat.index}">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center"
+                    style="background: #FDFDFD; cursor: pointer;" data-bs-toggle="collapse"
+                    th:data-bs-target="'#collapseSection' + ${sectionStat.index}">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" 
-                             style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark); font-size: 0.85rem;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                            style="width: 32px; height: 32px; background-color: var(--pastel-blue); color: var(--navy-dark); font-size: 0.85rem;">
                             <span th:text="${sectionStat.index + 1}">1</span>
                         </div>
                         <div>
@@ -112,65 +213,74 @@
                 <!-- Lessons inside Section -->
                 <div th:id="'collapseSection' + ${sectionStat.index}" class="collapse show">
                     <div class="list-group list-group-flush">
-                        <div th:each="lesson, itemStat : ${entry.value}" 
-                             class="list-group-item p-3.5 px-4 d-flex align-items-center justify-content-between gap-3 lesson-row"
-                             th:data-type="${lesson.lessonType}"
-                             th:style="${lesson.isExam() ? 'background: #FFF5F5; border-left: 5px solid #DC2626;' : ''}">
-                            
+                        <div th:each="lesson, itemStat : ${entry.value}"
+                            class="list-group-item p-3.5 px-4 d-flex align-items-center justify-content-between gap-3 lesson-row"
+                            th:data-type="${lesson.lessonType}"
+                            th:with="isExamRow=${lesson.isExam() or lesson.examId != null or (lesson.title != null and (lesson.title.contains('Bài thi') or lesson.title.contains('kiểm tra')))}">
+
                             <!-- Left: Status Icon & Title -->
                             <div class="d-flex align-items-center gap-3 flex-grow-1 min-w-0">
-                                <!-- Order badge or Exam Icon -->
-                                <div th:if="${lesson.isExam()}" class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
-                                     style="width: 32px; height: 32px; background: #FEE2E2; color: #991B1B;">
-                                    <i class="bi bi-mortarboard-fill"></i>
-                                </div>
-                                <div th:unless="${lesson.isExam()}" class="rounded-circle d-flex align-items-center justify-content-center text-muted border small flex-shrink-0" 
-                                     style="width: 28px; height: 28px; font-size: 0.75rem;" 
-                                     th:text="${lesson.orderIndex != null ? lesson.orderIndex : (itemStat.index + 1)}">
+                                <!-- Order badge -->
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-muted border small"
+                                    style="width: 28px; height: 28px; flex-shrink: 0; font-size: 0.75rem;"
+                                    th:text="${lesson.orderIndex != null ? lesson.orderIndex : (itemStat.index + 1)}">
                                     1
                                 </div>
 
                                 <!-- Status Icon -->
                                 <div class="flex-shrink-0">
-                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) <= completedCount}" 
-                                       class="bi bi-check-circle-fill text-success fs-5" title="Đã hoàn thành"></i>
-                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) == completedCount + 1 and !lesson.isExam()}" 
-                                       class="bi bi-play-circle-fill text-primary fs-5" title="Đang học"></i>
-                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) > completedCount + 1 and !lesson.isExam()}" 
-                                       class="bi bi-circle text-muted fs-5 opacity-50" title="Chưa học"></i>
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) <= completedCount}"
+                                        class="bi bi-check-circle-fill text-success fs-5" title="Đã hoàn thành"></i>
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) == completedCount + 1}"
+                                        class="bi bi-play-circle-fill text-primary fs-5" title="Đang học"></i>
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) > completedCount + 1}"
+                                        class="bi bi-circle text-muted fs-5 opacity-50" title="Chưa học"></i>
                                 </div>
 
                                 <!-- Lesson Details -->
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                        <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
-                                           class="fw-semibold text-decoration-none hover-primary text-truncate d-inline-block" 
-                                           th:classappend="${lesson.isExam()} ? 'text-danger fw-bold fs-6' : 'text-dark'"
-                                           style="max-width: 580px;"
-                                           th:text="${lesson.title}">
+                                        <a th:href="${lesson.examId != null} ? @{/exams/{id}/start(id=${lesson.examId})} : @{/learning/lessons/{id}(id=${lesson.id})}"
+                                            class="fw-semibold text-decoration-none hover-primary text-truncate d-inline-block"
+                                            th:classappend="${isExamRow} ? 'text-danger fw-bold' : 'text-dark'"
+                                            style="max-width: 580px;" th:text="${lesson.title}">
                                             Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
                                         </a>
-                                        <span th:if="${lesson.milestoneExam}" class="badge bg-warning bg-opacity-25 text-dark border border-warning small px-2 fw-bold"><i class="bi bi-award-fill me-1 text-warning"></i>Milestone</span>
-                                        <span th:if="${lesson.isFreePreview}" class="badge bg-info-subtle text-info border border-info-subtle small px-2">Học thử miễn phí</span>
+                                        <span th:if="${isExamRow}"
+                                            class="badge bg-danger text-white border border-danger-subtle small px-2.5 py-1 fw-bold shadow-sm">
+                                            <i class="bi bi-clipboard2-check me-1"></i>Bài thi đánh giá
+                                        </span>
+                                        <span
+                                            th:if="${!isExamRow && (lesson.isFreePreview != null && lesson.isFreePreview)}"
+                                            class="badge bg-info-subtle text-info border border-info-subtle small px-2">Học
+                                            thử miễn phí</span>
                                     </div>
-                                    <div class="d-flex align-items-center gap-3 text-muted small" style="font-size: 0.78rem;">
-                                        <span class="badge" th:classappend="${lesson.typeBadgeClass}" th:text="${lesson.typeDisplayName}">VIDEO</span>
-                                        <span><i class="bi bi-clock me-1"></i><span th:text="${lesson.durationMinutes != null ? lesson.durationMinutes : 20}">20</span> phút</span>
-                                        <span th:if="${lesson.description != null && !lesson.description.isBlank()}" 
-                                              class="text-truncate d-none d-md-inline" style="max-width: 250px;" 
-                                              th:text="${lesson.description}">Ghi chú bài học</span>
+                                    <div class="d-flex align-items-center gap-3 text-muted small"
+                                        style="font-size: 0.78rem;">
+                                        <span class="badge" th:classappend="${lesson.typeBadgeClass}"
+                                            th:text="${lesson.typeDisplayName}">VIDEO</span>
+                                        <span><i class="bi bi-clock me-1"></i><span
+                                                th:text="${lesson.durationMinutes != null ? lesson.durationMinutes : 20}">20</span>
+                                            phút</span>
+                                        <span th:if="${lesson.description != null && !lesson.description.isBlank()}"
+                                            class="text-truncate d-none d-md-inline" style="max-width: 250px;"
+                                            th:text="${lesson.description}">Ghi chú bài học</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Right: Actions -->
                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}"
-                                   class="btn btn-sm px-3 rounded-pill d-flex align-items-center gap-1.5"
-                                   th:classappend="${lesson.milestoneExam ? 'btn-primary fw-semibold' : 'btn-outline-primary'}">
-                                    <i th:if="${lesson.milestoneExam}" class="bi bi-pencil-square"></i>
-                                    <span th:text="${lesson.milestoneExam ? 'Làm bài' : 'Vào học'}">Vào học</span>
-                                    <i th:if="${!lesson.milestoneExam}" class="bi bi-arrow-right"></i>
+                                <a th:if="${isExamRow}"
+                                    th:href="${lesson.examId != null} ? @{/exams/{id}/start(id=${lesson.examId})} : @{/learning/lessons/{id}(id=${lesson.id})}"
+                                    class="btn btn-sm btn-danger px-3.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5 text-white fw-bold shadow-sm">
+                                    <i class="bi bi-pencil-square"></i>
+                                    <span>Vào phòng thi</span>
+                                </a>
+                                <a th:unless="${isExamRow}" th:href="@{/learning/lessons/{id}(id=${lesson.id})}"
+                                    class="btn btn-sm btn-outline-primary px-3 rounded-pill d-flex align-items-center gap-1.5">
+                                    <span>Vào học</span>
+                                    <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
                         </div>
@@ -182,7 +292,7 @@
         <!-- Filter JS script -->
         <script>
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     const filter = this.getAttribute('data-filter');

@@ -109,4 +109,54 @@ class CourseRecommendationServiceTest {
         assertEquals(1, items.size());
         assertEquals(85, items.get(0).getMatchPercentage());
     }
+
+    @Test
+    void testGetRecommendationsFromExamResult_HighScore_RecommendsTargetLevel() {
+        when(courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED")).thenReturn(List.of(n4Course, n5Course));
+        when(registrationRepository.existsByUserIdAndCourseId(anyLong(), anyLong())).thenReturn(false);
+
+        com.jlpp.modules.exam.dto.ExamResultResponse examResult = com.jlpp.modules.exam.dto.ExamResultResponse.builder()
+                .score(85)
+                .totalPossibleScore(100)
+                .percentage(java.math.BigDecimal.valueOf(85))
+                .jlptLevel("N5")
+                .weakestSkill("Ngữ pháp")
+                .strongestSkill("Từ vựng")
+                .build();
+
+        com.jlpp.modules.course.dto.ExamRecommendationDto result = 
+                recommendationService.getRecommendationsFromExamResult(examResult, 1L, "N4", "NO", "N5");
+
+        assertNotNull(result);
+        assertTrue(result.isAssessmentOk());
+        assertEquals("N4", result.getTargetLevel());
+        assertNotNull(result.getPrimaryCourse());
+        assertEquals(101L, result.getPrimaryCourse().getCourse().getId()); // N4 course
+        assertEquals(98, result.getPrimaryCourse().getMatchPercentage());
+        assertTrue(result.getEvaluationTitle().contains("Xuất sắc"));
+    }
+
+    @Test
+    void testGetRecommendationsFromExamResult_LowScore_RecommendsFoundationLevel() {
+        when(courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED")).thenReturn(List.of(n4Course, n5Course));
+        when(registrationRepository.existsByUserIdAndCourseId(anyLong(), anyLong())).thenReturn(false);
+
+        com.jlpp.modules.exam.dto.ExamResultResponse examResult = com.jlpp.modules.exam.dto.ExamResultResponse.builder()
+                .score(35)
+                .totalPossibleScore(100)
+                .percentage(java.math.BigDecimal.valueOf(35))
+                .jlptLevel("N5")
+                .weakestSkill("Ngữ pháp")
+                .strongestSkill("Từ vựng")
+                .build();
+
+        com.jlpp.modules.course.dto.ExamRecommendationDto result = 
+                recommendationService.getRecommendationsFromExamResult(examResult, 1L, "N4", "NO", "N5");
+
+        assertNotNull(result);
+        assertFalse(result.isAssessmentOk());
+        assertNotNull(result.getPrimaryCourse());
+        assertEquals(100L, result.getPrimaryCourse().getCourse().getId()); // N5 foundation course
+        assertTrue(result.getEvaluationTitle().contains("Khuyến nghị xây dựng lại nền móng"));
+    }
 }

@@ -41,6 +41,7 @@ public class PublicCourseController {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
     private final CurrentUserSession currentUserSession;
+    private final com.jlpp.modules.exam.repository.ExamRepository examRepository;
 
     @ModelAttribute("currentRole")
     public String currentRole(HttpSession session) {
@@ -77,7 +78,8 @@ public class PublicCourseController {
 
     /**
      * Homepage: Serves both Guest and Authenticated Learner
-     * If Learner is logged in, delivers quick-study hub & active learning progress widget
+     * If Learner is logged in, delivers quick-study hub & active learning progress
+     * widget
      */
     @GetMapping("/")
     public String home(Principal principal, HttpSession session, Model model) {
@@ -86,7 +88,8 @@ public class PublicCourseController {
         model.addAttribute("featuredCourses", featuredCourses);
 
         if (currentUser != null) {
-            List<CourseRegistration> registrations = courseRegistrationRepository.findByUserIdWithCourse(currentUser.getId());
+            List<CourseRegistration> registrations = courseRegistrationRepository
+                    .findByUserIdWithCourse(currentUser.getId());
             Set<Long> enrolledCourseIds = registrations.stream()
                     .map(r -> r.getCourse().getId())
                     .collect(Collectors.toSet());
@@ -140,10 +143,10 @@ public class PublicCourseController {
      */
     @GetMapping("/courses")
     public String courseList(@RequestParam(required = false) String level,
-                             @RequestParam(required = false) String q,
-                             Principal principal,
-                             HttpSession session,
-                             Model model) {
+            @RequestParam(required = false) String q,
+            Principal principal,
+            HttpSession session,
+            Model model) {
         String selectedLevel = level == null ? "" : level.trim().toUpperCase(Locale.ROOT);
         String keyword = q == null ? "" : q.trim();
         List<Course> courses = catalogService.findCourses(selectedLevel, keyword);
@@ -151,7 +154,8 @@ public class PublicCourseController {
         User currentUser = resolveCurrentUser(principal, session);
         Set<Long> enrolledCourseIds = Set.of();
         if (currentUser != null) {
-            List<CourseRegistration> registrations = courseRegistrationRepository.findByUserIdWithCourse(currentUser.getId());
+            List<CourseRegistration> registrations = courseRegistrationRepository
+                    .findByUserIdWithCourse(currentUser.getId());
             enrolledCourseIds = registrations.stream()
                     .map(r -> r.getCourse().getId())
                     .collect(Collectors.toSet());
@@ -173,9 +177,9 @@ public class PublicCourseController {
      */
     @GetMapping("/courses/{id}")
     public String courseDetail(@PathVariable Long id,
-                               Principal principal,
-                               HttpSession session,
-                               Model model) {
+            Principal principal,
+            HttpSession session,
+            Model model) {
         Course course = catalogService.findCourse(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Không tìm thấy khóa học"));
         List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(id);
@@ -191,9 +195,16 @@ public class PublicCourseController {
             model.addAttribute("learner", currentUser);
         }
 
+        com.jlpp.modules.exam.entity.Exam midtermExam = examRepository
+                .findByCourseIdAndExamTypeIgnoreCase(id, "MIDTERM").stream().findFirst().orElse(null);
+        com.jlpp.modules.exam.entity.Exam finalExam = examRepository.findByCourseIdAndExamTypeIgnoreCase(id, "FINAL")
+                .stream().findFirst().orElse(null);
+
         model.addAttribute("course", course);
         model.addAttribute("lessons", lessons);
         model.addAttribute("lessonCount", lessons.size());
+        model.addAttribute("midtermExam", midtermExam);
+        model.addAttribute("finalExam", finalExam);
         model.addAttribute("isEnrolled", isEnrolled);
         model.addAttribute("registration", registration);
         model.addAttribute("relatedCourses", relatedCourses);

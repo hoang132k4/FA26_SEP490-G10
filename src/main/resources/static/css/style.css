@@ -2818,3 +2818,133 @@ textarea.lesson-field {
     height: 12px;
   }
 }
+
+/* ==========================================================================
+   Modern Course Card & JLPT Level Badges Enhancements
+   ========================================================================== */
+
+/* JLPT Level Color Themes */
+.badge-jlpt-n5 {
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.badge-jlpt-n4 {
+  background: linear-gradient(135deg, #0284C7 0%, #0EA5E9 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
+}
+
+.badge-jlpt-n3 {
+  background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.badge-jlpt-n2 {
+  background: linear-gradient(135deg, #7C3AED 0%, #9333EA 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.35);
+}
+
+.badge-jlpt-n1 {
+  background: linear-gradient(135deg, #BE123C 0%, #E11D48 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.35);
+}
+
+.badge-featured-glow {
+  background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 3px 10px rgba(221, 36, 118, 0.38);
+}
+
+/* Enhanced Course Card */
+.kotoba-course-card {
+  border-radius: 20px !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(23, 59, 87, 0.08) !important;
+  box-shadow: 0 4px 18px rgba(23, 59, 87, 0.04) !important;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.32s ease !important;
+}
+
+.kotoba-course-card:hover {
+  transform: translateY(-7px) !important;
+  box-shadow: 0 18px 36px -6px rgba(23, 59, 87, 0.12), 0 6px 14px -3px rgba(23, 59, 87, 0.06) !important;
+  border-color: rgba(49, 92, 120, 0.3) !important;
+}
+
+.kotoba-course-card .course-thumb-img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease !important;
+}
+
+.kotoba-course-card:hover .course-thumb-img {
+  transform: scale(1.06) !important;
+  filter: brightness(1.02);
+}
+
+.kotoba-course-card .card-title a {
+  transition: color 0.2s ease;
+}
+
+.kotoba-course-card:hover .card-title a {
+  color: var(--steel-blue) !important;
+}
+
+.kotoba-course-card .btn-cta-arrow {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-block;
+}
+
+.kotoba-course-card:hover .btn-cta-arrow {
+  transform: translateX(4px);
+}
+
+/* Filter pills */
+.course-filter-btn {
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: var(--text-main);
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.course-filter-btn:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+  color: var(--navy-dark);
+}
+
+.course-filter-btn.active {
+  background: var(--navy-dark) !important;
+  border-color: var(--navy-dark) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 3px 10px rgba(23, 59, 87, 0.25);
+}
+
+/* Hover elevation helper */
+.hover-elevate {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-elevate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(23, 59, 87, 0.12) !important;
+}
+
+/* Backdrop blur support */
+.backdrop-blur-sm {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
