@@ -25,7 +25,10 @@ replay_pid*
 
 # Maven & Build output
 target/
-*.class
+.m2/
+
+# Stray Node tooling (project has no package.json)
+node_modules/
 
 # IDE & Editor files
 .idea/
@@ -38,6 +41,7 @@ target/
 # Uploads & Temp files
 uploads/**
 !uploads/.gitkeep
+tmp/
 application-local.yml
 *.bak
 
@@ -45,5 +49,3 @@ application-local.yml
 scratch/
 unpacked_*/
 *_Export/
-
-
