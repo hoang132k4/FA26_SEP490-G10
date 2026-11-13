@@ -110,13 +110,18 @@
                     <div class="list-group list-group-flush">
                         <div th:each="lesson, itemStat : ${entry.value}" 
                              class="list-group-item p-3.5 px-4 d-flex align-items-center justify-content-between gap-3 lesson-row"
-                             th:data-type="${lesson.lessonType}">
+                             th:data-type="${lesson.lessonType}"
+                             th:style="${lesson.isExam() ? 'background: #FFF5F5; border-left: 5px solid #DC2626;' : ''}">
                             
                             <!-- Left: Status Icon & Title -->
                             <div class="d-flex align-items-center gap-3 flex-grow-1 min-w-0">
-                                <!-- Order badge -->
-                                <div class="rounded-circle d-flex align-items-center justify-content-center text-muted border small" 
-                                     style="width: 28px; height: 28px; flex-shrink: 0; font-size: 0.75rem;" 
+                                <!-- Order badge or Exam Icon -->
+                                <div th:if="${lesson.isExam()}" class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                                     style="width: 32px; height: 32px; background: #FEE2E2; color: #991B1B;">
+                                    <i class="bi bi-mortarboard-fill"></i>
+                                </div>
+                                <div th:unless="${lesson.isExam()}" class="rounded-circle d-flex align-items-center justify-content-center text-muted border small flex-shrink-0" 
+                                     style="width: 28px; height: 28px; font-size: 0.75rem;" 
                                      th:text="${lesson.orderIndex != null ? lesson.orderIndex : (itemStat.index + 1)}">
                                     1
                                 </div>
@@ -125,9 +130,9 @@
                                 <div class="flex-shrink-0">
                                     <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) <= completedCount}" 
                                        class="bi bi-check-circle-fill text-success fs-5" title="Đã hoàn thành"></i>
-                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) == completedCount + 1}" 
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) == completedCount + 1 and !lesson.isExam()}" 
                                        class="bi bi-play-circle-fill text-primary fs-5" title="Đang học"></i>
-                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) > completedCount + 1}" 
+                                    <i th:if="${(lesson.orderIndex != null ? lesson.orderIndex : itemStat.index + 1) > completedCount + 1 and !lesson.isExam()}" 
                                        class="bi bi-circle text-muted fs-5 opacity-50" title="Chưa học"></i>
                                 </div>
 
@@ -135,12 +140,19 @@
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                                         <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
-                                           class="fw-semibold text-dark text-decoration-none hover-primary text-truncate d-inline-block" 
+                                           class="fw-semibold text-decoration-none hover-primary text-truncate d-inline-block" 
+                                           th:classappend="${lesson.isExam()} ? 'text-danger fw-bold fs-6' : 'text-dark'"
                                            style="max-width: 580px;"
                                            th:text="${lesson.title}">
                                             Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
                                         </a>
-                                        <span th:if="${lesson.isFreePreview}" class="badge bg-info-subtle text-info border border-info-subtle small px-2">Học thử miễn phí</span>
+                                        <span th:if="${lesson.isExam()}" class="badge rounded-pill px-2.5 py-1 text-white fw-bold shadow-sm" style="background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); font-size: 0.72rem;">
+                                            <i class="bi bi-award-fill me-1"></i> GRADED ASSESSMENT
+                                        </span>
+                                        <span th:if="${lesson.isExam()}" class="badge bg-white text-danger border border-danger-subtle small px-2">
+                                            Bài thi đánh giá
+                                        </span>
+                                        <span th:if="${!lesson.isExam() && (lesson.isFreePreview != null && lesson.isFreePreview)}" class="badge bg-info-subtle text-info border border-info-subtle small px-2">Học thử miễn phí</span>
                                     </div>
                                     <div class="d-flex align-items-center gap-3 text-muted small" style="font-size: 0.78rem;">
                                         <span class="badge" th:classappend="${lesson.typeBadgeClass}" th:text="${lesson.typeDisplayName}">VIDEO</span>
@@ -154,7 +166,15 @@
 
                             <!-- Right: Actions -->
                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}" class="btn btn-sm btn-outline-primary px-3 rounded-pill d-flex align-items-center gap-1.5">
+                                <a th:if="${lesson.isExam()}" 
+                                   th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                                   class="btn btn-danger px-3 py-1.5 rounded-pill d-flex align-items-center gap-2 text-white shadow-sm fw-bold">
+                                    <i class="bi bi-card-checklist"></i>
+                                    <span>Xem thông tin kỳ thi</span>
+                                </a>
+                                <a th:unless="${lesson.isExam()}" 
+                                   th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                                   class="btn btn-sm btn-outline-primary px-3 rounded-pill d-flex align-items-center gap-1.5">
                                     <span>Vào học</span>
                                     <i class="bi bi-arrow-right"></i>
                                 </a>

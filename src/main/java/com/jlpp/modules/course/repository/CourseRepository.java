@@ -26,7 +26,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     List<Course> findTop3ByLevelAndStatusAndIdNot(String level, String status, Long id);
 
-    @Query("SELECT c FROM Course c WHERE c.status = 'PUBLISHED' " +
+    @Query("SELECT c FROM Course c WHERE (c.status = 'PUBLISHED' OR c.status = 'ACTIVE' OR c.status = 'PUBLIC') " +
            "AND (:level IS NULL OR :level = '' OR c.level = :level) " +
            "AND (:keyword IS NULL OR :keyword = '' OR " +
            "LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -38,10 +38,10 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             Pageable pageable
     );
 
-    @Query("SELECT c FROM Course c WHERE c.status = 'PUBLISHED' " +
+    @Query("SELECT c FROM Course c WHERE (c.status = 'PUBLISHED' OR c.status = 'ACTIVE' OR c.status = 'PUBLIC') " +
            "AND c.level = :level ORDER BY c.enrollmentCount DESC")
     List<Course> findRecommendedByLevel(@Param("level") String level);
 
-    @Query("SELECT c FROM Course c WHERE c.featured = true ORDER BY c.id ASC")
+    @Query("SELECT c FROM Course c WHERE c.featured = true AND (c.status = 'PUBLISHED' OR c.status = 'ACTIVE' OR c.status = 'PUBLIC') ORDER BY c.id ASC")
     List<Course> findByFeaturedTrueOrderByCourseIdAsc();
 }

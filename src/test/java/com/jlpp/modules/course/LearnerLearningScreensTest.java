@@ -173,4 +173,18 @@ public class LearnerLearningScreensTest {
                 .andExpect(redirectedUrl("/learning/lessons/" + lesson2Id))
                 .andExpect(flash().attributeExists("successMessage"));
     }
+
+    @Test
+    @DisplayName("UC: View My Courses - hiển thị danh sách khóa học và thống kê tiến độ cá nhân")
+    @WithMockUser(username = "test_learner@jeps.edu.vn", roles = {"LEARNER"})
+    void testViewMyCourses() throws Exception {
+        mockMvc.perform(get("/learning/my-courses"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/learning/my-courses"))
+                .andExpect(model().attributeExists("learner"))
+                .andExpect(model().attributeExists("registrations"))
+                .andExpect(model().attribute("totalCount", greaterThanOrEqualTo(1)))
+                .andExpect(model().attributeExists("inProgressCount"))
+                .andExpect(model().attributeExists("completedCount"));
+    }
 }

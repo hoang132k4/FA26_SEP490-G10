@@ -33,6 +33,7 @@ public class PublicCatalogService {
         String normalizedKeyword = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
 
         return courseRepository.findAll().stream()
+                .filter(this::isPublic)
                 .filter(course -> normalizedLevel.isEmpty()
                         || normalizedLevel.equals(normalize(course.getJlptLevel())))
                 .filter(course -> normalizedKeyword.isEmpty()
@@ -44,12 +45,21 @@ public class PublicCatalogService {
 
     public List<Course> getFeaturedCourses() {
         return courseRepository.findByFeaturedTrueOrderByCourseIdAsc().stream()
+                .filter(this::isPublic)
                 .limit(3)
                 .toList();
     }
 
     public Optional<Course> findCourse(Long id) {
-        return courseRepository.findById(id);
+        return courseRepository.findById(id).filter(this::isPublic);
+    }
+
+    public boolean isPublic(Course course) {
+        if (course == null || course.getStatus() == null) {
+            return false;
+        }
+        String s = course.getStatus().trim().toUpperCase(Locale.ROOT);
+        return "PUBLISHED".equals(s) || "ACTIVE".equals(s) || "PUBLIC".equals(s);
     }
 
     public List<LessonPreview> findLessonPreviews(Long courseId) {

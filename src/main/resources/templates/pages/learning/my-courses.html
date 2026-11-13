@@ -12,70 +12,157 @@
                 <p class="text-muted small mb-0">Theo dõi tiến độ và tiếp tục học tập các khóa học bạn đã đăng ký</p>
             </div>
             <div class="mt-3 mt-md-0">
-                <a th:href="@{/learning/courses}" class="btn btn-steel btn-sm px-3">
+                <a th:href="@{/learning/courses}" class="btn btn-steel btn-sm px-3 shadow-sm">
                     <i class="bi bi-plus-circle me-1"></i> Đăng ký thêm khóa học
                 </a>
             </div>
         </div>
 
-        <!-- Enrolled Courses List -->
-        <div class="row" th:if="${registrations != null && !registrations.isEmpty()}">
-            <div class="col-md-6 col-lg-4 mb-4" th:each="reg : ${registrations}">
-                <div class="card h-100 kotoba-card overflow-hidden d-flex flex-column shadow-sm">
-                    <!-- Thumbnail & Level Badge -->
-                    <div class="position-relative">
-                        <img th:src="${reg.course.thumbnailUrl != null ? reg.course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
-                             class="card-img-top" 
-                             th:alt="${reg.course.title}" 
-                             style="height: 180px; object-fit: cover;">
-                        <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill shadow-sm" 
-                              style="background-color: var(--navy-dark); color: white; font-weight: 700;"
-                              th:text="${reg.course.level}">N5</span>
-                        
-                        <span class="position-absolute top-0 end-0 m-3 badge px-3 py-1 rounded-pill bg-success shadow-sm">
-                            <i class="bi bi-check2-circle me-1"></i> Đang học
-                        </span>
+        <div th:if="${registrations != null && !registrations.isEmpty()}">
+            <!-- Learning Stats Overview -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 d-flex flex-row align-items-center">
+                        <div class="rounded-3 p-3 me-3 text-white d-flex align-items-center justify-content-center"
+                             style="background: linear-gradient(135deg, #2563eb, #1d4ed8); width: 54px; height: 54px;">
+                            <i class="bi bi-play-circle fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Đang học</div>
+                            <div class="fs-4 fw-bold text-dark" th:text="${inProgressCount}">0</div>
+                        </div>
                     </div>
-
-                    <!-- Card Body -->
-                    <div class="card-body d-flex flex-column p-4 flex-grow-1">
-                        <h5 class="card-title fw-bold text-dark mb-2" style="line-height: 1.4;">
-                            <a th:href="@{/learning/courses/{id}(id=${reg.course.id})}" class="text-decoration-none text-dark hover-primary" 
-                               th:text="${reg.course.title}">
-                                Khóa học
-                            </a>
-                        </h5>
-
-                        <div class="small text-muted mb-3">
-                            <span>Đăng ký: <span th:text="${#temporals.format(reg.registeredAt, 'dd/MM/yyyy')}">23/10/2026</span></span>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 d-flex flex-row align-items-center">
+                        <div class="rounded-3 p-3 me-3 text-white d-flex align-items-center justify-content-center"
+                             style="background: linear-gradient(135deg, #10b981, #059669); width: 54px; height: 54px;">
+                            <i class="bi bi-check2-circle fs-4"></i>
                         </div>
-
-                        <!-- Progress Bar -->
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between small text-muted mb-1">
-                                <span>Tiến độ hoàn thành:</span>
-                                <strong class="text-dark" th:text="${reg.progressPercent + '%'}">0%</strong>
-                            </div>
-                            <div class="progress progress-kotoba" style="height: 8px;">
-                                <div class="progress-bar bg-success" role="progressbar" th:style="'width: ' + ${reg.progressPercent} + '%;'"></div>
-                            </div>
+                        <div>
+                            <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Đã hoàn thành</div>
+                            <div class="fs-4 fw-bold text-dark" th:text="${completedCount}">0</div>
                         </div>
-
-                        <!-- Action Footer -->
-                        <div class="d-flex gap-2 mt-auto pt-3 border-top border-light">
-                            <a th:href="@{/learning/courses/{id}/lessons(id=${reg.course.id})}" class="btn btn-sakura btn-sm flex-grow-1 py-2 fw-semibold">
-                                <i class="bi bi-play-circle-fill me-1"></i> Xem bài học
-                            </a>
-                            <a th:href="@{/learning/courses/{id}/materials(id=${reg.course.id})}" class="btn btn-outline-secondary btn-sm px-3" title="Tài liệu khóa học">
-                                <i class="bi bi-folder2"></i>
-                            </a>
+                    </div>
+                </div>
+                <div class="col-sm-12 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 d-flex flex-row align-items-center">
+                        <div class="rounded-3 p-3 me-3 text-white d-flex align-items-center justify-content-center"
+                             style="background: linear-gradient(135deg, #173B57, #0f2334); width: 54px; height: 54px;">
+                            <i class="bi bi-collection-play fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Tổng số khóa học</div>
+                            <div class="fs-4 fw-bold text-dark" th:text="${totalCount}">0</div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Filter Tabs -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <ul class="nav nav-pills gap-2" id="courseFilterTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active px-3 py-1 rounded-pill small fw-semibold" onclick="filterCourses('ALL', this)">
+                            Tất cả <span class="badge text-bg-light ms-1" th:text="${totalCount}">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link px-3 py-1 rounded-pill small fw-semibold" onclick="filterCourses('IN_PROGRESS', this)">
+                            Đang học <span class="badge text-bg-light ms-1" th:text="${inProgressCount}">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link px-3 py-1 rounded-pill small fw-semibold" onclick="filterCourses('COMPLETED', this)">
+                            Đã hoàn thành <span class="badge text-bg-light ms-1" th:text="${completedCount}">0</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Enrolled Courses Grid -->
+            <div class="row g-4" id="coursesGrid">
+                <div class="col-md-6 col-lg-4 course-card-wrapper" 
+                     th:each="reg : ${registrations}"
+                     th:attr="data-status=${((reg.status != null and reg.status == 'COMPLETED') or (reg.progressPercent != null and reg.progressPercent == 100)) ? 'COMPLETED' : 'IN_PROGRESS'}">
+                    <div class="card h-100 kotoba-card overflow-hidden d-flex flex-column shadow-sm border-0">
+                        <!-- Thumbnail & Level Badge -->
+                        <div class="position-relative">
+                            <img th:src="${reg.course.thumbnailUrl != null and !reg.course.thumbnailUrl.isBlank() ? reg.course.thumbnailUrl : 'https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=800&auto=format&fit=crop'}" 
+                                 class="card-img-top" 
+                                 th:alt="${reg.course.title}" 
+                                 style="height: 180px; object-fit: cover;">
+                            
+                            <!-- Level Badge -->
+                            <span class="position-absolute top-0 start-0 m-3 badge px-3 py-1 rounded-pill shadow-sm" 
+                                  style="background-color: var(--navy-dark); color: white; font-weight: 700;"
+                                  th:text="${reg.course.level}">N5</span>
+                            
+                            <!-- Status Badge -->
+                            <span class="position-absolute top-0 end-0 m-3 badge px-3 py-1 rounded-pill shadow-sm"
+                                  th:classappend="${(reg.status != null and reg.status == 'COMPLETED') or (reg.progressPercent != null and reg.progressPercent == 100)} ? 'bg-success' : 'bg-primary'"
+                                  th:text="${(reg.status != null and reg.status == 'COMPLETED') or (reg.progressPercent != null and reg.progressPercent == 100)} ? 'Hoàn thành' : 'Đang học'">
+                                Đang học
+                            </span>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="card-body d-flex flex-column p-4 flex-grow-1 bg-white">
+                            <h5 class="card-title fw-bold text-dark mb-2" style="line-height: 1.4; min-height: 2.8rem;">
+                                <a th:href="@{/learning/courses/{id}(id=${reg.course.id})}" 
+                                   class="text-decoration-none text-dark hover-primary" 
+                                   th:text="${reg.course.title}">
+                                    Khóa học
+                                </a>
+                            </h5>
+
+                            <div class="d-flex justify-content-between small text-muted mb-3">
+                                <span><i class="bi bi-calendar3 me-1"></i> <span th:text="${#temporals.format(reg.registeredAt, 'dd/MM/yyyy')}">23/10/2026</span></span>
+                                <span th:if="${reg.course.lessonCount != null and reg.course.lessonCount > 0}">
+                                    <i class="bi bi-journal-text me-1"></i> <span th:text="${reg.course.lessonCount + ' bài học'}">0 bài</span>
+                                </span>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Tiến độ hoàn thành:</span>
+                                    <strong class="text-dark" th:text="${(reg.progressPercent != null ? reg.progressPercent : 0) + '%'}">0%</strong>
+                                </div>
+                                <div class="progress progress-kotoba" style="height: 8px;">
+                                    <div class="progress-bar" 
+                                         th:classappend="${reg.progressPercent == 100} ? 'bg-success' : 'bg-primary'" 
+                                         role="progressbar" 
+                                         th:style="'width: ' + ${(reg.progressPercent != null ? reg.progressPercent : 0)} + '%;'"></div>
+                                </div>
+                            </div>
+
+                            <!-- Action Footer -->
+                            <div class="d-flex gap-2 mt-auto pt-3 border-top border-light">
+                                <a th:href="@{/learning/courses/{id}/lessons(id=${reg.course.id})}" 
+                                   class="btn btn-sakura btn-sm flex-grow-1 py-2 fw-semibold">
+                                    <i class="bi bi-play-circle-fill me-1"></i> Xem bài học
+                                </a>
+                                <a th:href="@{/learning/courses/{id}/materials(id=${reg.course.id})}" 
+                                   class="btn btn-outline-secondary btn-sm px-3" 
+                                   title="Tài liệu khóa học">
+                                    <i class="bi bi-folder2"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Empty Feedback (hidden by default) -->
+            <div id="filterEmptyState" class="text-center py-5 d-none">
+                <i class="bi bi-inbox fs-1 text-muted mb-2"></i>
+                <h5 class="text-muted fw-bold">Không tìm thấy khóa học trong mục này</h5>
+                <p class="text-muted small">Hãy chuyển sang tab khác để xem các khóa học của bạn.</p>
+            </div>
         </div>
 
-        <!-- Empty State -->
+        <!-- Empty State (No enrolled courses at all) -->
         <div class="text-center py-5" th:if="${registrations == null || registrations.isEmpty()}">
             <div class="d-inline-flex p-4 rounded-circle bg-light mb-3 text-muted">
                 <i class="bi bi-collection-play fs-1"></i>
@@ -92,4 +179,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Client-side filter script -->
+    <script>
+        function filterCourses(status, btn) {
+            // Update active state on tabs
+            document.querySelectorAll('#courseFilterTabs .nav-link').forEach(el => el.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const cards = document.querySelectorAll('.course-card-wrapper');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const cardStatus = card.getAttribute('data-status');
+                if (status === 'ALL' || cardStatus === status) {
+                    card.classList.remove('d-none');
+                    visibleCount++;
+                } else {
+                    card.classList.add('d-none');
+                }
+            });
+
+            const emptyMsg = document.getElementById('filterEmptyState');
+            if (emptyMsg) {
+                if (visibleCount === 0) {
+                    emptyMsg.classList.remove('d-none');
+                } else {
+                    emptyMsg.classList.add('d-none');
+                }
+            }
+        }
+    </script>
 </div>

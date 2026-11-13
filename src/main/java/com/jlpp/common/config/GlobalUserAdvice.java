@@ -5,7 +5,7 @@ import com.jlpp.modules.notification.service.NotificationService;
 import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -14,11 +14,16 @@ import java.security.Principal;
 import java.util.List;
 
 @ControllerAdvice
-@RequiredArgsConstructor
 public class GlobalUserAdvice {
 
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+
+    public GlobalUserAdvice(UserRepository userRepository,
+                            @Autowired(required = false) NotificationService notificationService) {
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
+    }
 
     @ModelAttribute
     public void populateCurrentUser(Model model, Principal principal, HttpSession session) {
@@ -53,10 +58,15 @@ public class GlobalUserAdvice {
 
             // Populate real-time notification data from database
             try {
-                List<Notification> notifications = notificationService.getRecentNotifications(currentUser.getId());
-                long unreadCount = notificationService.getUnreadCount(currentUser.getId());
-                model.addAttribute("recentNotifications", notifications);
-                model.addAttribute("unreadNotificationCount", unreadCount);
+                if (notificationService != null) {
+                    List<Notification> notifications = notificationService.getRecentNotifications(currentUser.getId());
+                    long unreadCount = notificationService.getUnreadCount(currentUser.getId());
+                    model.addAttribute("recentNotifications", notifications);
+                    model.addAttribute("unreadNotificationCount", unreadCount);
+                } else {
+                    model.addAttribute("recentNotifications", List.of());
+                    model.addAttribute("unreadNotificationCount", 0L);
+                }
             } catch (Exception ignored) {
                 model.addAttribute("recentNotifications", List.of());
                 model.addAttribute("unreadNotificationCount", 0L);
