@@ -20,6 +20,19 @@ public class Lesson extends BaseEntity {
     @Column(name = "title", nullable = false, length = 200)
     private String title;
 
+    @Column(name = "lesson_title", length = 200)
+    private String lessonTitle;
+
+    @PrePersist
+    @PreUpdate
+    public void syncLessonTitle() {
+        if (lessonTitle == null && title != null) {
+            lessonTitle = title;
+        } else if (title == null && lessonTitle != null) {
+            title = lessonTitle;
+        }
+    }
+
     @Column(name = "order_index", nullable = false)
     @Builder.Default
     private Integer orderIndex = 1;
@@ -47,11 +60,30 @@ public class Lesson extends BaseEntity {
 
     @Column(name = "status", length = 30)
     @Builder.Default
-    private String status = "PUBLISHED";
+    private String status = "ACTIVE";
 
     @Column(name = "is_free_preview")
     @Builder.Default
     private Boolean isFreePreview = false;
+
+    @Column(name = "exam_id")
+    private Long examId;
+
+    public Boolean getIsFreePreview() {
+        return Boolean.TRUE.equals(this.isFreePreview);
+    }
+
+    public boolean isFreePreview() {
+        return Boolean.TRUE.equals(this.isFreePreview);
+    }
+
+    public boolean isExam() {
+        return isMilestoneExam() || "EXAM".equalsIgnoreCase(lessonType) || examId != null;
+    }
+
+    public boolean getIsExam() {
+        return isExam();
+    }
 
     public boolean isMilestoneExam() {
         if ("EXAM".equalsIgnoreCase(lessonType)

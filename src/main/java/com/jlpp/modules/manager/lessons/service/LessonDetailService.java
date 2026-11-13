@@ -3,11 +3,24 @@ package com.jlpp.modules.manager.lessons.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.common.constants.SkillTypeEnum;
+import com.jlpp.modules.course.entity.StudyMaterial;
+import com.jlpp.modules.course.service.StudyMaterialService;
+import com.jlpp.modules.flashcard.entity.Flashcard;
+import com.jlpp.modules.flashcard.repository.FlashcardRepository;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonDetail;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonRow;
+import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonStudyView;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LibraryItem;
+import com.jlpp.modules.manager.lessons.dto.LessonDtos.PracticeQuizView;
 import com.jlpp.modules.manager.lessons.repository.LessonDetailRepository;
 import com.jlpp.modules.manager.lessons.repository.LessonLibraryRepository;
+import com.jlpp.modules.manager.lessons.repository.LessonRepository;
+import com.jlpp.modules.quiz.entity.Exercise;
+import com.jlpp.modules.quiz.repository.ExerciseRepository;
+import com.jlpp.modules.quiz.service.QuizService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -21,18 +34,111 @@ import java.util.Optional;
 @Service
 public class LessonDetailService {
 
+    private static final Logger log = LoggerFactory.getLogger(LessonDetailService.class);
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     private final LessonDetailRepository detailRepository;
     private final LessonLibraryRepository libraryRepository;
     private final ObjectMapper objectMapper;
+    private final StudyMaterialService studyMaterialService;
+    private final FlashcardRepository flashcardRepository;
+    private final ExerciseRepository exerciseRepository;
+    private final QuizService quizService;
+    private final LessonRepository managerLessonRepository;
 
     public LessonDetailService(LessonDetailRepository detailRepository,
                                LessonLibraryRepository libraryRepository,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               StudyMaterialService studyMaterialService,
+                               FlashcardRepository flashcardRepository,
+                               ExerciseRepository exerciseRepository,
+                               QuizService quizService,
+                               @Qualifier("managerLessonRepository") LessonRepository managerLessonRepository) {
         this.detailRepository = detailRepository;
         this.libraryRepository = libraryRepository;
         this.objectMapper = objectMapper;
+        this.studyMaterialService = studyMaterialService;
+        this.flashcardRepository = flashcardRepository;
+        this.exerciseRepository = exerciseRepository;
+        this.quizService = quizService;
+        this.managerLessonRepository = managerLessonRepository;
+    }
+
+    public LessonStudyView buildLessonStudyView(long lessonId) {
+        LessonRow lesson = managerLessonRepository.findById(lessonId).orElse(null);
+        return lesson == null ? null : buildLessonStudyView(lesson);
+    }
+
+    public LessonStudyView buildLessonStudyView(LessonRow lesson) {
+        if (lesson == null) return null;
+        List<StudyMaterial> materials = List.of();
+        List<Flashcard> flashcards = List.of();
+        List<PracticeQuizView> practiceQuizzes = new ArrayList<>();
+        try {
+            materials = studyMaterialService.getMaterialsByLessonId(lesson.id());
+        } catch (Exception exception) {
+            log.warn("Could not read study materials for lesson {}", lesson.id(), exception);
+        }
+        try {
+            flashcards = flashcardRepository.findByLessonId(lesson.id());
+        } catch (Exception exception) {
+            log.warn("Could not read flashcards for lesson {}", lesson.id(), exception);
+        }
+        try {
+            for (Exercise exercise : exerciseRepository.findAllByLessonId(lesson.id())) {
+                practiceQuizzes.add(new PracticeQuizView(exercise,
+                        quizService.getQuestionsForExercise(exercise.getExerciseId())));
+            }
+        } catch (Exception exception) {
+            log.warn("Could not read practice quizzes for lesson {}", lesson.id(), exception);
+        }
+        SkillTypeEnum skillType = SkillTypeEnum.fromParam(lesson.skillValue());
+        List<Map<String, Object>> listeningQuestions = List.of();
+        List<Map<String, Object>> readingQuestions = List.of();
+        String readingPassage = "";
+        if (skillType == SkillTypeEnum.LISTENING) {
+            try {
+                listeningQuestions = findListeningQuestions(lesson.id());
+            } catch (Exception exception) {
+                log.warn("Could not read listening questions for lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.READING) {
+            try {
+                readingQuestions = findReadingQuestions(lesson.id());
+                readingPassage = findReadingPassage(lesson.id());
+                if ((readingPassage == null || readingPassage.isBlank()) && lesson.content() != null) {
+                    readingPassage = lesson.content();
+                }
+            } catch (Exception exception) {
+                log.warn("Could not read reading content for lesson {}", lesson.id(), exception);
+            }
+        }
+        Map<String, Object> kanjiDetail = null;
+        Map<String, Object> grammarDetail = null;
+        Map<String, Object> vocabDetail = null;
+        if (skillType == SkillTypeEnum.KANJI) {
+            try {
+                kanjiDetail = findKanjiDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read kanji detail for lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.GRAMMAR) {
+            try {
+                grammarDetail = findGrammarDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read grammar detail for lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.VOCABULARY) {
+            try {
+                vocabDetail = findVocabDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read vocab detail for lesson {}", lesson.id(), exception);
+            }
+        }
+        return new LessonStudyView(lesson,
+                skillType == null ? "Khác" : skillType.getLabel(), materials, flashcards,
+                listeningQuestions, readingPassage, readingQuestions, practiceQuizzes,
+                kanjiDetail, grammarDetail, vocabDetail);
     }
 
     public boolean supportsLibrary(SkillTypeEnum skill) {

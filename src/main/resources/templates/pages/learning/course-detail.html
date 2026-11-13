@@ -149,23 +149,37 @@
                                 </span>
                                 <div>
                                     <h6 class="mb-0 fw-semibold">
-                                        <a th:if="${isEnrolled || lesson.isFreePreview}" th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
-                                           class="text-decoration-none text-dark hover-primary" th:text="${lesson.title}">Tên bài giảng</a>
-                                        <span th:unless="${isEnrolled || lesson.isFreePreview}" class="text-dark" th:text="${lesson.title}">Tên bài giảng</span>
+                                        <a th:if="${isEnrolled || (lesson.isFreePreview != null && lesson.isFreePreview) || lesson.isExam()}" 
+                                           th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                                           class="text-decoration-none hover-primary"
+                                           th:classappend="${lesson.isExam()} ? 'text-danger fw-bold' : 'text-dark'" 
+                                           th:text="${lesson.title}">Tên bài giảng</a>
+                                        <span th:unless="${isEnrolled || (lesson.isFreePreview != null && lesson.isFreePreview) || lesson.isExam()}" class="text-dark" th:text="${lesson.title}">Tên bài giảng</span>
                                     </h6>
                                     <small class="text-muted" th:text="${lesson.sectionName}">Chương 1</small>
                                 </div>
                             </div>
 
                             <div class="d-flex align-items-center gap-2">
-                                <span th:if="${lesson.isFreePreview}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                                <span th:if="${lesson.isExam()}" class="badge bg-danger rounded-pill px-2.5 py-1 text-white fw-bold small">
+                                    <i class="bi bi-mortarboard-fill me-1"></i> Bài thi đánh giá
+                                </span>
+                                <span th:if="${!lesson.isExam() && (lesson.isFreePreview != null && lesson.isFreePreview)}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
                                     Học thử
                                 </span>
-                                <span th:if="${isEnrolled}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">
+                                <span th:if="${!lesson.isExam() && isEnrolled}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">
                                     Đã mở khóa
                                 </span>
                                 <span class="small text-muted me-2" th:text="${lesson.durationMinutes + ' phút'}">30 phút</span>
-                                <a th:if="${isEnrolled || lesson.isFreePreview}" th:href="@{/learning/lessons/{id}(id=${lesson.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 small">
+                                
+                                <a th:if="${lesson.isExam()}" 
+                                   th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                                   class="btn btn-sm btn-danger rounded-pill px-3 py-1 fw-bold text-white shadow-sm d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-card-checklist"></i> Xem thông tin kỳ thi
+                                </a>
+                                <a th:if="${!lesson.isExam() && (isEnrolled || (lesson.isFreePreview != null && lesson.isFreePreview))}" 
+                                   th:href="@{/learning/lessons/{id}(id=${lesson.id})}" 
+                                   class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 small">
                                     Học ngay
                                 </a>
                             </div>

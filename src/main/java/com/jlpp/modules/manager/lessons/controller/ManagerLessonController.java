@@ -1209,74 +1209,7 @@ public class ManagerLessonController {
      * cho đúng 1 bài học khi được yêu cầu.
      */
     private LessonStudyView buildLessonStudyView(LessonRow lesson) {
-        List<StudyMaterial> materials = List.of();
-        List<Flashcard> flashcards = List.of();
-        List<PracticeQuizView> practiceQuizzes = new ArrayList<>();
-        try {
-            materials = studyMaterialService.getMaterialsByLessonId(lesson.id());
-        } catch (Exception exception) {
-            log.warn("Could not read study materials for manager lesson {}", lesson.id(), exception);
-        }
-        try {
-            flashcards = flashcardRepository.findByLessonId(lesson.id());
-        } catch (Exception exception) {
-            log.warn("Could not read flashcards for manager lesson {}", lesson.id(), exception);
-        }
-        try {
-            for (Exercise exercise : exerciseRepository.findAllByLessonId(lesson.id())) {
-                practiceQuizzes.add(new PracticeQuizView(exercise,
-                        quizService.getQuestionsForExercise(exercise.getExerciseId())));
-            }
-        } catch (Exception exception) {
-            log.warn("Could not read practice quizzes for manager lesson {}", lesson.id(), exception);
-        }
-        SkillTypeEnum skillType = SkillTypeEnum.fromParam(lesson.skillValue());
-        List<Map<String, Object>> listeningQuestions = List.of();
-        List<Map<String, Object>> readingQuestions = List.of();
-        String readingPassage = "";
-        if (skillType == SkillTypeEnum.LISTENING) {
-            try {
-                listeningQuestions = lessonDetailService.findListeningQuestions(lesson.id());
-            } catch (DataAccessException exception) {
-                log.warn("Could not read listening questions for manager lesson {}", lesson.id(), exception);
-            }
-        } else if (skillType == SkillTypeEnum.READING) {
-            try {
-                readingQuestions = lessonDetailService.findReadingQuestions(lesson.id());
-                readingPassage = lessonDetailService.findReadingPassage(lesson.id());
-                if ((readingPassage == null || readingPassage.isBlank()) && lesson.content() != null) {
-                    readingPassage = lesson.content();
-                }
-            } catch (DataAccessException exception) {
-                log.warn("Could not read reading content for manager lesson {}", lesson.id(), exception);
-            }
-        }
-        Map<String, Object> kanjiDetail = null;
-        Map<String, Object> grammarDetail = null;
-        Map<String, Object> vocabDetail = null;
-        if (skillType == SkillTypeEnum.KANJI) {
-            try {
-                kanjiDetail = lessonDetailService.findKanjiDetail(lesson);
-            } catch (Exception exception) {
-                log.warn("Could not read kanji detail for manager lesson {}", lesson.id(), exception);
-            }
-        } else if (skillType == SkillTypeEnum.GRAMMAR) {
-            try {
-                grammarDetail = lessonDetailService.findGrammarDetail(lesson);
-            } catch (Exception exception) {
-                log.warn("Could not read grammar detail for manager lesson {}", lesson.id(), exception);
-            }
-        } else if (skillType == SkillTypeEnum.VOCABULARY) {
-            try {
-                vocabDetail = lessonDetailService.findVocabDetail(lesson);
-            } catch (Exception exception) {
-                log.warn("Could not read vocab detail for manager lesson {}", lesson.id(), exception);
-            }
-        }
-        return new LessonStudyView(lesson,
-                skillType == null ? "Khác" : skillType.getLabel(), materials, flashcards,
-                listeningQuestions, readingPassage, readingQuestions, practiceQuizzes,
-                kanjiDetail, grammarDetail, vocabDetail);
+        return lessonDetailService.buildLessonStudyView(lesson);
     }
 
     /** Trích xuất thẻ flashcard từ bài học (từ vựng, kanji, hoặc ngữ pháp). */
