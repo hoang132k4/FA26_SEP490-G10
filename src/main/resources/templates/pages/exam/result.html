@@ -142,19 +142,30 @@
                     <div class="mb-4" th:each="skill : ${result.skillBreakdown}">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-semibold text-dark small" th:text="${skill.skillName}">Từ vựng - Ngữ pháp</span>
-                            <span class="small text-muted">
+                            <span class="small text-muted d-flex align-items-center gap-1.5">
                                 <strong th:text="${skill.earnedPoints}">0</strong>/<span th:text="${skill.totalPoints}">75</span> điểm 
                                 (<span th:text="${skill.percentage} + '%'">0%</span>)
+                                <span th:if="${skill.belowMinimum != null and skill.belowMinimum}" 
+                                      class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5 rounded-pill fw-bold" 
+                                      style="font-size: 0.72rem;">
+                                    <i class="bi bi-exclamation-triangle-fill me-0.5"></i> Điểm liệt (sàn: <span th:text="${skill.minRequired}">19</span>đ)
+                                </span>
                             </span>
                         </div>
                         <div class="progress" style="height: 8px; border-radius: 6px; background-color: #E2E8F0;">
                             <div class="progress-bar"
                                  role="progressbar"
-                                 th:style="'width: ' + ${skill.percentage} + '%; background-color: var(--steel-blue);'"
+                                 th:style="'width: ' + ${skill.percentage} + '%; background-color: ' + (${skill.belowMinimum != null and skill.belowMinimum} ? '#DC2626' : 'var(--steel-blue)') + ';'"
                                  th:aria-valuenow="${skill.percentage}"
                                  aria-valuemin="0"
                                  aria-valuemax="100"></div>
                         </div>
+                    </div>
+
+                    <!-- Ghi chú quy đổi chuẩn JLPT -->
+                    <div class="small text-muted fst-italic mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                        <i class="bi bi-info-circle me-1 text-primary"></i> 
+                        Điểm số được quy đổi xấp xỉ tuyến tính theo chuẩn JLPT thang 180 điểm (kỳ thi JLPT chính thức sử dụng thang chuẩn hóa IRT không công bố công thức).
                     </div>
 
                     <!-- Aligned Badges Row at Bottom -->
