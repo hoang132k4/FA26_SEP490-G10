@@ -56,6 +56,8 @@
                                 <div class="flex-grow-1">
                                     <h3 class="h6 fw-bold mb-2" th:text="${lesson.title != null ? lesson.title : 'Bài học ' + iter.count}">Tên bài học</h3>
                                     <div class="d-flex flex-wrap gap-2">
+                                        <span th:if="${lesson.isExam != null && lesson.isExam}"
+                                              class="badge bg-danger text-white rounded-pill"><i class="bi bi-mortarboard-fill me-1"></i> Bài thi đánh giá</span>
                                         <span th:if="${lesson.skillType != null and !lesson.skillType.isBlank()}"
                                               class="badge text-bg-light border" th:text="${lesson.skillType}">Kỹ năng</span>
                                         <span th:if="${lesson.sectionName != null and !lesson.sectionName.isBlank()}"

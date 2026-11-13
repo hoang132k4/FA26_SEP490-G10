@@ -26,22 +26,24 @@ public class ManagerQuestionService {
     }
 
     @Transactional(readOnly = true)
-    public List<QuestionListRow> search(String search, String category, String questionType,
-                                         String jlptLevel, String skillType, String difficulty, String status) {
+    public List<QuestionListRow> search(String search, String questionType,
+                                         String jlptLevel, String skillType, String status) {
         List<Question> questions = questionRepository.searchForManager(
-                norm(search), norm(category), norm(questionType),
-                norm(jlptLevel), norm(skillType), norm(difficulty), norm(status));
+                norm(search), norm(questionType),
+                norm(jlptLevel), norm(skillType), norm(status));
         if (questions.isEmpty()) return List.of();
 
         List<Long> ids = questions.stream().map(Question::getId).toList();
         Map<Long, Long> examCounts = toBatchMap(questionRepository.batchCountExamUsages(ids));
         Map<Long, Long> quizCounts = toBatchMap(questionRepository.batchCountQuizUsages(ids));
+        Map<Long, Long> childCounts = toBatchMap(questionRepository.batchCountChildren(ids));
 
         return questions.stream().map(q -> new QuestionListRow(
                 q.getId(), q.getContent(), q.getQuestionType(),
-                q.getJlptLevel(), q.getSkillType(), q.getDifficulty(), q.getStatus(),
+                q.getJlptLevel(), q.getSkillType(), q.getStatus(),
                 examCounts.getOrDefault(q.getId(), 0L),
-                quizCounts.getOrDefault(q.getId(), 0L)
+                quizCounts.getOrDefault(q.getId(), 0L),
+                childCounts.getOrDefault(q.getId(), 0L)
         )).toList();
     }
 
@@ -54,11 +56,6 @@ public class ManagerQuestionService {
     @Transactional(readOnly = true)
     public List<Question> findChildren(long parentId) {
         return questionRepository.findByParentIdOrderById(parentId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<String> categories() {
-        return questionRepository.findDistinctCategories();
     }
 
     @Transactional(readOnly = true)
@@ -115,12 +112,10 @@ public class ManagerQuestionService {
         form.setId(question.getId());
         form.setQuestionType(question.getQuestionType());
         form.setContent(question.getContent());
-        form.setCategory(question.getCategory());
         form.setAudioUrl(question.getAudioUrl());
         form.setExplanation(question.getExplanation());
         form.setJlptLevel(question.getJlptLevel());
         form.setSkillType(question.getSkillType());
-        form.setDifficulty(question.getDifficulty());
         form.setStatus(question.getStatus());
         form.setParentId(question.getParentId());
 
@@ -146,21 +141,17 @@ public class ManagerQuestionService {
                 Arrays.stream(QuestionTypeEnum.values()).map(Enum::name).toList(),
                 Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList(),
                 Arrays.stream(SkillTypeEnum.values()).map(Enum::name).toList(),
-                Arrays.stream(DifficultyEnum.values()).map(Enum::name).toList(),
-                Arrays.stream(QuestionStatusEnum.values()).map(Enum::name).toList(),
-                Arrays.stream(QuestionCategoryEnum.values()).map(Enum::name).toList()
+                Arrays.stream(QuestionStatusEnum.values()).map(Enum::name).toList()
         );
     }
 
     private void applyForm(Question question, ManagerQuestionForm form) {
         question.setQuestionType(form.getQuestionType());
         question.setContent(clean(form.getContent()));
-        question.setCategory(optional(form.getCategory()));
         question.setAudioUrl(optional(form.getAudioUrl()));
         question.setExplanation(optional(form.getExplanation()));
         question.setJlptLevel(optional(form.getJlptLevel()));
         question.setSkillType(optional(form.getSkillType()));
-        question.setDifficulty(optional(form.getDifficulty()));
         question.setStatus(form.getStatus());
         question.setParentId(form.getParentId());
 
@@ -203,10 +194,6 @@ public class ManagerQuestionService {
                 && Arrays.stream(SkillTypeEnum.values()).noneMatch(v -> v.name().equals(form.getSkillType()))) {
             throw new IllegalArgumentException("Loại kỹ năng không hợp lệ.");
         }
-        if (form.getDifficulty() != null && !form.getDifficulty().isBlank()
-                && Arrays.stream(DifficultyEnum.values()).noneMatch(v -> v.name().equals(form.getDifficulty()))) {
-            throw new IllegalArgumentException("Độ khó không hợp lệ.");
-        }
         if (!"PASSAGE".equals(form.getQuestionType())) {
             if (isBlank(form.getOptionA()) || isBlank(form.getOptionB())) {
                 throw new IllegalArgumentException("Cần ít nhất đáp án A và B.");
@@ -224,11 +211,14 @@ public class ManagerQuestionService {
                     throw new IllegalArgumentException("Đáp án đúng '" + key + "' không có trong danh sách đáp án.");
                 }
             }
-            if ("SINGLE_CHOICE".equals(form.getQuestionType()) && form.getAnswerKeys().size() > 1) {
-                throw new IllegalArgumentException("Câu hỏi trắc nghiệm 1 đáp án chỉ được chọn 1 đáp án đúng.");
+            if (form.getAnswerKeys().size() > 1) {
+                throw new IllegalArgumentException("Câu hỏi trắc nghiệm chỉ được chọn 1 đáp án đúng.");
             }
         }
         if (form.getParentId() != null) {
+            if ("PASSAGE".equals(form.getQuestionType())) {
+                throw new IllegalArgumentException("Câu hỏi con không được là loại PASSAGE.");
+            }
             Question parent = questionRepository.findById(form.getParentId()).orElse(null);
             if (parent == null || !"PASSAGE".equals(parent.getQuestionType())) {
                 throw new IllegalArgumentException("Câu hỏi cha phải là loại PASSAGE.");
@@ -290,8 +280,6 @@ public class ManagerQuestionService {
             List<String> questionTypes,
             List<String> jlptLevels,
             List<String> skillTypes,
-            List<String> difficulties,
-            List<String> statuses,
-            List<String> categories
+            List<String> statuses
     ) {}
 }

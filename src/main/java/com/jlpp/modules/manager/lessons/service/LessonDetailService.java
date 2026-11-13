@@ -3,11 +3,24 @@ package com.jlpp.modules.manager.lessons.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.common.constants.SkillTypeEnum;
+import com.jlpp.modules.course.entity.StudyMaterial;
+import com.jlpp.modules.course.service.StudyMaterialService;
+import com.jlpp.modules.flashcard.entity.Flashcard;
+import com.jlpp.modules.flashcard.repository.FlashcardRepository;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonDetail;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonRow;
+import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonStudyView;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LibraryItem;
+import com.jlpp.modules.manager.lessons.dto.LessonDtos.PracticeQuizView;
 import com.jlpp.modules.manager.lessons.repository.LessonDetailRepository;
 import com.jlpp.modules.manager.lessons.repository.LessonLibraryRepository;
+import com.jlpp.modules.manager.lessons.repository.LessonRepository;
+import com.jlpp.modules.quiz.entity.Exercise;
+import com.jlpp.modules.quiz.repository.ExerciseRepository;
+import com.jlpp.modules.quiz.service.QuizService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -21,18 +34,111 @@ import java.util.Optional;
 @Service
 public class LessonDetailService {
 
+    private static final Logger log = LoggerFactory.getLogger(LessonDetailService.class);
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     private final LessonDetailRepository detailRepository;
     private final LessonLibraryRepository libraryRepository;
     private final ObjectMapper objectMapper;
+    private final StudyMaterialService studyMaterialService;
+    private final FlashcardRepository flashcardRepository;
+    private final ExerciseRepository exerciseRepository;
+    private final QuizService quizService;
+    private final LessonRepository managerLessonRepository;
 
     public LessonDetailService(LessonDetailRepository detailRepository,
                                LessonLibraryRepository libraryRepository,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               StudyMaterialService studyMaterialService,
+                               FlashcardRepository flashcardRepository,
+                               ExerciseRepository exerciseRepository,
+                               QuizService quizService,
+                               @Qualifier("managerLessonRepository") LessonRepository managerLessonRepository) {
         this.detailRepository = detailRepository;
         this.libraryRepository = libraryRepository;
         this.objectMapper = objectMapper;
+        this.studyMaterialService = studyMaterialService;
+        this.flashcardRepository = flashcardRepository;
+        this.exerciseRepository = exerciseRepository;
+        this.quizService = quizService;
+        this.managerLessonRepository = managerLessonRepository;
+    }
+
+    public LessonStudyView buildLessonStudyView(long lessonId) {
+        LessonRow lesson = managerLessonRepository.findById(lessonId).orElse(null);
+        return lesson == null ? null : buildLessonStudyView(lesson);
+    }
+
+    public LessonStudyView buildLessonStudyView(LessonRow lesson) {
+        if (lesson == null) return null;
+        List<StudyMaterial> materials = List.of();
+        List<Flashcard> flashcards = List.of();
+        List<PracticeQuizView> practiceQuizzes = new ArrayList<>();
+        try {
+            materials = studyMaterialService.getMaterialsByLessonId(lesson.id());
+        } catch (Exception exception) {
+            log.warn("Could not read study materials for lesson {}", lesson.id(), exception);
+        }
+        try {
+            flashcards = flashcardRepository.findByLessonId(lesson.id());
+        } catch (Exception exception) {
+            log.warn("Could not read flashcards for lesson {}", lesson.id(), exception);
+        }
+        try {
+            for (Exercise exercise : exerciseRepository.findAllByLessonId(lesson.id())) {
+                practiceQuizzes.add(new PracticeQuizView(exercise,
+                        quizService.getQuestionsForExercise(exercise.getExerciseId())));
+            }
+        } catch (Exception exception) {
+            log.warn("Could not read practice quizzes for lesson {}", lesson.id(), exception);
+        }
+        SkillTypeEnum skillType = SkillTypeEnum.fromParam(lesson.skillValue());
+        List<Map<String, Object>> listeningQuestions = List.of();
+        List<Map<String, Object>> readingQuestions = List.of();
+        String readingPassage = "";
+        if (skillType == SkillTypeEnum.LISTENING) {
+            try {
+                listeningQuestions = findListeningQuestions(lesson.id());
+            } catch (Exception exception) {
+                log.warn("Could not read listening questions for lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.READING) {
+            try {
+                readingQuestions = findReadingQuestions(lesson.id());
+                readingPassage = findReadingPassage(lesson.id());
+                if ((readingPassage == null || readingPassage.isBlank()) && lesson.content() != null) {
+                    readingPassage = lesson.content();
+                }
+            } catch (Exception exception) {
+                log.warn("Could not read reading content for lesson {}", lesson.id(), exception);
+            }
+        }
+        Map<String, Object> kanjiDetail = null;
+        Map<String, Object> grammarDetail = null;
+        Map<String, Object> vocabDetail = null;
+        if (skillType == SkillTypeEnum.KANJI) {
+            try {
+                kanjiDetail = findKanjiDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read kanji detail for lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.GRAMMAR) {
+            try {
+                grammarDetail = findGrammarDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read grammar detail for lesson {}", lesson.id(), exception);
+            }
+        } else if (skillType == SkillTypeEnum.VOCABULARY) {
+            try {
+                vocabDetail = findVocabDetail(lesson);
+            } catch (Exception exception) {
+                log.warn("Could not read vocab detail for lesson {}", lesson.id(), exception);
+            }
+        }
+        return new LessonStudyView(lesson,
+                skillType == null ? "Khác" : skillType.getLabel(), materials, flashcards,
+                listeningQuestions, readingPassage, readingQuestions, practiceQuizzes,
+                kanjiDetail, grammarDetail, vocabDetail);
     }
 
     public boolean supportsLibrary(SkillTypeEnum skill) {
@@ -753,6 +859,7 @@ public class LessonDetailService {
 
     public Long save(long lessonId, SkillTypeEnum skill, Long sourceEntryId,
                      MultiValueMap<String, String> params, boolean saveToLibrary, String level) {
+        validateDetail(skill, params);
         Long entryId = sourceEntryId;
         if (saveToLibrary && supportsLibrary(skill)) entryId = createLibraryEntry(skill, params, level);
         Map<String, Object> payload = payload(params, skill);
@@ -935,6 +1042,198 @@ public class LessonDetailService {
             case KANJI -> libraryRepository.findKanjiEntry(id);
             default -> Optional.empty();
         };
+    }
+
+    public void validateDetail(SkillTypeEnum skill, MultiValueMap<String, String> params) {
+        if (skill == null || params == null) return;
+        switch (skill) {
+            case VOCABULARY -> validateVocabulary(params);
+            case KANJI -> validateKanji(params);
+            case GRAMMAR -> validateGrammar(params);
+            case READING -> validateReading(params);
+            case LISTENING -> validateListening(params);
+        }
+    }
+
+    private void validateVocabulary(MultiValueMap<String, String> params) {
+        List<String> words = params.get("word");
+        List<String> readings = params.get("wordReading") != null ? params.get("wordReading") : params.get("reading");
+        List<String> meanings = params.get("wordMeaning") != null ? params.get("wordMeaning") : params.get("meaning");
+        List<String> examples = params.get("wordExample") != null ? params.get("wordExample") : params.get("example");
+        List<String> exampleVis = params.get("wordExampleVi") != null ? params.get("wordExampleVi") : params.get("exampleVi");
+
+        boolean hasWord = false;
+        int count = words == null ? 0 : words.size();
+        for (int i = 0; i < count; i++) {
+            String w = words.get(i) == null ? "" : words.get(i).trim();
+            if (w.isBlank()) continue;
+            hasWord = true;
+            if (w.length() > 50) {
+                throw new IllegalArgumentException("Từ vựng thứ " + (i + 1) + " tối đa 50 ký tự.");
+            }
+            String reading = readings != null && i < readings.size() ? value(readings.get(i)).trim() : "";
+            if (reading.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập cách đọc cho từ: “" + w + "”.");
+            }
+            if (reading.length() > 50) {
+                throw new IllegalArgumentException("Cách đọc của từ “" + w + "” tối đa 50 ký tự.");
+            }
+            String meaning = meanings != null && i < meanings.size() ? value(meanings.get(i)).trim() : "";
+            if (meaning.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập ý nghĩa cho từ: “" + w + "”.");
+            }
+            if (meaning.length() > 255) {
+                throw new IllegalArgumentException("Ý nghĩa của từ “" + w + "” tối đa 255 ký tự.");
+            }
+            String exJp = examples != null && i < examples.size() ? value(examples.get(i)).trim() : "";
+            String exVi = exampleVis != null && i < exampleVis.size() ? value(exampleVis.get(i)).trim() : "";
+            if (!exJp.isBlank() && exVi.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập câu dịch tiếng Việt cho ví dụ của từ: “" + w + "”.");
+            }
+        }
+        if (!hasWord) {
+            throw new IllegalArgumentException("Bài học Từ vựng phải có ít nhất 1 từ vựng.");
+        }
+    }
+
+    private void validateKanji(MultiValueMap<String, String> params) {
+        String character = first(params, "character").trim();
+        if (character.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập chữ Hán (Kanji).");
+        }
+        if (character.codePointCount(0, character.length()) != 1) {
+            throw new IllegalArgumentException("Chữ Hán chỉ được nhập đúng 1 ký tự.");
+        }
+
+        String hanviet = first(params, "hanviet").trim();
+        if (hanviet.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập âm Hán Việt cho chữ Hán.");
+        }
+        if (hanviet.length() > 50) {
+            throw new IllegalArgumentException("Âm Hán Việt tối đa 50 ký tự.");
+        }
+
+        String strokeStr = first(params, "strokeCount").trim();
+        if (strokeStr.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập số nét của chữ Hán.");
+        }
+        try {
+            int strokes = Integer.parseInt(strokeStr);
+            if (strokes < 1 || strokes > 40) {
+                throw new IllegalArgumentException("Số nét chữ Hán phải từ 1 đến 40 nét.");
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Số nét chữ Hán không hợp lệ.");
+        }
+
+        String meaning = first(params, "kanjiMeaning").trim();
+        if (meaning.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập nghĩa của chữ Hán.");
+        }
+        if (meaning.length() > 200) {
+            throw new IllegalArgumentException("Nghĩa chữ Hán tối đa 200 ký tự.");
+        }
+
+        String on = first(params, "onReading").trim();
+        String kun = first(params, "kunReading").trim();
+        if (on.isBlank() && kun.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập ít nhất một âm On hoặc âm Kun cho chữ Hán.");
+        }
+    }
+
+    private void validateGrammar(MultiValueMap<String, String> params) {
+        String pattern = first(params, "pattern").trim();
+        if (pattern.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập mẫu ngữ pháp (ví dụ: 〜てはいけない).");
+        }
+        if (pattern.length() > 100) {
+            throw new IllegalArgumentException("Mẫu ngữ pháp tối đa 100 ký tự.");
+        }
+
+        String meaning = first(params, "meaning").trim();
+        if (meaning.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập ý nghĩa của mẫu ngữ pháp.");
+        }
+        if (meaning.length() > 255) {
+            throw new IllegalArgumentException("Ý nghĩa mẫu ngữ pháp tối đa 255 ký tự.");
+        }
+
+        String formation = first(params, "formation").trim();
+        if (formation.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập cấu trúc kết hợp ngữ pháp.");
+        }
+        if (formation.length() > 500) {
+            throw new IllegalArgumentException("Cấu trúc kết hợp tối đa 500 ký tự.");
+        }
+
+        List<String> exJpList = params.get("exampleJp");
+        List<String> exViList = params.get("exampleVi");
+        if (exJpList != null) {
+            for (int i = 0; i < exJpList.size(); i++) {
+                String jp = exJpList.get(i) == null ? "" : exJpList.get(i).trim();
+                String vi = exViList != null && i < exViList.size() && exViList.get(i) != null ? exViList.get(i).trim() : "";
+                if (!jp.isBlank() && vi.isBlank()) {
+                    throw new IllegalArgumentException("Vui lòng nhập bản dịch tiếng Việt cho câu ví dụ " + (i + 1) + ": “" + jp + "”.");
+                }
+            }
+        }
+    }
+
+    private void validateReading(MultiValueMap<String, String> params) {
+        String passage = first(params, "passage");
+        String stripped = passage.replaceAll("<[^>]*>", "").replaceAll("&nbsp;", " ").trim();
+        if (stripped.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập nội dung đoạn văn cho bài Đọc hiểu.");
+        }
+        if (passage.length() > 20000) {
+            throw new IllegalArgumentException("Nội dung đoạn văn tối đa 20.000 ký tự.");
+        }
+
+        List<String> questions = params.get("questionText");
+        List<String> optA = params.get("optionA");
+        List<String> optB = params.get("optionB");
+        List<String> optC = params.get("optionC");
+        List<String> optD = params.get("optionD");
+
+        boolean hasQuestion = false;
+        int qCount = questions == null ? 0 : questions.size();
+        for (int i = 0; i < qCount; i++) {
+            String qText = questions.get(i) == null ? "" : questions.get(i).trim();
+            if (qText.isBlank()) continue;
+            hasQuestion = true;
+            String a = optA != null && i < optA.size() ? value(optA.get(i)).trim() : "";
+            String b = optB != null && i < optB.size() ? value(optB.get(i)).trim() : "";
+            String c = optC != null && i < optC.size() ? value(optC.get(i)).trim() : "";
+            String d = optD != null && i < optD.size() ? value(optD.get(i)).trim() : "";
+            if (a.isBlank() || b.isBlank() || c.isBlank() || d.isBlank()) {
+                throw new IllegalArgumentException("Câu hỏi số " + (i + 1) + " phải nhập đủ cả 4 phương án A, B, C, D.");
+            }
+        }
+        if (!hasQuestion) {
+            throw new IllegalArgumentException("Bài Đọc hiểu phải có ít nhất 1 câu hỏi.");
+        }
+    }
+
+    private void validateListening(MultiValueMap<String, String> params) {
+        // Lưu ý: Người dùng yêu cầu không giới hạn dung lượng file nghe
+        List<String> questions = params.get("questionText");
+        List<String> optA = params.get("optionA");
+        List<String> optB = params.get("optionB");
+        List<String> optC = params.get("optionC");
+        List<String> optD = params.get("optionD");
+
+        int qCount = questions == null ? 0 : questions.size();
+        for (int i = 0; i < qCount; i++) {
+            String qText = questions.get(i) == null ? "" : questions.get(i).trim();
+            if (qText.isBlank()) continue;
+            String a = optA != null && i < optA.size() ? value(optA.get(i)).trim() : "";
+            String b = optB != null && i < optB.size() ? value(optB.get(i)).trim() : "";
+            String c = optC != null && i < optC.size() ? value(optC.get(i)).trim() : "";
+            String d = optD != null && i < optD.size() ? value(optD.get(i)).trim() : "";
+            if (a.isBlank() || b.isBlank() || c.isBlank() || d.isBlank()) {
+                throw new IllegalArgumentException("Câu hỏi nghe số " + (i + 1) + " phải nhập đủ cả 4 phương án A, B, C, D.");
+            }
+        }
     }
 
     private String first(MultiValueMap<String, String> params, String key) { return value(params.getFirst(key)); }

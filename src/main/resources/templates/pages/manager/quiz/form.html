@@ -30,23 +30,18 @@
             <div class="col-md-6">
                 <label class="form-label">Bài học <span class="text-danger">*</span></label>
                 <select class="form-select" th:field="*{lessonId}" required>
-                    <option value="">-- Chọn bài học --</option>
-                    <option th:each="lesson : ${lessons}" th:value="${lesson.id}" th:text="${lesson.title}"></option>
+                    <optgroup th:each="group : ${lessonGroups}" th:label="${group.key}">
+                        <option th:each="lesson : ${group.value}" th:value="${lesson.id}" th:text="${lesson.title}"></option>
+                    </optgroup>
                 </select>
                 <div class="text-danger small" th:errors="*{lessonId}"></div>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
                 <select class="form-select" th:field="*{status}" required>
-                    <option value="">-- Chọn --</option>
                     <option th:each="item : ${statuses}" th:value="${item}" th:text="${item}"></option>
                 </select>
                 <div class="text-danger small" th:errors="*{status}"></div>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Tổng số câu hỏi <span class="text-danger">*</span></label>
-                <input class="form-control" type="number" min="1" max="500" th:field="*{totalQuestions}" required>
-                <div class="text-danger small" th:errors="*{totalQuestions}"></div>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Điểm đạt (%) <span class="text-danger">*</span></label>

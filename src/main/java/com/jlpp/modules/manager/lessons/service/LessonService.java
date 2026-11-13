@@ -28,11 +28,11 @@ import java.util.stream.Collectors;
 @Service
 public class LessonService {
 
-    private static final int MAX_TITLE_LENGTH = 255;
+    private static final int MAX_TITLE_LENGTH = 150;
     private static final int MAX_SECTION_LENGTH = 150;
     private static final int MAX_DESCRIPTION_LENGTH = 500;
-    private static final int MAX_CONTENT_LENGTH = 20000;
-    private static final int MAX_DURATION_MINUTES = 600;
+    private static final int MAX_CONTENT_LENGTH = 50000;
+    private static final int MAX_DURATION_MINUTES = 360;
 
     private final LessonRepository lessonRepository;
     private final CourseService courseService;
@@ -78,6 +78,12 @@ public class LessonService {
         courseService.findCourse(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
 
+        boolean duplicate = lessonRepository.findByCourse(courseId).stream()
+                .anyMatch(r -> Objects.equals(r.sectionName(), input.sectionName()) && r.title().equalsIgnoreCase(input.title()));
+        if (duplicate) {
+            throw new IllegalArgumentException("Tên bài học “" + input.title() + "” đã tồn tại trong chương này.");
+        }
+
         int orderIndex = input.orderIndex() == null || input.orderIndex() < 1
                 ? lessonRepository.nextOrderIndex(courseId, input.skill())
                 : input.orderIndex();
@@ -91,6 +97,13 @@ public class LessonService {
         LessonInput input = validate(rawInput, true);
         courseService.findCourse(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
+
+        boolean duplicate = lessonRepository.findByCourse(courseId).stream()
+                .anyMatch(r -> Objects.equals(r.sectionName(), input.sectionName()) && r.title().equalsIgnoreCase(input.title()));
+        if (duplicate) {
+            throw new IllegalArgumentException("Tên bài học “" + input.title() + "” đã tồn tại trong chương này.");
+        }
+
         int orderIndex = lessonRepository.nextOrderIndex(courseId, null);
         long lessonId = lessonRepository.insert(courseId, input, orderIndex);
         normalizeOrders(courseId, null);
@@ -101,6 +114,12 @@ public class LessonService {
     public void update(long lessonId, LessonInput rawInput) {
         LessonRow existing = requireLesson(lessonId);
         LessonInput input = validate(rawInput, false);
+
+        boolean duplicate = lessonRepository.findByCourse(existing.courseId()).stream()
+                .anyMatch(r -> r.id() != lessonId && Objects.equals(r.sectionName(), input.sectionName()) && r.title().equalsIgnoreCase(input.title()));
+        if (duplicate) {
+            throw new IllegalArgumentException("Tên bài học “" + input.title() + "” đã tồn tại trong chương này.");
+        }
 
         int orderIndex = input.orderIndex() == null || input.orderIndex() < 1
                 ? existing.order()
@@ -124,6 +143,13 @@ public class LessonService {
             throw new IllegalArgumentException("Bài học này không thuộc cột Khác.");
         }
         LessonInput input = validate(rawInput, true);
+
+        boolean duplicate = lessonRepository.findByCourse(existing.courseId()).stream()
+                .anyMatch(r -> r.id() != lessonId && Objects.equals(r.sectionName(), input.sectionName()) && r.title().equalsIgnoreCase(input.title()));
+        if (duplicate) {
+            throw new IllegalArgumentException("Tên bài học “" + input.title() + "” đã tồn tại trong chương này.");
+        }
+
         lessonRepository.update(lessonId, input, existing.order());
     }
 

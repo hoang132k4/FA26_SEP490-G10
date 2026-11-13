@@ -403,8 +403,41 @@
 
         function markSingleNotificationRead(id, e) {
             fetch('/api/notifications/' + id + '/read', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    const item = document.getElementById('notif-item-' + id);
+                    if (item) {
+                        item.style.backgroundColor = '#FFFFFF';
+                        const dot = item.querySelector('.badge.bg-primary.rounded-circle');
+                        if (dot) dot.style.display = 'none';
+                    }
+                    if (data && data.unreadCount !== undefined) {
+                        const badge = document.getElementById('unreadBadgeCount');
+                        if (badge) {
+                            if (data.unreadCount <= 0) {
+                                badge.style.display = 'none';
+                            } else {
+                                badge.innerText = data.unreadCount;
+                            }
+                        }
+                        const pill = document.getElementById('unreadPillHeader');
+                        if (pill) {
+                            pill.innerText = data.unreadCount + ' mới';
+                        }
+                    }
+                })
                 .catch(err => console.error('Error marking notification as read:', err));
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const notifDropdownBtn = document.getElementById('notificationDropdown');
+            if (notifDropdownBtn) {
+                // Tự động đánh dấu đã đọc và xóa badge thông báo ngay khi người dùng nhấn xem
+                notifDropdownBtn.addEventListener('show.bs.dropdown', function () {
+                    markAllNotificationsRead();
+                });
+            }
+        });
     </script>
 </body>
 </html>

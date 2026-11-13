@@ -27,7 +27,7 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
-                <thead><tr><th class="ps-4">ID</th><th>Nội dung</th><th>Loại</th><th>Level</th><th>Kỹ năng</th><th>Độ khó</th><th class="pe-4">Thao tác</th></tr></thead>
+                <thead><tr><th class="ps-4">ID</th><th>Nội dung</th><th>Loại</th><th>Level</th><th>Kỹ năng</th><th class="pe-4">Thao tác</th></tr></thead>
                 <tbody>
                 <tr th:each="row : ${quizQuestions}">
                     <td class="ps-4" th:text="${row.questionId()}"></td>
@@ -37,12 +37,6 @@
                     <td><span class="badge bg-primary" th:text="${row.questionType()}"></span></td>
                     <td th:text="${row.jlptLevel() ?: '-'}"></td>
                     <td th:text="${row.skillType() ?: '-'}"></td>
-                    <td>
-                        <span th:if="${row.difficulty() != null}" class="badge"
-                              th:classappend="${row.difficulty() == 'EASY' ? 'bg-success' : (row.difficulty() == 'HARD' ? 'bg-danger' : 'bg-secondary')}"
-                              th:text="${row.difficulty()}"></span>
-                        <span th:if="${row.difficulty() == null}">-</span>
-                    </td>
                     <td class="pe-4">
                         <form method="post" th:action="@{/manager/quizzes/{eid}/questions/{qid}/remove(eid=${quiz.id()}, qid=${row.questionId()})}"
                               onsubmit="return confirm('Gỡ câu hỏi này khỏi quiz?');" style="display:inline;">
@@ -51,7 +45,7 @@
                     </td>
                 </tr>
                 <tr th:if="${quizQuestions == null || #lists.isEmpty(quizQuestions)}">
-                    <td colspan="7" class="text-center text-muted py-4">Chưa có câu hỏi nào trong quiz này.</td>
+                    <td colspan="6" class="text-center text-muted py-4">Chưa có câu hỏi nào trong quiz này.</td>
                 </tr>
                 </tbody>
             </table>
@@ -100,7 +94,7 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
-                    <thead><tr><th class="ps-4"><input type="checkbox" id="selectAll"></th><th>ID</th><th>Nội dung</th><th>Loại</th><th>Level</th><th>Kỹ năng</th><th>Độ khó</th></tr></thead>
+                    <thead><tr><th class="ps-4"><input type="checkbox" id="selectAll"></th><th>ID</th><th>Nội dung</th><th>Loại</th><th>Level</th><th>Kỹ năng</th></tr></thead>
                     <tbody>
                     <tr th:each="q : ${availableQuestions}">
                         <td class="ps-4"><input type="checkbox" name="questionIds" th:value="${q.questionId()}"></td>
@@ -111,15 +105,9 @@
                         <td><span class="badge bg-primary" th:text="${q.questionType()}"></span></td>
                         <td th:text="${q.jlptLevel() ?: '-'}"></td>
                         <td th:text="${q.skillType() ?: '-'}"></td>
-                        <td>
-                            <span th:if="${q.difficulty() != null}" class="badge"
-                                  th:classappend="${q.difficulty() == 'EASY' ? 'bg-success' : (q.difficulty() == 'HARD' ? 'bg-danger' : 'bg-secondary')}"
-                                  th:text="${q.difficulty()}"></span>
-                            <span th:if="${q.difficulty() == null}">-</span>
-                        </td>
                     </tr>
                     <tr th:if="${availableQuestions == null || #lists.isEmpty(availableQuestions)}">
-                        <td colspan="7" class="text-center text-muted py-4">Không có câu hỏi ACTIVE khả dụng. Hãy tạo và kích hoạt câu hỏi trong Question Bank trước.</td>
+                        <td colspan="6" class="text-center text-muted py-4">Không có câu hỏi ACTIVE khả dụng. Hãy tạo và kích hoạt câu hỏi trong Question Bank trước.</td>
                     </tr>
                     </tbody>
                 </table>

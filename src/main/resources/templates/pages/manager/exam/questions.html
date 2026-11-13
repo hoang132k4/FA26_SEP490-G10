@@ -20,45 +20,76 @@
     </div>
     <div class="alert alert-success" th:if="${examSuccess}" th:text="${examSuccess}"></div>
 
-    <!-- Câu hỏi đã gắn vào đề -->
+    <!-- Tiến độ theo phần -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4" th:each="p : ${sectionProgress}">
+            <div class="kotoba-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="fw-semibold" th:text="${p.label}">Phần</span>
+                    <span class="badge" th:classappend="${p.complete() ? 'bg-success' : (p.over() ? 'bg-danger' : 'bg-warning text-dark')}"
+                          th:text="${p.complete() ? 'Đủ' : (p.over() ? 'Thừa ' + (p.linked - p.required) : 'Thiếu ' + (p.required - p.linked))}">Thiếu</span>
+                </div>
+                <div class="fs-4 fw-bold mt-1"><span th:text="${p.linked}">0</span><span class="text-muted fs-6">/<span th:text="${p.required}">0</span> câu</span></div>
+                <div class="progress mt-2" style="height:6px;">
+                    <div class="progress-bar" th:classappend="${p.complete() ? 'bg-success' : (p.over() ? 'bg-danger' : 'bg-warning')}"
+                         th:style="'width:' + ${p.required == 0 ? 100 : (p.linked >= p.required ? 100 : p.linked * 100 / p.required)} + '%'"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p class="text-muted small mt-n2 mb-4">
+        Số câu từng phần lấy từ <a th:href="@{/manager/exams/{id}/edit(id=${exam.examId})}">cấu hình đề</a>.
+        Đề chỉ publish được khi cả 3 phần đều đủ câu.
+    </p>
+
+    <!-- Câu hỏi đã gắn vào đề, nhóm theo phần -->
     <div class="kotoba-card overflow-hidden mb-4">
-        <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+        <div class="px-4 py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
             <span class="fw-bold" style="color:var(--navy-dark);">Câu hỏi trong đề (<span th:text="${#lists.size(examQuestions)}">0</span>)</span>
+            <span class="small">
+                <span id="reorderStatus" class="me-2"></span>
+                <span class="text-muted"><i class="bi bi-grip-vertical"></i> Kéo thả để sắp xếp thứ tự trong từng phần</span>
+            </span>
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
-                <thead><tr><th class="ps-4">#</th><th>Nội dung</th><th>Loại</th><th>Section</th><th>Điểm</th><th class="pe-4">Thao tác</th></tr></thead>
+                <thead><tr><th class="ps-4" style="width:70px;">#</th><th>Nội dung</th><th>Loại</th><th class="pe-4">Thao tác</th></tr></thead>
+                <th:block th:each="p : ${sectionProgress}">
                 <tbody>
-                <tr th:each="row : ${examQuestions}">
-                    <td class="ps-4" th:text="${row.orderIndex}"></td>
-                    <td style="min-width:250px;max-width:400px;">
-                        <div class="text-truncate" style="max-width:400px;" th:text="${row.content}"></div>
-                        <small class="text-muted" th:text="${(row.jlptLevel ?: '') + ' ' + (row.skillType ?: '') + ' ' + (row.difficulty ?: '')}"></small>
+                <tr class="table-light">
+                    <td colspan="4" class="ps-4 fw-semibold">
+                        <span th:text="${p.label}"></span>
+                        <span class="text-muted fw-normal" th:text="${'(' + p.linked + '/' + p.required + ' câu)'}"></span>
                     </td>
-                    <td><span class="badge bg-primary" th:text="${row.questionType}"></span></td>
-                    <td><span class="badge bg-dark" th:text="${row.section}"></span></td>
-                    <td th:text="${row.points}"></td>
-                    <td class="pe-4">
-                        <div class="btn-group btn-group-sm">
-                            <form method="post" th:action="@{/manager/exams/{eid}/questions/{qid}/move-up(eid=${exam.examId}, qid=${row.questionId})}" style="display:inline;">
-                                <button class="btn btn-outline-secondary" type="submit" title="Di chuyển lên"><i class="bi bi-arrow-up"></i></button>
-                            </form>
-                            <form method="post" th:action="@{/manager/exams/{eid}/questions/{qid}/move-down(eid=${exam.examId}, qid=${row.questionId})}" style="display:inline;">
-                                <button class="btn btn-outline-secondary" type="submit" title="Di chuyển xuống"><i class="bi bi-arrow-down"></i></button>
-                            </form>
-                            <form method="post" th:action="@{/manager/exams/{eid}/questions/{qid}/remove(eid=${exam.examId}, qid=${row.questionId})}"
-                                  onsubmit="return confirm('Gỡ câu hỏi này khỏi đề thi?');" style="display:inline;">
-                                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-x-lg"></i></button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                <tr th:if="${examQuestions == null || #lists.isEmpty(examQuestions)}">
-                    <td colspan="6" class="text-center text-muted py-4">Chưa có câu hỏi nào trong đề thi này.</td>
                 </tr>
                 </tbody>
+                <tbody class="sortable-section" th:attr="data-section=${p.section}">
+                <tr th:each="row : ${examQuestions}" th:if="${row.section == p.section}" th:attr="data-qid=${row.questionId}">
+                    <td class="ps-4 text-nowrap">
+                        <i class="bi bi-grip-vertical drag-handle text-muted me-1" title="Kéo để đổi thứ tự"></i>
+                        <span class="order-no" th:text="${row.orderIndex}"></span>
+                    </td>
+                    <td style="min-width:250px;max-width:400px;">
+                        <div class="text-truncate" style="max-width:400px;" th:text="${row.content}"></div>
+                        <small class="text-muted" th:text="${(row.jlptLevel ?: '') + ' ' + (row.skillType ?: '')}"></small>
+                    </td>
+                    <td><span class="badge bg-primary" th:text="${row.questionType}"></span></td>
+                    <td class="pe-4">
+                        <form method="post" th:action="@{/manager/exams/{eid}/questions/{qid}/remove(eid=${exam.examId}, qid=${row.questionId})}"
+                              onsubmit="return confirm('Gỡ câu hỏi này khỏi đề thi?');" style="display:inline;">
+                            <button class="btn btn-sm btn-outline-danger" type="submit" title="Gỡ khỏi đề"><i class="bi bi-x-lg"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${p.linked == 0}">
+                    <td colspan="4" class="text-center text-muted py-3">Chưa có câu hỏi nào trong phần này.</td>
+                </tr>
+                </tbody>
+                </th:block>
             </table>
         </div>
+        <form id="reorderForm" class="d-none" method="post"
+              th:action="@{/manager/exams/{id}/questions/reorder(id=${exam.examId})}"></form>
     </div>
 
     <!-- Import câu hỏi từ Excel -->
@@ -70,7 +101,7 @@
             <div class="col-md-3"><button class="btn btn-success w-100" type="submit"><i class="bi bi-upload me-1"></i>Import vào đề</button></div>
             <div class="col-md-3"><a class="btn btn-outline-secondary w-100" th:href="@{/manager/exams/import/template}"><i class="bi bi-download me-1"></i>Tải file mẫu</a></div>
         </form>
-        <small class="text-muted d-block mt-2">File mẫu đề thi có thêm cột section và points. Câu hỏi được lưu vào ngân hàng (ACTIVE) và gắn luôn vào đề theo đúng thứ tự trong file.</small>
+        <small class="text-muted d-block mt-2">File mẫu đề thi có thêm cột section (để trống thì tự xếp theo kỹ năng). Câu hỏi được lưu vào ngân hàng (ACTIVE) và gắn luôn vào đề theo đúng thứ tự trong file. Nếu số câu vượt số câu còn trống của một phần, cả file bị từ chối.</small>
     </div>
 
     <!-- Thêm câu hỏi từ ngân hàng -->
@@ -98,26 +129,14 @@
 
         <!-- Form thêm câu hỏi -->
         <form method="post" th:action="@{/manager/exams/{id}/questions/add(id=${exam.examId})}">
-            <div class="row g-2 mb-3">
-                <div class="col-md-4">
-                    <select class="form-select" name="section">
-                        <option th:each="item : ${sections}" th:value="${item}" th:text="${item}"></option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text">Điểm</span>
-                        <input class="form-control" type="number" name="points" value="1" min="1">
-                    </div>
-                </div>
-                <div class="col-md-5">
-                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-lg me-1"></i>Thêm câu đã chọn vào đề</button>
-                </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <small class="text-muted">Câu được tự xếp vào phần theo kỹ năng: READING → Đọc hiểu, LISTENING → Nghe hiểu, còn lại → Kiến thức ngôn ngữ.</small>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg me-1"></i>Thêm câu đã chọn vào đề</button>
             </div>
 
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
-                    <thead><tr><th class="ps-4"><input type="checkbox" id="selectAll"></th><th>ID</th><th>Nội dung</th><th>Loại</th><th>Level</th><th>Kỹ năng</th><th>Độ khó</th></tr></thead>
+                    <thead><tr><th class="ps-4"><input type="checkbox" id="selectAll"></th><th>ID</th><th>Nội dung</th><th>Loại</th><th>Level</th><th>Kỹ năng</th></tr></thead>
                     <tbody>
                     <tr th:each="q : ${availableQuestions}">
                         <td class="ps-4"><input type="checkbox" name="questionIds" th:value="${q.id}"></td>
@@ -128,10 +147,9 @@
                         <td><span class="badge bg-primary" th:text="${q.questionType}"></span></td>
                         <td th:text="${q.jlptLevel ?: '-'}"></td>
                         <td th:text="${q.skillType ?: '-'}"></td>
-                        <td th:text="${q.difficulty ?: '-'}"></td>
                     </tr>
                     <tr th:if="${availableQuestions == null || #lists.isEmpty(availableQuestions)}">
-                        <td colspan="7" class="text-center text-muted py-4">Không có câu hỏi ACTIVE khả dụng. Hãy tạo và kích hoạt câu hỏi trong Question Bank trước.</td>
+                        <td colspan="6" class="text-center text-muted py-4">Không có câu hỏi ACTIVE khả dụng. Hãy tạo và kích hoạt câu hỏi trong Question Bank trước.</td>
                     </tr>
                     </tbody>
                 </table>
@@ -139,10 +157,56 @@
         </form>
     </div>
 
+    <style>
+        .drag-handle { cursor: grab; font-size: 1.1rem; }
+        .sortable-section tr.sortable-ghost { opacity: .4; background: #e8f0fe; }
+        .sortable-section tr.sortable-chosen { background: #f8f9fa; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <script>
         document.getElementById('selectAll').addEventListener('change', function() {
             document.querySelectorAll('input[name="questionIds"]').forEach(cb => cb.checked = this.checked);
         });
+
+        (function () {
+            var form = document.getElementById('reorderForm');
+            var status = document.getElementById('reorderStatus');
+            var csrfInput = form.querySelector('input[type="hidden"]');
+
+            function showStatus(text, cls) {
+                status.className = 'me-2 ' + cls;
+                status.textContent = text;
+            }
+
+            document.querySelectorAll('.sortable-section').forEach(function (tbody) {
+                Sortable.create(tbody, {
+                    handle: '.drag-handle',
+                    draggable: 'tr[data-qid]',
+                    animation: 150,
+                    onEnd: function (evt) {
+                        if (evt.oldIndex === evt.newIndex) return;
+                        var rows = Array.from(tbody.querySelectorAll('tr[data-qid]'));
+                        rows.forEach(function (row, i) { row.querySelector('.order-no').textContent = i + 1; });
+
+                        var body = new URLSearchParams();
+                        body.append('section', tbody.dataset.section);
+                        rows.forEach(function (row) { body.append('questionIds', row.dataset.qid); });
+                        if (csrfInput) body.append(csrfInput.name, csrfInput.value);
+
+                        showStatus('Đang lưu...', 'text-muted');
+                        fetch(form.action, { method: 'POST', body: body })
+                            .then(function (res) {
+                                if (res.ok) { showStatus('Đã lưu thứ tự', 'text-success'); return; }
+                                return res.text().then(function (msg) { throw new Error(msg || 'Không lưu được thứ tự.'); });
+                            })
+                            .catch(function (err) {
+                                alert(err.message || 'Không lưu được thứ tự.');
+                                location.reload();
+                            });
+                    }
+                });
+            });
+        })();
     </script>
 </div>
 </div>

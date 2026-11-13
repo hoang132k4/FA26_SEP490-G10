@@ -13,6 +13,8 @@ import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
 import com.jlpp.modules.flashcard.entity.Flashcard;
 import com.jlpp.modules.flashcard.repository.FlashcardRepository;
+import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonStudyView;
+import com.jlpp.modules.manager.lessons.service.LessonDetailService;
 import com.jlpp.modules.course.service.CourseRecommendationService;
 import com.jlpp.modules.course.service.CourseRegistrationService;
 import com.jlpp.modules.course.service.CourseService;
@@ -51,6 +53,7 @@ public class LearnerCourseController {
     private final FlashcardRepository flashcardRepository;
     private final com.jlpp.modules.learningpath.service.LessonProgressService lessonProgressService;
     private final com.jlpp.modules.exam.service.ExamService examService;
+    private final LessonDetailService lessonDetailService;
 
     /**
      * Helper to get active learner (from Security Principal, Session, or default Supabase account)
@@ -320,8 +323,17 @@ public class LearnerCourseController {
             return "redirect:" + examService.resolveMilestoneExamUrl(course.getId(), course.getLevel(), lesson.getId());
         }
 
+        // Skill study view from LessonDetailService (Kanji, Grammar, Vocab, Reading, Listening details)
+        LessonStudyView studyView = null;
+        try {
+            studyView = lessonDetailService.buildLessonStudyView(lessonId);
+        } catch (Exception exception) {
+            log.warn("Could not build lesson study view for lesson {}", lessonId, exception);
+        }
+
         model.addAttribute("learner", learner);
         model.addAttribute("lesson", lesson);
+        model.addAttribute("studyView", studyView);
         model.addAttribute("course", course);
         model.addAttribute("courseLessons", courseLessons);
         model.addAttribute("groupedLessons", groupedLessons);
@@ -513,8 +525,19 @@ public class LearnerCourseController {
         User learner = getCurrentLearner(principal, session);
         List<CourseRegistration> registrations = registrationService.getUserRegistrations(learner.getId());
 
+        long inProgressCount = registrations.stream()
+                .filter(r -> !"COMPLETED".equalsIgnoreCase(r.getStatus()) && (r.getProgressPercent() == null || r.getProgressPercent() < 100))
+                .count();
+
+        long completedCount = registrations.stream()
+                .filter(r -> "COMPLETED".equalsIgnoreCase(r.getStatus()) || (r.getProgressPercent() != null && r.getProgressPercent() == 100))
+                .count();
+
         model.addAttribute("learner", learner);
         model.addAttribute("registrations", registrations);
+        model.addAttribute("totalCount", registrations.size());
+        model.addAttribute("inProgressCount", inProgressCount);
+        model.addAttribute("completedCount", completedCount);
         model.addAttribute("activeMenu", "my-courses");
         return "pages/learning/my-courses";
     }

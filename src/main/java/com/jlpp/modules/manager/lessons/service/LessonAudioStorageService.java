@@ -56,9 +56,17 @@ public class LessonAudioStorageService {
     }
 
     private String store(MultipartFile file) throws IOException {
-        if (file.getSize() > MAX_AUDIO_SIZE) throw new IllegalArgumentException("Mỗi file nghe không được vượt quá 50 MB.");
         String contentType = file.getContentType() == null ? "" : file.getContentType().trim().toLowerCase(Locale.ROOT);
         String extension = AUDIO_EXTENSIONS.get(contentType);
+        if (extension == null) {
+            String originalName = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase(Locale.ROOT);
+            if (originalName.endsWith(".mp3")) extension = ".mp3";
+            else if (originalName.endsWith(".wav")) extension = ".wav";
+            else if (originalName.endsWith(".ogg")) extension = ".ogg";
+            else if (originalName.endsWith(".m4a")) extension = ".m4a";
+            else if (originalName.endsWith(".aac")) extension = ".aac";
+            else if (originalName.endsWith(".webm")) extension = ".webm";
+        }
         if (extension == null) throw new IllegalArgumentException("Chỉ chấp nhận file âm thanh MP3, WAV, OGG, M4A, AAC hoặc WEBM.");
         Files.createDirectories(uploadDirectory);
         String filename = UUID.randomUUID() + extension;

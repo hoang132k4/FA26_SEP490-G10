@@ -37,40 +37,52 @@
         </div>
     </div>
 
-    <form class="kotoba-card p-4" method="post" th:object="${questionForm}"
+    <!-- Tab chọn loại câu hỏi (chỉ hiện khi tạo mới và KHÔNG phải câu con) -->
+    <div th:if="${!isEdit && questionForm.parentId == null}" class="mb-4" id="questionTypeSelector">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="kotoba-card p-3 text-center type-card active" data-type="single" style="cursor:pointer; border: 2px solid transparent; transition: all 0.2s;">
+                    <i class="bi bi-check-circle fs-2 d-block mb-2" style="color:var(--navy-dark);"></i>
+                    <h6 class="fw-bold mb-1">Câu đơn</h6>
+                    <small class="text-muted">Trắc nghiệm 1 hoặc nhiều đáp án</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kotoba-card p-3 text-center type-card" data-type="passage" style="cursor:pointer; border: 2px solid transparent; transition: all 0.2s;">
+                    <i class="bi bi-book fs-2 d-block mb-2" style="color:var(--navy-dark);"></i>
+                    <h6 class="fw-bold mb-1">Bài đọc hiểu</h6>
+                    <small class="text-muted">Đoạn văn + nhiều câu hỏi con</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kotoba-card p-3 text-center type-card" data-type="listening" style="cursor:pointer; border: 2px solid transparent; transition: all 0.2s;">
+                    <i class="bi bi-headphones fs-2 d-block mb-2" style="color:var(--navy-dark);"></i>
+                    <h6 class="fw-bold mb-1">Bài nghe</h6>
+                    <small class="text-muted">Audio + câu hỏi trắc nghiệm</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form class="kotoba-card p-4" method="post" enctype="multipart/form-data" th:object="${questionForm}"
           th:action="${isEdit ? '/manager/questions/' + questionForm.id : '/manager/questions'}">
 
         <input type="hidden" th:field="*{parentId}">
+        <input type="hidden" th:field="*{questionType}" id="questionTypeInput">
 
-        <!-- Thông tin cơ bản -->
+        <!-- ═══ Section: Thông tin cơ bản ═══ -->
         <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Thông tin cơ bản</h5>
         <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <label class="form-label">Loại câu hỏi <span class="text-danger">*</span></label>
-                <select class="form-select" th:field="*{questionType}" required id="questionTypeSelect">
-                    <option th:each="item : ${options.questionTypes}" th:value="${item}" th:text="${item}"></option>
-                </select>
-                <div class="text-danger small" th:errors="*{questionType}"></div>
-            </div>
             <div class="col-md-2">
                 <label class="form-label">JLPT Level</label>
                 <select class="form-select" th:field="*{jlptLevel}">
-                    <option value="">--</option>
                     <option th:each="item : ${options.jlptLevels}" th:value="${item}" th:text="${item}"></option>
                 </select>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Kỹ năng</label>
-                <select class="form-select" th:field="*{skillType}">
-                    <option value="">--</option>
+                <select class="form-select" th:field="*{skillType}" id="skillTypeSelect">
                     <option th:each="item : ${options.skillTypes}" th:value="${item}" th:text="${item}"></option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Độ khó</label>
-                <select class="form-select" th:field="*{difficulty}">
-                    <option value="">--</option>
-                    <option th:each="item : ${options.difficulties}" th:value="${item}" th:text="${item}"></option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -81,34 +93,56 @@
             </div>
         </div>
 
-        <!-- Nội dung -->
-        <div class="row g-3 mb-4">
-            <div class="col-12">
-                <label class="form-label">Nội dung câu hỏi <span class="text-danger">*</span></label>
-                <textarea class="form-control" rows="4" th:field="*{content}" required></textarea>
-                <div class="text-danger small" th:errors="*{content}"></div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Category</label>
-                <select class="form-select" th:field="*{category}">
-                    <option value="">-- Chọn --</option>
-                    <option th:each="item : ${options.categories}" th:value="${item}" th:text="${item}"></option>
-                </select>
-            </div>
-            <div class="col-md-8">
-                <label class="form-label">Audio URL</label>
-                <input class="form-control" type="url" th:field="*{audioUrl}">
+        <!-- ═══ Section: Audio (nổi bật cho Bài nghe) ═══ -->
+        <div id="audioSection" class="mb-4" style="display:none;">
+            <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">
+                <i class="bi bi-headphones me-2"></i>Audio
+            </h5>
+            <div class="row g-3">
+                <div class="col-12">
+                    <input type="hidden" th:field="*{audioUrl}" id="audioUrlInput">
+                    <div th:if="${questionForm.audioUrl != null && !questionForm.audioUrl.isEmpty()}" class="mb-2" id="currentAudioBlock">
+                        <label class="form-label">Audio hiện tại:</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <audio controls preload="none" style="height:36px;">
+                                <source th:src="${questionForm.audioUrl}">
+                            </audio>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAudio()">
+                                <i class="bi bi-trash"></i> Xóa
+                            </button>
+                        </div>
+                    </div>
+                    <label class="form-label">Chọn file audio</label>
+                    <div class="input-group" id="audioInputWrapper">
+                        <span class="input-group-text"><i class="bi bi-music-note-beamed"></i></span>
+                        <input class="form-control" type="file" name="audioFile" id="audioFileInput"
+                               accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/*">
+                    </div>
+                    <small class="text-muted">Chấp nhận MP3, WAV, OGG, M4A, AAC, WEBM (tối đa 50MB)</small>
+                </div>
             </div>
         </div>
 
-        <!-- Đáp án (ẩn nếu PASSAGE) -->
+        <!-- ═══ Section: Nội dung ═══ -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <label class="form-label" id="contentLabel">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="contentTextarea" th:field="*{content}" required></textarea>
+                <div class="text-danger small" th:errors="*{content}"></div>
+                <small class="text-muted" id="passageHint" style="display:none;">
+                    Nhập toàn bộ đoạn văn đọc hiểu. Sau khi lưu, bạn có thể thêm các câu hỏi con cho đoạn văn này.
+                </small>
+            </div>
+        </div>
+
+        <!-- ═══ Section: Đáp án (ẩn nếu PASSAGE) ═══ -->
         <div id="optionsSection">
             <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Đáp án</h5>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <div class="input-group">
                         <span class="input-group-text fw-bold">A</span>
-                        <input class="form-control" th:field="*{optionA}" placeholder="Nội dung đáp án A">
+                        <input class="form-control" th:field="*{optionA}" placeholder="Nội dung đáp án A" required>
                         <div class="input-group-text">
                             <input class="form-check-input" type="checkbox" name="answerKeys" value="A"
                                    th:checked="${questionForm.answerKeys != null && questionForm.answerKeys.contains('A')}">
@@ -119,7 +153,7 @@
                 <div class="col-md-6">
                     <div class="input-group">
                         <span class="input-group-text fw-bold">B</span>
-                        <input class="form-control" th:field="*{optionB}" placeholder="Nội dung đáp án B">
+                        <input class="form-control" th:field="*{optionB}" placeholder="Nội dung đáp án B" required>
                         <div class="input-group-text">
                             <input class="form-check-input" type="checkbox" name="answerKeys" value="B"
                                    th:checked="${questionForm.answerKeys != null && questionForm.answerKeys.contains('B')}">
@@ -152,7 +186,7 @@
             </div>
         </div>
 
-        <!-- Giải thích -->
+        <!-- ═══ Section: Giải thích ═══ -->
         <div class="row g-3 mb-4">
             <div class="col-12">
                 <label class="form-label">Giải thích đáp án</label>
@@ -177,17 +211,16 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
-                <thead><tr><th>ID</th><th>Nội dung</th><th>Loại</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                <thead><tr><th>ID</th><th>Nội dung</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                 <tbody>
                 <tr th:each="child : ${children}">
                     <td th:text="${child.id}"></td>
                     <td><div class="text-truncate" style="max-width:350px;" th:text="${child.content}"></div></td>
-                    <td><span class="badge bg-primary" th:text="${child.questionType}"></span></td>
                     <td><span class="badge" th:classappend="${child.status == 'ACTIVE' ? 'bg-success' : 'bg-warning text-dark'}" th:text="${child.status}"></span></td>
                     <td><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/questions/{id}/edit(id=${child.id})}"><i class="bi bi-pencil"></i></a></td>
                 </tr>
                 <tr th:if="${children == null || #lists.isEmpty(children)}">
-                    <td colspan="5" class="text-center text-muted py-3">Chưa có câu hỏi con.</td>
+                    <td colspan="4" class="text-center text-muted py-3">Chưa có câu hỏi con.</td>
                 </tr>
                 </tbody>
             </table>
@@ -195,13 +228,157 @@
     </div>
 
     <script th:inline="javascript">
-        document.getElementById('questionTypeSelect').addEventListener('change', function() {
-            document.getElementById('optionsSection').style.display = this.value === 'PASSAGE' ? 'none' : 'block';
-        });
-        // Ẩn ngay khi load nếu đang là PASSAGE
-        if (document.getElementById('questionTypeSelect').value === 'PASSAGE') {
-            document.getElementById('optionsSection').style.display = 'none';
+        var isEdit = /*[[${isEdit}]]*/ false;
+        var hasParent = /*[[${questionForm.parentId != null}]]*/ false;
+        var currentType = /*[[${questionForm.questionType}]]*/ '';
+
+        var skillSelect = document.getElementById('skillTypeSelect');
+        var initialSkill = skillSelect.value;
+        var initialAudio = document.getElementById('audioUrlInput').value;
+
+        function lockSkill(value) {
+            Array.from(skillSelect.options).forEach(function(opt) { opt.hidden = false; });
+            skillSelect.value = value;
+            skillSelect.disabled = true;
         }
+
+        function singleSkillMode() {
+            skillSelect.disabled = false;
+            Array.from(skillSelect.options).forEach(function(opt) {
+                opt.hidden = (opt.value === 'READING' || opt.value === 'LISTENING');
+            });
+            if (skillSelect.value === 'READING' || skillSelect.value === 'LISTENING') {
+                skillSelect.value = 'VOCABULARY';
+            }
+        }
+
+        function removeAudio() {
+            document.getElementById('audioUrlInput').value = '';
+            var block = document.getElementById('currentAudioBlock');
+            if (block) block.style.display = 'none';
+        }
+
+        // Type selector cards
+        var typeCards = document.querySelectorAll('.type-card');
+        typeCards.forEach(function(card) {
+            card.addEventListener('click', function() {
+                typeCards.forEach(function(c) {
+                    c.classList.remove('active');
+                    c.style.borderColor = 'transparent';
+                });
+                this.classList.add('active');
+                this.style.borderColor = 'var(--navy-dark)';
+
+                var type = this.getAttribute('data-type');
+                var typeInput = document.getElementById('questionTypeInput');
+
+                if (type === 'passage') {
+                    typeInput.value = 'PASSAGE';
+                } else if (type === 'listening') {
+                    typeInput.value = 'MULTI_CHOICE';
+                } else {
+                    typeInput.value = 'MULTI_CHOICE';
+                }
+                currentSelectedTab = type;
+                toggleFormSections();
+            });
+        });
+
+        var currentSelectedTab = 'single';
+
+        // Determine initial tab
+        (function() {
+            if (isEdit || hasParent) {
+                if (currentType === 'PASSAGE') {
+                    currentSelectedTab = 'passage';
+                } else if (hasParent) {
+                    currentSelectedTab = 'child';
+                } else if (initialAudio || initialSkill === 'LISTENING') {
+                    currentSelectedTab = 'listening';
+                } else if (initialSkill === 'READING') {
+                    currentSelectedTab = 'child';
+                } else {
+                    currentSelectedTab = 'single';
+                }
+            } else {
+                // New question: default to 'single', highlight the card
+                currentSelectedTab = 'single';
+                var firstCard = document.querySelector('.type-card[data-type="single"]');
+                if (firstCard) {
+                    firstCard.classList.add('active');
+                    firstCard.style.borderColor = 'var(--navy-dark)';
+                }
+            }
+            toggleFormSections();
+        })();
+
+        function toggleFormSections() {
+            var optionsSection = document.getElementById('optionsSection');
+            var audioSection = document.getElementById('audioSection');
+            var contentLabel = document.getElementById('contentLabel');
+            var contentTextarea = document.getElementById('contentTextarea');
+            var passageHint = document.getElementById('passageHint');
+            var questionTypeInput = document.getElementById('questionTypeInput');
+            var optA = document.getElementById('optionA');
+            var optB = document.getElementById('optionB');
+
+            // Bài đọc hiểu (đoạn văn)
+            if (currentSelectedTab === 'passage') {
+                questionTypeInput.value = 'PASSAGE';
+                optionsSection.style.display = 'none';
+                audioSection.style.display = 'none';
+                contentLabel.innerHTML = 'Đoạn văn <span class="text-danger">*</span>';
+                contentTextarea.rows = 8;
+                contentTextarea.placeholder = 'Nhập đoạn văn tại đây...';
+                passageHint.style.display = 'block';
+                if (optA) optA.required = false;
+                if (optB) optB.required = false;
+                lockSkill(isEdit && initialSkill ? initialSkill : 'READING');
+                return;
+            }
+
+            questionTypeInput.value = 'MULTI_CHOICE';
+            optionsSection.style.display = 'block';
+            if (optA) optA.required = true;
+            if (optB) optB.required = true;
+            contentLabel.innerHTML = 'Nội dung câu hỏi <span class="text-danger">*</span>';
+            contentTextarea.rows = 4;
+            contentTextarea.placeholder = '';
+            passageHint.style.display = 'none';
+
+            if (currentSelectedTab === 'listening') {
+                audioSection.style.display = 'block';
+                lockSkill('LISTENING');
+            } else if (currentSelectedTab === 'child') {
+                // Câu con: kỹ năng theo bài cha
+                audioSection.style.display = 'none';
+                if (initialSkill === 'READING' || initialSkill === 'LISTENING') {
+                    lockSkill(initialSkill);
+                } else {
+                    singleSkillMode();
+                }
+            } else {
+                audioSection.style.display = 'none';
+                singleSkillMode();
+            }
+        }
+
+        // Enable disabled selects before form submit so values get sent
+        document.querySelector('form.kotoba-card').addEventListener('submit', function() {
+            var selects = this.querySelectorAll('select[disabled]');
+            selects.forEach(function(s) { s.disabled = false; });
+        });
     </script>
+
+    <style>
+        .type-card:hover {
+            border-color: var(--navy-dark) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .type-card.active {
+            border-color: var(--navy-dark) !important;
+            background: rgba(0,0,0,0.02);
+        }
+    </style>
 </div>
 </div>

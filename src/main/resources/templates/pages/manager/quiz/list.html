@@ -16,10 +16,43 @@
                 <input class="form-control" name="search" th:value="${search}" placeholder="Tìm theo tên quiz...">
             </div>
             <div class="col-md-4 col-lg-3">
-                <select class="form-select" name="lessonId">
-                    <option value="">Tất cả bài học</option>
-                    <option th:each="lesson : ${lessons}" th:value="${lesson.id}" th:text="${lesson.title}" th:selected="${lesson.id == lessonId}"></option>
-                </select>
+                <input type="hidden" name="level" id="levelInput" th:value="${level}">
+                <input type="hidden" name="section" id="sectionInput" th:value="${section}">
+                <div class="dropdown level-filter">
+                    <button class="form-select text-start text-truncate" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                            th:text="${level == '' ? 'Tất cả cấp độ' : (section == '' ? level : level + ' · ' + section)}">Tất cả cấp độ</button>
+                    <ul class="dropdown-menu w-100">
+                        <li>
+                            <a class="dropdown-item d-flex justify-content-between align-items-center" href="#" data-level="" data-section=""
+                               th:classappend="${level == ''} ? 'selected'">
+                                <span>Tất cả cấp độ</span>
+                                <i class="bi bi-check2" th:if="${level == ''}"></i>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li th:each="entry : ${levelSections}" class="dropend-hover">
+                            <a class="dropdown-item d-flex justify-content-between align-items-center" href="#"
+                               th:attr="data-level=${entry.key}" data-section=""
+                               th:classappend="${entry.key == level} ? 'selected'">
+                                <span>
+                                    <span th:text="${entry.key}">N5</span>
+                                    <i class="bi bi-check2 ms-1" th:if="${entry.key == level}"></i>
+                                </span>
+                                <i class="bi bi-chevron-right small" th:if="${!#lists.isEmpty(entry.value)}"></i>
+                            </a>
+                            <ul class="dropdown-menu submenu" th:if="${!#lists.isEmpty(entry.value)}">
+                                <li th:each="sec : ${entry.value}">
+                                    <a class="dropdown-item d-flex justify-content-between align-items-center gap-2" href="#"
+                                       th:attr="data-level=${entry.key},data-section=${sec}"
+                                       th:classappend="${entry.key == level && sec == section} ? 'selected'">
+                                        <span th:text="${sec}">Chương 1</span>
+                                        <i class="bi bi-check2" th:if="${entry.key == level && sec == section}"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </div>
             <div class="col-md-4 col-lg-2">
                 <select class="form-select" name="status">
@@ -46,7 +79,6 @@
                     <th>Tên quiz</th>
                     <th>Bài học</th>
                     <th>Số câu</th>
-                    <th>Đã gắn</th>
                     <th>Điểm đạt</th>
                     <th>Trạng thái</th>
                     <th class="pe-4">Thao tác</th>
@@ -57,7 +89,6 @@
                     <td class="ps-4" th:text="${quiz.id}"></td>
                     <td class="fw-semibold" th:text="${quiz.title}"></td>
                     <td th:text="${quiz.lessonTitle ?: '-'}"></td>
-                    <td th:text="${quiz.totalQuestions}"></td>
                     <td>
                         <span class="badge" th:classappend="${quiz.linkedQuestionCount > 0 ? 'bg-success' : 'bg-warning text-dark'}"
                               th:text="${quiz.linkedQuestionCount}"></span>
@@ -76,11 +107,106 @@
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(quizzes)}">
-                    <td colspan="8" class="text-center text-muted py-5">Không tìm thấy quiz.</td>
+                    <td colspan="7" class="text-center text-muted py-5">Không tìm thấy quiz.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <style>
+        .level-filter .dropend-hover { position: relative; }
+        .level-filter .submenu {
+            top: -0.5rem; left: 100%; margin: 0;
+            min-width: 22rem; max-height: 70vh; overflow-y: auto;
+        }
+        /* Vùng đệm vô hình nối mục N với cột chương để rê chậm không bị mất menu */
+        .level-filter .dropend-hover.show-sub::after {
+            content: ""; position: absolute; top: 0; bottom: 0; right: -12px; width: 12px;
+        }
+        .level-filter .dropend-hover.show-sub > .submenu { display: block; }
+        .level-filter .dropdown-item.selected { font-weight: 600; color: var(--bs-primary); }
+        .level-filter .dropdown-item:hover,
+        .level-filter .dropdown-item:focus,
+        .level-filter .dropend-hover.show-sub > .dropdown-item {
+            background-color: var(--bs-primary); color: #fff;
+        }
+        @media (max-width: 991.98px) {
+            .level-filter .submenu { display: block; position: static; min-width: 0; margin: 0; border: 0; box-shadow: none; padding-left: 1rem; }
+            .level-filter .dropend-hover.show-sub::after { display: none; }
+        }
+    </style>
+    <script>
+        (function () {
+            // Chỉ trì hoãn đổi bậc khi chuột đang đi chéo về phía cột chương (menu-aim)
+            var items = document.querySelectorAll('.level-filter .dropend-hover');
+            var current = null, hideTimer = null, openTimer = null;
+            var trail = [];
+
+            document.addEventListener('mousemove', function (e) {
+                trail.push({ x: e.clientX, y: e.clientY });
+                if (trail.length > 3) trail.shift();
+            });
+
+            function slope(a, b) { return (b.y - a.y) / (b.x - a.x); }
+
+            function aimingAtSubmenu() {
+                if (!current || trail.length < 2) return false;
+                var sub = current.querySelector('.submenu');
+                if (!sub) return false;
+                var r = sub.getBoundingClientRect();
+                var loc = trail[trail.length - 1], prev = trail[0];
+                if (loc.x >= r.left || prev.x >= loc.x) return false;
+                var upper = { x: r.left, y: r.top }, lower = { x: r.left, y: r.bottom };
+                return slope(loc, upper) < slope(prev, upper) && slope(loc, lower) > slope(prev, lower);
+            }
+
+            function open(li) {
+                items.forEach(function (x) { if (x !== li) x.classList.remove('show-sub'); });
+                li.classList.add('show-sub');
+                current = li;
+            }
+
+            function openWhenSettled(li, lastLoc) {
+                var loc = trail[trail.length - 1];
+                var stopped = lastLoc && loc && lastLoc.x === loc.x && lastLoc.y === loc.y;
+                if (stopped || !aimingAtSubmenu()) { open(li); return; }
+                openTimer = setTimeout(function () { openWhenSettled(li, loc); }, 100);
+            }
+
+            items.forEach(function (li) {
+                li.addEventListener('mouseenter', function () {
+                    clearTimeout(hideTimer);
+                    clearTimeout(openTimer);
+                    if (li === current) return;
+                    openWhenSettled(li);
+                });
+                li.addEventListener('mouseleave', function () {
+                    clearTimeout(openTimer);
+                    hideTimer = setTimeout(function () {
+                        li.classList.remove('show-sub');
+                        if (current === li) current = null;
+                    }, 400);
+                });
+            });
+
+            var toggle = document.querySelector('.level-filter [data-bs-toggle="dropdown"]');
+            toggle.addEventListener('hidden.bs.dropdown', function () {
+                clearTimeout(hideTimer);
+                clearTimeout(openTimer);
+                items.forEach(function (x) { x.classList.remove('show-sub'); });
+                current = null;
+            });
+        })();
+
+        document.querySelectorAll('.level-filter [data-level]').forEach(function (item) {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.getElementById('levelInput').value = this.dataset.level;
+                document.getElementById('sectionInput').value = this.dataset.section || '';
+                this.closest('form').submit();
+            });
+        });
+    </script>
 </div>
 </div>

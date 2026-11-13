@@ -7,6 +7,11 @@ spring:
   application:
     name: jlpp-platform
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 60MB
+
   # Thymeleaf configuration
   thymeleaf:
     cache: false
