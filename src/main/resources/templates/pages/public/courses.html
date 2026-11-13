@@ -79,7 +79,7 @@
         </div>
 
         <!-- Course Cards Grid -->
-        <div class="row" th:if="${courses != null && !courses.isEmpty()}">
+        <div class="row g-4" th:if="${courses != null && !courses.isEmpty()}">
             <th:block th:each="c : ${courses}">
                 <div th:replace="~{fragments/components/course-card :: courseCard(${c}, false)}"></div>
             </th:block>
