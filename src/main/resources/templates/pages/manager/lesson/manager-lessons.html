@@ -37,6 +37,146 @@
         .lesson-client-alert {
             border-left: 4px solid #dc3545;
         }
+        .lesson-filter-card {
+            border: 1px solid #E2E8F0;
+            border-radius: 1rem;
+            background: #FFFFFF;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .lesson-filter-card .form-control,
+        .lesson-filter-card .form-select {
+            border-radius: 0.625rem;
+            font-size: 0.875rem;
+            border-color: #CBD5E1;
+        }
+        .lesson-filter-card .form-control:focus,
+        .lesson-filter-card .form-select:focus {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.12);
+        }
+        .manager-skill-lessons.is-filtered .manager-lesson-drag-handle {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        #lessonEmptyFilterState {
+            border: 2px dashed #CBD5E1;
+            border-radius: 1rem;
+            background: #F8FAFC;
+        }
+
+        /* Thống kê bài học */
+        .lesson-stat-card {
+            border-radius: 1rem;
+            border: 1px solid #E2E8F0;
+            background: #FFFFFF;
+            padding: 1.15rem 0.85rem;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            position: relative;
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 0.75rem;
+        }
+        .lesson-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(23, 59, 87, 0.12);
+            border-color: #94A3B8;
+        }
+        .lesson-stat-card.is-active-filter {
+            border-color: #2563EB;
+            background: #F0F7FF;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+        .lesson-stat-label {
+            font-size: 0.825rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+            color: #475569;
+            line-height: 1.2;
+            width: 100%;
+            text-align: center;
+        }
+        .lesson-stat-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.85rem;
+            width: 100%;
+        }
+        .lesson-stat-icon {
+            width: 72px;
+            height: 72px;
+            min-width: 72px;
+            min-height: 72px;
+            aspect-ratio: 1 / 1;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.35rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+        }
+        .lesson-stat-icon.icon-total { background-color: #E8F1F8; color: var(--navy-dark); font-size: 2.25rem; }
+        .lesson-stat-icon.icon-vocab { background-color: #E6F6F4; color: #0D9488; }
+        .lesson-stat-icon.icon-kanji { background-color: #FEF3C7; color: #D97706; }
+        .lesson-stat-icon.icon-grammar { background-color: #F1EDFA; color: #7C3AED; }
+        .lesson-stat-icon.icon-reading { background-color: #E0F2FE; color: #0284C7; }
+        .lesson-stat-icon.icon-listening { background-color: #FFE4E6; color: #E11D48; }
+
+        .lesson-stat-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-width: 65px;
+        }
+        .lesson-stat-value {
+            font-size: 2.35rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--navy-dark);
+        }
+        .lesson-stat-sublabel {
+            font-size: 0.825rem;
+            color: #64748B;
+            line-height: 1.2;
+            margin-top: 0.25rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .lesson-stat-meta-strip {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 0.75rem;
+            padding: 0.65rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.25rem;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .lesson-stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            transition: color 0.15s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .lesson-stat-pill:hover {
+            color: #2563EB;
+        }
     </style>
 
     <div class="alert alert-success py-2" role="status" th:if="${lessonSuccess}" th:text="${lessonSuccess}"></div>
@@ -79,6 +219,220 @@
                 Quản lý khóa học <i class="bi bi-arrow-right"></i>
             </a>
         </div>
+    </div>
+
+    <!-- Thống kê bài học của khóa học -->
+    <section class="lesson-stats-section mb-4" th:if="${selectedCourse != null and lessonStats != null}">
+        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-2">
+            <!-- 1. Tổng số bài học -->
+            <div class="col">
+                <div class="lesson-stat-card js-stat-card" data-stat-skill="" th:title="|Tổng cộng ${lessonStats.totalLessons} bài học (${lessonStats.activeCount} hiện, ${lessonStats.inactiveCount} ẩn). Bấm để xem tất cả|">
+                    <div class="lesson-stat-label">Tổng số bài học</div>
+                    <div class="lesson-stat-content">
+                        <span class="lesson-stat-icon icon-total"><i class="bi bi-collection"></i></span>
+                        <div class="lesson-stat-details">
+                            <div class="lesson-stat-value" th:text="${lessonStats.totalLessons}">0</div>
+                            <div class="lesson-stat-sublabel">bài học</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Từ vựng (Vocabulary) -->
+            <div class="col">
+                <div class="lesson-stat-card js-stat-card" data-stat-skill="VOCABULARY" title="Bấm để lọc bài Từ vựng">
+                    <div class="lesson-stat-label">Từ vựng</div>
+                    <div class="lesson-stat-content">
+                        <span class="lesson-stat-icon icon-vocab">語</span>
+                        <div class="lesson-stat-details">
+                            <div class="lesson-stat-value" th:text="${lessonStats.vocabCount}">0</div>
+                            <div class="lesson-stat-sublabel">bài học</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Hán tự (Kanji) -->
+            <div class="col">
+                <div class="lesson-stat-card js-stat-card" data-stat-skill="KANJI" title="Bấm để lọc bài Hán tự">
+                    <div class="lesson-stat-label">Hán tự</div>
+                    <div class="lesson-stat-content">
+                        <span class="lesson-stat-icon icon-kanji">字</span>
+                        <div class="lesson-stat-details">
+                            <div class="lesson-stat-value" th:text="${lessonStats.kanjiCount}">0</div>
+                            <div class="lesson-stat-sublabel">bài học</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Ngữ pháp (Grammar) -->
+            <div class="col">
+                <div class="lesson-stat-card js-stat-card" data-stat-skill="GRAMMAR" title="Bấm để lọc bài Ngữ pháp">
+                    <div class="lesson-stat-label">Ngữ pháp</div>
+                    <div class="lesson-stat-content">
+                        <span class="lesson-stat-icon icon-grammar">文</span>
+                        <div class="lesson-stat-details">
+                            <div class="lesson-stat-value" th:text="${lessonStats.grammarCount}">0</div>
+                            <div class="lesson-stat-sublabel">bài học</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Đọc hiểu (Reading) -->
+            <div class="col">
+                <div class="lesson-stat-card js-stat-card" data-stat-skill="READING" title="Bấm để lọc bài Đọc hiểu">
+                    <div class="lesson-stat-label">Đọc hiểu</div>
+                    <div class="lesson-stat-content">
+                        <span class="lesson-stat-icon icon-reading">読</span>
+                        <div class="lesson-stat-details">
+                            <div class="lesson-stat-value" th:text="${lessonStats.readingCount}">0</div>
+                            <div class="lesson-stat-sublabel">bài học</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Nghe hiểu (Listening) -->
+            <div class="col">
+                <div class="lesson-stat-card js-stat-card" data-stat-skill="LISTENING" title="Bấm để lọc bài Nghe hiểu">
+                    <div class="lesson-stat-label">Nghe hiểu</div>
+                    <div class="lesson-stat-content">
+                        <span class="lesson-stat-icon icon-listening">聴</span>
+                        <div class="lesson-stat-details">
+                            <div class="lesson-stat-value" th:text="${lessonStats.listeningCount}">0</div>
+                            <div class="lesson-stat-sublabel">bài học</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dải chỉ số mở rộng -->
+        <div class="lesson-stat-meta-strip">
+            <span class="lesson-stat-pill" title="Trạng thái hiển thị bài học">
+                <i class="bi bi-eye text-primary"></i>
+                <span>Trạng thái: <strong class="text-success" th:text="${lessonStats.activeCount}">0</strong> hiện · <strong class="text-muted" th:text="${lessonStats.inactiveCount}">0</strong> ẩn</span>
+            </span>
+            <span class="lesson-stat-pill js-stat-pill" data-stat-skill="FLASHCARD" title="Bấm để lọc bài có Flashcard">
+                <i class="bi bi-copy text-primary"></i>
+                <span>Flashcard: <strong class="text-dark" th:text="${lessonStats.flashcardCount}">0</strong> bài</span>
+            </span>
+            <span class="lesson-stat-pill js-stat-pill" data-stat-skill="PRACTICE" title="Bấm để lọc bài Luyện tập / Quiz">
+                <i class="bi bi-check2-circle text-success"></i>
+                <span>Luyện tập (Quiz): <strong class="text-dark" th:text="${lessonStats.practiceCount}">0</strong> bài</span>
+            </span>
+            <span class="lesson-stat-pill js-stat-pill" data-stat-free="FREE" title="Bấm để lọc bài Học thử miễn phí">
+                <i class="bi bi-gift text-warning"></i>
+                <span>Học thử miễn phí: <strong class="text-dark" th:text="${lessonStats.freePreviewCount}">0</strong> bài</span>
+            </span>
+            <span class="lesson-stat-pill" title="Tổng thời lượng ước tính">
+                <i class="bi bi-clock-history text-secondary"></i>
+                <span>Tổng thời lượng: <strong class="text-dark" th:text="${lessonStats.formattedDuration()}">0 phút</strong></span>
+            </span>
+            <span class="lesson-stat-pill" title="Số lượng chương trong khóa">
+                <i class="bi bi-folder2 text-secondary"></i>
+                <span>Chương học: <strong class="text-dark" th:text="${lessonStats.chapterCount}">0</strong> chương</span>
+            </span>
+            <span class="lesson-stat-pill js-stat-pill" data-stat-skill="OTHER" th:if="${lessonStats.otherCount > 0}" title="Bấm để lọc bài học khác">
+                <i class="bi bi-grid text-muted"></i>
+                <span>Khác: <strong class="text-dark" th:text="${lessonStats.otherCount}">0</strong> bài</span>
+            </span>
+        </div>
+    </section>
+
+    <!-- Bộ lọc & Tìm kiếm bài học -->
+    <div class="kotoba-card p-3 mb-4 lesson-filter-card" th:if="${selectedCourse != null}">
+        <form id="lessonFilterForm" class="row g-2 align-items-center" method="get" th:action="@{/manager/lessons}">
+            <input type="hidden" name="courseId" th:value="${selectedCourseId}">
+
+            <!-- Ô tìm kiếm từ khóa -->
+            <div class="col-12 col-md-4 col-lg-3">
+                <label class="visually-hidden" for="lessonSearchInput">Tìm kiếm bài học</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input id="lessonSearchInput" name="search" class="form-control" type="search"
+                           placeholder="Tìm theo tên bài học, mô tả..."
+                           th:value="${searchQuery}">
+                </div>
+            </div>
+
+            <!-- Lọc theo Chương -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="visually-hidden" for="lessonChapterFilter">Lọc theo chương</label>
+                <select id="lessonChapterFilter" name="filterChapter" class="form-select">
+                    <option value="">Tất cả chương</option>
+                    <option th:each="cName : ${chapterNames}" th:value="${cName}" th:text="${cName}"
+                            th:selected="${cName == filterChapter}"></option>
+                </select>
+            </div>
+
+            <!-- Lọc theo Kỹ năng / Loại bài -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="visually-hidden" for="lessonSkillFilter">Lọc theo kỹ năng</label>
+                <select id="lessonSkillFilter" name="filterSkill" class="form-select">
+                    <option value="">Tất cả kỹ năng</option>
+                    <option value="VOCABULARY" th:selected="${filterSkill == 'VOCABULARY'}">Từ vựng (語)</option>
+                    <option value="KANJI" th:selected="${filterSkill == 'KANJI'}">Hán tự (字)</option>
+                    <option value="GRAMMAR" th:selected="${filterSkill == 'GRAMMAR'}">Ngữ pháp (文)</option>
+                    <option value="READING" th:selected="${filterSkill == 'READING'}">Đọc hiểu (読)</option>
+                    <option value="LISTENING" th:selected="${filterSkill == 'LISTENING'}">Nghe hiểu (聴)</option>
+                    <option value="FLASHCARD" th:selected="${filterSkill == 'FLASHCARD'}">Flashcard</option>
+                    <option value="PRACTICE" th:selected="${filterSkill == 'PRACTICE'}">Luyện tập (Quiz)</option>
+                    <option value="OTHER" th:selected="${filterSkill == 'OTHER'}">Bài học khác (▤)</option>
+                </select>
+            </div>
+
+            <!-- Lọc theo Trạng thái -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="visually-hidden" for="lessonStatusFilter">Lọc theo trạng thái</label>
+                <select id="lessonStatusFilter" name="filterStatus" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="ACTIVE" th:selected="${filterStatus == 'ACTIVE'}">Đang hiển thị</option>
+                    <option value="INACTIVE" th:selected="${filterStatus == 'INACTIVE'}">Đang ẩn</option>
+                </select>
+            </div>
+
+            <!-- Lọc theo Học thử / Miễn phí -->
+            <div class="col-6 col-md-3 col-lg-1">
+                <label class="visually-hidden" for="lessonFreeFilter">Học thử</label>
+                <select id="lessonFreeFilter" name="filterFree" class="form-select" title="Lọc theo chế độ học thử">
+                    <option value="">Tất cả</option>
+                    <option value="FREE" th:selected="${filterFree == 'FREE'}">Miễn phí</option>
+                    <option value="PAID" th:selected="${filterFree == 'PAID'}">Có phí</option>
+                </select>
+            </div>
+
+            <!-- Nút Lọc và Xoá như bên quiz management -->
+            <div class="col-12 col-md-6 col-lg-2 d-flex gap-2">
+                <button id="lessonFilterSubmit" class="btn btn-outline-primary flex-grow-1" type="submit">Lọc</button>
+                <a id="lessonFilterReset" class="btn btn-outline-secondary" th:href="@{/manager/lessons(courseId=${selectedCourseId})}">Xoá</a>
+            </div>
+        </form>
+
+        <!-- Thống kê trạng thái lọc -->
+        <div id="lessonFilterStats" class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top small text-muted">
+            <div class="d-flex align-items-center gap-2">
+                <span>Hiển thị: <strong id="lessonVisibleCount" class="text-dark" th:text="${courseLessonCount}">0</strong> / <span id="lessonTotalCount" th:text="${courseLessonCount}">0</span> bài học</span>
+                <span id="lessonFilterActiveBadge" class="badge bg-primary-subtle text-primary border border-primary-subtle" style="display:none;">
+                    <i class="bi bi-funnel-fill me-1"></i>Đang áp dụng bộ lọc
+                </span>
+            </div>
+            <div id="lessonFilterEmptyMessage" class="text-danger fw-semibold" style="display:none;">
+                <i class="bi bi-exclamation-circle me-1"></i>Không có bài học nào phù hợp với bộ lọc hiện tại.
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty state khi filter không có kết quả -->
+    <div id="lessonEmptyFilterState" class="kotoba-card p-5 text-center my-4" style="display:none;">
+        <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
+        <h5 class="fw-bold text-dark">Không tìm thấy bài học nào phù hợp</h5>
+        <p class="text-muted mb-3">Không có bài học nào thỏa mãn các điều kiện tìm kiếm và bộ lọc đã chọn.</p>
+        <button type="button" class="btn btn-outline-primary btn-sm px-3" id="lessonEmptyResetBtn">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Xóa bộ lọc để xem tất cả
+        </button>
     </div>
 
     <section class="manager-chapters" th:if="${selectedCourse != null}">
@@ -132,7 +486,17 @@
                          th:attr="data-chapter=${chapter.name}, data-column=${column.value}, data-course-id=${selectedCourseId}">
                         <article class="manager-skill-lesson" th:each="item, itemStat : ${column.lessons}"
                                  th:classappend="${!item.visible} ? ' is-hidden'"
-                                 th:attr="data-lesson-id=${item.id}, data-chapter=${chapter.name}, data-column=${column.value}, data-order=${itemStat.index + 1}"
+                                 th:attr="data-lesson-id=${item.id},
+                                          data-chapter=${chapter.name},
+                                          data-column=${column.value},
+                                          data-order=${itemStat.index + 1},
+                                          data-title=${item.title != null ? item.title : ''},
+                                          data-description=${item.description != null ? item.description : ''},
+                                          data-skill=${item.skillValue != null ? item.skillValue : 'OTHER'},
+                                          data-status=${item.visible ? 'ACTIVE' : 'INACTIVE'},
+                                          data-free=${item.freePreview ? 'true' : 'false'},
+                                          data-is-flashcard=${#lists.contains(lessonTags[item.id], 'FLASHCARD') or (item.title != null and #strings.startsWith(#strings.toLowerCase(item.title), 'flashcard'))},
+                                          data-is-practice=${#lists.contains(lessonTags[item.id], 'PRACTICE') or (item.title != null and (#strings.startsWith(#strings.toLowerCase(item.title), 'luyện tập') or #strings.startsWith(#strings.toLowerCase(item.title), 'quiz')))}"
                                  draggable="true">
                             <span class="manager-lesson-drag-handle" title="Kéo thả sắp xếp thứ tự bài học" aria-label="Kéo thả sắp xếp">
                                 <i class="bi bi-grip-vertical"></i>
@@ -177,16 +541,22 @@
                                    class="manager-lesson-icon-btn"
                                    th:href="@{/manager/lessons(courseId=${selectedCourseId}, skill=${item.skillValue}, edit=${item.id})}"
                                    th:attr="aria-label=|Sửa bài học ${item.title}|" title="Sửa bài học"><i class="bi bi-pencil-fill"></i></a>
-                                <form method="post" th:action="@{/manager/lessons/{id}/delete(id=${item.id})}"
-                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài học này?')">
-                                    <input type="hidden" name="courseId" th:value="${selectedCourseId}">
-                                    <input type="hidden" name="skill" th:value="${item.skillValue}">
-                                    <button type="submit" class="manager-lesson-icon-btn is-danger"
+                                <th:block th:with="isStudied=${studiedLessonIds != null and (studiedLessonIds.contains(item.id) or studiedLessonIds.contains(T(java.lang.Long).valueOf(item.id)))}">
+                                    <form th:if="${!isStudied}" method="post" th:action="@{/manager/lessons/{id}/delete(id=${item.id})}"
+                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài học này?')">
+                                        <input type="hidden" name="courseId" th:value="${selectedCourseId}">
+                                        <input type="hidden" name="skill" th:value="${item.skillValue}">
+                                        <button type="submit" class="manager-lesson-icon-btn is-danger"
+                                                th:attr="aria-label=|Xóa bài học ${item.title}|" title="Xóa bài học"><i class="bi bi-trash-fill"></i></button>
+                                    </form>
+                                    <button th:if="${isStudied}" type="button" class="manager-lesson-icon-btn is-danger"
+                                            onclick="alert('Bài học này đã có học viên học, không thể xóa!');"
                                             th:attr="aria-label=|Xóa bài học ${item.title}|" title="Xóa bài học"><i class="bi bi-trash-fill"></i></button>
-                                </form>
+                                </th:block>
                             </div>
                         </article>
-                        <p class="manager-no-lessons" th:if="${#lists.isEmpty(column.lessons)}">Chưa có bài học</p>
+                        <p class="manager-no-lessons" th:style="${#lists.isEmpty(column.lessons)} ? '' : 'display: none;'"
+                           th:text="${#lists.isEmpty(column.lessons) ? 'Chưa có bài học' : 'Không có bài học phù hợp'}">Chưa có bài học</p>
                     </div>
                     <footer class="manager-skill-actions">
                         <div class="manager-skill-primary-actions" th:classappend="${column.value == 'GRAMMAR' or column.value == 'OTHER'} ? ' is-single'">
@@ -778,7 +1148,7 @@
                             <span th:text="${selectedCourse != null ? selectedCourse.title : 'Khóa học'}">JLPT N5</span> ·
                             <span th:text="${selectedSkillLabel}">Ngữ pháp</span> ·
                             <span th:if="${form['sectionName'] != null and !#strings.isEmpty(form['sectionName'])}" th:text="${form['sectionName']}">Chương 1</span> ·
-                            <span th:if="${!editMode}" th:text="|tự động nối vào cuối kỹ năng, vị trí ${visibleCount + 1}|"></span>
+                            <span th:if="${!editMode}" th:text="|tự động nối vào cuối kỹ năng, vị trí ${visibleCount + 1} (trạng thái: Đang ẩn)|"></span>
                             <span th:if="${editMode}" th:text="|vị trí ${editingLesson.order} trong ${visibleCount}|"></span>
                         </p>
                     </div>
@@ -1191,16 +1561,21 @@
             </div>
 
             <div class="lesson-modal-foot">
-                <form th:if="${editMode}" class="lesson-modal-delete-form" method="post" data-confirm-delete
+                <button th:if="${editMode and editingLessonStudied}" type="button" class="lesson-modal-delete"
+                        onclick="alert('Bài học này đã có học viên học, không thể xóa!');"
+                        title="Xoá bài học">
+                    <i class="bi bi-trash3"></i>Xoá bài học
+                </button>
+                <form th:if="${editMode and !editingLessonStudied}" class="lesson-modal-delete-form" method="post" data-confirm-delete
                       th:action="@{/manager/lessons/{id}/delete(id=${editingLesson.id})}">
                     <input type="hidden" name="courseId" th:value="${selectedCourseId}">
                     <input type="hidden" name="skill" th:value="${selectedSkill.value}">
-                    <button type="submit" class="lesson-modal-delete">
+                    <button type="submit" class="lesson-modal-delete" title="Xoá bài học">
                         <i class="bi bi-trash3"></i>Xoá bài học
                     </button>
                 </form>
                 <span class="lesson-modal-placement" th:unless="${editMode}"
-                      th:text="|Bài mới sẽ ở vị trí ${visibleCount + 1} trong kỹ năng ${selectedSkillLabel}.|"></span>
+                      th:text="|Bài mới sẽ ở vị trí ${visibleCount + 1} trong kỹ năng ${selectedSkillLabel} (trạng thái: Đang ẩn).|"></span>
 
                 <div class="lesson-modal-actions">
                     <a class="lesson-btn lesson-btn-quiet"
@@ -1369,7 +1744,7 @@
                         </form>
                     </div>
                     <div class="lesson-modal-foot">
-                        <span class="lesson-modal-placement">skill_type sẽ được lưu là NULL.</span>
+                        <span class="lesson-modal-placement">skill_type sẽ được lưu là NULL, trạng thái ban đầu: Đang ẩn.</span>
                         <div class="lesson-modal-actions">
                             <a class="lesson-btn lesson-btn-quiet" th:href="@{/manager/lessons(courseId=${selectedCourseId})}">Hủy</a>
                             <button type="submit" form="lessonForm" class="lesson-btn lesson-btn-primary"><i class="bi bi-check-lg"></i>Lưu bài học</button>

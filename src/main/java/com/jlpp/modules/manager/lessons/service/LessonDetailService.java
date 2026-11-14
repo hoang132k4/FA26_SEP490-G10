@@ -1138,4 +1138,123 @@ public class LessonDetailService {
         Object val = row.get(key);
         return val == null ? "" : value(String.valueOf(val));
     }
+
+    public void validateUniqueContent(long courseId, Long excludeLessonId, SkillTypeEnum skill, MultiValueMap<String, String> params) {
+        if (skill != SkillTypeEnum.KANJI && skill != SkillTypeEnum.GRAMMAR) {
+            return;
+        }
+        List<Map<String, Object>> existingLessons = detailRepository.findExistingSkillContents(courseId, skill.getValue(), excludeLessonId);
+        if (existingLessons.isEmpty()) {
+            return;
+        }
+
+        if (skill == SkillTypeEnum.KANJI) {
+            String targetChar = first(params, "character").trim();
+            if (!targetChar.isBlank()) {
+                for (Map<String, Object> existing : existingLessons) {
+                    String existingChar = extractKanjiCharacter(existing);
+                    if (!existingChar.isBlank() && targetChar.equals(existingChar)) {
+                        String title = (String) existing.get("title");
+                        String titleDisplay = (title != null && !title.isBlank()) ? " “" + title.trim() + "”" : "";
+                        throw new IllegalArgumentException("Chữ Hán “" + targetChar + "” đã tồn tại trong bài học" + titleDisplay + " của khóa học này. Vui lòng không tạo bài học trùng nội dung.");
+                    }
+                }
+            }
+        } else if (skill == SkillTypeEnum.GRAMMAR) {
+            String targetPattern = first(params, "pattern").trim();
+            if (!targetPattern.isBlank()) {
+                String normalizedTarget = normalizeGrammarPattern(targetPattern);
+                for (Map<String, Object> existing : existingLessons) {
+                    String existingPattern = extractGrammarPattern(existing);
+                    if (!existingPattern.isBlank() && normalizedTarget.equals(normalizeGrammarPattern(existingPattern))) {
+                        String title = (String) existing.get("title");
+                        String titleDisplay = (title != null && !title.isBlank()) ? " “" + title.trim() + "”" : "";
+                        throw new IllegalArgumentException("Mẫu ngữ pháp “" + targetPattern + "” đã tồn tại trong bài học" + titleDisplay + " của khóa học này. Vui lòng không tạo bài học trùng nội dung.");
+                    }
+                }
+            }
+        }
+    }
+
+    private String extractKanjiCharacter(Map<String, Object> existing) {
+        String payloadJson = (String) existing.get("payload");
+        if (payloadJson != null && !payloadJson.isBlank()) {
+            try {
+                Map<String, Object> map = objectMapper.readValue(payloadJson, MAP_TYPE);
+                String ch = string(map, "character").trim();
+                if (!ch.isBlank()) return ch;
+            } catch (Exception ignored) {}
+        }
+        String content = (String) existing.get("content");
+        if (content != null && content.startsWith("# ")) {
+            String firstLine = content.lines().findFirst().orElse("");
+            String sub = firstLine.substring(2).trim();
+            int cut = sub.indexOf('(');
+            int colon = sub.indexOf(':');
+            int sp = sub.indexOf(' ');
+            if (cut <= 0 || (colon > 0 && colon < cut)) cut = colon;
+            if (cut <= 0 || (sp > 0 && sp < cut)) cut = sp;
+            String ch = (cut > 0 ? sub.substring(0, cut) : sub).trim();
+            if (!ch.isBlank()) return ch;
+        }
+        String title = (String) existing.get("title");
+        if (title != null && !title.isBlank()) {
+            String t = title.trim();
+            if (t.startsWith("Hán tự:")) {
+                String sub = t.substring(7).trim();
+                int cut = sub.indexOf('(');
+                int dash = sub.indexOf('-');
+                if (cut <= 0 || (dash > 0 && dash < cut)) cut = dash;
+                String ch = (cut > 0 ? sub.substring(0, cut) : sub).trim();
+                if (!ch.isBlank()) return ch;
+            } else {
+                return t.length() <= 2 ? t : t.substring(0, 1);
+            }
+        }
+        return "";
+    }
+
+    private String extractGrammarPattern(Map<String, Object> existing) {
+        String payloadJson = (String) existing.get("payload");
+        if (payloadJson != null && !payloadJson.isBlank()) {
+            try {
+                Map<String, Object> map = objectMapper.readValue(payloadJson, MAP_TYPE);
+                String pat = string(map, "pattern").trim();
+                if (!pat.isBlank()) return pat;
+            } catch (Exception ignored) {}
+        }
+        String content = (String) existing.get("content");
+        if (content != null && content.startsWith("# ")) {
+            String firstLine = content.lines().findFirst().orElse("");
+            String sub = firstLine.substring(2).trim();
+            int colon = sub.indexOf(':');
+            String pat = (colon > 0 ? sub.substring(0, colon) : sub).trim();
+            if (!pat.isBlank()) return pat;
+        }
+        String title = (String) existing.get("title");
+        if (title != null && !title.isBlank()) {
+            String t = title.trim();
+            if (t.startsWith("Ngữ pháp:")) {
+                String sub = t.substring(9).trim();
+                int colon = sub.indexOf(':');
+                int paren = sub.indexOf('(');
+                int dash = sub.indexOf('-');
+                int cut = colon > 0 ? colon : (paren > 0 ? paren : dash);
+                String pat = (cut > 0 ? sub.substring(0, cut) : sub).trim();
+                if (!pat.isBlank()) return pat;
+            } else {
+                return t;
+            }
+        }
+        return "";
+    }
+
+    private String normalizeGrammarPattern(String pattern) {
+        if (pattern == null) return "";
+        return pattern.trim()
+                .replace("〜", "~")
+                .replace("～", "~")
+                .replaceAll("\\s+", "")
+                .toLowerCase(java.util.Locale.ROOT);
+    }
 }

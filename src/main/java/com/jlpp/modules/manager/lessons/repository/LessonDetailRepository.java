@@ -54,4 +54,33 @@ public class LessonDetailRepository {
     public void delete(long lessonId) {
         jdbcTemplate.update("DELETE FROM lesson_details WHERE lesson_id = ?", lessonId);
     }
+
+    public java.util.List<java.util.Map<String, Object>> findExistingSkillContents(long courseId, String skillValue, Long excludeLessonId) {
+        String sql = """
+                SELECT l.lesson_id, l.lesson_title, l.content, ld.payload::text AS payload
+                FROM lessons l
+                LEFT JOIN lesson_details ld ON l.lesson_id = ld.lesson_id
+                WHERE l.course_id = ? AND COALESCE(l.skill_type, l.lesson_type) = ?
+                """;
+        if (excludeLessonId != null) {
+            sql += " AND l.lesson_id <> ?";
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+                map.put("lessonId", rs.getLong("lesson_id"));
+                map.put("title", rs.getString("lesson_title"));
+                map.put("content", rs.getString("content"));
+                map.put("payload", rs.getString("payload"));
+                return map;
+            }, courseId, skillValue, excludeLessonId);
+        } else {
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+                map.put("lessonId", rs.getLong("lesson_id"));
+                map.put("title", rs.getString("lesson_title"));
+                map.put("content", rs.getString("content"));
+                map.put("payload", rs.getString("payload"));
+                return map;
+            }, courseId, skillValue);
+        }
+    }
 }

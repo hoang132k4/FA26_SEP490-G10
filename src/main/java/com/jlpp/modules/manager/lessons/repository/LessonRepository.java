@@ -1,8 +1,12 @@
 package com.jlpp.modules.manager.lessons.repository;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.common.constants.LessonStatusEnum;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonInput;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonRow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -138,6 +142,26 @@ public class LessonRepository {
     }
 
     public void delete(long lessonId) {
+        jdbcTemplate.update("DELETE FROM lesson_details WHERE lesson_id = ?", lessonId);
+        jdbcTemplate.update("DELETE FROM flashcards WHERE lesson_id = ?", lessonId);
+        jdbcTemplate.update("DELETE FROM study_materials WHERE lesson_id = ?", lessonId);
+        try {
+            List<Long> exIds = jdbcTemplate.queryForList("SELECT exercise_id FROM exercises WHERE lesson_id = ?", Long.class, lessonId);
+            if (!exIds.isEmpty()) {
+                for (Long exId : exIds) {
+                    List<Long> qIds = jdbcTemplate.queryForList("SELECT question_id FROM exercise_questions WHERE exercise_id = ?", Long.class, exId);
+                    jdbcTemplate.update("DELETE FROM exercise_questions WHERE exercise_id = ?", exId);
+                    if (!qIds.isEmpty()) {
+                        for (Long qId : qIds) {
+                            jdbcTemplate.update("DELETE FROM question_options WHERE question_id = ?", qId);
+                            jdbcTemplate.update("DELETE FROM questions WHERE id = ?", qId);
+                        }
+                    }
+                }
+                jdbcTemplate.update("DELETE FROM exercises WHERE lesson_id = ?", lessonId);
+            }
+        } catch (Exception ignored) {
+        }
         jdbcTemplate.update("DELETE FROM lessons WHERE lesson_id = ?", lessonId);
     }
 
@@ -218,5 +242,173 @@ public class LessonRepository {
                 (rs, rowNum) -> rs.getLong("lesson_id"),
                 lessonIds.toArray());
         return new HashSet<>(ids);
+    }
+
+    private static final Logger log = LoggerFactory.getLogger(LessonRepository.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public Set<Long> findStudiedLessonIds(long courseId, List<Long> lessonIds) {
+        if (lessonIds == null || lessonIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Long> studiedIds = new HashSet<>();
+        String inSql = String.join(",", Collections.nCopies(lessonIds.size(), "?"));
+        Object[] params = lessonIds.toArray();
+
+        // 1. Check exercise results (students who submitted quiz exercises in this lesson)
+        try {
+            List<Long> ids = jdbcTemplate.query(
+                    "SELECT DISTINCT e.lesson_id FROM exercise_results er JOIN exercises e ON e.exercise_id = er.exercise_id WHERE e.lesson_id IN (" + inSql + ")",
+                    (rs, rowNum) -> rs.getLong("lesson_id"),
+                    params);
+            studiedIds.addAll(ids);
+        } catch (Exception e) {
+            log.debug("Check exercise_results: {}", e.getMessage());
+        }
+
+        // 2. Check exam / exercise attempts
+        try {
+            List<Long> ids = jdbcTemplate.query(
+                    "SELECT DISTINCT e.lesson_id FROM attempts a JOIN exercises e ON e.exercise_id = a.exercise_id WHERE e.lesson_id IN (" + inSql + ")",
+                    (rs, rowNum) -> rs.getLong("lesson_id"),
+                    params);
+            studiedIds.addAll(ids);
+        } catch (Exception e) {
+            log.debug("Check attempts: {}", e.getMessage());
+        }
+
+        // 3. Check learning_paths (granular per-lesson completion recorded by learners)
+        // Note: CAST(... AS TEXT) is required so PostgreSQL jsonb column can be read into String without PSQLException
+        try {
+            List<String> progressJsons = jdbcTemplate.queryForList(
+                    "SELECT CAST(lesson_progress AS TEXT) FROM learning_paths WHERE lesson_progress IS NOT NULL",
+                    String.class);
+            for (String json : progressJsons) {
+                if (json == null || json.isBlank()) continue;
+                try {
+                    JsonNode root = OBJECT_MAPPER.readTree(json);
+                    JsonNode lessonsNode = root.get("lessons");
+                    if (lessonsNode != null && lessonsNode.isObject()) {
+                        for (Long lid : lessonIds) {
+                            if (lessonsNode.has(String.valueOf(lid))) {
+                                studiedIds.add(lid);
+                            }
+                        }
+                    }
+                } catch (Exception parseEx) {
+                    for (Long lid : lessonIds) {
+                        String needle = "\"" + lid + "\"";
+                        if (json.contains(needle)) {
+                            studiedIds.add(lid);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Check learning_paths: {}", e.getMessage());
+        }
+
+        // 4. Check course_registrations progress_percent > 0 for ACTIVE lessons
+        try {
+            List<Integer> percents = jdbcTemplate.queryForList(
+                    "SELECT progress_percent FROM course_registrations WHERE course_id = ? AND progress_percent > 0",
+                    Integer.class, courseId);
+            if (!percents.isEmpty()) {
+                // Only consider ACTIVE lessons, because inactive / newly created draft lessons are never displayed to learners
+                List<LessonRow> activeLessons = findByCourse(courseId).stream()
+                        .filter(LessonRow::isVisible)
+                        .toList();
+                int totalActive = activeLessons.size();
+                if (totalActive > 0) {
+                    for (Integer percent : percents) {
+                        if (percent != null && percent > 0) {
+                            int completedCount = (int) Math.round((percent / 100.0) * totalActive);
+                            for (int i = 0; i < Math.min(completedCount, totalActive); i++) {
+                                studiedIds.add(activeLessons.get(i).id());
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Check course_registrations: {}", e.getMessage());
+        }
+
+        return studiedIds;
+    }
+
+    public boolean hasLearnersStudied(long lessonId) {
+        // 1. Direct check exercise results
+        try {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM exercise_results er JOIN exercises e ON e.exercise_id = er.exercise_id WHERE e.lesson_id = ?",
+                    Integer.class, lessonId);
+            if (count != null && count > 0) return true;
+        } catch (Exception ignored) {}
+
+        // 2. Direct check attempts
+        try {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM attempts a JOIN exercises e ON e.exercise_id = a.exercise_id WHERE e.lesson_id = ?",
+                    Integer.class, lessonId);
+            if (count != null && count > 0) return true;
+        } catch (Exception ignored) {}
+
+        // 3. Direct check learning_paths
+        try {
+            List<String> progressJsons = jdbcTemplate.queryForList(
+                    "SELECT CAST(lesson_progress AS TEXT) FROM learning_paths WHERE lesson_progress IS NOT NULL",
+                    String.class);
+            for (String json : progressJsons) {
+                if (json == null || json.isBlank()) continue;
+                try {
+                    JsonNode root = OBJECT_MAPPER.readTree(json);
+                    JsonNode lessonsNode = root.get("lessons");
+                    if (lessonsNode != null && lessonsNode.has(String.valueOf(lessonId))) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    if (json.contains("\"" + lessonId + "\"")) return true;
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 4. Fallback check via course active lessons
+        Optional<LessonRow> lessonOpt = findById(lessonId);
+        if (lessonOpt.isPresent()) {
+            LessonRow lesson = lessonOpt.get();
+            if (lesson.isVisible()) {
+                try {
+                    List<Integer> percents = jdbcTemplate.queryForList(
+                            "SELECT progress_percent FROM course_registrations WHERE course_id = ? AND progress_percent > 0",
+                            Integer.class, lesson.courseId());
+                    if (!percents.isEmpty()) {
+                        List<LessonRow> activeLessons = findByCourse(lesson.courseId()).stream()
+                                .filter(LessonRow::isVisible)
+                                .toList();
+                        int totalActive = activeLessons.size();
+                        int rank = -1;
+                        for (int i = 0; i < totalActive; i++) {
+                            if (activeLessons.get(i).id() == lessonId) {
+                                rank = i + 1;
+                                break;
+                            }
+                        }
+                        if (rank > 0 && totalActive > 0) {
+                            for (Integer percent : percents) {
+                                if (percent != null && percent > 0) {
+                                    int completedCount = (int) Math.round((percent / 100.0) * totalActive);
+                                    if (rank <= completedCount) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        return false;
     }
 }
