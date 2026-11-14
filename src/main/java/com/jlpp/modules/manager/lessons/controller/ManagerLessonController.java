@@ -20,6 +20,7 @@ import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonStudyView;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.PracticeQuizView;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.LibraryItem;
 import com.jlpp.modules.manager.lessons.dto.LessonDtos.SkillTab;
+import com.jlpp.modules.manager.lessons.dto.LessonDtos.LessonStats;
 import com.jlpp.modules.manager.lessons.service.LessonDetailService;
 import com.jlpp.modules.manager.lessons.service.LessonAudioStorageService;
 import com.jlpp.modules.manager.lessons.service.LessonService;
@@ -107,6 +108,11 @@ public class ManagerLessonController {
     @GetMapping
     public String workspace(@RequestParam(name = "courseId", required = false) Long courseId,
                             @RequestParam(name = "skill", required = false) String skill,
+                            @RequestParam(name = "search", required = false) String search,
+                            @RequestParam(name = "filterSkill", required = false) String filterSkill,
+                            @RequestParam(name = "filterChapter", required = false) String filterChapter,
+                            @RequestParam(name = "filterStatus", required = false) String filterStatus,
+                            @RequestParam(name = "filterFree", required = false) String filterFree,
                             @RequestParam(name = "edit", required = false) Long editLessonId,
                             @RequestParam(name = "modal", required = false) String modalMode,
                             @RequestParam(name = "tab", required = false) String libraryTab,
@@ -145,6 +151,11 @@ public class ManagerLessonController {
         model.addAttribute("openDetailId", detailId);
         model.addAttribute("courseLessonCount", selectedCourse == null ? 0 : selectedCourse.lessonCount());
         model.addAttribute("courseLevel", courseLevel);
+        model.addAttribute("searchQuery", search != null ? search.trim() : "");
+        model.addAttribute("filterSkill", filterSkill != null ? filterSkill.trim() : "");
+        model.addAttribute("filterChapter", filterChapter != null ? filterChapter.trim() : "");
+        model.addAttribute("filterStatus", filterStatus != null ? filterStatus.trim() : "");
+        model.addAttribute("filterFree", filterFree != null ? filterFree.trim() : "");
 
         List<LessonRow> courseLessons = List.of();
         if (selectedCourseId != null) {
@@ -159,6 +170,10 @@ public class ManagerLessonController {
         List<Long> lessonIds = allLessons.stream().map(LessonRow::id).toList();
         java.util.Set<Long> flashcardLessonIds = lessonService.findLessonIdsWithFlashcards(lessonIds);
         java.util.Set<Long> practiceLessonIds = lessonService.findLessonIdsWithExercises(lessonIds);
+        java.util.Set<Long> studiedLessonIds = selectedCourseId != null
+                ? lessonService.findStudiedLessonIds(selectedCourseId, lessonIds)
+                : java.util.Set.of();
+        model.addAttribute("studiedLessonIds", studiedLessonIds);
 
         Map<Long, List<String>> lessonTags = new java.util.LinkedHashMap<>();
         for (LessonRow lesson : allLessons) {
@@ -215,6 +230,52 @@ public class ManagerLessonController {
         chapterGroups = List.copyOf(chapterGroups);
         model.addAttribute("chapterGroups", chapterGroups);
         model.addAttribute("chapterNames", chapterNames);
+
+        int totalLessons = allLessons.size();
+        int activeCount = (int) allLessons.stream().filter(LessonRow::isVisible).count();
+        int inactiveCount = totalLessons - activeCount;
+        int freePreviewCount = (int) allLessons.stream().filter(LessonRow::freePreview).count();
+        int totalMinutes = allLessons.stream()
+                .mapToInt(l -> l.durationMinutes() != null ? l.durationMinutes() : 0)
+                .sum();
+        int totalHours = totalMinutes / 60;
+        int remainingMinutes = totalMinutes % 60;
+
+        int vocabCount = (int) allLessons.stream()
+                .filter(l -> "VOCABULARY".equalsIgnoreCase(l.skillValue()))
+                .count();
+        int kanjiCount = (int) allLessons.stream()
+                .filter(l -> "KANJI".equalsIgnoreCase(l.skillValue()))
+                .count();
+        int grammarCount = (int) allLessons.stream()
+                .filter(l -> "GRAMMAR".equalsIgnoreCase(l.skillValue()))
+                .count();
+        int readingCount = (int) allLessons.stream()
+                .filter(l -> "READING".equalsIgnoreCase(l.skillValue()))
+                .count();
+        int listeningCount = (int) allLessons.stream()
+                .filter(l -> "LISTENING".equalsIgnoreCase(l.skillValue()))
+                .count();
+        int otherCount = (int) allLessons.stream()
+                .filter(l -> !isKnownSkill(l.skillValue()))
+                .count();
+
+        int flashcardCount = (int) allLessons.stream().filter(l -> {
+            String titleLower = l.title() == null ? "" : l.title().toLowerCase();
+            return flashcardLessonIds.contains(l.id()) || titleLower.startsWith("flashcard");
+        }).count();
+
+        int practiceCount = (int) allLessons.stream().filter(l -> {
+            String titleLower = l.title() == null ? "" : l.title().toLowerCase();
+            return practiceLessonIds.contains(l.id()) || titleLower.startsWith("luyện tập") || titleLower.startsWith("quiz");
+        }).count();
+
+        LessonStats lessonStats = new LessonStats(
+                totalLessons, activeCount, inactiveCount, freePreviewCount,
+                totalMinutes, totalHours, remainingMinutes,
+                vocabCount, kanjiCount, grammarCount, readingCount, listeningCount,
+                otherCount, flashcardCount, practiceCount, chapterNames.size());
+        model.addAttribute("lessonStats", lessonStats);
 
         SkillTypeEnum selectedSkill = resolveSelectedSkill(skill, allLessons);
         model.addAttribute("selectedSkill", selectedSkill);
@@ -279,6 +340,8 @@ public class ManagerLessonController {
         model.addAttribute("otherMode", otherMode);
         model.addAttribute("modalEditing", editingLesson != null);
         model.addAttribute("editingLesson", editingLesson);
+        model.addAttribute("editingLessonStudied", editingLesson != null
+                && (studiedLessonIds.contains(editingLesson.id()) || lessonService.hasLearnersStudied(editingLesson.id())));
         model.addAttribute("modalTitle", (editingLesson != null ? "Sửa bài học " : "Thêm bài học ")
                 + selectedSkill.getLabel());
 
@@ -330,6 +393,15 @@ public class ManagerLessonController {
             } else if ((form.get("sectionName") == null || form.get("sectionName").toString().isBlank()) && !chapterNames.isEmpty()) {
                 String firstChap = chapterNames.stream().filter(c -> !c.equals("Chưa phân chương")).findFirst().orElse(null);
                 if (firstChap != null) form.put("sectionName", firstChap);
+            }
+        }
+        if (modalOpen && model.containsAttribute("retainedForm")) {
+            Object retainedObj = model.getAttribute("retainedForm");
+            if (retainedObj instanceof Map<?, ?> retainedMap) {
+                form = new java.util.LinkedHashMap<>(form);
+                @SuppressWarnings("unchecked")
+                Map<String, Object> retained = (Map<String, Object>) retainedMap;
+                form.putAll(retained);
             }
         }
         model.addAttribute("form", form);
@@ -452,17 +524,19 @@ public class ManagerLessonController {
                             .findFirst().orElse(null);
                 }
                 LessonInput input = new LessonInput(title, sectionName, null,
-                        params.getFirst("content"), null, LessonStatusEnum.ACTIVE.name(), null,
+                        params.getFirst("content"), null, LessonStatusEnum.INACTIVE.name(), null,
                         integerValue(params, "durationMinutes"), booleanValue(params, "freePreview"));
                 createdLessonId = lessonService.createOther(courseId, input);
                 redirectAttributes.addFlashAttribute("lessonSuccess", "Đã lưu bài học “" + trimmed(title) + "” vào cột Khác.");
             } catch (IllegalArgumentException exception) {
                 deleteQuietly(createdLessonId);
                 redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
+                redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(null, params));
                 redirectAttributes.addAttribute("modal", "new");
             } catch (DataAccessException exception) {
                 deleteQuietly(createdLessonId);
                 redirectAttributes.addFlashAttribute("lessonError", "Không lưu được bài học: " + describe(exception));
+                redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(null, params));
                 redirectAttributes.addAttribute("modal", "new");
             }
             redirectAttributes.addAttribute("courseId", courseId);
@@ -478,6 +552,7 @@ public class ManagerLessonController {
         try {
             if (skill == SkillTypeEnum.LISTENING) lessonAudioStorageService.applyQuestionAudioFiles(params, questionAudioFiles);
             lessonDetailService.validateDetail(skill, params);
+            lessonDetailService.validateUniqueContent(courseId, null, skill, params);
             String title = params.getFirst("title");
             String sectionName = params.getFirst("sectionName");
             if (sectionName == null || sectionName.isBlank()) {
@@ -492,7 +567,7 @@ public class ManagerLessonController {
                     params.getFirst("description"),
                     buildLessonContent(skill, params),
                     skill.getValue(),
-                    params.getFirst("status") == null ? LessonStatusEnum.ACTIVE.name() : params.getFirst("status"),
+                    LessonStatusEnum.INACTIVE.name(),
                     null,
                     integerValue(params, "durationMinutes"),
                     booleanValue(params, "freePreview"));
@@ -505,14 +580,17 @@ public class ManagerLessonController {
         } catch (IllegalArgumentException exception) {
             deleteQuietly(createdLessonId);
             redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(skill, params));
             redirectAttributes.addAttribute("modal", "new");
         } catch (DataAccessException exception) {
             deleteQuietly(createdLessonId);
             redirectAttributes.addFlashAttribute("lessonError", "Không lưu được bài học: " + describe(exception));
+            redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(skill, params));
             redirectAttributes.addAttribute("modal", "new");
         } catch (java.io.IOException exception) {
             deleteQuietly(createdLessonId);
             redirectAttributes.addFlashAttribute("lessonError", "Không thể lưu file nghe đã chọn. Vui lòng thử lại.");
+            redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(skill, params));
             redirectAttributes.addAttribute("modal", "new");
         }
         return redirectToWorkspace(courseId, skill.getValue(), redirectAttributes);
@@ -527,6 +605,7 @@ public class ManagerLessonController {
         Long courseId = longValue(params, "courseId");
         String requestedSkill = params.getFirst("skillType");
         SkillTypeEnum skill = SkillTypeEnum.fromParam(requestedSkill);
+        SkillTypeEnum resolvedSkill = skill;
         try {
             LessonRow existing = lessonService.findLesson(lessonId)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài học cần sửa."));
@@ -544,9 +623,9 @@ public class ManagerLessonController {
                 redirectAttributes.addAttribute("skill", "OTHER");
                 return REDIRECT;
             }
-            SkillTypeEnum resolvedSkill = skill == null
-                    ? SkillTypeEnum.fromParam(existing.skillValue())
-                    : skill;
+            if (resolvedSkill == null) {
+                resolvedSkill = SkillTypeEnum.fromParam(existing.skillValue());
+            }
             if (resolvedSkill == null) {
                 resolvedSkill = SkillTypeEnum.VOCABULARY;
             }
@@ -554,6 +633,10 @@ public class ManagerLessonController {
             String title = params.getFirst("title");
             if (resolvedSkill == SkillTypeEnum.LISTENING) lessonAudioStorageService.applyQuestionAudioFiles(params, questionAudioFiles);
             lessonDetailService.validateDetail(resolvedSkill, params);
+            Long targetCourseId = courseId != null ? courseId : existing.courseId();
+            if (targetCourseId != null) {
+                lessonDetailService.validateUniqueContent(targetCourseId, lessonId, resolvedSkill, params);
+            }
             String updateSectionName = params.getFirst("sectionName");
             if (updateSectionName == null || updateSectionName.isBlank()) {
                 updateSectionName = existing.sectionName();
@@ -576,15 +659,18 @@ public class ManagerLessonController {
             return redirectToWorkspace(courseId, resolvedSkill.getValue(), redirectAttributes);
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(resolvedSkill, params));
             redirectAttributes.addAttribute("edit", lessonId);
         } catch (DataAccessException exception) {
             redirectAttributes.addFlashAttribute("lessonError", "Không lưu được bài học: " + describe(exception));
+            redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(resolvedSkill, params));
             redirectAttributes.addAttribute("edit", lessonId);
         } catch (java.io.IOException exception) {
             redirectAttributes.addFlashAttribute("lessonError", "Không thể lưu file nghe đã chọn. Vui lòng thử lại.");
+            redirectAttributes.addFlashAttribute("retainedForm", reconstructFormFromParams(resolvedSkill, params));
             redirectAttributes.addAttribute("edit", lessonId);
         }
-        String redirectSkill = skill != null ? skill.getValue() : requestedSkill;
+        String redirectSkill = resolvedSkill != null ? resolvedSkill.getValue() : requestedSkill;
         return redirectToWorkspace(courseId, redirectSkill, redirectAttributes);
     }
 
@@ -1057,6 +1143,155 @@ public class ManagerLessonController {
 
     private String trimmed(String value) {
         return value == null || value.isBlank() ? "bài học mới" : value.trim();
+    }
+
+    private Map<String, Object> reconstructFormFromParams(SkillTypeEnum skill, MultiValueMap<String, String> params) {
+        if (params == null) {
+            return Map.of();
+        }
+        Map<String, Object> form = new java.util.LinkedHashMap<>();
+        if (params.getFirst("title") != null) form.put("title", params.getFirst("title"));
+        if (params.getFirst("sectionName") != null && !params.getFirst("sectionName").isBlank()) {
+            form.put("sectionName", params.getFirst("sectionName"));
+        }
+        if (params.getFirst("description") != null) form.put("description", params.getFirst("description"));
+        if (params.getFirst("durationMinutes") != null) form.put("durationMinutes", params.getFirst("durationMinutes"));
+        form.put("freePreview", booleanValue(params, "freePreview"));
+        if (params.getFirst("content") != null) form.put("content", params.getFirst("content"));
+        if (params.getFirst("status") != null) form.put("status", params.getFirst("status"));
+
+        if (skill == SkillTypeEnum.VOCABULARY) {
+            List<String> words = params.get("word");
+            List<String> readings = params.get("wordReading") != null ? params.get("wordReading") : params.get("reading");
+            List<String> posList = params.get("partOfSpeech");
+            List<String> hanviets = params.get("hanviet");
+            List<String> meanings = params.get("wordMeaning") != null ? params.get("wordMeaning") : params.get("meaning");
+            List<String> examples = params.get("wordExample") != null ? params.get("wordExample") : params.get("example");
+            List<String> exampleVis = params.get("wordExampleVi") != null ? params.get("wordExampleVi") : params.get("exampleVi");
+
+            int count = words != null ? words.size() : 0;
+            List<Map<String, String>> wordList = new java.util.ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                Map<String, String> row = new java.util.LinkedHashMap<>();
+                String w = words.get(i) != null ? words.get(i) : "";
+                String r = (readings != null && i < readings.size() && readings.get(i) != null) ? readings.get(i) : "";
+                String pos = (posList != null && i < posList.size() && posList.get(i) != null) ? posList.get(i) : "(N)";
+                String hv = (hanviets != null && i < hanviets.size() && hanviets.get(i) != null) ? hanviets.get(i) : "";
+                String m = (meanings != null && i < meanings.size() && meanings.get(i) != null) ? meanings.get(i) : "";
+                String ex = (examples != null && i < examples.size() && examples.get(i) != null) ? examples.get(i) : "";
+                String exVi = (exampleVis != null && i < exampleVis.size() && exampleVis.get(i) != null) ? exampleVis.get(i) : "";
+
+                row.put("word", w);
+                row.put("wordReading", r);
+                row.put("reading", r);
+                row.put("partOfSpeech", pos.isBlank() ? "(N)" : pos);
+                row.put("hanviet", hv);
+                row.put("wordMeaning", m);
+                row.put("meaning", m);
+                row.put("wordExample", ex);
+                row.put("example", ex);
+                row.put("wordExampleVi", exVi);
+                row.put("exampleVi", exVi);
+                wordList.add(row);
+            }
+            if (!wordList.isEmpty()) {
+                form.put("words", wordList);
+            }
+        } else if (skill == SkillTypeEnum.GRAMMAR) {
+            if (params.getFirst("pattern") != null) form.put("pattern", params.getFirst("pattern"));
+            if (params.getFirst("meaning") != null) form.put("meaning", params.getFirst("meaning"));
+            if (params.getFirst("formation") != null) form.put("formation", params.getFirst("formation"));
+            if (params.getFirst("notes") != null) form.put("notes", params.getFirst("notes"));
+            List<String> jps = params.get("exampleJp");
+            List<String> vis = params.get("exampleVi");
+            int count = jps != null ? jps.size() : 0;
+            List<Map<String, String>> exampleList = new java.util.ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                Map<String, String> row = new java.util.LinkedHashMap<>();
+                String jp = jps.get(i) != null ? jps.get(i) : "";
+                String vi = (vis != null && i < vis.size() && vis.get(i) != null) ? vis.get(i) : "";
+                row.put("exampleJp", jp);
+                row.put("exampleVi", vi);
+                row.put("jp", jp);
+                row.put("vi", vi);
+                exampleList.add(row);
+            }
+            if (!exampleList.isEmpty()) {
+                form.put("examples", exampleList);
+            }
+        } else if (skill == SkillTypeEnum.KANJI) {
+            if (params.getFirst("character") != null) form.put("character", params.getFirst("character"));
+            if (params.getFirst("hanviet") != null) form.put("hanviet", params.getFirst("hanviet"));
+            if (params.getFirst("onReading") != null) form.put("onReading", params.getFirst("onReading"));
+            if (params.getFirst("kunReading") != null) form.put("kunReading", params.getFirst("kunReading"));
+            if (params.getFirst("kanjiMeaning") != null) form.put("kanjiMeaning", params.getFirst("kanjiMeaning"));
+            if (params.getFirst("strokeCount") != null) form.put("strokeCount", params.getFirst("strokeCount"));
+            if (params.getFirst("radical") != null) form.put("radical", params.getFirst("radical"));
+            if (params.getFirst("nanori") != null) form.put("nanori", params.getFirst("nanori"));
+            List<String> cpWords = params.get("compoundWord");
+            List<String> cpReadings = params.get("compoundReading");
+            List<String> cpMeanings = params.get("compoundMeaning");
+            int count = cpWords != null ? cpWords.size() : 0;
+            List<Map<String, String>> compList = new java.util.ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                Map<String, String> row = new java.util.LinkedHashMap<>();
+                row.put("compoundWord", cpWords.get(i) != null ? cpWords.get(i) : "");
+                row.put("compoundReading", (cpReadings != null && i < cpReadings.size() && cpReadings.get(i) != null) ? cpReadings.get(i) : "");
+                row.put("compoundMeaning", (cpMeanings != null && i < cpMeanings.size() && cpMeanings.get(i) != null) ? cpMeanings.get(i) : "");
+                compList.add(row);
+            }
+            if (!compList.isEmpty()) {
+                form.put("compounds", compList);
+            }
+        } else if (skill == SkillTypeEnum.READING) {
+            if (params.getFirst("passage") != null) form.put("passage", params.getFirst("passage"));
+            List<String> questions = params.get("questionText");
+            List<String> optA = params.get("optionA");
+            List<String> optB = params.get("optionB");
+            List<String> optC = params.get("optionC");
+            List<String> optD = params.get("optionD");
+            List<String> correct = params.get("correct");
+            int count = questions != null ? questions.size() : 0;
+            List<Map<String, String>> qList = new java.util.ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                Map<String, String> row = new java.util.LinkedHashMap<>();
+                row.put("questionText", questions.get(i) != null ? questions.get(i) : "");
+                row.put("optionA", (optA != null && i < optA.size() && optA.get(i) != null) ? optA.get(i) : "");
+                row.put("optionB", (optB != null && i < optB.size() && optB.get(i) != null) ? optB.get(i) : "");
+                row.put("optionC", (optC != null && i < optC.size() && optC.get(i) != null) ? optC.get(i) : "");
+                row.put("optionD", (optD != null && i < optD.size() && optD.get(i) != null) ? optD.get(i) : "");
+                row.put("correct", (correct != null && i < correct.size() && correct.get(i) != null) ? correct.get(i) : "0");
+                qList.add(row);
+            }
+            if (!qList.isEmpty()) {
+                form.put("questions", qList);
+            }
+        } else if (skill == SkillTypeEnum.LISTENING) {
+            List<String> audios = params.get("questionAudioUrl");
+            List<String> questions = params.get("questionText");
+            List<String> optA = params.get("optionA");
+            List<String> optB = params.get("optionB");
+            List<String> optC = params.get("optionC");
+            List<String> optD = params.get("optionD");
+            List<String> correct = params.get("correct");
+            int count = questions != null ? questions.size() : (audios != null ? audios.size() : 0);
+            List<Map<String, String>> qList = new java.util.ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                Map<String, String> row = new java.util.LinkedHashMap<>();
+                row.put("questionAudioUrl", (audios != null && i < audios.size() && audios.get(i) != null) ? audios.get(i) : "");
+                row.put("questionText", (questions != null && i < questions.size() && questions.get(i) != null) ? questions.get(i) : "");
+                row.put("optionA", (optA != null && i < optA.size() && optA.get(i) != null) ? optA.get(i) : "");
+                row.put("optionB", (optB != null && i < optB.size() && optB.get(i) != null) ? optB.get(i) : "");
+                row.put("optionC", (optC != null && i < optC.size() && optC.get(i) != null) ? optC.get(i) : "");
+                row.put("optionD", (optD != null && i < optD.size() && optD.get(i) != null) ? optD.get(i) : "");
+                row.put("correct", (correct != null && i < correct.size() && correct.get(i) != null) ? correct.get(i) : "0");
+                qList.add(row);
+            }
+            if (!qList.isEmpty()) {
+                form.put("questions", qList);
+            }
+        }
+        return form;
     }
 
     private String describe(DataAccessException exception) {

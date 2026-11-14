@@ -72,6 +72,21 @@ public class LessonService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasLearnersStudied(long lessonId) {
+        return lessonRepository.hasLearnersStudied(lessonId);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Long> findStudiedLessonIds(long courseId, List<Long> lessonIds) {
+        if (lessonIds == null || lessonIds.isEmpty()) return Set.of();
+        try {
+            return lessonRepository.findStudiedLessonIds(courseId, lessonIds);
+        } catch (Exception exception) {
+            return Set.of();
+        }
+    }
+
     @Transactional
     public long create(long courseId, LessonInput rawInput) {
         LessonInput input = validate(rawInput, false);
@@ -84,11 +99,23 @@ public class LessonService {
             throw new IllegalArgumentException("Tên bài học “" + input.title() + "” đã tồn tại trong chương này.");
         }
 
-        int orderIndex = input.orderIndex() == null || input.orderIndex() < 1
-                ? lessonRepository.nextOrderIndex(courseId, input.skill())
-                : input.orderIndex();
-        long lessonId = lessonRepository.insert(courseId, input, orderIndex);
-        normalizeOrders(courseId, input.skill());
+        // Trạng thái bài học khi tạo mặc định là không hiển thị (INACTIVE)
+        LessonInput inactiveInput = new LessonInput(
+                input.title(),
+                input.sectionName(),
+                input.description(),
+                input.content(),
+                input.skill(),
+                LessonStatusEnum.INACTIVE.name(),
+                input.orderIndex(),
+                input.durationMinutes(),
+                input.freePreview());
+
+        int orderIndex = inactiveInput.orderIndex() == null || inactiveInput.orderIndex() < 1
+                ? lessonRepository.nextOrderIndex(courseId, inactiveInput.skill())
+                : inactiveInput.orderIndex();
+        long lessonId = lessonRepository.insert(courseId, inactiveInput, orderIndex);
+        normalizeOrders(courseId, inactiveInput.skill());
         return lessonId;
     }
 
@@ -104,8 +131,20 @@ public class LessonService {
             throw new IllegalArgumentException("Tên bài học “" + input.title() + "” đã tồn tại trong chương này.");
         }
 
+        // Trạng thái bài học khi tạo mặc định là không hiển thị (INACTIVE)
+        LessonInput inactiveInput = new LessonInput(
+                input.title(),
+                input.sectionName(),
+                input.description(),
+                input.content(),
+                input.skill(),
+                LessonStatusEnum.INACTIVE.name(),
+                input.orderIndex(),
+                input.durationMinutes(),
+                input.freePreview());
+
         int orderIndex = lessonRepository.nextOrderIndex(courseId, null);
-        long lessonId = lessonRepository.insert(courseId, input, orderIndex);
+        long lessonId = lessonRepository.insert(courseId, inactiveInput, orderIndex);
         normalizeOrders(courseId, null);
         return lessonId;
     }
@@ -156,6 +195,9 @@ public class LessonService {
     @Transactional
     public void delete(long lessonId) {
         LessonRow existing = requireLesson(lessonId);
+        if (hasLearnersStudied(lessonId)) {
+            throw new IllegalArgumentException("Bài học này đã có học viên học, không thể xóa!");
+        }
         lessonRepository.delete(lessonId);
         normalizeOrders(existing.courseId(), existing.skillValue());
     }
