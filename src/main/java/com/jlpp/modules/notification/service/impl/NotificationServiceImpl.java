@@ -23,12 +23,18 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public List<Notification> getRecentNotifications(Long userId) {
+        if (userId != null) {
+            return notificationRepository.findAllRecentNotificationsByUserId(userId);
+        }
         return notificationRepository.findAllRecentNotifications();
     }
 
     @Override
     @Transactional(readOnly = true)
     public long getUnreadCount(Long userId) {
+        if (userId != null) {
+            return notificationRepository.countUnreadByUserId(userId);
+        }
         return notificationRepository.countAllUnread();
     }
 
@@ -44,7 +50,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void markAllAsRead(Long userId) {
-        notificationRepository.markAllAsRead();
+        if (userId != null) {
+            notificationRepository.markAllAsReadByUserId(userId);
+        } else {
+            notificationRepository.markAllAsRead();
+        }
     }
 
     @Override

@@ -32,12 +32,18 @@ public class NotificationController {
         if (session != null && session.getAttribute("CURRENT_LEARNER_ID") != null) {
             return (Long) session.getAttribute("CURRENT_LEARNER_ID");
         }
-        return 1L;
+        return null;
     }
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getNotifications(Principal principal, HttpSession session) {
         Long userId = resolveUserId(principal, session);
+        if (userId == null) {
+            return ResponseEntity.ok(Map.of(
+                    "notifications", List.of(),
+                    "unreadCount", 0L
+            ));
+        }
         List<Notification> list = notificationService.getRecentNotifications(userId);
         long unreadCount = notificationService.getUnreadCount(userId);
         return ResponseEntity.ok(Map.of(
@@ -48,8 +54,11 @@ public class NotificationController {
 
     @PostMapping("/{id}/read")
     public ResponseEntity<Map<String, Object>> markAsRead(@PathVariable Long id, Principal principal, HttpSession session) {
-        notificationService.markAsRead(id);
         Long userId = resolveUserId(principal, session);
+        if (userId == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
+        notificationService.markAsRead(id);
         long unreadCount = notificationService.getUnreadCount(userId);
         return ResponseEntity.ok(Map.of("success", true, "unreadCount", unreadCount));
     }
@@ -57,8 +66,11 @@ public class NotificationController {
     @PostMapping("/read-all")
     public ResponseEntity<Map<String, Object>> markAllAsRead(Principal principal, HttpSession session) {
         Long userId = resolveUserId(principal, session);
+        if (userId == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
         notificationService.markAllAsRead(userId);
-        return ResponseEntity.ok(Map.of("success", true, "unreadCount", 0));
+        return ResponseEntity.ok(Map.of("success", true, "unreadCount", 0L));
     }
 
     @PostMapping("/reset-demo")

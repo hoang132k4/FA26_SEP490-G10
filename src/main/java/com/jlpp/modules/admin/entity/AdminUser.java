@@ -32,7 +32,7 @@ public class AdminUser {
     private String emailAddress;
 
     @Column(name = "password")
-    private String password = "Password123@";
+    private String password;
 
     @Column(name = "role", nullable = false)
     private String role;
