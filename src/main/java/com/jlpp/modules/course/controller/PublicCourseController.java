@@ -185,6 +185,13 @@ public class PublicCourseController {
         List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(id);
         List<Course> relatedCourses = courseService.getOtherCourses(id, course.getLevel(), 3);
 
+        Map<String, List<Lesson>> groupedLessons = lessons.stream()
+                .collect(Collectors.groupingBy(
+                        l -> (l.getSectionName() != null && !l.getSectionName().isBlank()) ? l.getSectionName() : "Chương 1: Bài học căn bản",
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
         User currentUser = resolveCurrentUser(principal, session);
         boolean isEnrolled = false;
         CourseRegistration registration = null;
@@ -202,6 +209,7 @@ public class PublicCourseController {
 
         model.addAttribute("course", course);
         model.addAttribute("lessons", lessons);
+        model.addAttribute("groupedLessons", groupedLessons);
         model.addAttribute("lessonCount", lessons.size());
         model.addAttribute("midtermExam", midtermExam);
         model.addAttribute("finalExam", finalExam);
