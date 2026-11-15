@@ -163,7 +163,10 @@
                     return;
                 }
                 var card = event.target.closest('.manager-skill-lesson');
-                if (!card) return;
+                if (!card || card.getAttribute('draggable') === 'false') {
+                    event.preventDefault();
+                    return;
+                }
                 draggedCard = card;
                 card.classList.add('is-dragging');
                 if (event.dataTransfer) {
@@ -231,10 +234,284 @@
         });
     }
 
+    /* ------------------------------------------------ search and filter */
+    function initLessonSearchAndFilter() {
+        var searchInput = document.getElementById('lessonSearchInput');
+        if (!searchInput) return;
+
+        var filterForm = document.getElementById('lessonFilterForm');
+        var chapterFilter = document.getElementById('lessonChapterFilter');
+        var skillFilter = document.getElementById('lessonSkillFilter');
+        var statusFilter = document.getElementById('lessonStatusFilter');
+        var freeFilter = document.getElementById('lessonFreeFilter');
+        var resetButton = document.getElementById('lessonFilterReset');
+        var emptyResetButton = document.getElementById('lessonEmptyResetBtn');
+        var visibleCountEl = document.getElementById('lessonVisibleCount');
+        var totalCountEl = document.getElementById('lessonTotalCount');
+        var filterBadge = document.getElementById('lessonFilterActiveBadge');
+        var emptyMsg = document.getElementById('lessonFilterEmptyMessage');
+        var emptyState = document.getElementById('lessonEmptyFilterState');
+
+        var allLessonCards = Array.prototype.slice.call(document.querySelectorAll('.manager-skill-lesson'));
+        var totalLessons = allLessonCards.length;
+        if (totalCountEl) totalCountEl.textContent = String(totalLessons);
+
+        function normalizeText(str) {
+            if (!str) return '';
+            return str.toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'd')
+                .trim();
+        }
+
+        function applyFilter() {
+            var query = normalizeText(searchInput ? searchInput.value : '');
+            var selectedChapter = chapterFilter ? chapterFilter.value.trim() : '';
+            var selectedSkill = skillFilter ? skillFilter.value.trim().toUpperCase() : '';
+            var selectedStatus = statusFilter ? statusFilter.value.trim().toUpperCase() : '';
+            var selectedFree = freeFilter ? freeFilter.value.trim().toUpperCase() : '';
+
+            var isFiltering = query.length > 0 || selectedChapter.length > 0 ||
+                              selectedSkill.length > 0 || selectedStatus.length > 0 ||
+                              selectedFree.length > 0;
+
+            var matchingCount = 0;
+
+            // Filter individual lesson cards
+            allLessonCards.forEach(function (card) {
+                var title = normalizeText(card.getAttribute('data-title') || '');
+                var desc = normalizeText(card.getAttribute('data-description') || '');
+                var cardChapter = (card.getAttribute('data-chapter') || '').trim();
+                var cardSkill = (card.getAttribute('data-skill') || '').trim().toUpperCase();
+                var cardStatus = (card.getAttribute('data-status') || '').trim().toUpperCase();
+                var cardFree = (card.getAttribute('data-free') || 'false').trim().toLowerCase();
+                var isFlashcard = card.getAttribute('data-is-flashcard') === 'true';
+                var isPractice = card.getAttribute('data-is-practice') === 'true';
+
+                // 1. Text search (matches title, description, or tags text)
+                var matchesText = true;
+                if (query.length > 0) {
+                    var cardText = title + ' ' + desc;
+                    if (isFlashcard) cardText += ' flashcard';
+                    if (isPractice) cardText += ' practice luyen tap quiz';
+                    matchesText = cardText.indexOf(query) !== -1;
+                }
+
+                // 2. Chapter filter
+                var matchesChapter = true;
+                if (selectedChapter.length > 0) {
+                    matchesChapter = cardChapter.toLowerCase() === selectedChapter.toLowerCase();
+                }
+
+                // 3. Skill / Type filter
+                var matchesSkill = true;
+                if (selectedSkill.length > 0) {
+                    if (selectedSkill === 'FLASHCARD') {
+                        matchesSkill = isFlashcard;
+                    } else if (selectedSkill === 'PRACTICE') {
+                        matchesSkill = isPractice;
+                    } else if (selectedSkill === 'OTHER') {
+                        matchesSkill = cardSkill === 'OTHER' || !cardSkill;
+                    } else {
+                        matchesSkill = cardSkill === selectedSkill;
+                    }
+                }
+
+                // 4. Status filter
+                var matchesStatus = true;
+                if (selectedStatus.length > 0) {
+                    matchesStatus = cardStatus === selectedStatus;
+                }
+
+                // 5. Free preview filter
+                var matchesFree = true;
+                if (selectedFree.length > 0) {
+                    if (selectedFree === 'FREE') {
+                        matchesFree = cardFree === 'true';
+                    } else if (selectedFree === 'PAID') {
+                        matchesFree = cardFree !== 'true';
+                    }
+                }
+
+                var isVisible = matchesText && matchesChapter && matchesSkill && matchesStatus && matchesFree;
+
+                if (isVisible) {
+                    card.style.display = '';
+                    matchingCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+
+                // If filtering is active, disable drag to avoid broken order saves
+                card.setAttribute('draggable', isFiltering ? 'false' : 'true');
+            });
+
+            // Update column headers & badges
+            var skillCards = document.querySelectorAll('.manager-skill-card');
+            skillCards.forEach(function (skillCard) {
+                var lessonsInCol = skillCard.querySelectorAll('.manager-skill-lesson');
+                var visibleInCol = 0;
+                lessonsInCol.forEach(function (card) {
+                    if (card.style.display !== 'none') visibleInCol++;
+                });
+                var countBadge = skillCard.querySelector('header b');
+                if (countBadge) {
+                    countBadge.textContent = String(visibleInCol);
+                }
+                var colLessonsContainer = skillCard.querySelector('.manager-skill-lessons');
+                if (colLessonsContainer) {
+                    if (isFiltering) {
+                        colLessonsContainer.classList.add('is-filtered');
+                    } else {
+                        colLessonsContainer.classList.remove('is-filtered');
+                    }
+                }
+                // Show subtle indicator if column has 0 visible items when filtered
+                var noLessonsEl = skillCard.querySelector('.manager-no-lessons');
+                if (noLessonsEl) {
+                    if (lessonsInCol.length > 0 && visibleInCol === 0 && isFiltering) {
+                        noLessonsEl.textContent = 'Không có bài học phù hợp';
+                        noLessonsEl.style.display = 'block';
+                    } else if (lessonsInCol.length === 0) {
+                        noLessonsEl.textContent = 'Chưa có bài học';
+                        noLessonsEl.style.display = 'block';
+                    } else {
+                        noLessonsEl.style.display = 'none';
+                    }
+                }
+            });
+
+            // Update chapters
+            var chapterArticles = document.querySelectorAll('.manager-chapter');
+            chapterArticles.forEach(function (chap) {
+                var lessonsInChap = chap.querySelectorAll('.manager-skill-lesson');
+                var visibleInChap = 0;
+                lessonsInChap.forEach(function (card) {
+                    if (card.style.display !== 'none') visibleInChap++;
+                });
+
+                var chapCountEl = chap.querySelector('.manager-chapter-count');
+                if (chapCountEl) {
+                    if (isFiltering) {
+                        chapCountEl.textContent = visibleInChap + ' / ' + lessonsInChap.length + ' bài học';
+                    } else {
+                        chapCountEl.textContent = lessonsInChap.length + ' bài học';
+                    }
+                }
+
+                // If chapter has 0 visible lessons when filtering, hide the chapter
+                if (isFiltering && visibleInChap === 0) {
+                    chap.style.display = 'none';
+                } else {
+                    chap.style.display = '';
+                }
+            });
+
+            // Update summary stats & empty states
+            if (visibleCountEl) visibleCountEl.textContent = String(matchingCount);
+            if (filterBadge) filterBadge.style.display = isFiltering ? 'inline-flex' : 'none';
+
+            if (totalLessons > 0 && matchingCount === 0) {
+                if (emptyState) emptyState.style.display = 'block';
+                if (emptyMsg) emptyMsg.style.display = 'block';
+            } else {
+                if (emptyState) emptyState.style.display = 'none';
+                if (emptyMsg) emptyMsg.style.display = 'none';
+            }
+
+            // Update active state on stat cards
+            var selectedSkillForCard = selectedSkill || '';
+            document.querySelectorAll('.js-stat-card').forEach(function (statCard) {
+                var cardSkill = (statCard.getAttribute('data-stat-skill') || '').toUpperCase();
+                if (cardSkill === selectedSkillForCard && (selectedSkillForCard || !isFiltering)) {
+                    statCard.classList.add('is-active-filter');
+                } else {
+                    statCard.classList.remove('is-active-filter');
+                }
+            });
+
+            // Update URL query params without reloading
+            try {
+                var url = new URL(window.location.href);
+                if (query) url.searchParams.set('search', searchInput.value.trim()); else url.searchParams.delete('search');
+                if (selectedChapter) url.searchParams.set('filterChapter', selectedChapter); else url.searchParams.delete('filterChapter');
+                if (selectedSkill) url.searchParams.set('filterSkill', selectedSkill); else url.searchParams.delete('filterSkill');
+                if (selectedStatus) url.searchParams.set('filterStatus', selectedStatus); else url.searchParams.delete('filterStatus');
+                if (selectedFree) url.searchParams.set('filterFree', selectedFree); else url.searchParams.delete('filterFree');
+                window.history.replaceState({}, '', url.toString());
+            } catch (e) {}
+        }
+
+        // Chi loc khi bam nut "Loc" hoac submit form (Enter trong o tim kiem)
+        if (filterForm) {
+            filterForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                applyFilter();
+            });
+        }
+
+        function resetFilters() {
+            if (searchInput) searchInput.value = '';
+            if (chapterFilter) chapterFilter.value = '';
+            if (skillFilter) skillFilter.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (freeFilter) freeFilter.value = '';
+            applyFilter();
+        }
+
+        if (resetButton) {
+            resetButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                resetFilters();
+            });
+        }
+        if (emptyResetButton) {
+            emptyResetButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                resetFilters();
+            });
+        }
+
+        // Tuong tac click vao the thong ke de loc nhanh
+        document.querySelectorAll('.js-stat-card').forEach(function (statCard) {
+            statCard.addEventListener('click', function () {
+                var targetSkill = statCard.getAttribute('data-stat-skill') || '';
+                if (skillFilter) {
+                    skillFilter.value = targetSkill;
+                    applyFilter();
+                }
+            });
+        });
+
+        document.querySelectorAll('.js-stat-pill').forEach(function (statPill) {
+            statPill.addEventListener('click', function () {
+                var targetSkill = statPill.getAttribute('data-stat-skill');
+                var targetFree = statPill.getAttribute('data-stat-free');
+                if (targetSkill && skillFilter) {
+                    skillFilter.value = targetSkill;
+                    applyFilter();
+                } else if (targetFree && freeFilter) {
+                    freeFilter.value = targetFree;
+                    applyFilter();
+                }
+            });
+        });
+
+        // Initial run on page load
+        applyFilter();
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initChapterLessonOrdering);
+        document.addEventListener('DOMContentLoaded', function () {
+            initChapterLessonOrdering();
+            initLessonSearchAndFilter();
+        });
     } else {
         initChapterLessonOrdering();
+        initLessonSearchAndFilter();
     }
 
     /* ------------------------------------------------------------ lesson popup */
@@ -532,7 +809,25 @@
                 existingRow.remove();
                 libraryPick.classList.remove('is-selected');
                 libraryPick.setAttribute('aria-pressed', 'false');
+                if (vocabRows.querySelectorAll('.lesson-word-grid').length === 0) {
+                    var emptyFrag = vocabTemplate.content.cloneNode(true);
+                    vocabRows.appendChild(emptyFrag);
+                }
             } else {
+                // Xóa các ô từ vựng trống trước khi thêm từ từ thư viện
+                var existingWordRows = vocabRows.querySelectorAll('.lesson-word-grid');
+                existingWordRows.forEach(function (wRow) {
+                    var wordVal = (wRow.querySelector('[name="word"]') && wRow.querySelector('[name="word"]').value.trim()) || '';
+                    var readingVal = (wRow.querySelector('[name="wordReading"]') && wRow.querySelector('[name="wordReading"]').value.trim()) || '';
+                    var meaningVal = (wRow.querySelector('[name="wordMeaning"]') && wRow.querySelector('[name="wordMeaning"]').value.trim()) || '';
+                    var hanvietVal = (wRow.querySelector('[name="hanviet"]') && wRow.querySelector('[name="hanviet"]').value.trim()) || '';
+                    var exampleVal = (wRow.querySelector('[name="wordExample"]') && wRow.querySelector('[name="wordExample"]').value.trim()) || '';
+                    var exampleViVal = (wRow.querySelector('[name="wordExampleVi"]') && wRow.querySelector('[name="wordExampleVi"]').value.trim()) || '';
+                    if (!wordVal && !readingVal && !meaningVal && !hanvietVal && !exampleVal && !exampleViVal) {
+                        wRow.remove();
+                    }
+                });
+
                 var fragment = vocabTemplate.content.cloneNode(true);
                 var row = fragment.querySelector('.lesson-word-grid');
                 row.dataset.libraryEntry = entryId;
@@ -612,6 +907,11 @@
     var deleteForm = document.querySelector('[data-confirm-delete]');
     if (deleteForm) {
         deleteForm.addEventListener('submit', function (event) {
+            var submitBtn = deleteForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) {
+                event.preventDefault();
+                return;
+            }
             var confirmed = window.confirm('Xoá bài học này khỏi kỹ năng? Các bài còn lại sẽ được đánh số lại.');
             if (!confirmed) {
                 event.preventDefault();

@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cấu trúc đề JLPT chính thức (N4, N5 theo bản rút gọn từ kỳ 12/2020).
- * Số câu là mặc định, manager có thể chỉnh từng phần khi tạo đề.
+ * Cấu trúc đề JLPT: thời lượng và điểm đạt theo quy định chính thức (N4, N5 theo bản rút gọn từ kỳ 12/2020).
+ * Số câu chỉ là tham khảo vì JLPT không cố định số câu mỗi kỳ; manager có thể chỉnh từng phần khi tạo đề.
  */
 public record JlptExamStructure(String level,
                                 int languageQuestions,

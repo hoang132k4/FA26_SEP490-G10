@@ -138,4 +138,32 @@ public final class LessonDtos {
     }
 
     public record PracticeQuizView(Exercise exercise, List<QuizQuestionDto> questions) { }
+
+    /** Tổng hợp số liệu thống kê bài học trong khóa học. */
+    public record LessonStats(
+            int totalLessons,
+            int activeCount,
+            int inactiveCount,
+            int freePreviewCount,
+            int totalMinutes,
+            int totalHours,
+            int remainingMinutes,
+            int vocabCount,
+            int kanjiCount,
+            int grammarCount,
+            int readingCount,
+            int listeningCount,
+            int otherCount,
+            int flashcardCount,
+            int practiceCount,
+            int chapterCount) {
+
+        public String formattedDuration() {
+            if (totalMinutes <= 0) return "0 phút";
+            if (totalHours > 0) {
+                return totalHours + "h " + (remainingMinutes > 0 ? remainingMinutes + "m" : "");
+            }
+            return totalMinutes + " phút";
+        }
+    }
 }

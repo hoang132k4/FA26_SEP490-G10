@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold" style="color:var(--navy-dark);" th:text="${isEdit ? 'Sửa cấu hình đề thi' : 'Tạo đề thi'}"></h2>
-            <p class="text-muted mb-0">Cấu trúc đề mặc định theo chuẩn JLPT của từng cấp độ.</p>
+            <p class="text-muted mb-0">Thời lượng và điểm đạt theo chuẩn JLPT; số câu từng phần là số tham khảo.</p>
         </div>
         <a class="btn btn-outline-secondary" th:href="@{/manager/exams}">Quay lại</a>
     </div>
@@ -120,7 +120,7 @@
             </div>
             <small class="text-muted d-block mt-3">
                 Không cần nhập điểm từng câu: điểm mỗi phần được quy đổi theo tỉ lệ câu đúng của phần đó, tổng 180 điểm như JLPT.
-                Số câu mặc định theo cấu trúc đề chính thức, có thể chỉnh nếu muốn.
+                Số câu mặc định là số tham khảo (JLPT không cố định số câu mỗi kỳ), có thể chỉnh nếu muốn.
             </small>
         </div>
 
