@@ -234,45 +234,115 @@
                     </small>
                 </div>
 
-                <!-- 1. KANJI STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and effectiveSkill != 'EXAM' and exam == null and (effectiveSkill == 'KANJI' or (studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character'])))}"
+                <!-- 0. DEDICATED JAPANESE AUDIO & LISTENING PLAYER CARD -->
+                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'LISTENING' or lesson.lessonType == 'AUDIO' or (attachedMaterials != null and !attachedMaterials.isEmpty() and attachedMaterials.?[materialType == 'AUDIO'].size() > 0))}"
+                    class="card p-4 mb-4 border-0 shadow-sm rounded-4 text-white"
+                    style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0D4E5B 100%);">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background: rgba(245, 158, 11, 0.25); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);">
+                                <i class="bi bi-soundwave me-1"></i> BÀI NGHE AUDIO &amp; LUYỆN ÂM BẢN XỨ
+                            </span>
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-2.5 py-1 small">
+                                <i class="bi bi-mic-fill me-1 text-warning"></i> Giọng đọc Tokyo
+                            </span>
+                        </div>
+                        <span class="text-white-50 small">
+                            <i class="bi bi-headphones me-1"></i> Choukai Listening
+                        </span>
+                    </div>
+
+                    <!-- Audio Tracks List -->
+                    <div class="d-flex flex-column gap-3">
+                        <!-- Attached Audio Materials from DB -->
+                        <div th:if="${attachedMaterials != null and !attachedMaterials.isEmpty() and attachedMaterials.?[materialType == 'AUDIO'].size() > 0}"
+                            th:each="audioMat, aStat : ${attachedMaterials.?[materialType == 'AUDIO']}"
+                            class="bg-white bg-opacity-10 p-3 rounded-3 border border-white border-opacity-10">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-play-circle-fill text-warning fs-4"></i>
+                                    <strong class="text-white small" th:text="${audioMat.materialTitle != null ? audioMat.materialTitle : 'Audio luyện nghe bài học'}">Audio bài nghe</strong>
+                                </div>
+                                <span class="badge bg-warning text-dark font-monospace small" style="font-size: 0.72rem;">Audio Track</span>
+                            </div>
+                            <p class="text-white-50 small mb-2" th:if="${audioMat.description != null}" th:text="${audioMat.description}">Mô tả bài nghe</p>
+                            <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                                <source th:src="${audioMat.audioUrl}" type="audio/wav">
+                                <source th:src="${audioMat.audioUrl}" type="audio/ogg">
+                                <source th:src="${audioMat.audioUrl}" type="audio/mpeg">
+                                Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
+                            </audio>
+
+                            <!-- Collapsible Transcript if bodyContent is available -->
+                            <div th:if="${audioMat.bodyContent != null and !audioMat.bodyContent.isBlank()}" class="mt-2">
+                                <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 small text-white border-opacity-50"
+                                        type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#scriptMat' + ${audioMat.materialId}"
+                                        aria-expanded="false">
+                                    <i class="bi bi-card-text me-1 text-warning"></i> Xem lời thoại &amp; Bản dịch (Script)
+                                </button>
+                                <div class="collapse mt-2" th:id="'scriptMat' + ${audioMat.materialId}">
+                                    <div class="p-3 rounded-3 bg-dark bg-opacity-50 text-white-75 border border-white border-opacity-10 small font-monospace"
+                                         style="line-height: 1.8; white-space: pre-wrap;" th:text="${audioMat.bodyContent}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fallback Audio Track if listening lesson has no attachedMaterials yet -->
+                        <div th:if="${attachedMaterials == null or attachedMaterials.isEmpty() or attachedMaterials.?[materialType == 'AUDIO'].isEmpty()}"
+                            class="bg-white bg-opacity-10 p-3 rounded-3 border border-white border-opacity-10">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-play-circle-fill text-warning fs-4"></i>
+                                    <strong class="text-white small" th:text="${lesson.title}">Bài nghe hội thoại</strong>
+                                </div>
+                                <span class="badge bg-warning text-dark font-monospace small" style="font-size: 0.72rem;">Audio Track</span>
+                            </div>
+                            <p class="text-white-50 small mb-2" th:text="${lesson.description != null ? lesson.description : 'Nghe đoạn hội thoại mẫu giọng chuẩn Tokyo và luyện phản xạ câu hỏi.'}">Mô tả</p>
+                            <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm">
+                                <source src="/audio/japanese_conversation_audio.wav" type="audio/wav">
+                                <source src="/audio/coffee_shop.ogg" type="audio/ogg">
+                                Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
+                            </audio>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. KANJI STUDY BOARD (Chỉ hiện khi có dữ liệu từ điển Hán tự thực) -->
+                <div th:if="${!lesson.isExam() and effectiveSkill != 'EXAM' and exam == null and studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character'])}"
                     class="kanji-study-board mb-4">
                     <div class="kanji-study-shell">
                         <!-- CỘT TRÁI: THÔNG TIN HÁN TỰ -->
                         <div class="kanji-overview-col">
                             <div class="kanji-stroke-box">
-                                <span class="kanji-main-char"
-                                    th:text="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character']) ? studyView.kanjiDetail['character'] : lesson.title}">字</span>
+                                <span class="kanji-main-char" th:text="${studyView.kanjiDetail['character']}">字</span>
                                 <span class="kanji-stroke-badge"
-                                    th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['strokeCount'] != null}"
+                                    th:if="${studyView.kanjiDetail['strokeCount'] != null}"
                                     th:text="|${studyView.kanjiDetail['strokeCount']} nét|">6 nét</span>
                             </div>
 
                             <div class="kanji-hanviet-tag"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['hanviet'] != null and !#strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
+                                th:if="${studyView.kanjiDetail['hanviet'] != null and !#strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
                                 th:text="${studyView.kanjiDetail['hanviet']}">HÁN VIỆT</div>
-                            <div class="kanji-hanviet-tag"
-                                th:if="${studyView == null or studyView.kanjiDetail == null or studyView.kanjiDetail['hanviet'] == null or #strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
-                                th:text="${lesson.title}">HÁN TỰ</div>
 
                             <hr class="kanji-col-divider">
 
                             <div class="kanji-reading-item"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['kunReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['kunReading'])}">
+                                th:if="${studyView.kanjiDetail['kunReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['kunReading'])}">
                                 <span class="kanji-badge-icon is-kun" title="Âm Kun">訓</span>
                                 <span class="kanji-reading-text"
                                     th:text="${studyView.kanjiDetail['kunReading']}">まわ・る</span>
                             </div>
 
                             <div class="kanji-reading-item"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['onReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['onReading'])}">
+                                th:if="${studyView.kanjiDetail['onReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['onReading'])}">
                                 <span class="kanji-badge-icon is-on" title="Âm On">音</span>
                                 <span class="kanji-reading-text"
                                     th:text="${studyView.kanjiDetail['onReading']}">カイ</span>
                             </div>
 
                             <div class="kanji-meta-row"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and (studyView.kanjiDetail['radical'] != null or studyView.kanjiDetail['meaning'] != null)}">
+                                th:if="${studyView.kanjiDetail['radical'] != null or studyView.kanjiDetail['meaning'] != null}">
                                 <span class="badge bg-light text-dark border"
                                     th:if="${studyView.kanjiDetail['radical'] != null and !#strings.isEmpty(studyView.kanjiDetail['radical'])}"
                                     th:text="|Bộ: ${studyView.kanjiDetail['radical']}|">Bộ thủ</span>
@@ -291,14 +361,14 @@
                                 <i class="bi bi-collection text-primary me-2"></i>Từ ghép thông dụng &amp; Cách dùng
                             </h5>
                             <div class="kanji-compounds-list"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['compounds'] != null and !#lists.isEmpty(studyView.kanjiDetail['compounds'])}">
+                                th:if="${studyView.kanjiDetail['compounds'] != null and !#lists.isEmpty(studyView.kanjiDetail['compounds'])}">
                                 <div class="kanji-compound-entry"
                                     th:each="comp : ${studyView.kanjiDetail['compounds']}">
                                     <div class="kanji-compound-word-wrap">
                                         <span class="kanji-compound-furigana"
                                             th:text="${comp['compoundReading'] != null and !#strings.isEmpty(comp['compoundReading']) ? comp['compoundReading'] : comp['reading']}">ふりがな</span>
                                         <span class="kanji-compound-word"
-                                            th:text="${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['compoundWord'] : comp['word']}">漢字</span>
+                                            th:text="${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['word']}">漢字</span>
                                     </div>
                                     <div class="kanji-compound-meaning"
                                         th:text="${comp['compoundMeaning'] != null and !#strings.isEmpty(comp['compoundMeaning']) ? comp['compoundMeaning'] : comp['meaning']}">
@@ -306,32 +376,17 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div
-                                th:if="${studyView == null or studyView.kanjiDetail == null or studyView.kanjiDetail['compounds'] == null or #lists.isEmpty(studyView.kanjiDetail['compounds'])}">
-                                <div class="lesson-content-body"
-                                    th:if="${lesson.content != null && !lesson.content.isBlank()}">
-                                    <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
-                                    <div id="renderedContent" class="markdown-body"></div>
-                                </div>
-                                <div th:unless="${lesson.content != null && !lesson.content.isBlank()}"
-                                    class="text-center py-4 text-muted">
-                                    <p class="small mb-0"
-                                        th:text="${lesson.description != null ? lesson.description : 'Đang cập nhật danh sách từ ghép cho chữ Hán này.'}">
-                                        Mô tả bài học</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. GRAMMAR STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'GRAMMAR' or (studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning'])))}"
+                <!-- 2. GRAMMAR STUDY BOARD (Chỉ hiện khi có từ điển mẫu câu thực sự, KHÔNG hiện tiêu đề bài học làm ý nghĩa giả) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.grammarDetail != null and ((studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning'])) or (studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])))}"
                     class="grammar-study-board mb-4">
                     <div class="grammar-study-card">
                         <!-- CẤU TRÚC KẾT HỢP -->
                         <div class="grammar-formation-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['formationRows'] != null and !#lists.isEmpty(studyView.grammarDetail['formationRows'])}">
+                            th:if="${studyView.grammarDetail['formationRows'] != null and !#lists.isEmpty(studyView.grammarDetail['formationRows'])}">
                             <div class="grammar-formation-grid">
                                 <div class="grammar-formation-row"
                                     th:each="fRow : ${studyView.grammarDetail['formationRows']}">
@@ -343,25 +398,23 @@
                             </div>
                         </div>
                         <div class="grammar-formation-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and (studyView.grammarDetail['formationRows'] == null or #lists.isEmpty(studyView.grammarDetail['formationRows'])) and studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])}">
+                            th:if="${(studyView.grammarDetail['formationRows'] == null or #lists.isEmpty(studyView.grammarDetail['formationRows'])) and studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])}">
                             <div class="grammar-formation-single" th:text="${studyView.grammarDetail['formation']}">Cấu
                                 trúc ngữ pháp</div>
                         </div>
 
-                        <!-- ĐƯỜNG PHÂN CÁCH NÉT ĐỨT -->
-                        <hr class="grammar-dashed-line">
-
-                        <!-- Ý NGHĨA -->
-                        <div class="grammar-meaning-wrap">
-                            <span class="grammar-meaning-label">Ý nghĩa:</span>
-                            <span class="grammar-meaning-val"
-                                th:text="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) ? studyView.grammarDetail['meaning'] : lesson.title}">Ý
-                                nghĩa mẫu ngữ pháp</span>
+                        <!-- Ý NGHĨA (CHỈ HIỂN THỊ KHI CÓ Ý NGHĨA THỰC SỰ TRONG TỪ ĐIỂN) -->
+                        <div th:if="${studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title)}">
+                            <hr class="grammar-dashed-line">
+                            <div class="grammar-meaning-wrap">
+                                <span class="grammar-meaning-label">Ý nghĩa:</span>
+                                <span class="grammar-meaning-val" th:text="${studyView.grammarDetail['meaning']}">Ý nghĩa mẫu ngữ pháp</span>
+                            </div>
                         </div>
 
                         <!-- CÁCH DÙNG & GIẢI THÍCH (❖) -->
                         <div class="grammar-notes-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['usageNotes'] != null and !#lists.isEmpty(studyView.grammarDetail['usageNotes'])}">
+                            th:if="${studyView.grammarDetail['usageNotes'] != null and !#lists.isEmpty(studyView.grammarDetail['usageNotes'])}">
                             <div class="grammar-note-item" th:each="note : ${studyView.grammarDetail['usageNotes']}">
                                 <span class="grammar-note-bullet">❖</span>
                                 <span class="grammar-note-text" th:text="${note}">Giải thích cách dùng chi
@@ -371,7 +424,7 @@
 
                         <!-- CÂU VÍ DỤ MINH HỌA -->
                         <div class="grammar-examples-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['examples'] != null and !#lists.isEmpty(studyView.grammarDetail['examples'])}">
+                            th:if="${studyView.grammarDetail['examples'] != null and !#lists.isEmpty(studyView.grammarDetail['examples'])}">
                             <h6 class="grammar-examples-title"><i class="bi bi-chat-quote me-1"></i>Ví dụ thực tế:</h6>
                             <div class="grammar-ex-item" th:each="ex : ${studyView.grammarDetail['examples']}">
                                 <span class="grammar-ex-bullet">•</span>
@@ -383,23 +436,13 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- FALLBACK MARKDOWN CHO GRAMMAR -->
-                        <div th:if="${lesson.content != null && !lesson.content.isBlank()}">
-                            <hr class="grammar-dashed-line">
-                            <div class="lesson-content-body">
-                                <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
-                                <div id="renderedContent" class="markdown-body"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- 3. VOCABULARY STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'VOCABULARY' or (studyView != null and studyView.vocabDetail != null and studyView.vocabDetail['words'] != null and !#lists.isEmpty(studyView.vocabDetail['words'])))}"
+                <!-- 3. VOCABULARY STUDY BOARD (Chỉ hiện khi có danh sách từ vựng chi tiết) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.vocabDetail != null and studyView.vocabDetail['words'] != null and !#lists.isEmpty(studyView.vocabDetail['words'])}"
                     class="vocab-study-board mb-4">
-                    <div class="vocab-table-card"
-                        th:if="${studyView != null and studyView.vocabDetail != null and studyView.vocabDetail['words'] != null and !#lists.isEmpty(studyView.vocabDetail['words'])}">
+                    <div class="vocab-table-card">
                         <div class="vocab-entry-row" th:each="vWord, vStat : ${studyView.vocabDetail['words']}"
                             th:classappend="${vStat.odd} ? ' is-odd' : ' is-even'">
 
@@ -448,36 +491,17 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- NẾU CHƯA CÓ WORDS, HIỂN THỊ NỘI DUNG MARKDOWN DỰ PHÒNG -->
-                    <div
-                        th:if="${studyView == null or studyView.vocabDetail == null or studyView.vocabDetail['words'] == null or #lists.isEmpty(studyView.vocabDetail['words'])}">
-                        <div class="card p-4 kotoba-card bg-white shadow-sm border">
-                            <div class="lesson-content-body"
-                                th:if="${lesson.content != null && !lesson.content.isBlank()}">
-                                <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
-                                <div id="renderedContent" class="markdown-body"></div>
-                            </div>
-                            <div th:unless="${lesson.content != null && !lesson.content.isBlank()}"
-                                class="text-center py-4 text-muted">
-                                <p class="small mb-0"
-                                    th:text="${lesson.description != null ? lesson.description : 'Chưa có dữ liệu từ vựng chi tiết cho bài học này.'}">
-                                    Mô tả</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- 4. LISTENING STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'LISTENING' or (studyView != null and studyView.listeningQuestions != null and !studyView.listeningQuestions.isEmpty()))}"
+                <!-- 4. LISTENING QUESTIONS BOARD (NẾU CÓ CÂU HỎI TRẮC NGHIỆM NGHE) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.listeningQuestions != null and !studyView.listeningQuestions.isEmpty()}"
                     class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
                     <h5 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-headphones text-warning me-2"></i>Luyện Nghe Hiểu (Choukai)
+                        <i class="bi bi-question-circle text-warning me-2"></i>Câu hỏi trắc nghiệm nghe hiểu
                     </h5>
 
-                    <div class="manager-listening-questions"
-                        th:if="${studyView != null and studyView.listeningQuestions != null and !studyView.listeningQuestions.isEmpty()}">
-                        <article class="manager-listening-question p-3 rounded-3 border bg-light"
+                    <div class="manager-listening-questions">
+                        <article class="manager-listening-question p-3 rounded-3 border bg-light mb-3"
                             th:each="question, questionStat : ${studyView.listeningQuestions}">
                             <header class="manager-listening-question-heading mb-2">
                                 <h5 class="fw-bold text-dark mb-1" th:text="|Câu ${questionStat.count}:|">Câu 1:</h5>
@@ -525,35 +549,27 @@
                             </div>
                         </article>
                     </div>
-
-                    <div th:if="${studyView == null or studyView.listeningQuestions == null or studyView.listeningQuestions.isEmpty()}"
-                        class="text-center py-4 text-muted">
-                        <i class="bi bi-soundwave fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                        <p class="small mb-0">Bài nghe này hiện đang được biên tập câu hỏi hoặc audio.</p>
-                    </div>
                 </div>
 
-                <!-- 5. READING STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'READING' or (studyView != null and studyView.readingQuestions != null and !studyView.readingQuestions.isEmpty()))}"
+                <!-- 5. READING QUESTIONS BOARD (NẾU CÓ CÂU HỎI TRẮC NGHIỆM ĐỌC) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.readingQuestions != null and !studyView.readingQuestions.isEmpty()}"
                     class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
                     <h5 class="fw-bold text-dark mb-3">
                         <i class="bi bi-book-half text-primary me-2"></i>Luyện Đọc Hiểu (Dokkai)
                     </h5>
 
                     <!-- Đoạn văn đọc hiểu -->
-                    <div class="manager-reading-content mb-4">
-                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-text me-1 text-secondary"></i>Đoạn văn
-                            đọc hiểu:</h6>
+                    <div class="manager-reading-content mb-4" th:if="${studyView.readingPassage != null and !studyView.readingPassage.isBlank()}">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-text me-1 text-secondary"></i>Đoạn văn đọc hiểu:</h6>
                         <div class="p-3.5 rounded-3 border bg-light-subtle text-dark"
                             style="font-size: 1.05rem; line-height: 1.85; white-space: pre-wrap;"
-                            th:text="${(studyView != null and studyView.readingPassage != null and !studyView.readingPassage.isBlank()) ? studyView.readingPassage : ((lesson.content != null and !lesson.content.isBlank()) ? lesson.content : lesson.description)}">
+                            th:text="${studyView.readingPassage}">
                             Nội dung bài đọc tiếng Nhật...
                         </div>
                     </div>
 
                     <!-- Câu hỏi đọc hiểu -->
-                    <div class="manager-listening-questions manager-reading-questions"
-                        th:if="${studyView != null and studyView.readingQuestions != null and !studyView.readingQuestions.isEmpty()}">
+                    <div class="manager-listening-questions manager-reading-questions">
                         <h6 class="fw-bold text-dark mb-2"><i class="bi bi-question-circle me-1 text-secondary"></i>Câu
                             hỏi trắc nghiệm đọc hiểu:</h6>
                         <article class="manager-listening-question p-3 rounded-3 border bg-light mb-3"
@@ -595,42 +611,29 @@
                             </div>
                         </article>
                     </div>
-
-                    <div th:if="${studyView == null or studyView.readingQuestions == null or studyView.readingQuestions.isEmpty()}"
-                        class="text-center py-4 text-muted">
-                        <i class="bi bi-journal-text fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                        <p class="small mb-0">Bài đọc này chưa có câu hỏi trắc nghiệm.</p>
-                    </div>
                 </div>
 
-                <!-- 6. GENERAL THEORY / MARKDOWN FALLBACK (KHI KHÔNG THUỘC 5 SKILL HOẶC LÝ THUYẾT CHUNG) -->
-                <div th:if="${!lesson.isExam() and exam == null and effectiveSkill != 'KANJI' and effectiveSkill != 'GRAMMAR' and effectiveSkill != 'VOCABULARY' and effectiveSkill != 'READING' and effectiveSkill != 'LISTENING'}"
-                    class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
-                    <!-- Markdown Formatted Lesson Content -->
-                    <div class="lesson-content-body" th:if="${lesson.content != null && !lesson.content.isBlank()}">
+                <!-- 6. MAIN LESSON BODY / MARKDOWN CONTENT -->
+                <div th:if="${!lesson.isExam() and exam == null and lesson.content != null and !lesson.content.isBlank()}"
+                    class="card p-4 p-md-5 kotoba-card mb-4 bg-white shadow-sm border">
+                    <div class="lesson-content-body">
                         <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
                         <div id="renderedContent" class="markdown-body"></div>
                     </div>
+                </div>
 
-                    <!-- Dynamic Content when lesson.content is empty -->
-                    <div th:unless="${lesson.content != null && !lesson.content.isBlank()}">
-                        <!-- Description if present in DB -->
-                        <div th:if="${lesson.description != null && !lesson.description.isBlank()}" class="mb-4">
-                            <h5 class="fw-bold text-dark mb-2">
-                                <i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học
-                            </h5>
-                            <p class="text-muted" style="line-height: 1.8;" th:text="${lesson.description}">
-                                Mô tả bài học.
-                            </p>
-                        </div>
-
-                        <!-- Neutral empty state -->
-                        <div th:if="${lesson.description == null || lesson.description.isBlank()}"
-                            class="text-center py-4 text-muted">
-                            <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                            <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi
-                                tài liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
-                        </div>
+                <!-- Fallback khi bài học chưa có nội dung markdown chi tiết -->
+                <div th:if="${!lesson.isExam() and exam == null and (lesson.content == null or lesson.content.isBlank())}"
+                    class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
+                    <div th:if="${lesson.description != null and !lesson.description.isBlank()}" class="mb-2">
+                        <h5 class="fw-bold text-dark mb-2">
+                            <i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học
+                        </h5>
+                        <p class="text-muted" style="line-height: 1.8;" th:text="${lesson.description}">Mô tả bài học.</p>
+                    </div>
+                    <div th:if="${lesson.description == null or lesson.description.isBlank()}" class="text-center py-4 text-muted">
+                        <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi tài liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
                     </div>
                 </div>
 
