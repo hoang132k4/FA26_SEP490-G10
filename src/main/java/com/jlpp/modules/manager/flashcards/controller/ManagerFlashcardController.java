@@ -222,10 +222,6 @@ public class ManagerFlashcardController {
     }
 
     private long currentUserId(Principal principal, HttpSession session) {
-        Object sessionUserId = session.getAttribute("CURRENT_LEARNER_ID");
-        if (sessionUserId instanceof Number number) {
-            return number.longValue();
-        }
         if (principal != null && principal.getName() != null && !principal.getName().isBlank()) {
             String identifier = principal.getName().trim();
             User currentUser = userRepository.findByEmailIgnoreCase(identifier).orElse(null);
@@ -235,6 +231,10 @@ public class ManagerFlashcardController {
             if (currentUser != null && currentUser.getId() != null) {
                 return currentUser.getId();
             }
+        }
+        Object sessionUserId = session != null ? session.getAttribute("CURRENT_LEARNER_ID") : null;
+        if (sessionUserId instanceof Number number) {
+            return number.longValue();
         }
         throw new IllegalStateException("Không tìm thấy tài khoản hiện tại.");
     }

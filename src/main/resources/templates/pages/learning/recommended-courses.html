@@ -54,7 +54,9 @@
 
                         <!-- Course Title & Level -->
                         <div class="d-flex align-items-start gap-3 mb-3">
-                            <img th:src="${item.course.thumbnailUrl}" class="rounded-3" style="width: 100px; height: 75px; object-fit: cover;" alt="">
+                            <img th:src="${item.course.thumbnailUrl != null and !item.course.thumbnailUrl.isBlank() ? item.course.thumbnailUrl : 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop'}" 
+                                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop';"
+                                 class="rounded-3" style="width: 100px; height: 75px; object-fit: cover;" alt="">
                             <div class="flex-grow-1">
                                 <span class="badge px-2 py-1 rounded-pill mb-1" style="background-color: var(--navy-dark); color: white;" 
                                       th:text="${item.course.level}">N4</span>
@@ -133,7 +135,7 @@
             </div>
 
             <!-- Other Courses Grid -->
-            <div class="row">
+            <div class="row g-4">
                 <th:block th:each="c : ${otherCourses}">
                     <div th:replace="~{fragments/components/course-card :: courseCard(${c}, true)}"></div>
                 </th:block>

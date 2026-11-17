@@ -14,5 +14,7 @@ public interface NotificationService {
 
     void markAllAsRead(Long userId);
 
+    void resetUnreadForDemo();
+
     void initSampleNotificationsIfEmpty();
 }

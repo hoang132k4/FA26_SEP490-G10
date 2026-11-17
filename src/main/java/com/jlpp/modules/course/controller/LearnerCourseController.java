@@ -75,23 +75,8 @@ public class LearnerCourseController {
                 return userOpt.get();
             }
         }
-        User defaultLearner = getOrCreateDefaultLearner();
-        session.setAttribute("CURRENT_LEARNER_ID", defaultLearner.getId());
-        return defaultLearner;
-    }
-
-    private User getOrCreateDefaultLearner() {
-        return userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .email("learner@jeps.edu.vn")
-                        .username("learner")
-                        .fullName("Nguyễn Văn Học Viên")
-                        .password("Password123@")
-                        .role(RoleEnum.LEARNER)
-                        .status("ACTIVE")
-                        .currentJlptLevel("N5")
-                        .targetJlptLevel("N4")
-                        .build()));
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.UNAUTHORIZED, "Vui lòng đăng nhập để tiếp tục");
     }
 
     /**

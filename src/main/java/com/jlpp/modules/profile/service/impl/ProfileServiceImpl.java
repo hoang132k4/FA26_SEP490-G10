@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -88,31 +90,29 @@ public class ProfileServiceImpl implements ProfileService {
 
     private void handleAvatarUpload(User user, MultipartFile avatarFile) {
         String contentType = avatarFile.getContentType();
-        if (contentType == null || !(contentType.equalsIgnoreCase("image/jpeg")
-                || contentType.equalsIgnoreCase("image/png")
-                || contentType.equalsIgnoreCase("image/jpg")
-                || contentType.equalsIgnoreCase("image/webp"))) {
-            throw new IllegalArgumentException("Định dạng ảnh không hợp lệ. Vui lòng tải lên ảnh định dạng JPEG, PNG hoặc WebP.");
-        }
+        String normalizedType = contentType == null ? "" : contentType.trim().toLowerCase(Locale.ROOT);
+        String extension = switch (normalizedType) {
+            case "image/jpeg", "image/jpg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> throw new IllegalArgumentException("Định dạng ảnh không hợp lệ. Vui lòng tải lên ảnh định dạng JPEG, PNG hoặc WebP.");
+        };
 
         if (avatarFile.getSize() > 5 * 1024 * 1024) {
             throw new IllegalArgumentException("Dung lượng ảnh đại diện không được vượt quá 5MB.");
         }
 
         try {
-            Path uploadDir = Paths.get("uploads", "avatars");
+            Path uploadDir = Paths.get("uploads", "avatars").toAbsolutePath().normalize();
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }
 
-            String originalFilename = avatarFile.getOriginalFilename();
-            String extension = "png";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+            String fileName = "avatar_" + user.getId() + "_" + UUID.randomUUID() + extension;
+            Path targetPath = uploadDir.resolve(fileName).normalize();
+            if (!targetPath.startsWith(uploadDir)) {
+                throw new IllegalArgumentException("Đường dẫn tệp không hợp lệ.");
             }
-
-            String fileName = "avatar_" + user.getId() + "_" + System.currentTimeMillis() + "." + extension;
-            Path targetPath = uploadDir.resolve(fileName);
             Files.copy(avatarFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             user.setAvatarUrl("/uploads/avatars/" + fileName);
@@ -184,9 +184,14 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         String contentType = avatarFile.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("Chỉ chấp nhận tệp hình ảnh (JPG, PNG, WEBP, GIF).");
-        }
+        String normalizedType = contentType == null ? "" : contentType.trim().toLowerCase(Locale.ROOT);
+        String extension = switch (normalizedType) {
+            case "image/jpeg", "image/jpg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            case "image/gif" -> ".gif";
+            default -> throw new IllegalArgumentException("Chỉ chấp nhận tệp hình ảnh (JPG, PNG, WEBP, GIF).");
+        };
 
         if (avatarFile.getSize() > 5 * 1024 * 1024) {
             throw new IllegalArgumentException("Kích thước ảnh tối đa là 5MB.");
@@ -195,18 +200,16 @@ public class ProfileServiceImpl implements ProfileService {
         User user = findUserByIdentifier(identifier);
 
         try {
-            Path uploadDir = Paths.get("uploads", "avatars");
+            Path uploadDir = Paths.get("uploads", "avatars").toAbsolutePath().normalize();
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }
 
-            String originalFilename = avatarFile.getOriginalFilename();
-            String extension = ".png";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String fileName = "avatar_" + user.getId() + "_" + UUID.randomUUID() + extension;
+            Path targetPath = uploadDir.resolve(fileName).normalize();
+            if (!targetPath.startsWith(uploadDir)) {
+                throw new IllegalArgumentException("Đường dẫn tệp không hợp lệ.");
             }
-            String fileName = "avatar_" + user.getId() + "_" + System.currentTimeMillis() + extension;
-            Path targetPath = uploadDir.resolve(fileName);
 
             Files.copy(avatarFile.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 

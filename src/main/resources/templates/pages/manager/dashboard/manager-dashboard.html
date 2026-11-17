@@ -4,25 +4,641 @@
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-            <div>
-                <h2 class="fw-bold mb-1" style="color:var(--navy-dark)">Bảng điều khiển quản lý</h2>
-                <p class="text-muted mb-0">Điểm bắt đầu để quản lý nội dung học tập trên JEPS.</p>
+        <!-- Scoped Dashboard Styles -->
+        <style>
+            .manager-hero-banner {
+                background: linear-gradient(135deg, var(--navy-dark) 0%, #204B6E 55%, var(--steel-blue) 100%);
+                border-radius: 1rem;
+                color: #ffffff;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 10px 25px -5px rgba(23, 59, 87, 0.25);
+            }
+            .manager-hero-banner h1 {
+                color: #FFFFFF !important;
+            }
+            .manager-hero-banner p {
+                color: #F1F5F9 !important;
+            }
+            .manager-hero-banner::after {
+                content: "";
+                position: absolute;
+                right: -40px;
+                bottom: -40px;
+                width: 220px;
+                height: 220px;
+                border-radius: 50%;
+                background: radial-gradient(circle, rgba(217, 75, 63, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+                pointer-events: none;
+            }
+            .stat-card-modern {
+                border-radius: 0.9rem;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                background: #ffffff;
+            }
+            .stat-card-modern:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 20px -5px rgba(23, 59, 87, 0.12);
+            }
+            .stat-icon-circle {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.35rem;
+                flex-shrink: 0;
+            }
+            .icon-blue   { background-color: #E8F1F8; color: var(--steel-blue); }
+            .icon-teal   { background-color: #E6F6F4; color: #0D9488; }
+            .icon-amber  { background-color: #FEF3C7; color: #D97706; }
+            .icon-purple { background-color: #F1EDFA; color: #7C3AED; }
+            .icon-green  { background-color: #DCFCE7; color: #16A34A; }
+            .icon-rose   { background-color: #FFE4E6; color: #E11D48; }
+
+            .badge-level-n5 { background-color: #0284C7; color: #fff; }
+            .badge-level-n4 { background-color: #0D9488; color: #fff; }
+            .badge-level-n3 { background-color: #D97706; color: #fff; }
+            .badge-level-n2 { background-color: #EA580C; color: #fff; }
+            .badge-level-n1 { background-color: var(--accent-red); color: #fff; }
+
+            .quick-action-card {
+                display: flex;
+                align-items: center;
+                gap: 0.85rem;
+                padding: 0.85rem 1rem;
+                border-radius: 0.75rem;
+                background-color: #F8FAFC;
+                border: 1px solid #E2E8F0;
+                color: var(--navy-dark);
+                text-decoration: none;
+                transition: all 0.18s ease;
+            }
+            .quick-action-card:hover {
+                background-color: #EEF4F7;
+                border-color: var(--steel-blue);
+                color: var(--navy-dark);
+                transform: translateX(4px);
+            }
+            .quick-action-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 9px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.15rem;
+                background-color: #FFFFFF;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            }
+            .nav-tabs-clean .nav-link {
+                border: none;
+                color: #64748B;
+                font-weight: 600;
+                font-size: 0.9rem;
+                padding: 0.65rem 1.1rem;
+                border-radius: 0.5rem;
+                transition: all 0.15s ease;
+            }
+            .nav-tabs-clean .nav-link.active {
+                background-color: #EEF4F7;
+                color: var(--navy-dark);
+            }
+            .table-modern thead th {
+                font-size: 0.78rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #64748B;
+                font-weight: 700;
+                background-color: #F8FAFC;
+                border-bottom: 1px solid #E2E8F0;
+                padding: 0.75rem 1rem;
+            }
+            .table-modern tbody td {
+                padding: 0.85rem 1rem;
+                vertical-align: middle;
+                border-bottom: 1px solid #F1F5F9;
+                font-size: 0.88rem;
+            }
+        </style>
+
+        <!-- 1. Hero Greeting Banner -->
+        <div class="manager-hero-banner p-4 p-lg-5 mb-4 position-relative">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; color: #FFFFFF !important;">
+                        <i class="bi bi-shield-check" style="color: #FFD2CC;"></i>
+                        <span style="color: #FFFFFF !important;">PORTAL QUẢN LÝ NỘI DUNG &bull; JEPS</span>
+                    </div>
+                    <h1 class="fw-bold mb-2 text-white" style="font-family: 'Noto Sans JP', sans-serif; font-size: 2.1rem; color: #FFFFFF !important; text-shadow: 0 1px 3px rgba(0,0,0,0.25);">
+                        Bảng điều khiển Quản lý
+                    </h1>
+                    <p class="mb-4" style="max-width: 650px; font-size: 1rem; line-height: 1.6; color: #F1F5F9 !important; font-weight: 400; opacity: 0.95;">
+                        Hệ thống theo dõi và điều phối nội dung khóa học, ngân hàng câu hỏi, đề thi JLPT và tiến trình học tập của học viên toàn nền tảng.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-light fw-semibold text-nowrap rounded-pill px-3 py-2 shadow-sm" style="color: var(--navy-dark);" th:href="@{/manager/courses/new}">
+                            <i class="bi bi-plus-circle-fill text-primary me-1"></i> Tạo khóa học mới
+                        </a>
+                        <a class="btn btn-outline-light text-nowrap rounded-pill px-3 py-2" th:href="@{/manager/questions}">
+                            <i class="bi bi-patch-question me-1"></i> Ngân hàng câu hỏi
+                        </a>
+                        <a class="btn btn-outline-light text-nowrap rounded-pill px-3 py-2" th:href="@{/manager/reports}">
+                            <i class="bi bi-bar-chart-line me-1"></i> Xem báo cáo
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-end d-none d-lg-block">
+                    <!-- Mount Fuji Japanese Illustration -->
+                    <svg viewBox="0 0 320 180" width="240" height="135" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="225" cy="65" r="38" fill="#D94B3F" />
+                        <path d="M 40 55 Q 65 45 90 55 T 130 55" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.35" />
+                        <path d="M 175 35 Q 195 25 215 35 T 245 35" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.3" />
+                        <path d="M 65 170 L 165 60 L 195 60 L 295 170 Z" fill="#244F70" />
+                        <path d="M 165 60 L 195 60 L 210 95 L 195 88 L 183 98 L 171 88 L 150 95 Z" fill="#FFFFFF" opacity="0.95" />
+                    </svg>
+                </div>
             </div>
-            <a class="btn btn-primary" th:href="@{/manager/courses}"><i class="bi bi-journal-plus me-1"></i> Quản lý khóa học</a>
         </div>
+
+        <!-- 2. KPI Metrics Grid (6 Cards) -->
         <div class="row g-3 mb-4">
-            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/courses}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-journal-bookmark fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Khóa học</div><small class="text-muted">Thiết lập cấp độ và trạng thái xuất bản.</small></div></a></div>
-            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/lessons}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-book-half fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Bài học</div><small class="text-muted">Theo dõi nội dung theo từng khóa học.</small></div></a></div>
-            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/questions}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-patch-question fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Câu hỏi</div><small class="text-muted">Xây dựng ngân hàng câu hỏi JLPT.</small></div></a></div>
-            <div class="col-sm-6 col-xl-3"><a th:href="@{/manager/exams}" class="text-decoration-none"><div class="kotoba-card p-4 h-100"><i class="bi bi-file-earmark-text fs-3" style="color:var(--steel-blue)"></i><div class="fw-semibold mt-3 text-dark">Đề thi</div><small class="text-muted">Chuẩn bị đề thi thử cho người học.</small></div></a></div>
+            <!-- 1. Courses -->
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <a th:href="@{/manager/courses}" class="text-decoration-none">
+                    <div class="card stat-card-modern p-3 h-100 kotoba-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="stat-icon-circle icon-blue"><i class="bi bi-journal-bookmark-fill"></i></span>
+                            <span class="badge rounded-pill text-bg-light border small text-muted">Khóa học</span>
+                        </div>
+                        <h3 class="fw-bold mb-1" style="color: var(--navy-dark)" th:text="${stats != null ? stats.totalCourses : 0}">0</h3>
+                        <div class="small text-muted mb-2">
+                            <span class="text-success fw-semibold" th:text="${stats != null ? stats.publishedCourses : 0}">0</span> xuất bản &bull;
+                            <span class="text-warning fw-semibold" th:text="${stats != null ? stats.draftCourses : 0}">0</span> nháp
+                        </div>
+                        <div class="mt-auto pt-2 border-top d-flex align-items-center justify-content-between text-muted" style="font-size: 0.78rem;">
+                            <span>Quản lý khóa</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 2. Lessons -->
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <a th:href="@{/manager/lessons}" class="text-decoration-none">
+                    <div class="card stat-card-modern p-3 h-100 kotoba-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="stat-icon-circle icon-teal"><i class="bi bi-book-half"></i></span>
+                            <span class="badge rounded-pill text-bg-light border small text-muted">Bài học</span>
+                        </div>
+                        <h3 class="fw-bold mb-1" style="color: var(--navy-dark)" th:text="${stats != null ? stats.totalLessons : 0}">0</h3>
+                        <div class="small text-muted mb-2">
+                            <span class="text-teal fw-semibold" style="color: #0D9488;" th:text="${stats != null ? stats.activeLessons : 0}">0</span> hoạt động
+                        </div>
+                        <div class="mt-auto pt-2 border-top d-flex align-items-center justify-content-between text-muted" style="font-size: 0.78rem;">
+                            <span>Soạn bài học</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 3. Questions Bank -->
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <a th:href="@{/manager/questions}" class="text-decoration-none">
+                    <div class="card stat-card-modern p-3 h-100 kotoba-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="stat-icon-circle icon-amber"><i class="bi bi-patch-question-fill"></i></span>
+                            <span class="badge rounded-pill text-bg-light border small text-muted">Câu hỏi</span>
+                        </div>
+                        <h3 class="fw-bold mb-1" style="color: var(--navy-dark)" th:text="${stats != null ? stats.totalQuestions : 0}">0</h3>
+                        <div class="small text-muted mb-2">Ngân hàng JLPT 4 kỹ năng</div>
+                        <div class="mt-auto pt-2 border-top d-flex align-items-center justify-content-between text-muted" style="font-size: 0.78rem;">
+                            <span>Xem ngân hàng</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 4. Exams -->
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <a th:href="@{/manager/exams}" class="text-decoration-none">
+                    <div class="card stat-card-modern p-3 h-100 kotoba-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="stat-icon-circle icon-purple"><i class="bi bi-file-earmark-text-fill"></i></span>
+                            <span class="badge rounded-pill text-bg-light border small text-muted">Đề thi</span>
+                        </div>
+                        <h3 class="fw-bold mb-1" style="color: var(--navy-dark)" th:text="${stats != null ? stats.totalExams : 0}">0</h3>
+                        <div class="small text-muted mb-2">
+                            <span class="fw-semibold" style="color: #7C3AED;" th:text="${stats != null ? stats.publishedExams : 0}">0</span> đã phát hành
+                        </div>
+                        <div class="mt-auto pt-2 border-top d-flex align-items-center justify-content-between text-muted" style="font-size: 0.78rem;">
+                            <span>Quản lý đề thi</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 5. Quizzes & Flashcards -->
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <a th:href="@{/manager/quizzes}" class="text-decoration-none">
+                    <div class="card stat-card-modern p-3 h-100 kotoba-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="stat-icon-circle icon-green"><i class="bi bi-ui-checks-grid"></i></span>
+                            <span class="badge rounded-pill text-bg-light border small text-muted">Luyện tập</span>
+                        </div>
+                        <h3 class="fw-bold mb-1" style="color: var(--navy-dark)">
+                            <span th:text="${stats != null ? stats.totalQuizzes : 0}">0</span>
+                            <span class="fs-6 fw-normal text-muted">quiz</span>
+                        </h3>
+                        <div class="small text-muted mb-2">
+                            <span class="fw-semibold text-success" th:text="${stats != null ? stats.totalFlashcards : 0}">0</span> flashcard
+                        </div>
+                        <div class="mt-auto pt-2 border-top d-flex align-items-center justify-content-between text-muted" style="font-size: 0.78rem;">
+                            <span>Xem bài quiz</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 6. Learning Activity & Pass Rate -->
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <a th:href="@{/manager/reports}" class="text-decoration-none">
+                    <div class="card stat-card-modern p-3 h-100 kotoba-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="stat-icon-circle icon-rose"><i class="bi bi-mortarboard-fill"></i></span>
+                            <span class="badge rounded-pill text-bg-light border small text-muted">Lượt thi</span>
+                        </div>
+                        <h3 class="fw-bold mb-1" style="color: var(--navy-dark)" th:text="${stats != null ? stats.totalAttempts : 0}">0</h3>
+                        <div class="small text-muted mb-2">
+                            Đạt: <span class="fw-semibold text-danger" th:text="${stats != null ? stats.overallPassRate + '%' : '0%'}">0%</span> &bull;
+                            <span class="fw-semibold text-primary" th:text="${stats != null ? stats.totalEnrollments : 0}">0</span> đ.ký
+                        </div>
+                        <div class="mt-auto pt-2 border-top d-flex align-items-center justify-content-between text-muted" style="font-size: 0.78rem;">
+                            <span>Chi tiết báo cáo</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
         </div>
-        <div class="kotoba-card p-4">
-            <h5 class="fw-bold mb-3">Thao tác nhanh</h5>
-            <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-outline-primary" th:href="@{/manager/courses/new}"><i class="bi bi-plus-lg me-1"></i> Thêm khóa học</a>
-                <a class="btn btn-outline-primary" th:href="@{/manager/quizzes}"><i class="bi bi-ui-checks-grid me-1"></i> Xem câu đố</a>
-                <a class="btn btn-outline-primary" th:href="@{/manager/reports}"><i class="bi bi-bar-chart-line me-1"></i> Xem báo cáo</a>
+
+        <!-- 3. Main Dashboard Content Grid -->
+        <div class="row g-4">
+            <!-- Left Column: Recent Courses & Recent Activities (8 Columns) -->
+            <div class="col-lg-8">
+                <!-- Recent Courses Card -->
+                <div class="card kotoba-card p-4 mb-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-0" style="color: var(--navy-dark);">
+                                <i class="bi bi-journal-bookmark-fill me-2" style="color: var(--steel-blue);"></i>Khóa học cập nhật gần đây
+                            </h5>
+                            <small class="text-muted">Các khóa học mới nhất được tạo và quản lý trong hệ thống</small>
+                        </div>
+                        <a class="btn btn-outline-primary btn-sm rounded-pill" th:href="@{/manager/courses}">
+                            Xem tất cả <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-modern mb-0">
+                            <thead>
+                            <tr>
+                                <th>Khóa học</th>
+                                <th class="text-center">JLPT</th>
+                                <th class="text-center">Bài học</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="course : ${stats != null ? stats.recentCourses : null}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" style="background-color: #EEF4F7; color: var(--steel-blue); width: 36px; height: 36px;">
+                                            <i class="bi bi-journal-text fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <a class="fw-bold text-decoration-none text-dark d-block" th:href="@{/manager/courses/{id}/view(id=${course.id})}" th:text="${course.title}">Tiêu đề khóa học</a>
+                                            <span class="text-muted small" th:text="'Mã: #' + ${course.id}">#1</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill px-2 py-1"
+                                          th:classappend="${course.level == 'N5' ? 'badge-level-n5' : (course.level == 'N4' ? 'badge-level-n4' : (course.level == 'N3' ? 'badge-level-n3' : (course.level == 'N2' ? 'badge-level-n2' : 'badge-level-n1')))}"
+                                          th:text="${course.level != null ? course.level : 'N5'}">N5</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge text-bg-light border fw-semibold" th:text="${course.lessonCount + ' bài'}">0 bài</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill"
+                                          th:classappend="${course.status == 'PUBLISHED' ? 'text-bg-success' : (course.status == 'DRAFT' ? 'text-bg-warning' : 'text-bg-secondary')}"
+                                          th:text="${course.status == 'PUBLISHED' ? 'Đã xuất bản' : (course.status == 'DRAFT' ? 'Bản nháp' : course.status)}">Đã xuất bản</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a class="btn btn-outline-secondary" th:href="@{/manager/courses/{id}/view(id=${course.id})}" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a class="btn btn-outline-primary" th:href="@{/manager/lessons(courseId=${course.id})}" title="Soạn bài học">
+                                            <i class="bi bi-book"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${stats == null or #lists.isEmpty(stats.recentCourses)}">
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
+                                    Chưa có khóa học nào. Hãy bấm <strong>Tạo khóa học mới</strong> để bắt đầu.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Activities (Tabs: Exam Results & Course Enrollments) -->
+                <div class="card kotoba-card p-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-0" style="color: var(--navy-dark);">
+                                <i class="bi bi-activity me-2" style="color: var(--accent-red);"></i>Hoạt động học viên gần đây
+                            </h5>
+                            <small class="text-muted">Theo dõi kết quả làm bài thi và lượt đăng ký mới của học viên</small>
+                        </div>
+                        <ul class="nav nav-pills nav-tabs-clean" id="activityTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="exams-tab" data-bs-toggle="tab" data-bs-target="#examsTabPane" type="button" role="tab" aria-controls="examsTabPane" aria-selected="true">
+                                    <i class="bi bi-award me-1"></i> Kết quả thi (<span th:text="${stats != null and stats.recentExamResults != null ? #lists.size(stats.recentExamResults) : 0}">0</span>)
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="enrollments-tab" data-bs-toggle="tab" data-bs-target="#enrollmentsTabPane" type="button" role="tab" aria-controls="enrollmentsTabPane" aria-selected="false">
+                                    <i class="bi bi-person-check me-1"></i> Đăng ký khóa (<span th:text="${stats != null and stats.recentEnrollments != null ? #lists.size(stats.recentEnrollments) : 0}">0</span>)
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="tab-content" id="activityTabContent">
+                        <!-- Pane 1: Exam Results -->
+                        <div class="tab-pane fade show active" id="examsTabPane" role="tabpanel" aria-labelledby="exams-tab">
+                            <div class="table-responsive">
+                                <table class="table table-modern mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Học viên</th>
+                                        <th>Đề thi</th>
+                                        <th class="text-center">JLPT</th>
+                                        <th class="text-center">Điểm / Tỷ lệ</th>
+                                        <th class="text-center">Kết quả</th>
+                                        <th class="text-end">Thời gian</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="result : ${stats != null ? stats.recentExamResults : null}">
+                                        <td>
+                                            <div class="fw-semibold text-dark" th:text="${result.learnerName}">Nguyễn Văn A</div>
+                                            <small class="text-muted" th:text="'ID: ' + ${result.userId}">ID: 1</small>
+                                        </td>
+                                        <td>
+                                            <span class="fw-semibold" th:text="${result.examTitle}">JLPT N5 Thi Thử Đề 1</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill px-2 py-1"
+                                                  th:classappend="${result.level == 'N5' ? 'badge-level-n5' : (result.level == 'N4' ? 'badge-level-n4' : (result.level == 'N3' ? 'badge-level-n3' : (result.level == 'N2' ? 'badge-level-n2' : 'badge-level-n1')))}"
+                                                  th:text="${result.level != null ? result.level : '—'}">N5</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-bold" th:text="${result.score}">150/180</span>
+                                            <span class="text-muted small" th:if="${result.percentage != null and !#strings.isEmpty(result.percentage)}" th:text="' (' + ${result.percentage} + '%)'"> (83%)</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill" th:classappend="${result.passed ? 'text-bg-success' : 'text-bg-danger'}"
+                                                  th:text="${result.passed ? 'ĐẠT' : 'CHƯA ĐẠT'}">ĐẠT</span>
+                                        </td>
+                                        <td class="text-end text-muted small" th:text="${result.completedAt}">13/11/2026 14:00</td>
+                                    </tr>
+                                    <tr th:if="${stats == null or #lists.isEmpty(stats.recentExamResults)}">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="bi bi-clipboard-x fs-3 d-block mb-2 text-secondary"></i>
+                                            Chưa ghi nhận kết quả thi nào từ học viên.
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Pane 2: Course Enrollments -->
+                        <div class="tab-pane fade" id="enrollmentsTabPane" role="tabpanel" aria-labelledby="enrollments-tab">
+                            <div class="table-responsive">
+                                <table class="table table-modern mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Học viên</th>
+                                        <th>Khóa học</th>
+                                        <th class="text-center">JLPT</th>
+                                        <th class="text-center">Tiến độ</th>
+                                        <th class="text-center">Trạng thái</th>
+                                        <th class="text-end">Ngày đăng ký</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="reg : ${stats != null ? stats.recentEnrollments : null}">
+                                        <td>
+                                            <div class="fw-semibold text-dark" th:text="${reg.learnerName}">Trần Thị B</div>
+                                            <small class="text-muted" th:text="'ID: ' + ${reg.userId}">ID: 2</small>
+                                        </td>
+                                        <td>
+                                            <span class="fw-semibold" th:text="${reg.courseTitle}">Khóa cấp tốc JLPT N4</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill px-2 py-1"
+                                                  th:classappend="${reg.level == 'N5' ? 'badge-level-n5' : (reg.level == 'N4' ? 'badge-level-n4' : (reg.level == 'N3' ? 'badge-level-n3' : (reg.level == 'N2' ? 'badge-level-n2' : 'badge-level-n1')))}"
+                                                  th:text="${reg.level != null ? reg.level : '—'}">N4</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                                <div class="progress" style="width: 60px; height: 6px;">
+                                                    <div class="progress-bar bg-primary" th:style="'width: ' + (${reg.progress != null ? reg.progress : 0}) + '%;'"></div>
+                                                </div>
+                                                <span class="small fw-semibold" th:text="${(reg.progress != null ? reg.progress : '0') + '%'}">50%</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill text-bg-light border" th:text="${reg.status != null ? reg.status : 'ACTIVE'}">ACTIVE</span>
+                                        </td>
+                                        <td class="text-end text-muted small" th:text="${reg.registeredAt}">13/11/2026 10:30</td>
+                                    </tr>
+                                    <tr th:if="${stats == null or #lists.isEmpty(stats.recentEnrollments)}">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="bi bi-people fs-3 d-block mb-2 text-secondary"></i>
+                                            Chưa có học viên đăng ký khóa học mới.
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: JLPT Distribution & Quick Actions Hub (4 Columns) -->
+            <div class="col-lg-4">
+                <!-- JLPT Distribution Card -->
+                <div class="card kotoba-card p-4 mb-4">
+                    <h5 class="fw-bold mb-3" style="color: var(--navy-dark);">
+                        <i class="bi bi-pie-chart-fill me-2" style="color: var(--steel-blue);"></i>Phân bổ Cấp độ JLPT
+                    </h5>
+                    <p class="text-muted small mb-3">Tỷ trọng tài nguyên theo các chuẩn trình độ năng lực Nhật ngữ.</p>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold small"><span class="badge badge-level-n5 me-1">N5</span> Nhập môn (Sơ cấp 1)</span>
+                            <span class="small text-muted">
+                                <b th:text="${stats != null and stats.coursesByLevel != null ? stats.coursesByLevel.get('N5') : 0}">0</b> khóa &bull;
+                                <span th:text="${stats != null and stats.questionsByLevel != null ? stats.questionsByLevel.get('N5') : 0}">0</span> câu
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar badge-level-n5" role="progressbar"
+                                 th:style="'width: ' + (${stats != null and stats.totalCourses > 0 ? (stats.coursesByLevel.get('N5') * 100.0 / stats.totalCourses) : 20}) + '%;'"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold small"><span class="badge badge-level-n4 me-1">N4</span> Cơ bản (Sơ cấp 2)</span>
+                            <span class="small text-muted">
+                                <b th:text="${stats != null and stats.coursesByLevel != null ? stats.coursesByLevel.get('N4') : 0}">0</b> khóa &bull;
+                                <span th:text="${stats != null and stats.questionsByLevel != null ? stats.questionsByLevel.get('N4') : 0}">0</span> câu
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar badge-level-n4" role="progressbar"
+                                 th:style="'width: ' + (${stats != null and stats.totalCourses > 0 ? (stats.coursesByLevel.get('N4') * 100.0 / stats.totalCourses) : 20}) + '%;'"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold small"><span class="badge badge-level-n3 me-1">N3</span> Trung cấp</span>
+                            <span class="small text-muted">
+                                <b th:text="${stats != null and stats.coursesByLevel != null ? stats.coursesByLevel.get('N3') : 0}">0</b> khóa &bull;
+                                <span th:text="${stats != null and stats.questionsByLevel != null ? stats.questionsByLevel.get('N3') : 0}">0</span> câu
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar badge-level-n3" role="progressbar"
+                                 th:style="'width: ' + (${stats != null and stats.totalCourses > 0 ? (stats.coursesByLevel.get('N3') * 100.0 / stats.totalCourses) : 20}) + '%;'"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold small"><span class="badge badge-level-n2 me-1">N2</span> Tiền cao cấp</span>
+                            <span class="small text-muted">
+                                <b th:text="${stats != null and stats.coursesByLevel != null ? stats.coursesByLevel.get('N2') : 0}">0</b> khóa &bull;
+                                <span th:text="${stats != null and stats.questionsByLevel != null ? stats.questionsByLevel.get('N2') : 0}">0</span> câu
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar badge-level-n2" role="progressbar"
+                                 th:style="'width: ' + (${stats != null and stats.totalCourses > 0 ? (stats.coursesByLevel.get('N2') * 100.0 / stats.totalCourses) : 20}) + '%;'"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold small"><span class="badge badge-level-n1 me-1">N1</span> Cao cấp (Bản ngữ)</span>
+                            <span class="small text-muted">
+                                <b th:text="${stats != null and stats.coursesByLevel != null ? stats.coursesByLevel.get('N1') : 0}">0</b> khóa &bull;
+                                <span th:text="${stats != null and stats.questionsByLevel != null ? stats.questionsByLevel.get('N1') : 0}">0</span> câu
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar badge-level-n1" role="progressbar"
+                                 th:style="'width: ' + (${stats != null and stats.totalCourses > 0 ? (stats.coursesByLevel.get('N1') * 100.0 / stats.totalCourses) : 20}) + '%;'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Hub Card -->
+                <div class="card kotoba-card p-4 mb-4">
+                    <h5 class="fw-bold mb-3" style="color: var(--navy-dark);">
+                        <i class="bi bi-lightning-charge-fill me-2" style="color: #D97706;"></i>Lối tắt Thao tác nhanh
+                    </h5>
+                    <div class="d-flex flex-column gap-2">
+                        <a class="quick-action-card" th:href="@{/manager/courses/new}">
+                            <div class="quick-action-icon text-primary"><i class="bi bi-plus-lg"></i></div>
+                            <div>
+                                <div class="fw-semibold">Tạo khóa học mới</div>
+                                <small class="text-muted">Khởi tạo giáo trình và cấp độ JLPT</small>
+                            </div>
+                        </a>
+                        <a class="quick-action-card" th:href="@{/manager/questions}">
+                            <div class="quick-action-icon text-warning"><i class="bi bi-patch-question-fill"></i></div>
+                            <div>
+                                <div class="fw-semibold">Soạn câu hỏi mới</div>
+                                <small class="text-muted">Bổ sung ngân hàng trắc nghiệm & đọc hiểu</small>
+                            </div>
+                        </a>
+                        <a class="quick-action-card" th:href="@{/manager/exams}">
+                            <div class="quick-action-icon text-purple" style="color: #7C3AED;"><i class="bi bi-file-earmark-plus-fill"></i></div>
+                            <div>
+                                <div class="fw-semibold">Tạo đề thi JLPT</div>
+                                <small class="text-muted">Cấu hình đề thi thử và thời gian làm bài</small>
+                            </div>
+                        </a>
+                        <a class="quick-action-card" th:href="@{/manager/quizzes}">
+                            <div class="quick-action-icon text-success"><i class="bi bi-ui-checks-grid"></i></div>
+                            <div>
+                                <div class="fw-semibold">Tạo bài Quiz kiểm tra</div>
+                                <small class="text-muted">Gắn bài luyện tập theo từng bài học</small>
+                            </div>
+                        </a>
+                        <a class="quick-action-card" th:href="@{/manager/flashcards}">
+                            <div class="quick-action-icon text-info" style="color: #0D9488;"><i class="bi bi-card-text"></i></div>
+                            <div>
+                                <div class="fw-semibold">Bộ Flashcard từ vựng</div>
+                                <small class="text-muted">Tạo thẻ ghi nhớ từ vựng Kanji & Hiragana</small>
+                            </div>
+                        </a>
+                        <a class="quick-action-card" th:href="@{/manager/reports}">
+                            <div class="quick-action-icon text-danger" style="color: var(--accent-red);"><i class="bi bi-filetype-csv"></i></div>
+                            <div>
+                                <div class="fw-semibold">Báo cáo & Xuất file CSV</div>
+                                <small class="text-muted">Xuất dữ liệu học viên và kết quả thi</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Content Manager Guide Tip -->
+                <div class="card p-3 border-0 rounded-4" style="background-color: #FAF8F5; border: 1px dashed #CBD5E1 !important;">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="background-color: var(--accent-red); width: 32px; height: 32px; flex-shrink: 0;">
+                            <i class="bi bi-lightbulb-fill" style="font-size: 0.9rem;"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 0.9rem;">Quy trình chuẩn bị nội dung</div>
+                            <small class="text-muted d-block mt-1" style="line-height: 1.5;">
+                                1. Tạo Khóa học &rarr; 2. Phân chia Chương và Bài học &rarr; 3. Soạn Ngân hàng câu hỏi &rarr; 4. Xuất bản Đề thi thử cho học viên.
+                            </small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

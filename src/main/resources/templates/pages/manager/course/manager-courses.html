@@ -324,9 +324,11 @@
             <article class="card h-100 kotoba-card overflow-hidden d-flex flex-column">
                 <div class="position-relative course-manager-cover">
                     <img th:if="${course['thumbnailUrl'] != null and !#strings.isEmpty(course['thumbnailUrl'])}"
-                         th:src="${course['thumbnailUrl']}" class="w-100" th:alt="${course['name']}" loading="lazy">
+                         th:src="${course['thumbnailUrl']}" 
+                         onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1000&auto=format&fit=crop';"
+                         class="w-100" th:alt="${course['name']}" loading="lazy">
                     <img th:unless="${course['thumbnailUrl'] != null and !#strings.isEmpty(course['thumbnailUrl'])}"
-                         src="https://images.unsplash.com/photo-1528164344705-475426879c0d?q=80&w=1000&auto=format&fit=crop"
+                         src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1000&auto=format&fit=crop"
                          class="w-100" th:alt="${course['name']}" loading="lazy">
                     <span class="position-absolute top-0 start-0 m-3 badge rounded-pill px-3 py-2 course-manager-level" th:text="${course['level']}">N5</span>
                     <span th:if="${course['featured'] == true}" class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-danger">

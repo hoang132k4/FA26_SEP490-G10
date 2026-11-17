@@ -44,9 +44,23 @@ public class PublicCatalogService {
     }
 
     public List<Course> getFeaturedCourses() {
-        return courseRepository.findByFeaturedTrueOrderByCourseIdAsc().stream()
+        return courseRepository.findAll().stream()
                 .filter(this::isPublic)
-                .limit(3)
+                .filter(c -> Boolean.TRUE.equals(c.getFeatured()))
+                .sorted((a, b) -> Long.compare(a.getId(), b.getId()))
+                .limit(6)
+                .toList();
+    }
+
+    public List<Course> getLatestCourses(int limit) {
+        List<Long> featuredIds = getFeaturedCourses().stream()
+                .map(Course::getId)
+                .toList();
+        return courseRepository.findAll().stream()
+                .filter(this::isPublic)
+                .filter(c -> !featuredIds.contains(c.getId()))
+                .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
+                .limit(limit)
                 .toList();
     }
 

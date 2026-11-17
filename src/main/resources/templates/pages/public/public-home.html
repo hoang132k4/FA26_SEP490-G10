@@ -127,18 +127,18 @@
         <!-- ============================================================== -->
         <!-- 2. PUBLIC HERO BANNER (Visible when Guest/Not Logged In)       -->
         <!-- ============================================================== -->
-        <section th:if="${!isAuthenticated}" class="card p-5 mb-5 kotoba-card position-relative overflow-hidden border-0 shadow-sm" style="background: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%); border-radius: 20px;">
+        <section th:if="${!isAuthenticated}" class="card p-5 mb-5 kotoba-card position-relative overflow-hidden border-0 shadow-sm" style="background: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%); border-radius: 20px; border: 1px solid #ECE7DE !important;">
             <div class="row align-items-center">
                 <div class="col-lg-7">
-                    <span class="badge mb-3 px-3 py-1 rounded-pill" style="background-color: #EBF4FA; color: var(--navy-dark); font-weight: 700; letter-spacing: 0.5px;">
-                        <i class="bi bi-compass me-1"></i> JEPS &bull; 日本語試験対策
+                    <span class="badge mb-3 px-3 py-1.5 rounded-pill shadow-sm" style="background-color: #EBF4FA; color: var(--navy-dark); font-weight: 700; letter-spacing: 0.5px;">
+                        <i class="bi bi-compass me-1 text-primary"></i> JEPS &bull; 日本語試験対策
                     </span>
                     <h1 class="display-4 fw-extrabold mb-3" style="color: var(--navy-dark); font-weight: 800; line-height: 1.2;">
                         Chinh phục Tiếng Nhật &amp; JLPT <br>
                         <span style="color: var(--steel-blue);">Từng bước vững chắc</span>
                     </h1>
                     <p class="fs-5 text-muted mb-4" style="line-height: 1.6;">
-                        Hệ thống học tập thông minh chuẩn phong cách Nhật Bản: Kiên trì, Tối giản và Hiệu quả. Lộ trình cá nhân hóa từ N5 đến N1.
+                        Hệ thống học tập thông minh chuẩn phong cách Nhật Bản: Kiên trì, Tối giản và Hiệu quả. Lộ trình cá nhân hóa từ N5 đến N1 với kho tài liệu phong phú.
                     </p>
                     <div class="d-flex flex-wrap gap-3">
                         <a th:href="@{/courses}" class="btn btn-steel btn-lg px-4 rounded-pill shadow-sm">
@@ -163,22 +163,129 @@
         </section>
 
         <!-- ============================================================== -->
-        <!-- 3. FEATURED COURSES SECTION (Common for both)                 -->
+        <!-- PLATFORM HIGHLIGHTS BAR (Metrics & Key Strengths)               -->
+        <!-- ============================================================== -->
+        <div class="row g-3 mb-5">
+            <div class="col-6 col-md-3">
+                <div class="card p-3 border-0 rounded-4 shadow-sm h-100 text-center hover-elevate" style="background: #FFFFFF; border: 1px solid #ECE7DE !important;">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 44px; height: 44px; background: #EBF4FA; color: var(--navy-dark);">
+                        <i class="bi bi-mortarboard-fill fs-5 text-primary"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0" style="color: var(--navy-dark);">5 Cấp Độ</h5>
+                    <p class="text-muted small mb-0">Chuẩn JLPT N5 — N1</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 border-0 rounded-4 shadow-sm h-100 text-center hover-elevate" style="background: #FFFFFF; border: 1px solid #ECE7DE !important;">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 44px; height: 44px; background: #FFF3EB; color: var(--sakura-accent);">
+                        <i class="bi bi-collection-play-fill fs-5" style="color: var(--sakura-accent);"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0" style="color: var(--navy-dark);">30+ Khóa Học</h5>
+                    <p class="text-muted small mb-0">Hơn 500 bài giảng toàn diện</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 border-0 rounded-4 shadow-sm h-100 text-center hover-elevate" style="background: #FFFFFF; border: 1px solid #ECE7DE !important;">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 44px; height: 44px; background: #EDF7EE; color: #10B981;">
+                        <i class="bi bi-patch-check-fill fs-5 text-success"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0" style="color: var(--navy-dark);">1,000+ Câu Hỏi</h5>
+                    <p class="text-muted small mb-0">Quiz &amp; Đề thi có giải thích</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 border-0 rounded-4 shadow-sm h-100 text-center hover-elevate" style="background: #FFFFFF; border: 1px solid #ECE7DE !important;">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 44px; height: 44px; background: #F3EBF9; color: #8E44AD;">
+                        <i class="bi bi-clock-history fs-5" style="color: #8E44AD;"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0" style="color: var(--navy-dark);">Học Tập 24/7</h5>
+                    <p class="text-muted small mb-0">Lưu tiến độ &amp; phản hồi ngay</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- 3. FEATURED COURSES SECTION (Khóa học tiêu biểu)               -->
         <!-- ============================================================== -->
         <section class="mb-5">
-            <div class="d-flex justify-content-between align-items-end mb-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 mb-4">
                 <div>
-                    <span class="text-uppercase fw-bold small text-muted">Chương trình chất lượng cao</span>
-                    <h2 class="fw-bold mb-0 text-dark">Khóa học JLPT Nổi bật</h2>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-1.5 rounded-pill text-white fw-bold shadow-sm" style="background: linear-gradient(135deg, #173B57 0%, #315C78 100%); font-size: 0.78rem; letter-spacing: 0.5px;">
+                            <i class="bi bi-award-fill text-warning me-1"></i> おすすめコース • ĐƯỢC ĐỀ XUẤT
+                        </span>
+                        <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1 small">Chất lượng cao</span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-dark" style="font-size: 1.85rem; letter-spacing: -0.02em;">Khóa Học JLPT Tiêu Biểu &amp; Chọn Lọc</h2>
+                    <p class="text-muted small mb-0">Chương trình đào tạo nền tảng vững chắc, bám sát cấu trúc đề thi chính thức từ N5 đến N1.</p>
                 </div>
-                <a th:href="@{/courses}" class="small text-decoration-none fw-semibold" style="color: var(--steel-blue)">
-                    Xem tất cả khóa học &rarr;
-                </a>
+                <div class="d-flex align-items-center gap-2">
+                    <a th:href="@{/courses}" class="btn btn-outline-dark btn-sm rounded-pill px-3.5 py-2 fw-semibold text-nowrap d-inline-flex align-items-center gap-1 shadow-sm hover-elevate">
+                        <span>Xem tất cả khóa học</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
             </div>
-            <div class="row">
-                <div th:each="course : ${featuredCourses}">
+
+            <!-- Quick JLPT Filter Pills -->
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+                <span class="small text-muted fw-bold me-1"><i class="bi bi-funnel me-1"></i>Lọc nhanh:</span>
+                <button type="button" class="course-filter-btn active" data-filter="ALL">
+                    <i class="bi bi-grid-fill me-1"></i> Tất cả
+                </button>
+                <button type="button" class="course-filter-btn" data-filter="N5">
+                    <span class="badge badge-jlpt-n5 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">N5</span> Nhập môn
+                </button>
+                <button type="button" class="course-filter-btn" data-filter="N4">
+                    <span class="badge badge-jlpt-n4 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">N4</span> Sơ cấp
+                </button>
+                <button type="button" class="course-filter-btn" data-filter="N3">
+                    <span class="badge badge-jlpt-n3 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">N3</span> Trung cấp
+                </button>
+                <button type="button" class="course-filter-btn" data-filter="N2">
+                    <span class="badge badge-jlpt-n2 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">N2</span> Nâng cao
+                </button>
+                <button type="button" class="course-filter-btn" data-filter="N1">
+                    <span class="badge badge-jlpt-n1 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">N1</span> Cao cấp
+                </button>
+            </div>
+
+            <!-- Featured Courses Grid (Using th:block for clean row child rendering) -->
+            <div class="row g-4" id="featuredCoursesGrid">
+                <th:block th:each="course : ${featuredCourses}">
                     <div th:replace="~{fragments/components/course-card :: courseCard(${course}, false)}"></div>
+                </th:block>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 3b. LATEST NEW COURSES SECTION (Khóa học mới phát hành)        -->
+        <!-- ============================================================== -->
+        <section class="mb-5" th:if="${latestCourses != null and !latestCourses.isEmpty()}">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 mb-4">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-1.5 rounded-pill text-white fw-bold shadow-sm" style="background: linear-gradient(135deg, #E06D53 0%, #EA580C 100%); font-size: 0.78rem; letter-spacing: 0.5px;">
+                            <i class="bi bi-stars text-warning me-1"></i> 新着コース • MỚI PHÁT HÀNH
+                        </span>
+                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2.5 py-1 small fw-bold">Chuẩn Quốc Tế</span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-dark" style="font-size: 1.85rem; letter-spacing: -0.02em;">Khóa Học Mới Nhất Theo Chuẩn JLPT</h2>
+                    <p class="text-muted small mb-0">Cập nhật đầy đủ bài giảng chi tiết, flashcard từ vựng, quiz trắc nghiệm và bài thi đánh giá chuẩn format.</p>
                 </div>
+                <div>
+                    <a th:href="@{/courses}" class="btn btn-sakura btn-sm rounded-pill px-3.5 py-2 fw-semibold text-nowrap d-inline-flex align-items-center gap-1 shadow-sm hover-elevate">
+                        <span>Khám phá trọn bộ</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Latest Courses Grid (Using th:block for clean row child rendering) -->
+            <div class="row g-4" id="latestCoursesGrid">
+                <th:block th:each="course : ${latestCourses}">
+                    <div th:replace="~{fragments/components/course-card :: courseCard(${course}, false)}"></div>
+                </th:block>
             </div>
         </section>
 
@@ -228,5 +335,33 @@
                 </div>
             </div>
         </section>
+
+        <!-- Client-side Quick Level Filter Script -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const filterBtns = document.querySelectorAll('.course-filter-btn');
+                const courseCards = document.querySelectorAll('.course-card-wrapper');
+                
+                filterBtns.forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        filterBtns.forEach(function(b) { b.classList.remove('active'); });
+                        this.classList.add('active');
+                        
+                        const selectedLevel = this.getAttribute('data-filter');
+                        
+                        courseCards.forEach(function(card) {
+                            const cardLevel = card.getAttribute('data-level');
+                            if (selectedLevel === 'ALL' || cardLevel === selectedLevel) {
+                                card.style.display = 'flex';
+                                card.style.opacity = '1';
+                            } else {
+                                card.style.display = 'none';
+                                card.style.opacity = '0';
+                            }
+                        });
+                    });
+                });
+            });
+        </script>
     </div>
 </div>
