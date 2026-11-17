@@ -949,15 +949,26 @@ public class LessonDetailService {
         }
     }
 
+    private static final java.util.regex.Pattern JAPANESE_PATTERN =
+            java.util.regex.Pattern.compile("^[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FAF\\u3400-\\u4DBFー\\s\\u3000-\\u303F]+$");
+    private static final java.util.regex.Pattern HIRAGANA_PATTERN =
+            java.util.regex.Pattern.compile("^[\\u3040-\\u309Fー\\s]+$");
+    private static final java.util.regex.Pattern KANJI_PATTERN =
+            java.util.regex.Pattern.compile("^[\\u4E00-\\u9FAF\\u3400-\\u4DBF]+$");
+    private static final java.util.regex.Pattern ON_KUN_PATTERN =
+            java.util.regex.Pattern.compile("^[\\u3040-\\u309F\\u30A0-\\u30FFー・\\s]+$");
+
     private void validateVocabulary(MultiValueMap<String, String> params) {
         List<String> words = params.get("word");
         List<String> readings = params.get("wordReading") != null ? params.get("wordReading") : params.get("reading");
         List<String> meanings = params.get("wordMeaning") != null ? params.get("wordMeaning") : params.get("meaning");
+        List<String> posList = params.get("partOfSpeech");
         List<String> examples = params.get("wordExample") != null ? params.get("wordExample") : params.get("example");
         List<String> exampleVis = params.get("wordExampleVi") != null ? params.get("wordExampleVi") : params.get("exampleVi");
 
         boolean hasWord = false;
         int count = words == null ? 0 : words.size();
+        java.util.Set<String> seenWords = new java.util.HashSet<>();
         for (int i = 0; i < count; i++) {
             String w = words.get(i) == null ? "" : words.get(i).trim();
             if (w.isBlank()) continue;
@@ -965,12 +976,25 @@ public class LessonDetailService {
             if (w.length() > 50) {
                 throw new IllegalArgumentException("Từ vựng thứ " + (i + 1) + " tối đa 50 ký tự.");
             }
+            if (!JAPANESE_PATTERN.matcher(w).matches()) {
+                throw new IllegalArgumentException("Từ vựng “" + w + "” phải được viết bằng tiếng Nhật (Hiragana, Katakana, hoặc Kanji).");
+            }
+            if (!seenWords.add(w.toLowerCase())) {
+                throw new IllegalArgumentException("Từ vựng “" + w + "” bị trùng lặp trong bài học.");
+            }
             String reading = readings != null && i < readings.size() ? value(readings.get(i)).trim() : "";
             if (reading.isBlank()) {
                 throw new IllegalArgumentException("Vui lòng nhập cách đọc cho từ: “" + w + "”.");
             }
             if (reading.length() > 50) {
                 throw new IllegalArgumentException("Cách đọc của từ “" + w + "” tối đa 50 ký tự.");
+            }
+            if (!HIRAGANA_PATTERN.matcher(reading).matches()) {
+                throw new IllegalArgumentException("Cách đọc của từ “" + w + "” phải được viết bằng chữ Hiragana.");
+            }
+            String pos = posList != null && i < posList.size() ? value(posList.get(i)).trim() : "";
+            if (pos.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập từ loại cho từ: “" + w + "”.");
             }
             String meaning = meanings != null && i < meanings.size() ? value(meanings.get(i)).trim() : "";
             if (meaning.isBlank()) {
@@ -981,8 +1005,14 @@ public class LessonDetailService {
             }
             String exJp = examples != null && i < examples.size() ? value(examples.get(i)).trim() : "";
             String exVi = exampleVis != null && i < exampleVis.size() ? value(exampleVis.get(i)).trim() : "";
+            if (!exJp.isBlank() && !JAPANESE_PATTERN.matcher(exJp).matches()) {
+                throw new IllegalArgumentException("Câu ví dụ tiếng Nhật của từ “" + w + "” phải được viết bằng tiếng Nhật.");
+            }
             if (!exJp.isBlank() && exVi.isBlank()) {
                 throw new IllegalArgumentException("Vui lòng nhập câu dịch tiếng Việt cho ví dụ của từ: “" + w + "”.");
+            }
+            if (exJp.isBlank() && !exVi.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập câu ví dụ tiếng Nhật cho ví dụ của từ: “" + w + "”.");
             }
         }
         if (!hasWord) {
@@ -997,6 +1027,14 @@ public class LessonDetailService {
         }
         if (character.codePointCount(0, character.length()) != 1) {
             throw new IllegalArgumentException("Chữ Hán chỉ được nhập đúng 1 ký tự.");
+        }
+        if (!KANJI_PATTERN.matcher(character).matches()) {
+            throw new IllegalArgumentException("Chữ Hán phải là một ký tự Kanji hợp lệ.");
+        }
+
+        String radical = first(params, "radical").trim();
+        if (!radical.isBlank() && !KANJI_PATTERN.matcher(radical).matches()) {
+            throw new IllegalArgumentException("Bộ thủ phải là chữ Kanji hợp lệ.");
         }
 
         String hanviet = first(params, "hanviet").trim();
@@ -1014,7 +1052,7 @@ public class LessonDetailService {
         try {
             int strokes = Integer.parseInt(strokeStr);
             if (strokes < 1 || strokes > 40) {
-                throw new IllegalArgumentException("Số nét chữ Hán phải từ 1 đến 40 nét.");
+                throw new IllegalArgumentException("Số nét chữ Hán phải là số nguyên dương từ 1 đến 40 nét.");
             }
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Số nét chữ Hán không hợp lệ.");
@@ -1032,6 +1070,12 @@ public class LessonDetailService {
         String kun = first(params, "kunReading").trim();
         if (on.isBlank() && kun.isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập ít nhất một âm On hoặc âm Kun cho chữ Hán.");
+        }
+        if (!on.isBlank() && !ON_KUN_PATTERN.matcher(on).matches()) {
+            throw new IllegalArgumentException("Âm On phải được viết bằng tiếng Nhật (Hiragana hoặc Katakana).");
+        }
+        if (!kun.isBlank() && !ON_KUN_PATTERN.matcher(kun).matches()) {
+            throw new IllegalArgumentException("Âm Kun phải được viết bằng tiếng Nhật (Hiragana hoặc Katakana).");
         }
     }
 
@@ -1058,6 +1102,11 @@ public class LessonDetailService {
         }
         if (formation.length() > 500) {
             throw new IllegalArgumentException("Cấu trúc kết hợp tối đa 500 ký tự.");
+        }
+
+        String description = first(params, "description").trim();
+        if (description.length() > 1000) {
+            throw new IllegalArgumentException("Giải thích cách dùng tối đa 1000 ký tự.");
         }
 
         List<String> exJpList = params.get("exampleJp");
@@ -1089,27 +1138,38 @@ public class LessonDetailService {
         List<String> optC = params.get("optionC");
         List<String> optD = params.get("optionD");
 
-        boolean hasQuestion = false;
         int qCount = questions == null ? 0 : questions.size();
+        if (qCount == 0) {
+            throw new IllegalArgumentException("Bài Đọc hiểu phải có ít nhất 1 câu hỏi.");
+        }
+        boolean hasValidQuestion = false;
         for (int i = 0; i < qCount; i++) {
             String qText = questions.get(i) == null ? "" : questions.get(i).trim();
-            if (qText.isBlank()) continue;
-            hasQuestion = true;
-            String a = optA != null && i < optA.size() ? value(optA.get(i)).trim() : "";
-            String b = optB != null && i < optB.size() ? value(optB.get(i)).trim() : "";
-            String c = optC != null && i < optC.size() ? value(optC.get(i)).trim() : "";
-            String d = optD != null && i < optD.size() ? value(optD.get(i)).trim() : "";
-            if (a.isBlank() || b.isBlank() || c.isBlank() || d.isBlank()) {
-                throw new IllegalArgumentException("Câu hỏi số " + (i + 1) + " phải nhập đủ cả 4 phương án A, B, C, D.");
+            if (qText.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập nội dung cho câu hỏi số " + (i + 1) + ".");
+            }
+            hasValidQuestion = true;
+            int optionCount = 0;
+            if (optA != null && i < optA.size() && !optA.get(i).trim().isBlank()) optionCount++;
+            if (optB != null && i < optB.size() && !optB.get(i).trim().isBlank()) optionCount++;
+            if (optC != null && i < optC.size() && !optC.get(i).trim().isBlank()) optionCount++;
+            if (optD != null && i < optD.size() && !optD.get(i).trim().isBlank()) optionCount++;
+            if (optionCount < 2) {
+                throw new IllegalArgumentException("Mỗi câu hỏi phải có ít nhất 2 đáp án.");
             }
         }
-        if (!hasQuestion) {
+        if (!hasValidQuestion) {
             throw new IllegalArgumentException("Bài Đọc hiểu phải có ít nhất 1 câu hỏi.");
         }
     }
 
     private void validateListening(MultiValueMap<String, String> params) {
-        // Lưu ý: Người dùng yêu cầu không giới hạn dung lượng file nghe
+        String audioUrl = first(params, "audioUrl").trim();
+        String questionAudioUrl = first(params, "questionAudioUrl").trim();
+        if (audioUrl.isBlank() && questionAudioUrl.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn file nghe hoặc nhập URL file nghe hợp lệ.");
+        }
+
         List<String> questions = params.get("questionText");
         List<String> optA = params.get("optionA");
         List<String> optB = params.get("optionB");
@@ -1117,16 +1177,27 @@ public class LessonDetailService {
         List<String> optD = params.get("optionD");
 
         int qCount = questions == null ? 0 : questions.size();
+        if (qCount == 0) {
+            throw new IllegalArgumentException("Bài Nghe hiểu phải có ít nhất 1 câu hỏi.");
+        }
+        boolean hasValidQuestion = false;
         for (int i = 0; i < qCount; i++) {
             String qText = questions.get(i) == null ? "" : questions.get(i).trim();
-            if (qText.isBlank()) continue;
-            String a = optA != null && i < optA.size() ? value(optA.get(i)).trim() : "";
-            String b = optB != null && i < optB.size() ? value(optB.get(i)).trim() : "";
-            String c = optC != null && i < optC.size() ? value(optC.get(i)).trim() : "";
-            String d = optD != null && i < optD.size() ? value(optD.get(i)).trim() : "";
-            if (a.isBlank() || b.isBlank() || c.isBlank() || d.isBlank()) {
-                throw new IllegalArgumentException("Câu hỏi nghe số " + (i + 1) + " phải nhập đủ cả 4 phương án A, B, C, D.");
+            if (qText.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập nội dung cho câu hỏi nghe số " + (i + 1) + ".");
             }
+            hasValidQuestion = true;
+            int optionCount = 0;
+            if (optA != null && i < optA.size() && !optA.get(i).trim().isBlank()) optionCount++;
+            if (optB != null && i < optB.size() && !optB.get(i).trim().isBlank()) optionCount++;
+            if (optC != null && i < optC.size() && !optC.get(i).trim().isBlank()) optionCount++;
+            if (optD != null && i < optD.size() && !optD.get(i).trim().isBlank()) optionCount++;
+            if (optionCount < 2) {
+                throw new IllegalArgumentException("Mỗi câu hỏi nghe phải có ít nhất 2 đáp án.");
+            }
+        }
+        if (!hasValidQuestion) {
+            throw new IllegalArgumentException("Bài Nghe hiểu phải có ít nhất 1 câu hỏi.");
         }
     }
 

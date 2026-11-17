@@ -440,7 +440,7 @@
             <div><h2>Chương và bài học</h2><p>Tạo chương trước; bài học sẽ lưu tên chương vào trường section_name.</p></div>
             <form class="manager-add-chapter" method="post" th:action="@{/manager/lessons/sections}">
                 <input type="hidden" name="courseId" th:value="${selectedCourseId}">
-                <input name="sectionName" maxlength="150" required placeholder="Tên chương mới">
+                <input name="sectionName" maxlength="150" required placeholder="Tên chương mới *">
                 <button type="submit"><i class="bi bi-folder-plus"></i> Tạo chương</button>
             </form>
         </div>
@@ -472,7 +472,7 @@
                             <div class="modal-body d-grid gap-3">
                                 <input type="hidden" name="courseId" th:value="${selectedCourseId}">
                                 <input type="hidden" name="oldName" th:value="${chapter.name}">
-                                <label class="form-label mb-0">Tên chương<input class="form-control mt-1" name="newName" maxlength="150" required th:value="${chapter.name}"></label>
+                                <label class="form-label mb-0">Tên chương <span class="text-danger">*</span><input class="form-control mt-1" name="newName" maxlength="150" required th:value="${chapter.name}"></label>
                             </div>
                             <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Lưu thay đổi</button></div>
                         </form>
@@ -1231,8 +1231,8 @@
                         <input type="hidden" name="skillType" th:value="${selectedSkill.value}">
                         <input type="hidden" name="entryId" th:value="${selectedEntryId}">
                         <div class="lesson-modal-scroll">
-                            <div class="alert alert-danger py-2 mb-3 lesson-modal-alert" role="alert" th:if="${lessonError}" th:text="${lessonError}"></div>
-                            <div class="alert alert-danger py-2 mb-3 lesson-client-alert" role="alert" style="display:none;"></div>
+                            <div class="alert alert-danger py-2 mb-3 lesson-modal-alert" role="alert" th:if="${lessonError}"><i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${lessonError}"></span></div>
+                            <div class="alert alert-danger py-2 mb-3 lesson-client-alert" role="alert" style="display:none;"><i class="bi bi-exclamation-triangle-fill me-2"></i><span class="lesson-client-alert-text"></span></div>
 
                             <div class="lesson-field-row is-name mb-3" th:if="${chapterNames != null and !#lists.isEmpty(chapterNames)}">
                                 <div style="flex: 1 1 55%;">
@@ -1324,7 +1324,7 @@
                                         </button>
                                     </div>
                                     <div class="lesson-word-grid lesson-word-head" aria-hidden="true">
-                                        <span>Từ</span><span>Cách đọc</span><span>Từ loại</span><span>Hán Việt</span><span>Nghĩa</span><span>Ví dụ (Nhật)</span><span>Ví dụ (Việt)</span><span></span>
+                                        <span>Từ <span class="text-danger">*</span></span><span>Cách đọc <span class="text-danger">*</span></span><span>Từ loại <span class="text-danger">*</span></span><span>Hán Việt</span><span>Nghĩa <span class="text-danger">*</span></span><span>Ví dụ (Nhật)</span><span>Ví dụ (Việt)</span><span></span>
                                     </div>
                                     <div class="lesson-repeat" data-repeat="words">
                                         <div class="lesson-word-grid" th:each="row : ${form['words']}">
@@ -1449,10 +1449,10 @@
                                             <input class="lesson-field is-japanese mb-3" name="questionText" type="text" required
                                                    th:value="${row['questionText']}" placeholder="Nội dung câu hỏi tiếng Nhật..." aria-label="Nội dung câu hỏi">
                                             <div class="listening-question-options">
-                                                <input class="lesson-field is-japanese" name="optionA" type="text" required th:value="${row['optionA']}" placeholder="A">
-                                                <input class="lesson-field is-japanese" name="optionB" type="text" required th:value="${row['optionB']}" placeholder="B">
-                                                <input class="lesson-field is-japanese" name="optionC" type="text" required th:value="${row['optionC']}" placeholder="C">
-                                                <input class="lesson-field is-japanese" name="optionD" type="text" required th:value="${row['optionD']}" placeholder="D">
+                                                <input class="lesson-field is-japanese" name="optionA" type="text" th:value="${row['optionA']}" placeholder="A">
+                                                <input class="lesson-field is-japanese" name="optionB" type="text" th:value="${row['optionB']}" placeholder="B">
+                                                <input class="lesson-field is-japanese" name="optionC" type="text" th:value="${row['optionC']}" placeholder="C">
+                                                <input class="lesson-field is-japanese" name="optionD" type="text" th:value="${row['optionD']}" placeholder="D">
                                             </div>
                                             <div class="lesson-question-answer mt-3">
                                                 <span class="lesson-field-label mb-0">Đáp án đúng:</span>
@@ -1471,7 +1471,7 @@
                             <!-- ============ ĐỌC HIỂU ============ -->
                             <th:block th:if="${selectedSkill.value == 'READING'}">
                                 <div>
-                                    <label class="lesson-field-label" for="readingPassage">Đoạn văn</label>
+                                    <label class="lesson-field-label" for="readingPassage">Đoạn văn <span class="text-danger">*</span></label>
                                     <div class="reading-rich-toolbar" role="toolbar" aria-label="Định dạng đoạn văn">
                                         <div class="reading-rich-toolbar-group">
                                             <button type="button" data-rich-command="bold" aria-label="In đậm" title="In đậm"><b>B</b></button>
@@ -1659,10 +1659,10 @@
             </div>
             <input class="lesson-field is-japanese mb-3" name="questionText" type="text" required placeholder="Nội dung câu hỏi tiếng Nhật..." aria-label="Nội dung câu hỏi">
             <div class="listening-question-options">
-                <input class="lesson-field is-japanese" name="optionA" type="text" required placeholder="A">
-                <input class="lesson-field is-japanese" name="optionB" type="text" required placeholder="B">
-                <input class="lesson-field is-japanese" name="optionC" type="text" required placeholder="C">
-                <input class="lesson-field is-japanese" name="optionD" type="text" required placeholder="D">
+                <input class="lesson-field is-japanese" name="optionA" type="text" placeholder="A">
+                <input class="lesson-field is-japanese" name="optionB" type="text" placeholder="B">
+                <input class="lesson-field is-japanese" name="optionC" type="text" placeholder="C">
+                <input class="lesson-field is-japanese" name="optionD" type="text" placeholder="D">
             </div>
             <div class="lesson-question-answer mt-3">
                 <span class="lesson-field-label">Đáp án đúng:</span>
@@ -1689,8 +1689,8 @@
                             <input type="hidden" name="courseId" th:value="${selectedCourseId}">
                             <input type="hidden" name="skillType" value="OTHER">
                             <div class="lesson-modal-scroll">
-                            <div class="alert alert-danger py-2 mb-3 lesson-modal-alert" role="alert" th:if="${lessonError}" th:text="${lessonError}"></div>
-                            <div class="alert alert-danger py-2 mb-3 lesson-client-alert" role="alert" style="display:none;"></div>
+                            <div class="alert alert-danger py-2 mb-3 lesson-modal-alert" role="alert" th:if="${lessonError}"><i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${lessonError}"></span></div>
+                            <div class="alert alert-danger py-2 mb-3 lesson-client-alert" role="alert" style="display:none;"><i class="bi bi-exclamation-triangle-fill me-2"></i><span class="lesson-client-alert-text"></span></div>
                                 <div class="lesson-field-row is-name mb-3" th:if="${chapterNames != null and !#lists.isEmpty(chapterNames)}">
                                     <div style="flex: 1 1 55%;">
                                         <label class="lesson-field-label" for="otherLessonTitle">Tên bài học <span class="text-danger">*</span></label>
@@ -1712,7 +1712,7 @@
                                     <input class="lesson-field" id="otherLessonTitle" name="title" type="text" maxlength="150" required th:value="${form['title']}">
                                     <input type="hidden" name="sectionName" th:value="${form['sectionName']}">
                                 </div>
-                                <label class="lesson-field-label" for="otherLessonContent">Nội dung</label>
+                                <label class="lesson-field-label" for="otherLessonContent">Nội dung <span class="text-danger">*</span></label>
                                 <div class="reading-rich-toolbar" role="toolbar" aria-label="Định dạng nội dung">
                                     <div class="reading-rich-toolbar-group">
                                         <button type="button" data-rich-command="bold" aria-label="In đậm" title="In đậm"><b>B</b></button>
