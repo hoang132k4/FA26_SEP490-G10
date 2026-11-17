@@ -30,6 +30,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -71,14 +73,37 @@ class ManagerQuestionIntegrationTest {
         MvcResult result = mockMvc.perform(get("/manager/questions").param("search", MARK + "Câu dùng trong đề"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/manager/question/list"))
-                .andExpect(model().attribute("questions", hasSize(1)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Đến trang"))))
                 .andReturn();
 
         @SuppressWarnings("unchecked")
-        List<QuestionListRow> rows = (List<QuestionListRow>) result.getModelAndView().getModel().get("questions");
+        List<QuestionListRow> rows = ((org.springframework.data.domain.Page<QuestionListRow>) result.getModelAndView().getModel().get("questions")).getContent();
+        assertEquals(1, rows.size());
         assertEquals(q.getId(), rows.get(0).id());
         assertEquals(1L, rows.get(0).examCount());
         assertEquals(0L, rows.get(0).quizCount());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void listIsPaginatedAndPageLinksKeepTheFilter() throws Exception {
+        for (int i = 0; i < 21; i++) saveChoice("Câu phân trang " + i, "ACTIVE");
+        String search = MARK + "Câu phân trang";
+
+        var first = mockMvc.perform(get("/manager/questions").param("search", search))
+                .andExpect(content().string(containsString("page=1")))
+                .andReturn();
+        var firstPage = (org.springframework.data.domain.Page<QuestionListRow>) first.getModelAndView().getModel().get("questions");
+        assertEquals(20, firstPage.getContent().size());
+        assertEquals(21, firstPage.getTotalElements());
+        String html = first.getResponse().getContentAsString();
+        assertTrue(html.contains("search=") && html.contains("page=1"), "page link should keep the search filter");
+        assertTrue(html.contains("Đến trang") && html.contains("data-total=\"2\""), "page jump box should be shown");
+
+        var second = (org.springframework.data.domain.Page<QuestionListRow>) mockMvc
+                .perform(get("/manager/questions").param("search", search).param("page", "1"))
+                .andReturn().getModelAndView().getModel().get("questions");
+        assertEquals(1, second.getContent().size());
     }
 
     @Test

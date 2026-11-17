@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -58,8 +59,8 @@ class ManagerQuestionControllerTest {
 
     @Test
     void list_noParams_returnsListView() throws Exception {
-        when(managerQuestionService.search(anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(Collections.emptyList());
+        when(managerQuestionService.search(anyString(), anyString(), anyString(), anyString(), anyString(), anyInt()))
+                .thenReturn(Page.empty());
         when(managerQuestionService.count()).thenReturn(0L);
 
         mockMvc.perform(get("/manager/questions"))
@@ -70,8 +71,8 @@ class ManagerQuestionControllerTest {
 
     @Test
     void list_withSearchParam_passedToService() throws Exception {
-        when(managerQuestionService.search(eq("kanji"), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(Collections.emptyList());
+        when(managerQuestionService.search(eq("kanji"), anyString(), anyString(), anyString(), anyString(), anyInt()))
+                .thenReturn(Page.empty());
         when(managerQuestionService.count()).thenReturn(0L);
 
         mockMvc.perform(get("/manager/questions").param("search", "kanji"))
@@ -81,8 +82,8 @@ class ManagerQuestionControllerTest {
 
     @Test
     void list_modelContainsQuestionsAndOptions() throws Exception {
-        when(managerQuestionService.search(anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(Collections.emptyList());
+        when(managerQuestionService.search(anyString(), anyString(), anyString(), anyString(), anyString(), anyInt()))
+                .thenReturn(Page.empty());
         when(managerQuestionService.count()).thenReturn(5L);
 
         mockMvc.perform(get("/manager/questions"))

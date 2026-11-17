@@ -144,25 +144,41 @@ public class ManagerQuizRepository {
                 exerciseId);
     }
 
+    public List<Long> findInactiveQuestionIds(long exerciseId) {
+        return jdbcTemplate.queryForList("""
+                SELECT q.id FROM exercise_questions eq
+                JOIN questions q ON q.id = eq.question_id
+                WHERE eq.exercise_id = ? AND q.status <> 'ACTIVE'
+                ORDER BY q.id
+                """, Long.class, exerciseId);
+    }
+
     public long countExerciseQuestions(long exerciseId) {
         return jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM exercise_questions WHERE exercise_id = ?", Long.class, exerciseId);
     }
 
-    public List<ExerciseQuestionRow> findAvailableQuestions(long exerciseId, String jlptLevel, String skillType) {
-        return jdbcTemplate.query("""
-                SELECT q.id, q.content, q.question_type, q.jlpt_level, q.skill_type
-                FROM questions q
-                WHERE q.status = 'ACTIVE'
-                  AND q.parent_id IS NULL
-                  AND q.id NOT IN (SELECT eq.question_id FROM exercise_questions eq WHERE eq.exercise_id = ?)
-                  AND (? = '' OR q.jlpt_level = ?)
-                  AND (? = '' OR q.skill_type = ?)
-                ORDER BY q.id DESC
-                """, (rs, row) -> new ExerciseQuestionRow(
+    private static final String AVAILABLE_QUESTIONS_WHERE = """
+            WHERE q.status = 'ACTIVE'
+              AND q.parent_id IS NULL
+              AND q.id NOT IN (SELECT eq.question_id FROM exercise_questions eq WHERE eq.exercise_id = ?)
+              AND (? = '' OR q.jlpt_level = ?)
+              AND (? = '' OR q.skill_type = ?)
+            """;
+
+    public List<ExerciseQuestionRow> findAvailableQuestions(long exerciseId, String jlptLevel, String skillType,
+                                                            int limit, long offset) {
+        return jdbcTemplate.query("SELECT q.id, q.content, q.question_type, q.jlpt_level, q.skill_type FROM questions q "
+                        + AVAILABLE_QUESTIONS_WHERE + " ORDER BY q.id DESC LIMIT ? OFFSET ?",
+                (rs, row) -> new ExerciseQuestionRow(
                         rs.getLong("id"), rs.getString("content"), rs.getString("question_type"),
                         rs.getString("jlpt_level"), rs.getString("skill_type")),
-                exerciseId, jlptLevel, jlptLevel, skillType, skillType);
+                exerciseId, jlptLevel, jlptLevel, skillType, skillType, limit, offset);
+    }
+
+    public long countAvailableQuestions(long exerciseId, String jlptLevel, String skillType) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM questions q " + AVAILABLE_QUESTIONS_WHERE,
+                Long.class, exerciseId, jlptLevel, jlptLevel, skillType, skillType);
     }
 
     /** Câu đơn ACTIVE chưa có trong quiz; bỏ qua bài đọc/nghe dạng PASSAGE vì quiz chưa hiển thị được câu con. */

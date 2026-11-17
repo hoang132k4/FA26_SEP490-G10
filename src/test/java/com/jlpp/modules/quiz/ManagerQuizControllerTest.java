@@ -239,7 +239,8 @@ class ManagerQuizControllerTest {
         when(managerQuizService.findById(1L)).thenReturn(QUIZ);
         when(managerQuizService.getQuizQuestions(1L)).thenReturn(List.of(
                 new ExerciseQuestionRow(10L, "Câu hỏi?", "MULTI_CHOICE", "N4", "VOCABULARY")));
-        when(managerQuizService.findAvailableQuestions(eq(1L), anyString(), anyString())).thenReturn(Collections.emptyList());
+        when(managerQuizService.findAvailableQuestions(eq(1L), anyString(), anyString(), anyInt()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
         when(managerQuizService.questionFilterOptions()).thenReturn(new QuizQuestionOptions(List.of("N4"), List.of("VOCABULARY")));
 
         mockMvc.perform(get("/manager/quizzes/1/questions"))

@@ -6,6 +6,7 @@ import com.jlpp.modules.question.service.ManagerQuestionService;
 import com.jlpp.modules.question.service.QuestionAudioStorageService;
 import com.jlpp.modules.question.service.QuestionImportService;
 import jakarta.validation.Valid;
+import com.jlpp.common.util.PageLinks;
 import com.jlpp.common.util.UserMessages;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
@@ -40,8 +41,11 @@ public class ManagerQuestionController {
                        @RequestParam(defaultValue = "") String jlptLevel,
                        @RequestParam(defaultValue = "") String skillType,
                        @RequestParam(defaultValue = "") String status,
+                       @RequestParam(defaultValue = "0") int page,
                        Model model) {
-        model.addAttribute("questions", managerQuestionService.search(search, questionType, jlptLevel, skillType, status));
+        model.addAttribute("questions", managerQuestionService.search(search, questionType, jlptLevel, skillType, status, page));
+        model.addAttribute("pageUrl", PageLinks.of("/manager/questions", "search", search, "questionType", questionType,
+                "jlptLevel", jlptLevel, "skillType", skillType, "status", status));
         model.addAttribute("search", search);
         model.addAttribute("questionType", questionType);
         model.addAttribute("jlptLevel", jlptLevel);

@@ -160,13 +160,15 @@
                         <td th:text="${q.jlptLevel ?: '-'}"></td>
                         <td th:text="${q.skillType ?: '-'}"></td>
                     </tr>
-                    <tr th:if="${availableQuestions == null || #lists.isEmpty(availableQuestions)}">
+                    <tr th:if="${availableQuestions.isEmpty()}">
                         <td colspan="6" class="text-center text-muted py-4">Không có câu hỏi ACTIVE khả dụng. Hãy tạo và kích hoạt câu hỏi trong Question Bank trước.</td>
                     </tr>
                     </tbody>
                 </table>
             </div>
         </form>
+        <div th:replace="~{fragments/components/pagination :: pagination(${availableQuestions}, ${pageUrl})}"></div>
+        <div th:replace="~{fragments/components/page-jump :: pageJump(${availableQuestions}, ${pageUrl})}"></div>
     </div>
 
     <style>

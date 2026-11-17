@@ -1,6 +1,8 @@
 package com.jlpp.modules.question.repository;
 
 import com.jlpp.modules.question.entity.Question;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,11 +24,12 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
               and (q.parentId is null)
             order by q.id desc
             """)
-    List<Question> searchForManager(@Param("search") String search,
+    Page<Question> searchForManager(@Param("search") String search,
                                     @Param("questionType") String questionType,
                                     @Param("jlptLevel") String jlptLevel,
                                     @Param("skillType") String skillType,
-                                    @Param("status") String status);
+                                    @Param("status") String status,
+                                    Pageable pageable);
 
     @Query("select distinct q.category from Question q where q.category is not null and q.category <> '' order by q.category")
     List<String> findDistinctCategories();
@@ -48,6 +51,20 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findAvailableForExam(@Param("examId") Long examId,
                                         @Param("jlptLevel") String jlptLevel,
                                         @Param("skillType") String skillType);
+
+    @Query("""
+            select q from Question q
+            where q.status = 'ACTIVE'
+              and q.questionType <> 'PASSAGE'
+              and (:jlptLevel = '' or q.jlptLevel = :jlptLevel)
+              and (:skillType = '' or q.skillType = :skillType)
+              and q.id not in (select eq.id.questionId from ExamQuestion eq where eq.id.examId = :examId)
+            order by q.id desc
+            """)
+    Page<Question> findAvailableForExam(@Param("examId") Long examId,
+                                        @Param("jlptLevel") String jlptLevel,
+                                        @Param("skillType") String skillType,
+                                        Pageable pageable);
 
     // ── Usage stats ──
 

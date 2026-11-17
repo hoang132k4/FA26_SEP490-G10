@@ -17,6 +17,8 @@ import com.jlpp.modules.question.repository.QuestionRepository;
 import com.jlpp.modules.question.service.QuestionImportService;
 import com.jlpp.modules.question.service.QuestionPicker;
 import jakarta.persistence.EntityManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -32,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 
 import static com.jlpp.modules.exam.service.JlptExamStructure.LISTENING;
@@ -181,9 +185,12 @@ public class ManagerExamService {
         return examQuestionRepository.countByExamId(examId);
     }
 
+    public static final int PAGE_SIZE = 20;
+
     @Transactional(readOnly = true)
-    public List<Question> findAvailableQuestions(long examId, String jlptLevel, String skillType) {
-        return questionRepository.findAvailableForExam(examId, norm(jlptLevel), norm(skillType));
+    public Page<Question> findAvailableQuestions(long examId, String jlptLevel, String skillType, int page) {
+        return questionRepository.findAvailableForExam(examId, norm(jlptLevel), norm(skillType),
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE));
     }
 
     /** Gắn câu hỏi vào đề; mỗi phần không được vượt số câu đã cấu hình. */
@@ -198,14 +205,21 @@ public class ManagerExamService {
             throw new IllegalArgumentException("Section không hợp lệ.");
         }
 
+        List<Long> ids = new ArrayList<>(new LinkedHashSet<>(form.getQuestionIds()));
+        Map<Long, Question> found = new HashMap<>();
+        questionRepository.findAllById(ids).forEach(q -> found.put(q.getId(), q));
+        Set<Long> alreadyLinked = new HashSet<>(examQuestionRepository.findLinkedQuestionIds(examId, ids));
+
         Map<String, List<Question>> bySection = new LinkedHashMap<>();
-        for (Long questionId : new LinkedHashSet<>(form.getQuestionIds())) {
-            Question question = questionRepository.findById(questionId)
-                    .orElseThrow(() -> new IllegalArgumentException("Câu hỏi #" + questionId + " không tồn tại."));
+        for (Long questionId : ids) {
+            Question question = found.get(questionId);
+            if (question == null) {
+                throw new IllegalArgumentException("Câu hỏi #" + questionId + " không tồn tại.");
+            }
             if (!"ACTIVE".equals(question.getStatus())) {
                 throw new IllegalArgumentException("Câu hỏi #" + questionId + " chưa được kích hoạt (ACTIVE).");
             }
-            if (examQuestionRepository.existsById(new ExamQuestionId(examId, questionId))) {
+            if (alreadyLinked.contains(questionId)) {
                 continue;
             }
             String section = forcedSection != null ? forcedSection : sectionOf(question.getSkillType());
@@ -224,17 +238,18 @@ public class ManagerExamService {
         for (Map.Entry<String, List<Question>> entry : bySection.entrySet()) {
             String section = entry.getKey();
             int order = examQuestionRepository.maxOrderIndex(examId, section);
+            List<ExamQuestion> links = new ArrayList<>();
             for (Question question : entry.getValue()) {
-                order++;
-                examQuestionRepository.save(ExamQuestion.builder()
+                links.add(ExamQuestion.builder()
                         .id(new ExamQuestionId(examId, question.getId()))
                         .exam(exam)
                         .question(question)
                         .section(section)
-                        .orderIndex(order)
+                        .orderIndex(++order)
                         .points(1)
                         .build());
             }
+            examQuestionRepository.saveAll(links);
         }
     }
 
@@ -344,6 +359,10 @@ public class ManagerExamService {
 
     private static final String STALE_PREVIEW =
             "Kết quả xem trước đã cũ vì câu hỏi trong đề hoặc ngân hàng vừa thay đổi. Hãy bấm Tự động chọn câu để chọn lại.";
+
+    static String idList(List<Long> ids) {
+        return String.join(", ", ids.stream().map(id -> "#" + id).toList());
+    }
 
     private static void requireDraft(Exam exam) {
         if (!ExamStatusEnum.DRAFT.name().equals(exam.getStatus())) {
@@ -486,6 +505,12 @@ public class ManagerExamService {
         if (!mismatched.isEmpty()) {
             throw new IllegalArgumentException("Không thể chuyển sang " + status + ": số câu đã gán chưa khớp cấu trúc đề ("
                     + String.join(", ", mismatched) + "). Hãy gắn đủ câu hoặc chỉnh lại số câu từng phần.");
+        }
+        // A question used only by DRAFT exams may be archived, so re-check before learners can see the exam.
+        List<Long> inactive = examQuestionRepository.findInactiveQuestionIds(examId);
+        if (!inactive.isEmpty()) {
+            throw new IllegalArgumentException("Không thể chuyển sang " + status + ": đề còn câu hỏi không ở trạng thái ACTIVE ("
+                    + idList(inactive) + "). Hãy gỡ các câu này khỏi đề hoặc kích hoạt lại trước.");
         }
     }
 

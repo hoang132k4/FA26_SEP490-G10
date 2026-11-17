@@ -8,6 +8,7 @@ import com.jlpp.modules.quiz.dto.ManagerQuizForm;
 import com.jlpp.modules.quiz.dto.QuizGenerateForm;
 import com.jlpp.modules.quiz.service.ManagerQuizService;
 import jakarta.validation.Valid;
+import com.jlpp.common.util.PageLinks;
 import com.jlpp.common.util.UserMessages;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
@@ -110,13 +111,16 @@ public class ManagerQuizController {
     public String questionsPage(@PathVariable long id,
                                 @RequestParam(defaultValue = "") String jlptLevel,
                                 @RequestParam(defaultValue = "") String skillType,
+                                @RequestParam(defaultValue = "0") int page,
                                 Model model, RedirectAttributes redirectAttributes) {
         try {
             var quiz = managerQuizService.findById(id);
             var filterOptions = managerQuizService.questionFilterOptions();
             model.addAttribute("quiz", quiz);
             model.addAttribute("quizQuestions", managerQuizService.getQuizQuestions(id));
-            model.addAttribute("availableQuestions", managerQuizService.findAvailableQuestions(id, jlptLevel, skillType));
+            model.addAttribute("availableQuestions", managerQuizService.findAvailableQuestions(id, jlptLevel, skillType, page));
+            model.addAttribute("pageUrl", PageLinks.of("/manager/quizzes/" + id + "/questions",
+                    "jlptLevel", jlptLevel, "skillType", skillType));
             model.addAttribute("addForm", new ExerciseQuestionForm());
             model.addAttribute("jlptLevels", filterOptions.jlptLevels());
             model.addAttribute("skillTypes", filterOptions.skillTypes());

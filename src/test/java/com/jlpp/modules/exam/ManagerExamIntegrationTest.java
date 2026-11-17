@@ -24,6 +24,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -430,6 +432,47 @@ class ManagerExamIntegrationTest {
                         Integer.class, exam.getExamId(), c.getId()))
                 .toList();
         assertEquals(List.of(childOrders.get(0), childOrders.get(0) + 1, childOrders.get(0) + 2), childOrders);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void availableQuestionsArePaginated() throws Exception {
+        Exam exam = saveExam("Đề phân trang câu", "JLPT_MOCK", "N1", "DRAFT", 38, 5, 24);
+        for (int i = 0; i < 21; i++) {
+            Question q = saveQuestion("ACTIVE", "LISTENING");
+            q.setJlptLevel("N1");
+            questionRepository.save(q);
+        }
+
+        var first = (org.springframework.data.domain.Page<Question>) mockMvc
+                .perform(get("/manager/exams/{id}/questions", exam.getExamId()).param("jlptLevel", "N1").param("skillType", "LISTENING"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("jlptLevel=N1")))
+                .andExpect(content().string(containsString("Đến trang")))
+                .andReturn().getModelAndView().getModel().get("availableQuestions");
+        assertEquals(20, first.getContent().size());
+        assertTrue(first.getTotalElements() >= 21);
+
+        var second = (org.springframework.data.domain.Page<Question>) mockMvc
+                .perform(get("/manager/exams/{id}/questions", exam.getExamId())
+                        .param("jlptLevel", "N1").param("skillType", "LISTENING").param("page", "1"))
+                .andReturn().getModelAndView().getModel().get("availableQuestions");
+        assertEquals(1, second.getNumber());
+        assertFalse(second.getContent().isEmpty());
+    }
+
+    @Test
+    void publishingExamWithArchivedQuestionIsRejected() throws Exception {
+        Exam exam = saveExam("Đề có câu đã lưu trữ", "JLPT_MOCK", "N5", "DRAFT", 1, 0, 0);
+        Question question = saveQuestion("ACTIVE");
+        mockMvc.perform(addQuestions(exam, question));
+        jdbc.update("UPDATE questions SET status = 'ARCHIVED' WHERE id = ?", question.getId());
+
+        mockMvc.perform(updateExam(exam, "PUBLISHED", 1, 0, 0))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("examError", containsString("đề còn câu hỏi không ở trạng thái ACTIVE (#" + question.getId() + ")")));
+
+        assertEquals("DRAFT", jdbc.queryForObject("SELECT status FROM exams WHERE exam_id = ?", String.class, exam.getExamId()));
     }
 
     @Test

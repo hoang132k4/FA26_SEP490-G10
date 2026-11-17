@@ -45,6 +45,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -225,6 +226,21 @@ class ManagerExamServiceTest {
         assertEquals("PUBLISHED", saved.getStatus());
     }
 
+    @Test
+    void updateToPublishedRejectsExamWithQuestionsNoLongerActive() {
+        stubLinked("LANGUAGE", 3);
+        stubLinked("READING", 2);
+        stubLinked("LISTENING", 1);
+        when(examQuestionRepository.findInactiveQuestionIds(EXAM_ID)).thenReturn(List.of(12L, 15L));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.update(EXAM_ID, examForm("JLPT_MOCK", "N5", "PUBLISHED", 3, 2, 1)));
+
+        assertEquals("Không thể chuyển sang PUBLISHED: đề còn câu hỏi không ở trạng thái ACTIVE (#12, #15). "
+                + "Hãy gỡ các câu này khỏi đề hoặc kích hoạt lại trước.", ex.getMessage());
+        verify(examRepository, never()).save(any());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"PUBLISHED", "ACTIVE"})
     void updateToPublishableStatusFailsWhenASectionIsIncomplete(String status) {
@@ -356,7 +372,7 @@ class ManagerExamServiceTest {
                 () -> service.addQuestionsToExam(EXAM_ID, questionForm(List.of(10L, 11L), "READING")));
 
         assertTrue(ex.getMessage().contains("Đọc hiểu chỉ cần 2 câu, đã gán 1 nên chỉ thêm được 1 câu nữa"));
-        verify(examQuestionRepository, never()).save(any());
+        verify(examQuestionRepository, never()).saveAll(any());
     }
 
     @Test
@@ -375,7 +391,7 @@ class ManagerExamServiceTest {
         when(examQuestionRepository.maxOrderIndex(EXAM_ID, "LANGUAGE")).thenReturn(0);
         stubQuestion(10L, "ACTIVE");
         stubQuestion(11L, "ACTIVE");
-        when(examQuestionRepository.existsById(new ExamQuestionId(EXAM_ID, 10L))).thenReturn(true);
+        when(examQuestionRepository.findLinkedQuestionIds(eq(EXAM_ID), any())).thenReturn(List.of(10L));
 
         service.addQuestionsToExam(EXAM_ID, questionForm(List.of(10L, 11L), "LANGUAGE"));
 
@@ -400,7 +416,7 @@ class ManagerExamServiceTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.addQuestionsToExam(EXAM_ID, questionForm(List.of(), "LANGUAGE")));
-        verify(examQuestionRepository, never()).save(any());
+        verify(examQuestionRepository, never()).saveAll(any());
     }
 
     @Test
@@ -414,9 +430,25 @@ class ManagerExamServiceTest {
     }
 
     @Test
+    void addQuestionsLoadsSelectionWithBatchQueries() {
+        stubExamExists();
+        stubQuestion(10L, "ACTIVE");
+        stubQuestion(11L, "ACTIVE");
+        stubQuestion(12L, "ACTIVE");
+
+        service.addQuestionsToExam(EXAM_ID, questionForm(List.of(10L, 11L, 12L), "LANGUAGE"));
+
+        verify(questionRepository).findAllById(List.of(10L, 11L, 12L));
+        verify(questionRepository, never()).findById(anyLong());
+        verify(examQuestionRepository).findLinkedQuestionIds(EXAM_ID, List.of(10L, 11L, 12L));
+        verify(examQuestionRepository, never()).existsById(any());
+        verify(examQuestionRepository).saveAll(any());
+        verify(examQuestionRepository, never()).save(any());
+    }
+
+    @Test
     void addQuestionsRejectsMissingQuestion() {
         stubExamExists();
-        when(questionRepository.findById(999L)).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.addQuestionsToExam(EXAM_ID, questionForm(List.of(999L), "LANGUAGE")));
@@ -434,7 +466,7 @@ class ManagerExamServiceTest {
                 () -> service.addQuestionsToExam(EXAM_ID, questionForm(List.of(10L), "LANGUAGE")));
 
         assertTrue(ex.getMessage().contains("chưa được kích hoạt"));
-        verify(examQuestionRepository, never()).save(any());
+        verify(examQuestionRepository, never()).saveAll(any());
     }
 
     @Test
@@ -520,8 +552,8 @@ class ManagerExamServiceTest {
         Question reading = question(3L, "ACTIVE");
         reading.setSkillType("READING");
         Question explicit = question(4L, "ACTIVE");
-        when(questionRepository.findById(3L)).thenReturn(Optional.of(reading));
-        when(questionRepository.findById(4L)).thenReturn(Optional.of(explicit));
+        stubQuestion(reading);
+        stubQuestion(explicit);
         when(questionImportService.importFile(any(), eq("ACTIVE"))).thenReturn(List.of(
                 row(2, passage, Map.of()),
                 row(3, child, Map.of()),
@@ -544,7 +576,7 @@ class ManagerExamServiceTest {
         stubExamExists();
         Question q = question(3L, "ACTIVE");
         q.setSkillType(skillType);
-        when(questionRepository.findById(3L)).thenReturn(Optional.of(q));
+        stubQuestion(q);
         when(questionImportService.importFile(any(), eq("ACTIVE"))).thenReturn(List.of(row(2, q, Map.of("section", "  "))));
 
         service.importQuestions(EXAM_ID, excelFile());
@@ -565,7 +597,7 @@ class ManagerExamServiceTest {
                 () -> service.importQuestions(EXAM_ID, excelFile()));
 
         assertTrue(ex.getErrors().get(0).contains("Đọc hiểu chỉ cần 1 câu"));
-        verify(examQuestionRepository, never()).save(any());
+        verify(examQuestionRepository, never()).saveAll(any());
     }
 
     @Test
@@ -641,7 +673,6 @@ class ManagerExamServiceTest {
     void addQuestions_forcedSectionOverridesDefault() {
         stubExamExists();
         stubQuestion(200L, "ACTIVE", "READING");
-        when(examQuestionRepository.existsById(any())).thenReturn(false);
         when(examQuestionRepository.countByExamIdAndSection(EXAM_ID, "LISTENING")).thenReturn(0L);
         when(examQuestionRepository.maxOrderIndex(EXAM_ID, "LISTENING")).thenReturn(0);
 
@@ -928,9 +959,10 @@ class ManagerExamServiceTest {
 
     @Test
     void findAvailableQuestions_normalizesFilters() {
-        service.findAvailableQuestions(EXAM_ID, " N5 ", null);
+        service.findAvailableQuestions(EXAM_ID, " N5 ", null, -1);
 
-        verify(questionRepository).findAvailableForExam(EXAM_ID, "N5", "");
+        verify(questionRepository).findAvailableForExam(EXAM_ID, "N5", "",
+                org.springframework.data.domain.PageRequest.of(0, ManagerExamService.PAGE_SIZE));
     }
 
     @Test
@@ -999,20 +1031,37 @@ class ManagerExamServiceTest {
         when(examQuestionRepository.countByExamIdAndSection(EXAM_ID, section)).thenReturn(count);
     }
 
+    private final Map<Long, Question> stubbedQuestions = new java.util.HashMap<>();
+
     private void stubQuestion(long id, String status) {
-        when(questionRepository.findById(id)).thenReturn(Optional.of(question(id, status)));
+        stubQuestion(question(id, status));
     }
 
     private void stubQuestion(long id, String status, String skillType) {
         Question q = question(id, status);
         q.setSkillType(skillType);
-        when(questionRepository.findById(id)).thenReturn(Optional.of(q));
+        stubQuestion(q);
     }
 
+    /** Serves findAllById from the questions stubbed so far, like the database would. */
+    private void stubQuestion(Question q) {
+        stubbedQuestions.put(q.getId(), q);
+        lenient().doAnswer(inv -> {
+            List<Question> found = new ArrayList<>();
+            for (Object id : (Iterable<?>) inv.getArgument(0)) {
+                if (stubbedQuestions.containsKey(id)) found.add(stubbedQuestions.get(id));
+            }
+            return found;
+        }).when(questionRepository).findAllById(any());
+    }
+
+    @SuppressWarnings("unchecked")
     private List<ExamQuestion> captureSavedExamQuestions(int expectedCount) {
-        ArgumentCaptor<ExamQuestion> captor = ArgumentCaptor.forClass(ExamQuestion.class);
-        verify(examQuestionRepository, times(expectedCount)).save(captor.capture());
-        return new ArrayList<>(captor.getAllValues());
+        ArgumentCaptor<List<ExamQuestion>> captor = ArgumentCaptor.forClass(List.class);
+        verify(examQuestionRepository, org.mockito.Mockito.atLeastOnce()).saveAll(captor.capture());
+        List<ExamQuestion> saved = captor.getAllValues().stream().flatMap(List::stream).toList();
+        assertEquals(expectedCount, saved.size());
+        return new ArrayList<>(saved);
     }
 
     private static ManagerExamForm examForm(String type, String level, String status) {

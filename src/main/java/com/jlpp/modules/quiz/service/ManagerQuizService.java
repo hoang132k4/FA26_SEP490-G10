@@ -6,6 +6,9 @@ import com.jlpp.modules.question.entity.Question;
 import com.jlpp.modules.question.service.QuestionImportService;
 import com.jlpp.modules.quiz.dto.*;
 import com.jlpp.modules.quiz.repository.ManagerQuizRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -104,6 +107,12 @@ public class ManagerQuizService {
         if (repository.countExerciseQuestions(quizId) == 0) {
             throw new IllegalArgumentException("Không thể chuyển sang PUBLISHED: quiz chưa có câu hỏi nào. Hãy gắn câu hỏi vào quiz trước.");
         }
+        List<Long> inactive = repository.findInactiveQuestionIds(quizId);
+        if (!inactive.isEmpty()) {
+            throw new IllegalArgumentException("Không thể chuyển sang PUBLISHED: quiz còn câu hỏi không ở trạng thái ACTIVE ("
+                    + String.join(", ", inactive.stream().map(id -> "#" + id).toList())
+                    + "). Hãy gỡ các câu này khỏi quiz hoặc kích hoạt lại trước.");
+        }
     }
 
     // ── Quiz-Question Management ──
@@ -119,9 +128,15 @@ public class ManagerQuizService {
         return repository.countExerciseQuestions(quizId);
     }
 
+    public static final int PAGE_SIZE = 20;
+
     @Transactional(readOnly = true)
-    public List<ExerciseQuestionRow> findAvailableQuestions(long quizId, String jlptLevel, String skillType) {
-        return repository.findAvailableQuestions(quizId, norm(jlptLevel), norm(skillType));
+    public Page<ExerciseQuestionRow> findAvailableQuestions(long quizId, String jlptLevel, String skillType, int page) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE);
+        String level = norm(jlptLevel);
+        String skill = norm(skillType);
+        return new PageImpl<>(repository.findAvailableQuestions(quizId, level, skill, PAGE_SIZE, pageable.getOffset()),
+                pageable, repository.countAvailableQuestions(quizId, level, skill));
     }
 
     @Transactional

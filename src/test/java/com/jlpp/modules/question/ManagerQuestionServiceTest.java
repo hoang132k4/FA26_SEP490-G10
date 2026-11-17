@@ -17,6 +17,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +43,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ManagerQuestionServiceTest {
 
+    private static final Pageable FIRST_PAGE = PageRequest.of(0, ManagerQuestionService.PAGE_SIZE);
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
@@ -57,8 +63,8 @@ class ManagerQuestionServiceTest {
     void searchAttachesBatchedExamAndQuizUsageCounts() {
         Question q1 = question(1L, "MULTI_CHOICE", "ACTIVE");
         Question q2 = question(2L, "MULTI_CHOICE", "ACTIVE");
-        when(questionRepository.searchForManager("kanji", "", "N5", "", ""))
-                .thenReturn(List.of(q1, q2));
+        when(questionRepository.searchForManager("kanji", "", "N5", "", "", FIRST_PAGE))
+                .thenReturn(new PageImpl<>(List.of(q1, q2)));
         when(questionRepository.batchCountExamUsages(List.of(1L, 2L)))
                 .thenReturn(List.<Object[]>of(new Object[]{1L, 3L}));
         when(questionRepository.batchCountQuizUsages(List.of(1L, 2L)))
@@ -66,7 +72,7 @@ class ManagerQuestionServiceTest {
         when(questionRepository.batchCountChildren(List.of(1L, 2L)))
                 .thenReturn(List.of());
 
-        List<QuestionListRow> rows = service.search(" kanji ", null, "N5", null, null);
+        List<QuestionListRow> rows = service.search(" kanji ", null, "N5", null, null, 0).getContent();
 
         assertEquals(2, rows.size());
         assertEquals(3L, rows.get(0).examCount());
@@ -77,10 +83,31 @@ class ManagerQuestionServiceTest {
     }
 
     @Test
-    void searchWithNoResultsSkipsUsageQueries() {
-        when(questionRepository.searchForManager("", "", "", "", "")).thenReturn(List.of());
+    void searchReturnsRequestedPageWithTotalCount() {
+        Pageable second = PageRequest.of(1, ManagerQuestionService.PAGE_SIZE);
+        when(questionRepository.searchForManager("", "", "", "", "", second))
+                .thenReturn(new PageImpl<>(List.of(question(21L, "MULTI_CHOICE", "ACTIVE")), second, 21));
 
-        List<QuestionListRow> rows = service.search(null, null, null, null, null);
+        Page<QuestionListRow> page = service.search(null, null, null, null, null, 1);
+
+        assertEquals(1, page.getNumber());
+        assertEquals(21, page.getTotalElements());
+        assertEquals(2, page.getTotalPages());
+        assertEquals(21L, page.getContent().get(0).id());
+    }
+
+    @Test
+    void searchClampsNegativePageToFirstPage() {
+        when(questionRepository.searchForManager("", "", "", "", "", FIRST_PAGE)).thenReturn(Page.empty(FIRST_PAGE));
+
+        assertEquals(0, service.search(null, null, null, null, null, -3).getNumber());
+    }
+
+    @Test
+    void searchWithNoResultsSkipsUsageQueries() {
+        when(questionRepository.searchForManager("", "", "", "", "", FIRST_PAGE)).thenReturn(new PageImpl<>(List.of()));
+
+        List<QuestionListRow> rows = service.search(null, null, null, null, null, 0).getContent();
 
         assertTrue(rows.isEmpty());
         verify(questionRepository, never()).batchCountExamUsages(anyList());
@@ -497,23 +524,23 @@ class ManagerQuestionServiceTest {
 
     @Test
     void search_nullSearchParam_normalizesToEmpty() {
-        when(questionRepository.searchForManager("", "", "", "", "")).thenReturn(List.of());
+        when(questionRepository.searchForManager("", "", "", "", "", FIRST_PAGE)).thenReturn(new PageImpl<>(List.of()));
 
-        List<QuestionListRow> rows = service.search(null, null, null, null, null);
+        List<QuestionListRow> rows = service.search(null, null, null, null, null, 0).getContent();
 
         assertTrue(rows.isEmpty());
-        verify(questionRepository).searchForManager("", "", "", "", "");
+        verify(questionRepository).searchForManager("", "", "", "", "", FIRST_PAGE);
     }
 
     @Test
     void search_singleResult_childCountIncluded() {
         Question q = question(1L, "PASSAGE", "ACTIVE");
-        when(questionRepository.searchForManager("", "", "", "", "")).thenReturn(List.of(q));
+        when(questionRepository.searchForManager("", "", "", "", "", FIRST_PAGE)).thenReturn(new PageImpl<>(List.of(q)));
         when(questionRepository.batchCountExamUsages(List.of(1L))).thenReturn(List.of());
         when(questionRepository.batchCountQuizUsages(List.of(1L))).thenReturn(List.of());
         when(questionRepository.batchCountChildren(List.of(1L))).thenReturn(List.<Object[]>of(new Object[]{1L, 3L}));
 
-        List<QuestionListRow> rows = service.search(null, null, null, null, null);
+        List<QuestionListRow> rows = service.search(null, null, null, null, null, 0).getContent();
 
         assertEquals(1, rows.size());
         assertEquals(3L, rows.get(0).childCount());
@@ -522,12 +549,12 @@ class ManagerQuestionServiceTest {
     @Test
     void search_questionNotInBatchMaps_returnsZeroCounts() {
         Question q = question(5L, "MULTI_CHOICE", "ACTIVE");
-        when(questionRepository.searchForManager("", "", "", "", "")).thenReturn(List.of(q));
+        when(questionRepository.searchForManager("", "", "", "", "", FIRST_PAGE)).thenReturn(new PageImpl<>(List.of(q)));
         when(questionRepository.batchCountExamUsages(List.of(5L))).thenReturn(List.of());
         when(questionRepository.batchCountQuizUsages(List.of(5L))).thenReturn(List.of());
         when(questionRepository.batchCountChildren(List.of(5L))).thenReturn(List.of());
 
-        List<QuestionListRow> rows = service.search(null, null, null, null, null);
+        List<QuestionListRow> rows = service.search(null, null, null, null, null, 0).getContent();
 
         assertEquals(0L, rows.get(0).examCount());
         assertEquals(0L, rows.get(0).quizCount());

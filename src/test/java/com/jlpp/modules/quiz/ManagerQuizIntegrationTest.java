@@ -131,15 +131,38 @@ class ManagerQuizIntegrationTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void availableQuestionsArePaginated() throws Exception {
+        long quizId = saveQuiz("Quiz phân trang", "DRAFT", 0);
+        for (int i = 0; i < 21; i++) saveQuestion("ACTIVE", "N1", "LISTENING");
+
+        var result = mockMvc.perform(get("/manager/quizzes/{id}/questions", quizId)
+                        .param("jlptLevel", "N1").param("skillType", "LISTENING"))
+                .andExpect(content().string(containsString("skillType=LISTENING")))
+                .andExpect(content().string(containsString("Đến trang")))
+                .andReturn();
+        var first = (org.springframework.data.domain.Page<ExerciseQuestionRow>) result.getModelAndView().getModel().get("availableQuestions");
+        assertEquals(20, first.getContent().size());
+        assertTrue(first.getTotalElements() >= 21);
+
+        var second = (org.springframework.data.domain.Page<ExerciseQuestionRow>) mockMvc
+                .perform(get("/manager/quizzes/{id}/questions", quizId)
+                        .param("jlptLevel", "N1").param("skillType", "LISTENING").param("page", "1"))
+                .andReturn().getModelAndView().getModel().get("availableQuestions");
+        assertEquals(1, second.getNumber());
+        assertTrue(!second.getContent().isEmpty());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void questionsPageListsActiveQuestionsNotYetInQuiz() throws Exception {
         long quizId = saveQuiz("Quiz câu khả dụng", "DRAFT", 0);
         Question linked = saveQuestion("ACTIVE", "N5", "VOCABULARY");
         Question available = saveQuestion("ACTIVE", "N5", "VOCABULARY");
         mockMvc.perform(addQuestions(quizId, linked));
 
-        var rows = (List<ExerciseQuestionRow>) mockMvc.perform(get("/manager/quizzes/{id}/questions", quizId)
+        var rows = ((org.springframework.data.domain.Page<ExerciseQuestionRow>) mockMvc.perform(get("/manager/quizzes/{id}/questions", quizId)
                         .param("jlptLevel", "N5").param("skillType", "VOCABULARY"))
-                .andReturn().getModelAndView().getModel().get("availableQuestions");
+                .andReturn().getModelAndView().getModel().get("availableQuestions")).getContent();
 
         List<Long> ids = rows.stream().map(ExerciseQuestionRow::questionId).toList();
         assertTrue(ids.contains(available.getId()));
@@ -147,6 +170,20 @@ class ManagerQuizIntegrationTest {
         ExerciseQuestionRow row = rows.stream().filter(r -> r.questionId() == available.getId()).findFirst().orElseThrow();
         assertEquals("N5", row.jlptLevel());
         assertEquals("VOCABULARY", row.skillType());
+    }
+
+    @Test
+    void publishingQuizWithArchivedQuestionIsRejected() throws Exception {
+        long quizId = saveQuiz("Quiz có câu đã lưu trữ", "DRAFT", 0);
+        Question question = saveQuestion("ACTIVE");
+        mockMvc.perform(addQuestions(quizId, question));
+        jdbc.update("UPDATE questions SET status = 'ARCHIVED' WHERE id = ?", question.getId());
+
+        mockMvc.perform(updateQuiz(quizId, "Quiz có câu đã lưu trữ", "PUBLISHED"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("quizError", containsString("quiz còn câu hỏi không ở trạng thái ACTIVE (#" + question.getId() + ")")));
+
+        assertEquals("DRAFT", statusOf(quizId));
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.jlpp.modules.question.dto.QuestionImportException;
 import com.jlpp.modules.question.entity.Question;
 import com.jlpp.modules.question.service.QuestionImportService;
 import com.jlpp.modules.quiz.dto.ExerciseQuestionForm;
+import com.jlpp.modules.quiz.dto.ExerciseQuestionRow;
 import com.jlpp.modules.quiz.dto.ManagerQuizForm;
 import com.jlpp.modules.quiz.dto.QuizGenerateForm;
 import com.jlpp.modules.quiz.dto.QuizOption;
@@ -183,6 +184,20 @@ class ManagerQuizServiceTest {
     }
 
     @Test
+    void updateToPublishedFailsWhenQuizHasQuestionsNoLongerActive() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+        when(repository.countExerciseQuestions(QUIZ_ID)).thenReturn(2L);
+        when(repository.findInactiveQuestionIds(QUIZ_ID)).thenReturn(List.of(7L));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.update(QUIZ_ID, quizForm("PUBLISHED")));
+
+        assertEquals("Không thể chuyển sang PUBLISHED: quiz còn câu hỏi không ở trạng thái ACTIVE (#7). "
+                + "Hãy gỡ các câu này khỏi quiz hoặc kích hoạt lại trước.", ex.getMessage());
+        verify(repository, never()).update(anyLong(), anyLong(), any(), anyInt(), any());
+    }
+
+    @Test
     void updateToPublishedFailsWhenQuizHasNoQuestions() {
         when(repository.lessonExists(LESSON_ID)).thenReturn(true);
         when(repository.countExerciseQuestions(QUIZ_ID)).thenReturn(0L);
@@ -217,9 +232,24 @@ class ManagerQuizServiceTest {
 
     @Test
     void findAvailableQuestionsNormalizesFilters() {
-        service.findAvailableQuestions(QUIZ_ID, " N5 ", null);
+        service.findAvailableQuestions(QUIZ_ID, " N5 ", null, 0);
 
-        verify(repository).findAvailableQuestions(QUIZ_ID, "N5", "");
+        verify(repository).findAvailableQuestions(QUIZ_ID, "N5", "", ManagerQuizService.PAGE_SIZE, 0);
+        verify(repository).countAvailableQuestions(QUIZ_ID, "N5", "");
+    }
+
+    @Test
+    void findAvailableQuestionsReturnsRequestedPageWithTotal() {
+        var row = new ExerciseQuestionRow(21L, "Câu 21", "MULTI_CHOICE", "N5", "VOCABULARY");
+        when(repository.findAvailableQuestions(QUIZ_ID, "", "", ManagerQuizService.PAGE_SIZE, ManagerQuizService.PAGE_SIZE))
+                .thenReturn(List.of(row));
+        when(repository.countAvailableQuestions(QUIZ_ID, "", "")).thenReturn(21L);
+
+        var page = service.findAvailableQuestions(QUIZ_ID, "", "", 1);
+
+        assertEquals(1, page.getNumber());
+        assertEquals(21, page.getTotalElements());
+        assertEquals(List.of(row), page.getContent());
     }
 
     @Test
@@ -597,9 +627,9 @@ class ManagerQuizServiceTest {
 
     @Test
     void findAvailableQuestionsPassesBothFiltersNonNull() {
-        service.findAvailableQuestions(QUIZ_ID, "N4", "GRAMMAR");
+        service.findAvailableQuestions(QUIZ_ID, "N4", "GRAMMAR", 0);
 
-        verify(repository).findAvailableQuestions(QUIZ_ID, "N4", "GRAMMAR");
+        verify(repository).findAvailableQuestions(QUIZ_ID, "N4", "GRAMMAR", ManagerQuizService.PAGE_SIZE, 0);
     }
 
     // ── addQuestions additional ──

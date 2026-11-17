@@ -9,6 +9,9 @@ import com.jlpp.modules.question.repository.QuestionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,26 +28,28 @@ public class ManagerQuestionService {
         this.objectMapper = objectMapper;
     }
 
+    public static final int PAGE_SIZE = 20;
+
     @Transactional(readOnly = true)
-    public List<QuestionListRow> search(String search, String questionType,
-                                         String jlptLevel, String skillType, String status) {
-        List<Question> questions = questionRepository.searchForManager(
+    public Page<QuestionListRow> search(String search, String questionType,
+                                        String jlptLevel, String skillType, String status, int page) {
+        Page<Question> questions = questionRepository.searchForManager(
                 norm(search), norm(questionType),
-                norm(jlptLevel), norm(skillType), norm(status));
-        if (questions.isEmpty()) return List.of();
+                norm(jlptLevel), norm(skillType), norm(status),
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE));
+        if (questions.isEmpty()) return new PageImpl<>(List.of(), questions.getPageable(), questions.getTotalElements());
 
         List<Long> ids = questions.stream().map(Question::getId).toList();
         Map<Long, Long> examCounts = toBatchMap(questionRepository.batchCountExamUsages(ids));
         Map<Long, Long> quizCounts = toBatchMap(questionRepository.batchCountQuizUsages(ids));
         Map<Long, Long> childCounts = toBatchMap(questionRepository.batchCountChildren(ids));
 
-        return questions.stream().map(q -> new QuestionListRow(
+        return questions.map(q -> new QuestionListRow(
                 q.getId(), q.getContent(), q.getQuestionType(),
                 q.getJlptLevel(), q.getSkillType(), q.getStatus(),
                 examCounts.getOrDefault(q.getId(), 0L),
                 quizCounts.getOrDefault(q.getId(), 0L),
-                childCounts.getOrDefault(q.getId(), 0L)
-        )).toList();
+                childCounts.getOrDefault(q.getId(), 0L)));
     }
 
     @Transactional(readOnly = true)

@@ -10,6 +10,7 @@ import com.jlpp.modules.exam.service.ManagerExamService;
 import com.jlpp.modules.question.controller.ManagerQuestionController;
 import com.jlpp.modules.question.dto.QuestionImportException;
 import jakarta.validation.Valid;
+import com.jlpp.common.util.PageLinks;
 import com.jlpp.common.util.UserMessages;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
@@ -104,12 +105,15 @@ public class ManagerExamController {
     public String questionsPage(@PathVariable long examId,
                                 @RequestParam(defaultValue = "") String jlptLevel,
                                 @RequestParam(defaultValue = "") String skillType,
+                                @RequestParam(defaultValue = "0") int page,
                                 Model model, RedirectAttributes redirectAttributes) {
         try {
             var exam = managerExamService.findById(examId);
             model.addAttribute("exam", exam);
             model.addAttribute("examQuestions", managerExamService.getExamQuestions(examId));
-            model.addAttribute("availableQuestions", managerExamService.findAvailableQuestions(examId, jlptLevel, skillType));
+            model.addAttribute("availableQuestions", managerExamService.findAvailableQuestions(examId, jlptLevel, skillType, page));
+            model.addAttribute("pageUrl", PageLinks.of("/manager/exams/" + examId + "/questions",
+                    "jlptLevel", jlptLevel, "skillType", skillType));
             model.addAttribute("addForm", new ExamQuestionForm());
             model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
             model.addAttribute("jlptLevels", Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList());
