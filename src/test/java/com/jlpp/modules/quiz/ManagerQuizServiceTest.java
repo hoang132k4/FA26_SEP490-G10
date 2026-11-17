@@ -5,6 +5,7 @@ import com.jlpp.modules.question.entity.Question;
 import com.jlpp.modules.question.service.QuestionImportService;
 import com.jlpp.modules.quiz.dto.ExerciseQuestionForm;
 import com.jlpp.modules.quiz.dto.ManagerQuizForm;
+import com.jlpp.modules.quiz.dto.QuizGenerateForm;
 import com.jlpp.modules.quiz.dto.QuizOption;
 import com.jlpp.modules.quiz.repository.ManagerQuizRepository;
 import com.jlpp.modules.quiz.service.ManagerQuizService;
@@ -30,6 +31,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,7 +67,7 @@ class ManagerQuizServiceTest {
 
     @Test
     void statusesListAllExerciseStatuses() {
-        assertEquals(List.of("DRAFT", "PUBLISHED", "ARCHIVED"), service.statuses());
+        assertEquals(List.of("DRAFT", "PUBLISHED"), service.statuses());
     }
 
     @Test
@@ -124,7 +126,7 @@ class ManagerQuizServiceTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"ACTIVE", "draft"})
+    @ValueSource(strings = {"ACTIVE", "draft", "ARCHIVED"})
     void createRejectsInvalidStatus(String status) {
         when(repository.lessonExists(LESSON_ID)).thenReturn(true);
 
@@ -140,11 +142,33 @@ class ManagerQuizServiceTest {
     @Test
     void updateDraftWritesChanges() {
         when(repository.lessonExists(LESSON_ID)).thenReturn(true);
-        when(repository.update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "ARCHIVED")).thenReturn(1);
+        when(repository.update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "DRAFT")).thenReturn(1);
 
-        service.update(QUIZ_ID, quizForm("ARCHIVED"));
+        service.update(QUIZ_ID, quizForm("DRAFT"));
 
-        verify(repository).update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "ARCHIVED");
+        verify(repository).update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "DRAFT");
+        verify(repository).lessonHasOtherQuiz(LESSON_ID, QUIZ_ID);
+    }
+
+    @Test
+    void createRejectsLessonThatAlreadyHasQuiz() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+        when(repository.lessonHasOtherQuiz(LESSON_ID, null)).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.create(quizForm("DRAFT")));
+
+        assertEquals("Bài học này đã có quiz. Mỗi bài học chỉ được gắn một quiz.", ex.getMessage());
+        verifyNoInsert();
+    }
+
+    @Test
+    void updateRejectsMovingToLessonThatAlreadyHasQuiz() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+        when(repository.lessonHasOtherQuiz(LESSON_ID, QUIZ_ID)).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> service.update(QUIZ_ID, quizForm("DRAFT")));
+        verify(repository, never()).update(anyLong(), anyLong(), any(), anyInt(), any());
     }
 
     @Test
@@ -349,6 +373,389 @@ class ManagerQuizServiceTest {
         when(questionImportService.buildTemplate(false)).thenReturn(template);
 
         assertEquals(template, service.importTemplate());
+    }
+
+    // ── generate ──
+
+    @Test
+    void generateRejectsInvalidLevel() {
+        stubQuizExists();
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("X9");
+        form.setCounts(Map.of("VOCABULARY", 5));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.generateQuestions(QUIZ_ID, form));
+        assertEquals("Vui lòng chọn cấp độ JLPT.", ex.getMessage());
+    }
+
+    @Test
+    void generateRejectsNullLevel() {
+        stubQuizExists();
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setCounts(Map.of("VOCABULARY", 5));
+
+        assertThrows(IllegalArgumentException.class, () -> service.generateQuestions(QUIZ_ID, form));
+    }
+
+    @Test
+    void generateRejectsNegativeCount() {
+        stubQuizExists();
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(Map.of("VOCABULARY", -3));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.generateQuestions(QUIZ_ID, form));
+        assertTrue(ex.getMessage().contains("không được âm"));
+    }
+
+    @Test
+    void generateRejectsAllCountsZero() {
+        stubQuizExists();
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(Map.of("VOCABULARY", 0, "GRAMMAR", 0));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.generateQuestions(QUIZ_ID, form));
+        assertEquals("Hãy nhập số câu cho ít nhất một kỹ năng.", ex.getMessage());
+    }
+
+    @Test
+    void generateWithInsufficientPoolThrowsWithSkillLabel() {
+        stubQuizExists();
+        when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "VOCABULARY"))
+                .thenReturn(List.of(1L, 2L));
+
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(Map.of("VOCABULARY", 5));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.generateQuestions(QUIZ_ID, form));
+        assertTrue(ex.getMessage().contains("Từ vựng"));
+        assertTrue(ex.getMessage().contains("chỉ còn 2 câu"));
+    }
+
+    @Test
+    void generatePicksCorrectCountAndLinksToQuiz() {
+        stubQuizExists();
+        when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "VOCABULARY"))
+                .thenReturn(List.of(1L, 2L, 3L, 4L, 5L));
+        lenient().when(repository.questionExists(anyLong())).thenReturn(true);
+        lenient().when(repository.questionIsActive(anyLong())).thenReturn(true);
+
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(Map.of("VOCABULARY", 3));
+
+        int count = service.generateQuestions(QUIZ_ID, form);
+
+        assertEquals(3, count);
+    }
+
+    // ── remove edge case ──
+
+    @Test
+    void removingOnlyQuestionFromDraftQuizIsAllowed() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("DRAFT")));
+        when(repository.deleteExerciseQuestion(QUIZ_ID, 1L)).thenReturn(1);
+
+        service.removeQuestionFromQuiz(QUIZ_ID, 1L);
+
+        verify(repository).deleteExerciseQuestion(QUIZ_ID, 1L);
+        verify(repository).syncTotalQuestions(QUIZ_ID);
+    }
+
+    // ── questionFilterOptions ──
+
+    @Test
+    void countQuizQuestionsDelegatesToRepository() {
+        when(repository.countExerciseQuestions(QUIZ_ID)).thenReturn(7L);
+
+        assertEquals(7L, service.countQuizQuestions(QUIZ_ID));
+    }
+
+    @Test
+    void questionFilterOptionsContainsAllLevelsAndSkills() {
+        ManagerQuizService.QuizQuestionOptions opts = service.questionFilterOptions();
+
+        assertEquals(List.of("VOCABULARY", "GRAMMAR", "LISTENING", "READING"), opts.skillTypes());
+        assertEquals(List.of("N5", "N4", "N3", "N2", "N1"), opts.jlptLevels());
+    }
+
+    // ── additional search tests ──
+
+    @Test
+    void searchPassesAllNonNullValuesThrough() {
+        service.search("keyword", "N3", "READING", "DRAFT");
+
+        verify(repository).search("keyword", "N3", "READING", "DRAFT");
+    }
+
+    @Test
+    void searchAllNulls_sendsEmptyStrings() {
+        service.search(null, null, null, null);
+
+        verify(repository).search("", "", "", "");
+    }
+
+    // ── lessonGroups ──
+
+    @Test
+    void lessonGroupsGroupsByGroupField() {
+        when(repository.findLessons()).thenReturn(List.of(
+                new com.jlpp.modules.quiz.dto.LessonOption(1L, "Bài 1", "N5"),
+                new com.jlpp.modules.quiz.dto.LessonOption(2L, "Bài 2", "N5"),
+                new com.jlpp.modules.quiz.dto.LessonOption(3L, "Bài 3", "N4")));
+
+        var groups = service.lessonGroups();
+
+        assertEquals(2, groups.size());
+        assertEquals(2, groups.get("N5").size());
+        assertEquals(1, groups.get("N4").size());
+    }
+
+    @Test
+    void lessonGroupsEmptyList_returnsEmptyMap() {
+        when(repository.findLessons()).thenReturn(List.of());
+
+        var groups = service.lessonGroups();
+
+        assertTrue(groups.isEmpty());
+    }
+
+    // ── findById additional ──
+
+    @Test
+    void findByIdReturnsQuizWhenPresent() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("DRAFT")));
+
+        QuizOption result = service.findById(QUIZ_ID);
+
+        assertEquals(QUIZ_ID, result.id());
+        assertEquals("Quiz bài 1", result.title());
+    }
+
+    // ── create additional ──
+
+    @Test
+    void createWithNullTitle_insertsEmptyString() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+        ManagerQuizForm form = quizForm("DRAFT");
+        form.setTitle(null);
+
+        service.create(form);
+
+        verify(repository).insert(LESSON_ID, "", 70, "DRAFT");
+    }
+
+    // ── update additional ──
+
+    @Test
+    void updateRejectsMissingLessonId() {
+        ManagerQuizForm form = quizForm("DRAFT");
+        form.setLessonId(null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.update(QUIZ_ID, form));
+        assertEquals("Bài học được chọn không tồn tại.", ex.getMessage());
+    }
+
+    @Test
+    void updateRejectsInvalidStatus() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.update(QUIZ_ID, quizForm("ACTIVE")));
+        assertEquals("Trạng thái quiz không hợp lệ.", ex.getMessage());
+    }
+
+    @Test
+    void updateToDraftFromPublishedSucceeds() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+        when(repository.update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "DRAFT")).thenReturn(1);
+
+        service.update(QUIZ_ID, quizForm("DRAFT"));
+
+        verify(repository).update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "DRAFT");
+    }
+
+    // ── quiz questions additional ──
+
+    @Test
+    void getQuizQuestionsReturnsListFromRepository() {
+        stubQuizExists();
+        var expected = List.of(new com.jlpp.modules.quiz.dto.ExerciseQuestionRow(10L, "Q1", "MULTI_CHOICE", "N5", "VOCABULARY"));
+        when(repository.findExerciseQuestions(QUIZ_ID)).thenReturn(expected);
+
+        var result = service.getQuizQuestions(QUIZ_ID);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void findAvailableQuestionsPassesBothFiltersNonNull() {
+        service.findAvailableQuestions(QUIZ_ID, "N4", "GRAMMAR");
+
+        verify(repository).findAvailableQuestions(QUIZ_ID, "N4", "GRAMMAR");
+    }
+
+    // ── addQuestions additional ──
+
+    @Test
+    void addQuestionsSyncsTotalQuestionsAfterInsert() {
+        stubQuizExists();
+        stubActiveQuestion(1L);
+
+        service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L)));
+
+        verify(repository).syncTotalQuestions(QUIZ_ID);
+    }
+
+    @Test
+    void addQuestionsPartiallyExisting_onlyInsertsNew() {
+        stubQuizExists();
+        stubActiveQuestion(1L);
+        stubActiveQuestion(2L);
+        when(repository.exerciseQuestionExists(QUIZ_ID, 1L)).thenReturn(true);
+
+        service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L, 2L)));
+
+        verify(repository, never()).insertExerciseQuestion(QUIZ_ID, 1L);
+        verify(repository).insertExerciseQuestion(QUIZ_ID, 2L);
+    }
+
+    // ── generate additional ──
+
+    @Test
+    void generateWithNullCounts_throwsNoSkillSelected() {
+        stubQuizExists();
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.generateQuestions(QUIZ_ID, form));
+        assertEquals("Hãy nhập số câu cho ít nhất một kỹ năng.", ex.getMessage());
+    }
+
+    @Test
+    void generateMultipleSkills_picksCorrectCountPerSkill() {
+        stubQuizExists();
+        when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "VOCABULARY"))
+                .thenReturn(List.of(1L, 2L, 3L, 4L, 5L));
+        when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "GRAMMAR"))
+                .thenReturn(List.of(10L, 11L, 12L, 13L, 14L));
+        lenient().when(repository.questionExists(anyLong())).thenReturn(true);
+        lenient().when(repository.questionIsActive(anyLong())).thenReturn(true);
+
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(Map.of("VOCABULARY", 2, "GRAMMAR", 3));
+
+        int count = service.generateQuestions(QUIZ_ID, form);
+
+        assertEquals(5, count);
+    }
+
+    @Test
+    void generateWithZeroForOneSkill_skipsZeroSkill() {
+        stubQuizExists();
+        when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "VOCABULARY"))
+                .thenReturn(List.of(1L, 2L, 3L));
+        lenient().when(repository.questionExists(anyLong())).thenReturn(true);
+        lenient().when(repository.questionIsActive(anyLong())).thenReturn(true);
+
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(Map.of("VOCABULARY", 2, "GRAMMAR", 0));
+
+        int count = service.generateQuestions(QUIZ_ID, form);
+
+        assertEquals(2, count);
+        verify(repository, never()).findGeneratableQuestionIds(QUIZ_ID, "N5", "GRAMMAR");
+    }
+
+    @Test
+    void generateMissingQuiz_throws() {
+        when(repository.findById(999L)).thenReturn(Optional.empty());
+
+        QuizGenerateForm form = new QuizGenerateForm();
+        form.setJlptLevel("N5");
+        form.setCounts(Map.of("VOCABULARY", 1));
+
+        assertThrows(IllegalArgumentException.class, () -> service.generateQuestions(999L, form));
+    }
+
+    // ── remove additional ──
+
+    @Test
+    void removeQuestionFromArchivedQuiz_succeeds() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("ARCHIVED")));
+        when(repository.deleteExerciseQuestion(QUIZ_ID, 1L)).thenReturn(1);
+
+        service.removeQuestionFromQuiz(QUIZ_ID, 1L);
+
+        verify(repository).deleteExerciseQuestion(QUIZ_ID, 1L);
+        verify(repository).syncTotalQuestions(QUIZ_ID);
+    }
+
+    @Test
+    void removePublished_withMultipleQuestions_succeeds() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("PUBLISHED")));
+        when(repository.countExerciseQuestions(QUIZ_ID)).thenReturn(3L);
+        when(repository.deleteExerciseQuestion(QUIZ_ID, 1L)).thenReturn(1);
+
+        service.removeQuestionFromQuiz(QUIZ_ID, 1L);
+
+        verify(repository).deleteExerciseQuestion(QUIZ_ID, 1L);
+        verify(repository).syncTotalQuestions(QUIZ_ID);
+    }
+
+    // ── NEW: additional edge cases ──
+
+    @Test
+    void search_emptyStrings_sendsEmpty() {
+        service.search("", "", "", "");
+        verify(repository).search("", "", "", "");
+    }
+
+    @Test
+    void findById_found_returnsQuiz() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("PUBLISHED")));
+
+        QuizOption result = service.findById(QUIZ_ID);
+
+        assertEquals(QUIZ_ID, result.id());
+        assertEquals("PUBLISHED", result.status());
+    }
+
+    @Test
+    void create_nullPassingScore_throwsNpe() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+        ManagerQuizForm form = quizForm("DRAFT");
+        form.setPassingScore(null);
+
+        assertThrows(NullPointerException.class, () -> service.create(form));
+    }
+
+    @Test
+    void update_lessonIdFromForm() {
+        when(repository.lessonExists(LESSON_ID)).thenReturn(true);
+        when(repository.update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "DRAFT")).thenReturn(1);
+
+        service.update(QUIZ_ID, quizForm("DRAFT"));
+
+        verify(repository).update(QUIZ_ID, LESSON_ID, "Quiz bài 1", 70, "DRAFT");
+    }
+
+    @Test
+    void addQuestions_emptyIds_throwsIllegalArgument() {
+        stubQuizExists();
+        assertThrows(IllegalArgumentException.class,
+                () -> service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of())));
     }
 
     // ── helpers ──

@@ -81,9 +81,7 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/uploads/**",
-                                "/favicon.ico",
-                                "/h2-console/**",
-                                "/api/notifications/**"
+                                "/favicon.ico"
                         ).permitAll()
 
                         // Role-Based Access Control
@@ -174,7 +172,6 @@ public class SecurityConfig {
                 )
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
-                                new AntPathRequestMatcher("/h2-console/**"),
                                 new AntPathRequestMatcher("/quiz/submit"),
                                 new AntPathRequestMatcher("/api/notifications/**")
                         )

@@ -2,6 +2,8 @@ package com.jlpp.modules.quiz;
 
 import com.jlpp.modules.question.entity.Question;
 import com.jlpp.modules.question.repository.QuestionRepository;
+import com.jlpp.modules.quiz.dto.ExerciseQuestionRow;
+import com.jlpp.modules.quiz.dto.LessonOption;
 import com.jlpp.support.QuestionExcel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -103,6 +106,75 @@ class ManagerQuizIntegrationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void lessonPickerAndSectionFilterHandleMissingSectionCourseAndLevel() throws Exception {
+        saveCourse(900_101L, "Khoá N5", "N5");
+        saveCourse(900_102L, "Khoá chưa gán cấp", "");
+        saveLesson(900_011L, 900_101L, "Chương A");
+        saveLesson(900_012L, 900_101L, null);
+        saveLesson(900_013L, 900_101L, "   ");
+        saveLesson(900_014L, 900_102L, null);
+        saveLesson(900_015L, null, null);
+
+        var levelSections = (Map<String, List<String>>) mockMvc.perform(get("/manager/quizzes"))
+                .andReturn().getModelAndView().getModel().get("levelSections");
+        assertTrue(levelSections.get("N5").contains("Chương A"));
+        assertTrue(levelSections.get("N5").stream().noneMatch(s -> s == null || s.isBlank()));
+
+        var lessonGroups = (Map<String, List<LessonOption>>) mockMvc.perform(get("/manager/quizzes/new"))
+                .andReturn().getModelAndView().getModel().get("lessonGroups");
+        assertEquals(List.of(900_011L), lessonIds(lessonGroups, "N5 · Chương A"));
+        assertEquals(List.of(900_012L, 900_013L), lessonIds(lessonGroups, "N5 · " + MARK + "Khoá N5"));
+        assertEquals(List.of(900_014L), lessonIds(lessonGroups, MARK + "Khoá chưa gán cấp"));
+        assertTrue(lessonIds(lessonGroups, "Khác").contains(900_015L));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void questionsPageListsActiveQuestionsNotYetInQuiz() throws Exception {
+        long quizId = saveQuiz("Quiz câu khả dụng", "DRAFT", 0);
+        Question linked = saveQuestion("ACTIVE", "N5", "VOCABULARY");
+        Question available = saveQuestion("ACTIVE", "N5", "VOCABULARY");
+        mockMvc.perform(addQuestions(quizId, linked));
+
+        var rows = (List<ExerciseQuestionRow>) mockMvc.perform(get("/manager/quizzes/{id}/questions", quizId)
+                        .param("jlptLevel", "N5").param("skillType", "VOCABULARY"))
+                .andReturn().getModelAndView().getModel().get("availableQuestions");
+
+        List<Long> ids = rows.stream().map(ExerciseQuestionRow::questionId).toList();
+        assertTrue(ids.contains(available.getId()));
+        assertTrue(!ids.contains(linked.getId()));
+        ExerciseQuestionRow row = rows.stream().filter(r -> r.questionId() == available.getId()).findFirst().orElseThrow();
+        assertEquals("N5", row.jlptLevel());
+        assertEquals("VOCABULARY", row.skillType());
+    }
+
+    @Test
+    void secondQuizForSameLessonIsRejected() throws Exception {
+        saveQuiz("Quiz có sẵn", "DRAFT", 0);
+
+        mockMvc.perform(post("/manager/quizzes").with(csrf())
+                        .param("lessonId", String.valueOf(LESSON_ID))
+                        .param("title", MARK + "Quiz thứ hai")
+                        .param("passingScore", "60")
+                        .param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/manager/quiz/form"))
+                .andExpect(model().attribute("quizError", "Bài học này đã có quiz. Mỗi bài học chỉ được gắn một quiz."));
+
+        assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM exercises WHERE lesson_id = ?", Long.class, LESSON_ID));
+    }
+
+    @Test
+    void editingQuizWithoutChangingLessonIsAllowed() throws Exception {
+        long quizId = saveQuiz("Quiz sửa tên", "DRAFT", 0);
+
+        mockMvc.perform(updateQuiz(quizId, "Quiz đã đổi tên", "DRAFT"))
+                .andExpect(redirectedUrl("/manager/quizzes"))
+                .andExpect(flash().attribute("quizSuccess", "Đã cập nhật quiz."));
+    }
+
+    @Test
     void createWithPassingScoreAbove100RedisplaysFormWithValidationError() throws Exception {
         mockMvc.perform(post("/manager/quizzes").with(csrf())
                         .param("lessonId", String.valueOf(LESSON_ID))
@@ -174,6 +246,29 @@ class ManagerQuizIntegrationTest {
                 .andExpect(flash().attribute("quizSuccess", "Đã cập nhật quiz."));
 
         assertEquals("PUBLISHED", statusOf(quizId));
+    }
+
+    @Test
+    void linkedQuestionsGetIncreasingOrderAcrossBatches() throws Exception {
+        long quizId = saveQuiz("Quiz thứ tự", "DRAFT", 0);
+        Question q1 = saveQuestion("ACTIVE");
+        Question q2 = saveQuestion("ACTIVE");
+        Question q3 = saveQuestion("ACTIVE");
+
+        mockMvc.perform(addQuestions(quizId, q3, q1));
+        mockMvc.perform(addQuestions(quizId, q2));
+
+        assertEquals(List.of(q3.getId(), q1.getId(), q2.getId()), jdbc.queryForList(
+                "SELECT question_id FROM exercise_questions WHERE exercise_id = ? ORDER BY question_order",
+                Long.class, quizId));
+        assertEquals(List.of(1, 2, 3), jdbc.queryForList(
+                "SELECT question_order FROM exercise_questions WHERE exercise_id = ? ORDER BY question_order",
+                Integer.class, quizId));
+        @SuppressWarnings("unchecked")
+        List<ExerciseQuestionRow> rows = (List<ExerciseQuestionRow>) mockMvc
+                .perform(get("/manager/quizzes/{id}/questions", quizId))
+                .andReturn().getModelAndView().getModel().get("quizQuestions");
+        assertEquals(List.of(q3.getId(), q1.getId(), q2.getId()), rows.stream().map(ExerciseQuestionRow::questionId).toList());
     }
 
     @Test
@@ -267,7 +362,93 @@ class ManagerQuizIntegrationTest {
                 .andExpect(flash().attribute("importErrors", List.of("Vui lòng chọn file Excel (.xlsx).")));
     }
 
+    // ── Auto generate ──
+
+    @Test
+    void generatePicksRequestedCountPerSkillAtChosenLevel() throws Exception {
+        long quizId = saveQuiz("Quiz tự động", "DRAFT", 0);
+        for (int i = 0; i < 3; i++) saveQuestion("ACTIVE", "N5", "VOCABULARY");
+        for (int i = 0; i < 2; i++) saveQuestion("ACTIVE", "N5", "GRAMMAR");
+        Question otherLevel = saveQuestion("ACTIVE", "N4", "VOCABULARY");
+        Question draft = saveQuestion("DRAFT", "N5", "VOCABULARY");
+
+        mockMvc.perform(generate(quizId, "N5").param("counts[VOCABULARY]", "2").param("counts[GRAMMAR]", "2"))
+                .andExpect(redirectedUrl("/manager/quizzes/" + quizId + "/questions"))
+                .andExpect(flash().attribute("quizSuccess", "Đã tự động chọn 4 câu hỏi từ ngân hàng câu hỏi."));
+
+        assertEquals(4, linkCount(quizId));
+        assertEquals(4, totalQuestionsOf(quizId));
+        assertEquals(2L, jdbc.queryForObject("""
+                SELECT COUNT(*) FROM exercise_questions eq JOIN questions q ON q.id = eq.question_id
+                WHERE eq.exercise_id = ? AND q.skill_type = 'VOCABULARY' AND q.jlpt_level = 'N5' AND q.status = 'ACTIVE'
+                """, Long.class, quizId));
+        assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM exercise_questions WHERE question_id IN (?, ?)",
+                Long.class, otherLevel.getId(), draft.getId()));
+    }
+
+    @Test
+    void generateWithNotEnoughQuestionsLinksNothing() throws Exception {
+        long quizId = saveQuiz("Quiz thiếu câu", "DRAFT", 0);
+        saveQuestion("ACTIVE", "N5", "VOCABULARY");
+        saveQuestion("ACTIVE", "N5", "GRAMMAR");
+
+        mockMvc.perform(generate(quizId, "N5").param("counts[VOCABULARY]", "1").param("counts[GRAMMAR]", "5"))
+                .andExpect(flash().attribute("quizError", containsString("Ngữ pháp cần 5 câu")))
+                .andExpect(flash().attribute("quizError", containsString("chỉ còn 1 câu")));
+
+        assertEquals(0, linkCount(quizId));
+    }
+
+    @Test
+    void questionsPageShowsGenerateFormWithEverySkill() throws Exception {
+        long quizId = saveQuiz("Quiz form tự động", "DRAFT", 0);
+
+        mockMvc.perform(get("/manager/quizzes/{id}/questions", quizId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Tự động chọn câu từ ngân hàng")))
+                .andExpect(content().string(containsString("name=\"counts[VOCABULARY]\"")))
+                .andExpect(content().string(containsString("name=\"counts[LISTENING]\"")));
+    }
+
+    @Test
+    void generateWithoutAnyCountShowsError() throws Exception {
+        long quizId = saveQuiz("Quiz rỗng", "DRAFT", 0);
+
+        mockMvc.perform(generate(quizId, "N5").param("counts[VOCABULARY]", "0"))
+                .andExpect(flash().attribute("quizError", "Hãy nhập số câu cho ít nhất một kỹ năng."));
+    }
+
     // ── helpers ──
+
+    private void saveCourse(long id, String title, String jlptLevel) {
+        jdbc.update("INSERT INTO courses (id, course_id, title, course_title, level, jlpt_level, price) VALUES (?, ?, ?, ?, 'N5', ?, 0)",
+                id, id, MARK + title, MARK + title, jlptLevel);
+    }
+
+    private void saveLesson(long id, Long courseId, String section) {
+        jdbc.update("INSERT INTO lessons (id, lesson_id, course_id, title, lesson_title, section_name, order_index) VALUES (?, ?, ?, ?, ?, ?, 1)",
+                id, id, courseId, MARK + "Bài " + id, MARK + "Bài " + id, section);
+    }
+
+    private static List<Long> lessonIds(Map<String, List<LessonOption>> groups, String group) {
+        return groups.getOrDefault(group, List.of()).stream().map(LessonOption::id).sorted().toList();
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder generate(long quizId, String level) {
+        return post("/manager/quizzes/{id}/questions/generate", quizId).with(csrf()).param("jlptLevel", level);
+    }
+
+    private Question saveQuestion(String status, String level, String skillType) {
+        return questionRepository.saveAndFlush(Question.builder()
+                .content(MARK + "Câu hỏi " + System.nanoTime())
+                .questionType("MULTI_CHOICE")
+                .jlptLevel(level)
+                .skillType(skillType)
+                .options("[{\"key\":\"A\",\"text\":\"A\"},{\"key\":\"B\",\"text\":\"B\"}]")
+                .answerKey("[\"A\"]")
+                .status(status)
+                .build());
+    }
 
     private long saveQuiz(String title, String status, int totalQuestions) {
         GeneratedKeyHolder keys = new GeneratedKeyHolder();

@@ -341,5 +341,104 @@ public class ExamControllerTest {
         mockMvc.perform(get("/exams/history/99"))
                 .andExpect(status().isForbidden());
     }
+
+    // ── ADDITIONAL EDGE CASES ──
+
+    @Test
+    @WithMockUser(username = "learner1", roles = {"LEARNER"})
+    @DisplayName("POST /exams/{id}/submit - Kết quả có resultId → redirect kèm resultId")
+    void testSubmitExam_WithResultId_RedirectIncludesResultId() throws Exception {
+        ExamResultResponse result = ExamResultResponse.builder()
+                .resultId(100L)
+                .examId(8L)
+                .score(30)
+                .totalPossibleScore(60)
+                .passed(false)
+                .persistentSaved(true)
+                .build();
+
+        when(examService.evaluateAndSaveSubmission(eq(8L), any(), any(), any())).thenReturn(result);
+
+        mockMvc.perform(post("/exams/8/submit")
+                        .with(csrf())
+                        .param("timeSpentSeconds", "120"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/exams/result/8?resultId=100"));
+    }
+
+    @Test
+    @WithMockUser(username = "learner1", roles = {"LEARNER"})
+    @DisplayName("POST /exams/{id}/submit - Guest (resultId null) → redirect không có resultId")
+    void testSubmitExam_NoResultId_RedirectWithoutResultId() throws Exception {
+        ExamResultResponse result = ExamResultResponse.builder()
+                .examId(8L)
+                .score(30)
+                .totalPossibleScore(60)
+                .passed(false)
+                .persistentSaved(false)
+                .build();
+
+        when(examService.evaluateAndSaveSubmission(eq(8L), any(), any(), any())).thenReturn(result);
+
+        mockMvc.perform(post("/exams/8/submit")
+                        .with(csrf())
+                        .param("timeSpentSeconds", "120"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/exams/result/8"));
+    }
+
+    @Test
+    @WithMockUser(username = "learner1", roles = {"LEARNER"})
+    @DisplayName("GET /exams/result/{id} - Không có session result và không có resultId → 404")
+    void testExamResultPage_NoSessionNoResultId_Throws404() throws Exception {
+        mockMvc.perform(get("/exams/result/8"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /exams/history/{resultId} - Unauthenticated → redirect to login")
+    void testExamHistoryDetailPage_Unauthenticated_Redirects() throws Exception {
+        mockMvc.perform(get("/exams/history/55"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    @DisplayName("GET /exams/{id}/start - Unauthenticated → redirect to register")
+    void testStartExam_Unauthenticated_RedirectsToRegister() throws Exception {
+        mockMvc.perform(get("/exams/8/start"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    @WithMockUser(username = "learner1", roles = {"LEARNER"})
+    @DisplayName("GET /exams/mock?level=N3 - Lọc theo level N3")
+    void testJlptMockListPage_FilterByLevel() throws Exception {
+        when(examService.getLearnerExams("N3")).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/exams/mock").param("level", "N3"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/exam/list"))
+                .andExpect(model().attribute("activeLevel", "N3"));
+    }
+
+    @Test
+    @WithMockUser(username = "learner1", roles = {"LEARNER"})
+    @DisplayName("GET /exams/result/{id} - Có resultId → lấy từ history")
+    void testExamResultPage_WithResultId_FetchesFromHistory() throws Exception {
+        ExamResultResponse result = ExamResultResponse.builder()
+                .resultId(55L)
+                .examId(8L)
+                .examType("JLPT_MOCK")
+                .score(45)
+                .passed(true)
+                .build();
+
+        when(examService.getHistoricalResult(eq(55L), any())).thenReturn(result);
+
+        mockMvc.perform(get("/exams/result/8").param("resultId", "55"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/exam/result"))
+                .andExpect(model().attributeExists("result"));
+    }
 }
 

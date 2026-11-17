@@ -10,8 +10,10 @@ import com.jlpp.modules.quiz.entity.*;
 import com.jlpp.modules.quiz.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -68,6 +70,13 @@ public class QuizServiceImpl implements QuizService {
         Exercise saved = exerciseRepository.save(newExercise);
         seedQuizQuestionsForLesson(lessonId);
         return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Exercise getExercise(Long exerciseId) {
+        return exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy bài tập."));
     }
 
     @Override

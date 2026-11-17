@@ -1,11 +1,14 @@
 package com.jlpp.modules.quiz.controller;
 
+import com.jlpp.common.constants.SkillTypeEnum;
 import com.jlpp.modules.question.controller.ManagerQuestionController;
 import com.jlpp.modules.question.dto.QuestionImportException;
 import com.jlpp.modules.quiz.dto.ExerciseQuestionForm;
 import com.jlpp.modules.quiz.dto.ManagerQuizForm;
+import com.jlpp.modules.quiz.dto.QuizGenerateForm;
 import com.jlpp.modules.quiz.service.ManagerQuizService;
 import jakarta.validation.Valid;
+import com.jlpp.common.util.UserMessages;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -74,7 +77,7 @@ public class ManagerQuizController {
             managerQuizService.create(form);
             redirectAttributes.addFlashAttribute("quizSuccess", "Đã tạo quiz.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            model.addAttribute("quizError", exception.getMessage());
+            model.addAttribute("quizError", UserMessages.of(exception));
             return formPage(form, model, false);
         }
         return "redirect:/manager/quizzes";
@@ -88,7 +91,7 @@ public class ManagerQuizController {
             managerQuizService.update(id, form);
             redirectAttributes.addFlashAttribute("quizSuccess", "Đã cập nhật quiz.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            model.addAttribute("quizError", exception.getMessage());
+            model.addAttribute("quizError", UserMessages.of(exception));
             return formPage(form, model, true);
         }
         return "redirect:/manager/quizzes";
@@ -117,6 +120,7 @@ public class ManagerQuizController {
             model.addAttribute("addForm", new ExerciseQuestionForm());
             model.addAttribute("jlptLevels", filterOptions.jlptLevels());
             model.addAttribute("skillTypes", filterOptions.skillTypes());
+            model.addAttribute("skillOptions", SkillTypeEnum.questionSkills());
             model.addAttribute("filterJlptLevel", jlptLevel);
             model.addAttribute("filterSkillType", skillType);
             return "pages/manager/quiz/questions";
@@ -134,7 +138,20 @@ public class ManagerQuizController {
             managerQuizService.addQuestionsToQuiz(id, form);
             redirectAttributes.addFlashAttribute("quizSuccess", "Đã thêm câu hỏi vào quiz.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("quizError", UserMessages.of(exception));
+        }
+        return "redirect:/manager/quizzes/" + id + "/questions";
+    }
+
+    @PostMapping("/{id}/questions/generate")
+    public String generateQuestions(@PathVariable long id,
+                                    @ModelAttribute("generateForm") QuizGenerateForm form,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            int count = managerQuizService.generateQuestions(id, form);
+            redirectAttributes.addFlashAttribute("quizSuccess", "Đã tự động chọn " + count + " câu hỏi từ ngân hàng câu hỏi.");
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("quizError", UserMessages.of(exception));
         }
         return "redirect:/manager/quizzes/" + id + "/questions";
     }
@@ -146,7 +163,7 @@ public class ManagerQuizController {
             managerQuizService.removeQuestionFromQuiz(id, questionId);
             redirectAttributes.addFlashAttribute("quizSuccess", "Đã gỡ câu hỏi khỏi quiz.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("quizError", UserMessages.of(exception));
         }
         return "redirect:/manager/quizzes/" + id + "/questions";
     }
@@ -166,7 +183,7 @@ public class ManagerQuizController {
             redirectAttributes.addFlashAttribute("quizError", "Import thất bại, chưa có dữ liệu nào được lưu. Sửa các lỗi sau rồi thử lại:");
             redirectAttributes.addFlashAttribute("importErrors", exception.getErrors());
         } catch (IllegalArgumentException | DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("quizError", UserMessages.of(exception));
         }
         return "redirect:/manager/quizzes/" + id + "/questions";
     }

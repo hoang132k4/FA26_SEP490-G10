@@ -547,6 +547,75 @@ public class ExamServiceTest {
         assertTrue(ex.getReason().contains("Không tìm thấy"));
     }
 
+    // --- Additional edge cases ---
+
+    @Test
+    @DisplayName("evaluateSubmission - Non-numeric answer string treated as unanswered")
+    void testEvaluateSubmission_NonNumericAnswer() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        Map<String, String> answers = Map.of("answer_101", "not_a_number");
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, answers, 60);
+
+        assertEquals(0, result.getCorrectCount());
+        assertEquals(3, result.getUnansweredCount());
+    }
+
+    @Test
+    @DisplayName("getPlacementExamForTaking(level) - Chọn đúng đề theo cấp độ assignedLevel")
+    void testGetPlacementExamForTaking_WithSpecificLevel() {
+        Exam placementN3 = new Exam(20L, "Placement N3", "PLACEMENT_TEST", "N3", 45, 15, 12, "ACTIVE", "N3");
+        when(examRepository.findByExamTypeIgnoreCase("PLACEMENT_TEST"))
+                .thenReturn(List.of(mockPlacementExam, placementN3));
+        when(questionReader.countQuestionsByExamId(20L)).thenReturn(5L);
+        when(examRepository.findById(20L)).thenReturn(Optional.of(placementN3));
+        when(questionReader.findQuestionsForTaking(20L)).thenReturn(takingQuestions);
+
+        ExamTakeResponse response = examService.getPlacementExamForTaking("N3");
+
+        assertEquals(20L, response.getExamId());
+    }
+
+    @Test
+    @DisplayName("getPlacementExamForTaking(level) - Level không có trong DB fallback về đề đầu tiên")
+    void testGetPlacementExamForTaking_UnknownLevel_FallsBackToFirst() {
+        when(examRepository.findByExamTypeIgnoreCase("PLACEMENT_TEST"))
+                .thenReturn(List.of(mockPlacementExam));
+        when(questionReader.countQuestionsByExamId(7L)).thenReturn(3L);
+        when(examRepository.findById(7L)).thenReturn(Optional.of(mockPlacementExam));
+        when(questionReader.findQuestionsForTaking(7L)).thenReturn(takingQuestions);
+
+        ExamTakeResponse response = examService.getPlacementExamForTaking("N1");
+
+        assertEquals(7L, response.getExamId());
+    }
+
+    @Test
+    @DisplayName("getMilestoneExamForTaking - Đề chưa có câu hỏi ném 400")
+    void testGetMilestoneExamForTaking_ZeroQuestions() {
+        when(examRepository.findById(10L)).thenReturn(Optional.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(0L);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> examService.getMilestoneExamForTaking(10L));
+        assertEquals(400, ex.getStatusCode().value());
+    }
+
+    @Test
+    @DisplayName("evaluateSubmission - Empty map means all unanswered, percentage = 0.0")
+    void testEvaluateSubmission_EmptyMapAllUnanswered() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, Map.of(), 0);
+
+        assertEquals(0, result.getCorrectCount());
+        assertEquals(0, result.getIncorrectCount());
+        assertEquals(3, result.getUnansweredCount());
+    }
+
     // --- JLPT 180-POINT SCORING SPECIFICATION TESTS ---
 
     private List<QuestionDto> buildMockQuestions(int langCorrect, int langTotal,
@@ -759,6 +828,368 @@ public class ExamServiceTest {
         assertEquals(3, result.getSkillBreakdown().size());
         assertNull(result.getStrongestSkill());
         assertEquals("Toàn diện các kỹ năng (Kiến thức ngôn ngữ, Đọc hiểu, Nghe hiểu)", result.getWeakestSkill());
+    }
+
+    // ── NEW: getLearnerExams edge cases ──
+
+    @Test
+    @DisplayName("getLearnerExams(N4) - Lọc theo cấp độ cụ thể")
+    void testGetLearnerExams_SpecificLevel_FiltersCorrectly() {
+        when(examRepository.findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase("JLPT_MOCK", "N4"))
+                .thenReturn(List.of(mockExamN4));
+        when(questionReader.countQuestionsByExamId(8L)).thenReturn(5L);
+
+        List<ExamCardDto> cards = examService.getLearnerExams("N4");
+
+        assertEquals(1, cards.size());
+        assertEquals("N4", cards.get(0).getJlptLevel());
+        assertEquals(5, cards.get(0).getTotalQuestions());
+    }
+
+    @Test
+    @DisplayName("getLearnerExams - level có khoảng trắng vẫn trim đúng")
+    void testGetLearnerExams_WhitespacePaddedLevel_Trimmed() {
+        when(examRepository.findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase("JLPT_MOCK", "N3"))
+                .thenReturn(List.of(mockExamN3));
+        when(questionReader.countQuestionsByExamId(9L)).thenReturn(2L);
+
+        List<ExamCardDto> cards = examService.getLearnerExams("  N3  ");
+
+        assertEquals(1, cards.size());
+        assertEquals("N3", cards.get(0).getJlptLevel());
+    }
+
+    @Test
+    @DisplayName("getLearnerExams - examTitle null fallback về getTitle()")
+    void testGetLearnerExams_ExamTitleFallback() {
+        Exam noTitle = new Exam(20L, null, "JLPT_MOCK", "N5", 90, 10, 80, "ACTIVE", null);
+        when(examRepository.findByExamTypeIgnoreCase("JLPT_MOCK")).thenReturn(List.of(noTitle));
+        when(questionReader.countQuestionsByExamId(20L)).thenReturn(1L);
+
+        List<ExamCardDto> cards = examService.getLearnerExams("ALL");
+
+        assertNull(cards.get(0).getExamTitle());
+    }
+
+    // ── NEW: getExamForTaking edge cases ──
+
+    @Test
+    @DisplayName("getExamForTaking - câu hỏi không có skillGroup mặc định sang VOCAB_GRAMMAR")
+    void testGetExamForTaking_NullSkillGroup_DefaultsToVocabGrammar() {
+        QuestionDto qNoGroup = QuestionDto.builder()
+                .id(200L).category("Test").skillGroup(null).content("Q")
+                .points(1).orderIndex(1)
+                .options(List.of(OptionDto.builder().id(2001L).label("1").text("A").correct(null).build()))
+                .build();
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForTaking(8L)).thenReturn(List.of(qNoGroup));
+
+        ExamTakeResponse response = examService.getExamForTaking(8L);
+
+        assertEquals(1, response.getVocabGrammarQuestions().size());
+        assertTrue(response.getReadingQuestions().isEmpty());
+        assertTrue(response.getListeningQuestions().isEmpty());
+    }
+
+    @Test
+    @DisplayName("getExamForTaking - skillGroup không nhận dạng được mặc định sang VOCAB_GRAMMAR")
+    void testGetExamForTaking_UnknownSkillGroup_DefaultsToVocabGrammar() {
+        QuestionDto qUnknown = QuestionDto.builder()
+                .id(201L).category("Test").skillGroup("WRITING").content("Q")
+                .points(1).orderIndex(1)
+                .options(List.of(OptionDto.builder().id(2011L).label("1").text("A").correct(null).build()))
+                .build();
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForTaking(8L)).thenReturn(List.of(qUnknown));
+
+        ExamTakeResponse response = examService.getExamForTaking(8L);
+
+        assertEquals(1, response.getVocabGrammarQuestions().size());
+    }
+
+    @Test
+    @DisplayName("getExamForTaking - submitUrl xây đúng")
+    void testGetExamForTaking_SubmitUrlCorrectlyConstructed() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForTaking(8L)).thenReturn(List.of());
+
+        ExamTakeResponse response = examService.getExamForTaking(8L);
+
+        assertEquals("/exams/8/submit", response.getSubmitUrl());
+    }
+
+    // ── NEW: getMilestoneExams edge cases ──
+
+    @Test
+    @DisplayName("getMilestoneExams - courseId null trả về tất cả milestones")
+    void testGetMilestoneExams_NullCourseId_ReturnsAll() {
+        when(examRepository.findByExamTypeIgnoreCase("MILESTONE")).thenReturn(List.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(3L);
+
+        List<ExamCardDto> list = examService.getMilestoneExams(null);
+
+        assertEquals(1, list.size());
+        assertEquals(10L, list.get(0).getExamId());
+    }
+
+    @Test
+    @DisplayName("getMilestoneExams - không có milestone nào → empty")
+    void testGetMilestoneExams_NoCandidates_ReturnsEmpty() {
+        when(examRepository.findByCourseIdAndExamTypeIgnoreCase(99L, "MILESTONE")).thenReturn(List.of());
+        when(examRepository.findByExamTypeIgnoreCase("MILESTONE")).thenReturn(List.of());
+
+        List<ExamCardDto> list = examService.getMilestoneExams(99L);
+
+        assertTrue(list.isEmpty());
+    }
+
+    // ── NEW: resolveMilestoneExamUrl ──
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - courseId tìm thấy milestone có câu hỏi")
+    void testResolveMilestoneExamUrl_CourseIdFinds() {
+        when(examRepository.findByCourseIdAndExamTypeIgnoreCase(2L, "MILESTONE"))
+                .thenReturn(List.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(5L);
+
+        String url = examService.resolveMilestoneExamUrl(2L, null, null);
+
+        assertEquals("/exams/milestone/10?courseId=2", url);
+    }
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - courseId null, level tìm được")
+    void testResolveMilestoneExamUrl_NullCourseId_LevelFinds() {
+        when(examRepository.findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase("MILESTONE", "N4"))
+                .thenReturn(List.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(1L);
+
+        String url = examService.resolveMilestoneExamUrl(null, "N4", null);
+
+        assertEquals("/exams/milestone/10", url);
+    }
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - cả hai null, fallback lấy tất cả")
+    void testResolveMilestoneExamUrl_BothNull_FallsBackToAll() {
+        when(examRepository.findByExamTypeIgnoreCase("MILESTONE")).thenReturn(List.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(2L);
+
+        String url = examService.resolveMilestoneExamUrl(null, null, null);
+
+        assertEquals("/exams/milestone/10", url);
+    }
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - chọn candidate đầu tiên có câu hỏi > 0")
+    void testResolveMilestoneExamUrl_FirstWithQuestions_Selected() {
+        Exam empty = new Exam(11L, "Empty", "MILESTONE", "N4", 60, 0, 50, "DRAFT", null);
+        when(examRepository.findByExamTypeIgnoreCase("MILESTONE")).thenReturn(List.of(empty, mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(11L)).thenReturn(0L);
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(3L);
+
+        String url = examService.resolveMilestoneExamUrl(null, null, null);
+
+        assertEquals("/exams/milestone/10", url);
+    }
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - không có candidate nào → fallback URL")
+    void testResolveMilestoneExamUrl_NoCandidates_ReturnsFallbackUrl() {
+        when(examRepository.findByExamTypeIgnoreCase("MILESTONE")).thenReturn(List.of());
+
+        String url = examService.resolveMilestoneExamUrl(null, null, null);
+
+        assertEquals("/exams/milestones", url);
+    }
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - query string chứa cả courseId và lessonId")
+    void testResolveMilestoneExamUrl_QueryStringWithBothIds() {
+        when(examRepository.findByCourseIdAndExamTypeIgnoreCase(2L, "MILESTONE"))
+                .thenReturn(List.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(1L);
+
+        String url = examService.resolveMilestoneExamUrl(2L, null, 5L);
+
+        assertEquals("/exams/milestone/10?courseId=2&lessonId=5", url);
+    }
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - chỉ lessonId, không courseId")
+    void testResolveMilestoneExamUrl_OnlyLessonId() {
+        when(examRepository.findByExamTypeIgnoreCase("MILESTONE")).thenReturn(List.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(1L);
+
+        String url = examService.resolveMilestoneExamUrl(null, null, 5L);
+
+        assertEquals("/exams/milestone/10?lessonId=5", url);
+    }
+
+    @Test
+    @DisplayName("resolveMilestoneExamUrl - không có id → không có query string")
+    void testResolveMilestoneExamUrl_NoIds_NoQueryString() {
+        when(examRepository.findByExamTypeIgnoreCase("MILESTONE")).thenReturn(List.of(mockMilestoneExam));
+        when(questionReader.countQuestionsByExamId(10L)).thenReturn(1L);
+
+        String url = examService.resolveMilestoneExamUrl(null, null, null);
+
+        assertFalse(url.contains("?"));
+    }
+
+    // ── NEW: getMilestoneExamForTaking ──
+
+    @Test
+    @DisplayName("getMilestoneExamForTaking - exam không tồn tại → 404")
+    void testGetMilestoneExamForTaking_NotFound_Throws404() {
+        when(examRepository.findById(999L)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> examService.getMilestoneExamForTaking(999L));
+        assertEquals(404, ex.getStatusCode().value());
+    }
+
+    // ── NEW: evaluateSubmission edge cases ──
+
+    @Test
+    @DisplayName("evaluateSubmission - null formParams → tất cả unanswered")
+    void testEvaluateSubmission_NullFormParams_AllUnanswered() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, null, 60);
+
+        assertEquals(0, result.getCorrectCount());
+        assertEquals(3, result.getUnansweredCount());
+    }
+
+    @Test
+    @DisplayName("evaluateSubmission - null timeSpent → xử lý như 0")
+    void testEvaluateSubmission_NullTimeSpent_TreatedAsZero() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, Map.of(), null);
+
+        assertEquals(0, result.getTimeSpentSeconds());
+        assertEquals("00:00", result.getFormattedTimeSpent());
+    }
+
+    @Test
+    @DisplayName("evaluateSubmission - kỹ năng ≥ 75% không bị báo weakest")
+    void testEvaluateSubmission_SkillAbove75Percent_NotReportedAsWeakest() {
+        Exam examN4 = new Exam(600L, "N4 Test", "JLPT_MOCK", "N4", 115, 0, 90, "ACTIVE", null);
+        List<QuestionDto> questions = buildMockQuestions(8, 10, 4, 5, 7, 8);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(600L)).thenReturn(Optional.of(examN4));
+        when(questionReader.findQuestionsForEvaluation(600L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(600L, answers, 300);
+
+        assertNull(result.getWeakestSkill());
+    }
+
+    // ── NEW: evaluateAndSaveSubmission edge cases ──
+
+    @Test
+    @DisplayName("evaluateAndSaveSubmission - khác answers hash → không dedup")
+    void testEvaluateAndSave_DifferentAnswersHash_NotDeduplicated() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+        when(resultWriter.saveExamResultSummary(any(), any(), any(), any(), anyBoolean(), any(), any()))
+                .thenReturn(90L, 91L);
+
+        Map<String, String> answers1 = Map.of("answer_101", "1001");
+        Map<String, String> answers2 = Map.of("answer_101", "1002");
+
+        ExamResultResponse resp1 = examService.evaluateAndSaveSubmission(8L, 10L, answers1, 60);
+        ExamResultResponse resp2 = examService.evaluateAndSaveSubmission(8L, 10L, answers2, 60);
+
+        assertNotEquals(resp1.getResultId(), resp2.getResultId());
+        verify(resultWriter, times(2)).saveExamResultSummary(any(), any(), any(), any(), anyBoolean(), any(), any());
+    }
+
+    // ── NEW: getLearnerExamHistory ──
+
+    @Test
+    @DisplayName("getLearnerExamHistory - userId null → danh sách rỗng")
+    void testGetLearnerExamHistory_NullUserId_ReturnsEmpty() {
+        List<ExamHistoryDto> history = examService.getLearnerExamHistory(null);
+
+        assertTrue(history.isEmpty());
+        verify(resultReader, never()).findExamHistoryByUserId(any());
+    }
+
+    // ── NEW: getHistoricalResult edge cases ──
+
+    @Test
+    @DisplayName("getHistoricalResult - resultId null → 400")
+    void testGetHistoricalResult_NullResultId_Throws400() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> examService.getHistoricalResult(null, 1L));
+        assertEquals(400, ex.getStatusCode().value());
+    }
+
+    @Test
+    @DisplayName("getHistoricalResult - userId null → 400")
+    void testGetHistoricalResult_NullUserId_Throws400() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> examService.getHistoricalResult(12L, null));
+        assertEquals(400, ex.getStatusCode().value());
+    }
+
+    @Test
+    @DisplayName("getHistoricalResult - selectedOption non-numeric → unanswered")
+    void testGetHistoricalResult_NonNumericSelectedOption_TreatedAsUnanswered() {
+        ExamResultResponse mockDetail = ExamResultResponse.builder()
+                .resultId(12L).examId(8L).examTitle("JLPT N4").score(0).passed(false)
+                .percentage(BigDecimal.ZERO).examType("JLPT_MOCK").jlptLevel("N4")
+                .persistentSaved(true).build();
+
+        when(resultReader.findExamResultByIdAndUserId(12L, 1L)).thenReturn(Optional.of(mockDetail));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+        when(resultReader.findSelectedOptionsByResultId(12L)).thenReturn(Map.of(101L, "not_a_number"));
+
+        ExamResultResponse response = examService.getHistoricalResult(12L, 1L);
+
+        assertEquals(0, response.getCorrectCount());
+        assertTrue(response.getUnansweredCount() > 0);
+    }
+
+    // ── NEW: resolveStatusNotice (tested through evaluateSubmission) ──
+
+    @Test
+    @DisplayName("evaluateSubmission - MILESTONE passed → notice chúc mừng")
+    void testEvaluateSubmission_MilestonePassedNotice() {
+        Exam milestone = new Exam(700L, "Milestone", "MILESTONE", "N5", 60, 0, 10, "ACTIVE", null);
+        List<QuestionDto> questions = buildMockQuestions(10, 10, 5, 5, 5, 5);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(700L)).thenReturn(Optional.of(milestone));
+        when(questionReader.findQuestionsForEvaluation(700L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(700L, answers, 300);
+
+        assertTrue(result.getPassed());
+        assertTrue(result.getStatusNotice().contains("Chúc mừng"));
+        assertTrue(result.getStatusNotice().contains("cột mốc"));
+    }
+
+    @Test
+    @DisplayName("evaluateSubmission - MILESTONE failed → notice cần ôn tập")
+    void testEvaluateSubmission_MilestoneFailedNotice() {
+        Exam milestone = new Exam(701L, "Milestone", "MILESTONE", "N5", 60, 0, 170, "ACTIVE", null);
+        List<QuestionDto> questions = buildMockQuestions(1, 10, 0, 5, 0, 5);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        when(examRepository.findById(701L)).thenReturn(Optional.of(milestone));
+        when(questionReader.findQuestionsForEvaluation(701L)).thenReturn(questions);
+
+        ExamResultResponse result = examService.evaluateSubmission(701L, answers, 300);
+
+        assertFalse(result.getPassed());
+        assertTrue(result.getStatusNotice().contains("chưa đạt"));
     }
 }
 

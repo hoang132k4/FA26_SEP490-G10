@@ -92,6 +92,18 @@
               th:action="@{/manager/exams/{id}/questions/reorder(id=${exam.examId})}"></form>
     </div>
 
+    <!-- Tự động chọn câu từ ngân hàng -->
+    <div class="kotoba-card p-4 mb-4" th:if="${exam.status == 'DRAFT'}">
+        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Tự động chọn câu theo cấu trúc JLPT</h5>
+        <form class="row g-2 align-items-center" method="post"
+              th:action="@{/manager/exams/{id}/questions/generate(id=${exam.examId})}">
+            <div class="col-md-9">
+                <small class="text-muted">Lấy ngẫu nhiên câu hỏi ACTIVE cấp <strong th:text="${exam.jlptLevel}"></strong> trong ngân hàng câu hỏi, đủ số câu từng phần theo cấu trúc JLPT. Câu đã chọn tay được giữ nguyên; bài đọc/nghe được lấy cả cụm. Bạn sẽ xem trước kết quả và có thể chọn lại từng phần trước khi xác nhận.</small>
+            </div>
+            <div class="col-md-3"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-magic me-1"></i>Tự động chọn câu</button></div>
+        </form>
+    </div>
+
     <!-- Import câu hỏi từ Excel -->
     <div class="kotoba-card p-4 mb-4">
         <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Import câu hỏi từ Excel</h5>

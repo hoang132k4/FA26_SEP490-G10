@@ -65,7 +65,7 @@ public class QuizController {
 
         Exercise exercise;
         if (exerciseId != null) {
-            exercise = quizService.getOrCreateExerciseForLesson(exerciseId);
+            exercise = quizService.getExercise(exerciseId);
         } else {
             exercise = quizService.getOrCreateExerciseForLesson(lessonId);
         }

@@ -3,12 +3,14 @@ package com.jlpp.modules.exam.controller;
 import com.jlpp.common.constants.JlptLevelEnum;
 import com.jlpp.common.constants.SkillTypeEnum;
 import com.jlpp.modules.exam.dto.ExamQuestionForm;
+import com.jlpp.modules.exam.dto.GeneratePreview;
 import com.jlpp.modules.exam.dto.ManagerExamForm;
 import com.jlpp.modules.exam.service.JlptExamStructure;
 import com.jlpp.modules.exam.service.ManagerExamService;
 import com.jlpp.modules.question.controller.ManagerQuestionController;
 import com.jlpp.modules.question.dto.QuestionImportException;
 import jakarta.validation.Valid;
+import com.jlpp.common.util.UserMessages;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import jakarta.servlet.http.HttpSession;
 import java.util.Arrays;
 import java.util.List;
 
@@ -74,7 +77,7 @@ public class ManagerExamController {
             managerExamService.create(form);
             redirectAttributes.addFlashAttribute("examSuccess", "Đã tạo đề thi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            model.addAttribute("examError", exception.getMessage());
+            model.addAttribute("examError", UserMessages.of(exception));
             return formPage(form, model, null);
         }
         return "redirect:/manager/exams";
@@ -89,7 +92,7 @@ public class ManagerExamController {
             managerExamService.update(examId, form);
             redirectAttributes.addFlashAttribute("examSuccess", "Đã cập nhật đề thi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            model.addAttribute("examError", exception.getMessage());
+            model.addAttribute("examError", UserMessages.of(exception));
             return formPage(form, model, examId);
         }
         return "redirect:/manager/exams";
@@ -110,7 +113,7 @@ public class ManagerExamController {
             model.addAttribute("addForm", new ExamQuestionForm());
             model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
             model.addAttribute("jlptLevels", Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList());
-            model.addAttribute("skillTypes", Arrays.stream(SkillTypeEnum.values()).map(Enum::name).toList());
+            model.addAttribute("skillTypes", SkillTypeEnum.questionSkillNames());
             model.addAttribute("filterJlptLevel", jlptLevel);
             model.addAttribute("filterSkillType", skillType);
             return "pages/manager/exam/questions";
@@ -128,7 +131,68 @@ public class ManagerExamController {
             managerExamService.addQuestionsToExam(examId, form);
             redirectAttributes.addFlashAttribute("examSuccess", "Đã thêm câu hỏi vào đề thi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("examError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("examError", UserMessages.of(exception));
+        }
+        return "redirect:/manager/exams/" + examId + "/questions";
+    }
+
+    @PostMapping("/{examId}/questions/generate")
+    public String previewGenerate(@PathVariable long examId, HttpSession session,
+                                   Model model, RedirectAttributes redirectAttributes) {
+        try {
+            GeneratePreview preview = managerExamService.previewQuestions(examId);
+            session.setAttribute("generatePreview_" + examId, preview);
+            var exam = managerExamService.findById(examId);
+            model.addAttribute("exam", exam);
+            model.addAttribute("preview", preview);
+            model.addAttribute("sectionLabels", JlptExamStructure.SECTION_LABELS);
+            model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
+            return "pages/manager/exam/generate-preview";
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("examError", UserMessages.of(exception));
+            return "redirect:/manager/exams/" + examId + "/questions";
+        }
+    }
+
+    @PostMapping("/{examId}/questions/generate/regenerate")
+    public String regenerateSection(@PathVariable long examId, @RequestParam String section,
+                                     HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            GeneratePreview current = (GeneratePreview) session.getAttribute("generatePreview_" + examId);
+            if (current == null) {
+                redirectAttributes.addFlashAttribute("examError", "Phiên preview đã hết hạn. Hãy bấm lại nút Tự động chọn câu.");
+                return "redirect:/manager/exams/" + examId + "/questions";
+            }
+            GeneratePreview updated = managerExamService.regenerateSection(examId, section, current);
+            session.setAttribute("generatePreview_" + examId, updated);
+            var exam = managerExamService.findById(examId);
+            model.addAttribute("exam", exam);
+            model.addAttribute("preview", updated);
+            model.addAttribute("sectionLabels", JlptExamStructure.SECTION_LABELS);
+            model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
+            model.addAttribute("examSuccess", "Đã chọn lại phần " + JlptExamStructure.SECTION_LABELS.get(section) + ".");
+            return "pages/manager/exam/generate-preview";
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("examError", UserMessages.of(exception));
+            return "redirect:/manager/exams/" + examId + "/questions";
+        }
+    }
+
+    @PostMapping("/{examId}/questions/generate/confirm")
+    public String confirmGenerate(@PathVariable long examId, HttpSession session,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            GeneratePreview preview = (GeneratePreview) session.getAttribute("generatePreview_" + examId);
+            if (preview == null) {
+                redirectAttributes.addFlashAttribute("examError", "Phiên preview đã hết hạn. Hãy bấm lại nút Tự động chọn câu.");
+                return "redirect:/manager/exams/" + examId + "/questions";
+            }
+            int count = managerExamService.confirmGenerate(examId, preview);
+            session.removeAttribute("generatePreview_" + examId);
+            redirectAttributes.addFlashAttribute("examSuccess",
+                    "Đã xác nhận và gắn " + count + " câu hỏi vào đề thi. Hãy xem lại trước khi đăng đề.");
+        } catch (IllegalArgumentException | DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("examError", UserMessages.of(exception));
         }
         return "redirect:/manager/exams/" + examId + "/questions";
     }
@@ -142,7 +206,7 @@ public class ManagerExamController {
             managerExamService.reorderSection(examId, section, questionIds == null ? List.of() : questionIds);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException | DataAccessException exception) {
-            return ResponseEntity.badRequest().body(exception.getMessage());
+            return ResponseEntity.badRequest().body(UserMessages.of(exception));
         }
     }
 
@@ -153,7 +217,7 @@ public class ManagerExamController {
             managerExamService.removeQuestionFromExam(examId, questionId);
             redirectAttributes.addFlashAttribute("examSuccess", "Đã gỡ câu hỏi khỏi đề thi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("examError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("examError", UserMessages.of(exception));
         }
         return "redirect:/manager/exams/" + examId + "/questions";
     }
@@ -173,7 +237,7 @@ public class ManagerExamController {
             redirectAttributes.addFlashAttribute("examError", "Import thất bại, chưa có dữ liệu nào được lưu. Sửa các lỗi sau rồi thử lại:");
             redirectAttributes.addFlashAttribute("importErrors", exception.getErrors());
         } catch (IllegalArgumentException | DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("examError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("examError", UserMessages.of(exception));
         }
         return "redirect:/manager/exams/" + examId + "/questions";
     }

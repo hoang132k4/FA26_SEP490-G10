@@ -52,6 +52,28 @@
         </div>
     </div>
 
+    <!-- Tự động chọn câu từ ngân hàng -->
+    <div class="kotoba-card p-4 mb-4">
+        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Tự động chọn câu từ ngân hàng</h5>
+        <form class="row g-2 align-items-end" method="post"
+              th:action="@{/manager/quizzes/{id}/questions/generate(id=${quiz.id()})}">
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="genLevel">Cấp độ</label>
+                <select class="form-select" id="genLevel" name="jlptLevel" required>
+                    <option th:each="lv : ${jlptLevels}" th:value="${lv}" th:text="${lv}"
+                            th:selected="${lv == filterJlptLevel}"></option>
+                </select>
+            </div>
+            <div class="col-6 col-md" th:each="skill : ${skillOptions}">
+                <label class="form-label small mb-1" th:for="'gen-' + ${skill.name()}" th:text="${skill.label}"></label>
+                <input class="form-control" type="number" min="0" max="100" value="0"
+                       th:id="'gen-' + ${skill.name()}" th:name="'counts[' + ${skill.name()} + ']'">
+            </div>
+            <div class="col-md-2"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-magic me-1"></i>Tự động chọn</button></div>
+        </form>
+        <small class="text-muted d-block mt-2">Nhập số câu cho từng kỹ năng (0 = bỏ qua). Hệ thống lấy ngẫu nhiên câu hỏi ACTIVE đúng cấp độ trong ngân hàng, không trùng câu đã có trong quiz. Nếu một kỹ năng không đủ câu thì không câu nào được thêm.</small>
+    </div>
+
     <!-- Import câu hỏi từ Excel -->
     <div class="kotoba-card p-4 mb-4">
         <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Import câu hỏi từ Excel</h5>

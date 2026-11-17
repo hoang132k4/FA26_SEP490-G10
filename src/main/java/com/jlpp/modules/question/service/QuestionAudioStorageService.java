@@ -38,11 +38,7 @@ public class QuestionAudioStorageService {
         }
         Files.createDirectories(uploadDirectory);
         String filename = UUID.randomUUID() + extension;
-        Path destination = uploadDirectory.resolve(filename).normalize();
-        if (!destination.startsWith(uploadDirectory)) {
-            throw new IllegalArgumentException("Tên file không hợp lệ.");
-        }
-        file.transferTo(destination);
+        file.transferTo(uploadDirectory.resolve(filename));
         return "/uploads/questions/audio/" + filename;
     }
 }

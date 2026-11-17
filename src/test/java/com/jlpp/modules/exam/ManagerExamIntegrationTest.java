@@ -390,7 +390,211 @@ class ManagerExamIntegrationTest {
                 .andExpect(flash().attribute("importErrors", List.of("Chỉ hỗ trợ file .xlsx. Hãy tải file mẫu và điền dữ liệu.")));
     }
 
+    // ── Auto generate ──
+
+    @Test
+    void generateFillsDraftExamWithOfficialJlptStructureFromBank() throws Exception {
+        Exam exam = saveExam("Đề tự động", "JLPT_MOCK", "N5", "DRAFT", 1, 1, 1);
+        Question handPicked = saveQuestion("ACTIVE", "GRAMMAR");
+        mockMvc.perform(addQuestions(exam, handPicked));
+        saveQuestions(37, "VOCABULARY", null);
+        Question passage = saveQuestion("ACTIVE", "READING", "PASSAGE", null);
+        List<Question> children = saveQuestions(3, "READING", passage.getId());
+        saveQuestions(2, "READING", null);
+        saveQuestions(24, "LISTENING", null);
+
+        var previewResult = mockMvc.perform(post("/manager/exams/{id}/questions/generate", exam.getExamId()).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("preview"))
+                .andExpect(view().name("pages/manager/exam/generate-preview"))
+                .andReturn();
+        var session = previewResult.getRequest().getSession();
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate/confirm", exam.getExamId()).session((org.springframework.mock.web.MockHttpSession) session).with(csrf()))
+                .andExpect(redirectedUrl("/manager/exams/" + exam.getExamId() + "/questions"))
+                .andExpect(flash().attribute("examSuccess", containsString("Đã xác nhận và gắn 66 câu hỏi")));
+
+        entityManager.flush();
+        entityManager.clear();
+        Exam saved = examRepository.findById(exam.getExamId()).orElseThrow();
+        assertEquals(38, saved.getLanguageQuestions());
+        assertEquals(5, saved.getReadingQuestions());
+        assertEquals(24, saved.getListeningQuestions());
+        assertEquals(67, saved.getTotalQuestions());
+        assertEquals(38, sectionCount(exam, "LANGUAGE"));
+        assertEquals(5, sectionCount(exam, "READING"));
+        assertEquals(24, sectionCount(exam, "LISTENING"));
+        assertEquals(1, linkedCount(exam, handPicked.getId()));
+        assertEquals(0, linkedCount(exam, passage.getId()));
+        List<Integer> childOrders = children.stream()
+                .map(c -> jdbc.queryForObject("SELECT order_index FROM exam_questions WHERE exam_id = ? AND question_id = ?",
+                        Integer.class, exam.getExamId(), c.getId()))
+                .toList();
+        assertEquals(List.of(childOrders.get(0), childOrders.get(0) + 1, childOrders.get(0) + 2), childOrders);
+    }
+
+    @Test
+    void updateWithBlankTitleRedisplaysForm() throws Exception {
+        Exam exam = saveExam("Đề sửa lỗi form", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
+
+        mockMvc.perform(withSections(post("/manager/exams/{id}", exam.getExamId()).with(csrf()), 38, 5, 24)
+                        .param("examTitle", "")
+                        .param("examType", "JLPT_MOCK")
+                        .param("jlptLevel", "N5")
+                        .param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/manager/exam/form"))
+                .andExpect(model().attributeHasFieldErrors("examForm", "examTitle"));
+    }
+
+    @Test
+    void questionsPageOfMissingExamRedirectsToList() throws Exception {
+        mockMvc.perform(get("/manager/exams/{id}/questions", 999_999L))
+                .andExpect(redirectedUrl("/manager/exams"))
+                .andExpect(flash().attribute("examError", "Không tìm thấy đề thi."));
+    }
+
+    @Test
+    void regenerateWithUnknownSectionKeepsPreviewAndShowsError() throws Exception {
+        Exam exam = saveExam("Đề chọn lại sai phần", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
+        saveQuestions(38, "VOCABULARY", null);
+        saveQuestions(5, "READING", null);
+        saveQuestions(24, "LISTENING", null);
+        var session = (org.springframework.mock.web.MockHttpSession) mockMvc
+                .perform(post("/manager/exams/{id}/questions/generate", exam.getExamId()).with(csrf()))
+                .andReturn().getRequest().getSession();
+
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate/regenerate", exam.getExamId())
+                        .session(session).param("section", "WRITING").with(csrf()))
+                .andExpect(redirectedUrl("/manager/exams/" + exam.getExamId() + "/questions"))
+                .andExpect(flash().attribute("examError", "Section không hợp lệ."));
+    }
+
+    @Test
+    void reorderWithoutQuestionIdsIsRejected() throws Exception {
+        Exam exam = saveExam("Đề sắp xếp rỗng", "JLPT_MOCK", "N5", "DRAFT", 10, 5, 5);
+        mockMvc.perform(addQuestions(exam, saveQuestion("ACTIVE")));
+
+        mockMvc.perform(post("/manager/exams/{e}/questions/reorder", exam.getExamId()).with(csrf())
+                        .param("section", "LANGUAGE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Danh sách câu hỏi của phần này đã thay đổi")));
+    }
+
+    @Test
+    void importIntoMissingExamShowsError() throws Exception {
+        var file = QuestionExcel.xlsx(List.of("content", "option_a", "option_b", "answer"), List.of(List.of("Câu", "A", "B", "A")));
+
+        mockMvc.perform(multipart("/manager/exams/{id}/import", 999_999L).file(file).with(csrf()))
+                .andExpect(redirectedUrl("/manager/exams/999999/questions"))
+                .andExpect(flash().attribute("examError", "Không tìm thấy đề thi."));
+    }
+
+    @Test
+    void regenerateReplacesOnlyTheChosenSection() throws Exception {
+        Exam exam = saveExam("Đề chọn lại", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
+        saveQuestions(38, "VOCABULARY", null);
+        saveQuestions(5, "READING", null);
+        saveQuestions(30, "LISTENING", null);
+
+        var session = (org.springframework.mock.web.MockHttpSession) mockMvc
+                .perform(post("/manager/exams/{id}/questions/generate", exam.getExamId()).with(csrf()))
+                .andReturn().getRequest().getSession();
+        var before = (com.jlpp.modules.exam.dto.GeneratePreview) session.getAttribute("generatePreview_" + exam.getExamId());
+
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate/regenerate", exam.getExamId())
+                        .session(session).param("section", "LISTENING").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/manager/exam/generate-preview"))
+                .andExpect(model().attribute("examSuccess", "Đã chọn lại phần Nghe hiểu."));
+
+        var after = (com.jlpp.modules.exam.dto.GeneratePreview) session.getAttribute("generatePreview_" + exam.getExamId());
+        assertEquals(before.sections().get("LANGUAGE"), after.sections().get("LANGUAGE"));
+        assertEquals(before.sections().get("READING"), after.sections().get("READING"));
+        assertEquals(24, after.sections().get("LISTENING").size());
+        assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM exam_questions WHERE exam_id = ?", Long.class, exam.getExamId()));
+    }
+
+    @Test
+    void regenerateAndConfirmWithoutPreviewInSessionAskToStartAgain() throws Exception {
+        Exam exam = saveExam("Đề hết phiên", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
+        String expired = "Phiên preview đã hết hạn. Hãy bấm lại nút Tự động chọn câu.";
+
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate/regenerate", exam.getExamId())
+                        .param("section", "LISTENING").with(csrf()))
+                .andExpect(redirectedUrl("/manager/exams/" + exam.getExamId() + "/questions"))
+                .andExpect(flash().attribute("examError", expired));
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate/confirm", exam.getExamId()).with(csrf()))
+                .andExpect(redirectedUrl("/manager/exams/" + exam.getExamId() + "/questions"))
+                .andExpect(flash().attribute("examError", expired));
+    }
+
+    @Test
+    void confirmingStalePreviewLinksNothing() throws Exception {
+        Exam exam = saveExam("Đề preview cũ", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
+        List<Question> vocabulary = saveQuestions(38, "VOCABULARY", null);
+        saveQuestions(5, "READING", null);
+        saveQuestions(24, "LISTENING", null);
+        var session = (org.springframework.mock.web.MockHttpSession) mockMvc
+                .perform(post("/manager/exams/{id}/questions/generate", exam.getExamId()).with(csrf()))
+                .andReturn().getRequest().getSession();
+
+        mockMvc.perform(addQuestions(exam, vocabulary.get(0)));
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate/confirm", exam.getExamId()).session(session).with(csrf()))
+                .andExpect(flash().attribute("examError", containsString("Kết quả xem trước đã cũ")));
+
+        assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM exam_questions WHERE exam_id = ?", Long.class, exam.getExamId()));
+    }
+
+    @Test
+    void generateWithNotEnoughQuestionsInBankLinksNothing() throws Exception {
+        Exam exam = saveExam("Đề thiếu ngân hàng", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
+        saveQuestions(38, "VOCABULARY", null);
+        saveQuestions(5, "READING", null);
+        saveQuestions(3, "LISTENING", null);
+
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate", exam.getExamId()).with(csrf()))
+                .andExpect(flash().attribute("examError", containsString("Nghe hiểu cần thêm 24 câu")))
+                .andExpect(flash().attribute("examError", containsString("chỉ còn 3 câu")));
+
+        assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM exam_questions WHERE exam_id = ?", Long.class, exam.getExamId()));
+    }
+
+    @Test
+    void generateButtonIsShownOnlyForDraftExam() throws Exception {
+        Exam draft = saveExam("Đề nháp", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
+        Exam published = saveExam("Đề đã đăng nút", "JLPT_MOCK", "N5", "PUBLISHED", 38, 5, 24);
+
+        mockMvc.perform(get("/manager/exams/{id}/questions", draft.getExamId()))
+                .andExpect(content().string(containsString("Tự động chọn câu theo cấu trúc JLPT")));
+        mockMvc.perform(get("/manager/exams/{id}/questions", published.getExamId()))
+                .andExpect(content().string(not(containsString("Tự động chọn câu theo cấu trúc JLPT"))));
+    }
+
+    @Test
+    void generateIsOnlyAllowedForDraftExam() throws Exception {
+        Exam exam = saveExam("Đề đã đăng", "JLPT_MOCK", "N5", "PUBLISHED", 38, 5, 24);
+
+        mockMvc.perform(post("/manager/exams/{id}/questions/generate", exam.getExamId()).with(csrf()))
+                .andExpect(flash().attribute("examError", "Chỉ tự động chọn câu cho đề thi ở trạng thái DRAFT."));
+    }
+
     // ── helpers ──
+
+    private List<Question> saveQuestions(int count, String skillType, Long parentId) {
+        List<Question> saved = new java.util.ArrayList<>();
+        for (int i = 0; i < count; i++) saved.add(saveQuestion("ACTIVE", skillType, "MULTI_CHOICE", parentId));
+        return saved;
+    }
+
+    private long sectionCount(Exam exam, String section) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM exam_questions WHERE exam_id = ? AND section = ?",
+                Long.class, exam.getExamId(), section);
+    }
+
+    private long linkedCount(Exam exam, long questionId) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM exam_questions WHERE exam_id = ? AND question_id = ?",
+                Long.class, exam.getExamId(), questionId);
+    }
 
     private Exam saveExam(String title, String type, String level, String status, int language, int reading, int listening) {
         Exam exam = new Exam(null, MARK + title, type, level, 90, language + reading + listening, 80, status, null);
@@ -405,13 +609,19 @@ class ManagerExamIntegrationTest {
     }
 
     private Question saveQuestion(String status, String skillType) {
+        return saveQuestion(status, skillType, "MULTI_CHOICE", null);
+    }
+
+    private Question saveQuestion(String status, String skillType, String questionType, Long parentId) {
+        boolean passage = "PASSAGE".equals(questionType);
         Question q = Question.builder()
                 .content(MARK + "Câu hỏi " + System.nanoTime())
-                .questionType("MULTI_CHOICE")
+                .questionType(questionType)
+                .parentId(parentId)
                 .jlptLevel("N5")
                 .skillType(skillType)
-                .options("[{\"key\":\"A\",\"text\":\"あ\"},{\"key\":\"B\",\"text\":\"い\"}]")
-                .answerKey("[\"A\"]")
+                .options(passage ? null : "[{\"key\":\"A\",\"text\":\"あ\"},{\"key\":\"B\",\"text\":\"い\"}]")
+                .answerKey(passage ? null : "[\"A\"]")
                 .status(status)
                 .build();
         return questionRepository.save(q);

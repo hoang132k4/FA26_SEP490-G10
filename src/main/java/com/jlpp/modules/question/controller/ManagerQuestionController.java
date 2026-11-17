@@ -6,6 +6,7 @@ import com.jlpp.modules.question.service.ManagerQuestionService;
 import com.jlpp.modules.question.service.QuestionAudioStorageService;
 import com.jlpp.modules.question.service.QuestionImportService;
 import jakarta.validation.Valid;
+import com.jlpp.common.util.UserMessages;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -96,7 +97,7 @@ public class ManagerQuestionController {
             managerQuestionService.create(form);
             redirectAttributes.addFlashAttribute("questionSuccess", "Đã thêm câu hỏi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            model.addAttribute("questionError", exception.getMessage());
+            model.addAttribute("questionError", UserMessages.of(exception));
             return formPage(form, model, false);
         } catch (java.io.IOException exception) {
             model.addAttribute("questionError", "Lỗi upload file audio: " + exception.getMessage());
@@ -116,7 +117,7 @@ public class ManagerQuestionController {
             managerQuestionService.update(id, form);
             redirectAttributes.addFlashAttribute("questionSuccess", "Đã cập nhật câu hỏi.");
         } catch (IllegalArgumentException | DataAccessException exception) {
-            model.addAttribute("questionError", exception.getMessage());
+            model.addAttribute("questionError", UserMessages.of(exception));
             return formPage(form, model, true);
         } catch (java.io.IOException exception) {
             model.addAttribute("questionError", "Lỗi upload file audio: " + exception.getMessage());
@@ -157,7 +158,7 @@ public class ManagerQuestionController {
             redirectAttributes.addFlashAttribute("questionError", "Import thất bại, chưa có câu hỏi nào được lưu. Sửa các lỗi sau rồi thử lại:");
             redirectAttributes.addFlashAttribute("importErrors", exception.getErrors());
         } catch (DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("questionError", "Lỗi lưu dữ liệu: " + exception.getMostSpecificCause().getMessage());
+            redirectAttributes.addFlashAttribute("questionError", UserMessages.of(exception));
         }
         return "redirect:/manager/questions";
     }

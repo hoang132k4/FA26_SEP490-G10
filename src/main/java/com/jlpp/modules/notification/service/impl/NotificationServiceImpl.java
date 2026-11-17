@@ -49,17 +49,6 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void resetUnreadForDemo() {
-        List<Notification> list = notificationRepository.findAllRecentNotifications();
-        for (int i = 0; i < Math.min(3, list.size()); i++) {
-            Notification n = list.get(i);
-            n.setRead(false);
-            notificationRepository.save(n);
-        }
-    }
-
-    @Override
-    @Transactional
     public void initSampleNotificationsIfEmpty() {
         long currentCount = notificationRepository.count();
         log.info("Checking notifications table. Current count = {}", currentCount);

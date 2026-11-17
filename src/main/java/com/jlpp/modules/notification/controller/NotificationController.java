@@ -6,8 +6,10 @@ import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
 import java.util.List;
@@ -32,7 +34,7 @@ public class NotificationController {
         if (session != null && session.getAttribute("CURRENT_LEARNER_ID") != null) {
             return (Long) session.getAttribute("CURRENT_LEARNER_ID");
         }
-        return 1L;
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
     }
 
     @GetMapping
@@ -48,8 +50,8 @@ public class NotificationController {
 
     @PostMapping("/{id}/read")
     public ResponseEntity<Map<String, Object>> markAsRead(@PathVariable Long id, Principal principal, HttpSession session) {
-        notificationService.markAsRead(id);
         Long userId = resolveUserId(principal, session);
+        notificationService.markAsRead(id);
         long unreadCount = notificationService.getUnreadCount(userId);
         return ResponseEntity.ok(Map.of("success", true, "unreadCount", unreadCount));
     }
@@ -59,12 +61,6 @@ public class NotificationController {
         Long userId = resolveUserId(principal, session);
         notificationService.markAllAsRead(userId);
         return ResponseEntity.ok(Map.of("success", true, "unreadCount", 0));
-    }
-
-    @PostMapping("/reset-demo")
-    public ResponseEntity<Map<String, Object>> resetDemo() {
-        notificationService.resetUnreadForDemo();
-        return ResponseEntity.ok(Map.of("success", true, "unreadCount", 3));
     }
 }
 

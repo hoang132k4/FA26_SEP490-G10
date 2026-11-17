@@ -140,7 +140,7 @@ public class ManagerQuestionService {
         return new ManagerQuestionOptions(
                 Arrays.stream(QuestionTypeEnum.values()).map(Enum::name).toList(),
                 Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList(),
-                Arrays.stream(SkillTypeEnum.values()).map(Enum::name).toList(),
+                SkillTypeEnum.questionSkillNames(),
                 Arrays.stream(QuestionStatusEnum.values()).map(Enum::name).toList()
         );
     }
@@ -191,7 +191,7 @@ public class ManagerQuestionService {
             throw new IllegalArgumentException("Cấp độ JLPT không hợp lệ.");
         }
         if (form.getSkillType() != null && !form.getSkillType().isBlank()
-                && Arrays.stream(SkillTypeEnum.values()).noneMatch(v -> v.name().equals(form.getSkillType()))) {
+                && !SkillTypeEnum.questionSkillNames().contains(form.getSkillType())) {
             throw new IllegalArgumentException("Loại kỹ năng không hợp lệ.");
         }
         if (!"PASSAGE".equals(form.getQuestionType())) {
@@ -201,9 +201,7 @@ public class ManagerQuestionService {
             if (form.getAnswerKeys() == null || form.getAnswerKeys().isEmpty()) {
                 throw new IllegalArgumentException("Vui lòng chọn đáp án đúng.");
             }
-            List<String> validKeys = new ArrayList<>();
-            if (!isBlank(form.getOptionA())) validKeys.add("A");
-            if (!isBlank(form.getOptionB())) validKeys.add("B");
+            List<String> validKeys = new ArrayList<>(List.of("A", "B"));
             if (!isBlank(form.getOptionC())) validKeys.add("C");
             if (!isBlank(form.getOptionD())) validKeys.add("D");
             for (String key : form.getAnswerKeys()) {
@@ -226,10 +224,11 @@ public class ManagerQuestionService {
         }
     }
 
+    /** validateDomain has already required options A and B. */
     private String buildOptionsJson(ManagerQuestionForm form) {
         List<Map<String, String>> opts = new ArrayList<>();
-        if (!isBlank(form.getOptionA())) opts.add(Map.of("key", "A", "text", form.getOptionA().trim()));
-        if (!isBlank(form.getOptionB())) opts.add(Map.of("key", "B", "text", form.getOptionB().trim()));
+        opts.add(Map.of("key", "A", "text", form.getOptionA().trim()));
+        opts.add(Map.of("key", "B", "text", form.getOptionB().trim()));
         if (!isBlank(form.getOptionC())) opts.add(Map.of("key", "C", "text", form.getOptionC().trim()));
         if (!isBlank(form.getOptionD())) opts.add(Map.of("key", "D", "text", form.getOptionD().trim()));
         return toJson(opts);
@@ -256,11 +255,7 @@ public class ManagerQuestionService {
     }
 
     private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Lỗi tạo JSON.", e);
-        }
+        return objectMapper.valueToTree(value).toString();
     }
 
     private Map<Long, Long> toBatchMap(List<Object[]> rows) {
