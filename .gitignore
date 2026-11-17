@@ -44,6 +44,8 @@ uploads/**
 tmp/
 application-local.yml
 *.bak
+*_backup.*
+*_updated.*
 
 # Temporary / Scratch artifacts
 scratch/

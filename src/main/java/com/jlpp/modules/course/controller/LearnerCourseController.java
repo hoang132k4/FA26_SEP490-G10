@@ -275,12 +275,27 @@ public class LearnerCourseController {
         Lesson prevLesson = (currentIdx > 0) ? courseLessons.get(currentIdx - 1) : null;
         Lesson nextLesson = (currentIdx >= 0 && currentIdx < courseLessons.size() - 1) ? courseLessons.get(currentIdx + 1) : null;
 
-        // Attached materials for this lesson
-        Long lid = lesson.getLessonId() != null ? lesson.getLessonId() : lesson.getId();
-        List<StudyMaterial> attachedMaterials = studyMaterialService.getMaterialsByLessonId(lid);
+        // Attached materials for this lesson (search by both lesson_id and id)
+        List<StudyMaterial> attachedMaterials = new ArrayList<>(studyMaterialService.getMaterialsByLessonId(lesson.getId()));
+        if (lesson.getLessonId() != null && !lesson.getLessonId().equals(lesson.getId())) {
+            List<StudyMaterial> extraMats = studyMaterialService.getMaterialsByLessonId(lesson.getLessonId());
+            for (StudyMaterial em : extraMats) {
+                if (attachedMaterials.stream().noneMatch(m -> m.getMaterialId().equals(em.getMaterialId()))) {
+                    attachedMaterials.add(em);
+                }
+            }
+        }
 
         // Flashcards for this lesson from backend database
-        List<Flashcard> lessonFlashcards = flashcardRepository.findByLessonId(lesson.getId());
+        List<Flashcard> lessonFlashcards = new ArrayList<>(flashcardRepository.findByLessonId(lesson.getId()));
+        if (lesson.getLessonId() != null && !lesson.getLessonId().equals(lesson.getId())) {
+            List<Flashcard> extraCards = flashcardRepository.findByLessonId(lesson.getLessonId());
+            for (Flashcard ec : extraCards) {
+                if (lessonFlashcards.stream().noneMatch(c -> c.getFlashcardId().equals(ec.getFlashcardId()))) {
+                    lessonFlashcards.add(ec);
+                }
+            }
+        }
 
         // Registration & progress
         CourseRegistration registration = registrationService.getRegistration(learner.getId(), course.getId());
@@ -311,7 +326,11 @@ public class LearnerCourseController {
         // Skill study view from LessonDetailService (Kanji, Grammar, Vocab, Reading, Listening details)
         LessonStudyView studyView = null;
         try {
-            studyView = lessonDetailService.buildLessonStudyView(lessonId);
+            Long targetLessonId = (lesson.getLessonId() != null) ? lesson.getLessonId() : lesson.getId();
+            studyView = lessonDetailService.buildLessonStudyView(targetLessonId);
+            if (studyView == null && !targetLessonId.equals(lesson.getId())) {
+                studyView = lessonDetailService.buildLessonStudyView(lesson.getId());
+            }
         } catch (Exception exception) {
             log.warn("Could not build lesson study view for lesson {}", lessonId, exception);
         }

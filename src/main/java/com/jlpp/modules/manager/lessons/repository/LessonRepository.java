@@ -78,7 +78,7 @@ public class LessonRepository {
 
     public Optional<LessonRow> findById(long lessonId) {
         try {
-            return jdbcTemplate.query(LESSON_SELECT + " WHERE lesson_id = ?", lessonRowMapper, lessonId)
+            return jdbcTemplate.query(LESSON_SELECT + " WHERE lesson_id = ? OR id = ?", lessonRowMapper, lessonId, lessonId)
                     .stream()
                     .findFirst();
         } catch (Exception ex) {
@@ -96,8 +96,8 @@ public class LessonRepository {
                                duration_minutes,
                                is_free_preview,
                                status
-                        FROM lessons WHERE id = ?
-                        """, lessonRowMapper, lessonId)
+                        FROM lessons WHERE id = ? OR lesson_id = ?
+                        """, lessonRowMapper, lessonId, lessonId)
                         .stream()
                         .findFirst();
             } catch (Exception fallbackEx) {

@@ -27,9 +27,14 @@ public class LessonDetailRepository {
 
     public Optional<LessonDetail> findByLessonId(long lessonId) {
         return jdbcTemplate.query(
-                        "SELECT lesson_id, skill_type, source_entry_id, audio_url, body, payload::text AS payload "
-                                + "FROM lesson_details WHERE lesson_id = ?",
-                        detailRowMapper, lessonId)
+                        """
+                        SELECT lesson_id, skill_type, source_entry_id, audio_url, body, payload::text AS payload
+                        FROM lesson_details
+                        WHERE lesson_id = ?
+                           OR lesson_id = (SELECT lesson_id FROM lessons WHERE id = ? LIMIT 1)
+                           OR lesson_id = (SELECT id FROM lessons WHERE lesson_id = ? LIMIT 1)
+                        """,
+                        detailRowMapper, lessonId, lessonId, lessonId)
                 .stream()
                 .findFirst();
     }
