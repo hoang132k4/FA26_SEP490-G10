@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- Type a page number and press Enter; page is 1-based for the user, 0-based in the URL. -->
+    <form th:fragment="pageJump(page, baseUrl)" th:if="${page != null && page.totalPages > 1}"
+          class="d-flex justify-content-center align-items-center gap-2 mt-2"
+          th:attr="data-base-url=@{${baseUrl}},data-total=${page.totalPages}"
+          onsubmit="event.preventDefault();
+                    var total = Number(this.dataset.total);
+                    var n = Math.min(Math.max(parseInt(this.elements.goto.value, 10) || 1, 1), total);
+                    var url = this.dataset.baseUrl;
+                    location.href = url + (url.indexOf('?') < 0 ? '?' : '&') + 'page=' + (n - 1);">
+        <label class="small text-muted mb-0">Đến trang</label>
+        <input type="number" name="goto" class="form-control form-control-sm text-center" style="width:80px"
+               min="1" th:max="${page.totalPages}" th:value="${page.number + 1}" aria-label="Số trang">
+        <span class="small text-muted" th:text="'/ ' + ${page.totalPages}">/ 1</span>
+    </form>
+</body>
+</html>

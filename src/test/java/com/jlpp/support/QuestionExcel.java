@@ -18,7 +18,7 @@ public final class QuestionExcel {
             Sheet sheet = wb.createSheet("Questions");
             write(sheet.createRow(0), header);
             for (int i = 0; i < rows.size(); i++) {
-                write(sheet.createRow(i + 1), rows.get(i));
+                if (rows.get(i) != null) write(sheet.createRow(i + 1), rows.get(i)); // null leaves that sheet row missing
             }
             wb.write(out);
             return new MockMultipartFile("file", "questions.xlsx",

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, ExamQuestionId> {
@@ -28,6 +29,12 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Exam
     int maxOrderIndex(@Param("examId") Long examId, @Param("section") String section);
 
     void deleteAllByIdExamId(Long examId);
+
+    @Query("select eq.id.questionId from ExamQuestion eq where eq.id.examId = :examId and eq.id.questionId in :ids")
+    List<Long> findLinkedQuestionIds(@Param("examId") Long examId, @Param("ids") Collection<Long> ids);
+
+    @Query("select eq.id.questionId from ExamQuestion eq where eq.id.examId = :examId and eq.question.status <> 'ACTIVE' order by eq.id.questionId")
+    List<Long> findInactiveQuestionIds(@Param("examId") Long examId);
 
     @Query("""
             select eq from ExamQuestion eq
