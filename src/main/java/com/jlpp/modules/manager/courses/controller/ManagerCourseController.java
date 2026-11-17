@@ -279,13 +279,23 @@ public class ManagerCourseController {
 
         Double basePrice = parsePriceField(price, "price", true, errors);
         Double promotionalPrice = parsePriceField(discountPrice, "discountPrice", false, errors);
-        if (basePrice != null && promotionalPrice != null && promotionalPrice > basePrice) {
-            errors.put("discountPrice", "Giá ưu đãi không được cao hơn giá gốc.");
+        if (promotionalPrice != null) {
+            if (promotionalPrice <= 0) {
+                errors.put("discountPrice", "Giá ưu đãi phải lớn hơn 0 nếu có.");
+            } else if (basePrice != null && promotionalPrice >= basePrice) {
+                errors.put("discountPrice", "Giá ưu đãi không được cao hơn hoặc bằng giá gốc.");
+            }
         }
 
-        checkMaxLength(shortDescription, 500, "shortDescription", "Mô tả ngắn", errors);
+        String cleanShortDesc = shortDescription == null ? "" : shortDescription.trim();
+        if (cleanShortDesc.isEmpty()) errors.put("shortDescription", "Vui lòng nhập mô tả ngắn.");
+        else if (cleanShortDesc.length() > 500) errors.put("shortDescription", "Mô tả ngắn tối đa 500 ký tự.");
+
+        String cleanObjectives = objectives == null ? "" : objectives.trim();
+        if (cleanObjectives.isEmpty()) errors.put("objectives", "Vui lòng nhập mục tiêu khóa học.");
+        else if (cleanObjectives.length() > 5000) errors.put("objectives", "Mục tiêu khóa học tối đa 5000 ký tự.");
+
         checkMaxLength(description, 2000, "description", "Mô tả chi tiết", errors);
-        checkMaxLength(objectives, 5000, "objectives", "Mục tiêu khóa học", errors);
         checkMaxLength(prerequisites, 2000, "prerequisites", "Điều kiện tiên quyết", errors);
         checkMaxLength(targetAudience, 2000, "targetAudience", "Đối tượng học viên", errors);
 
@@ -309,14 +319,14 @@ public class ManagerCourseController {
             return null;
         }
         try {
-            double parsed = Double.parseDouble(value);
-            if (!Double.isFinite(parsed) || parsed < 0) {
-                errors.put(field, "Giá phải là số từ 0 trở lên.");
+            long parsed = Long.parseLong(value);
+            if (parsed < 0) {
+                errors.put(field, "Giá phải là số nguyên từ 0 trở lên.");
                 return null;
             }
-            return parsed;
+            return (double) parsed;
         } catch (NumberFormatException exception) {
-            errors.put(field, "Vui lòng nhập một giá trị số hợp lệ.");
+            errors.put(field, "Vui lòng nhập một số nguyên hợp lệ.");
             return null;
         }
     }
@@ -394,7 +404,7 @@ public class ManagerCourseController {
             publicUrl = ("http".equalsIgnoreCase(parsed.getScheme()) || "https".equalsIgnoreCase(parsed.getScheme()))
                     && parsed.getHost() != null && parsed.getUserInfo() == null;
         } catch (IllegalArgumentException ignored) { }
-        boolean uploadedImage = url.matches("^/uploads/courses/[A-Za-z0-9-]+\\.(?i:jpg|png|webp|gif)$");
+        boolean uploadedImage = url.matches("^/uploads/courses/[A-Za-z0-9-]+\\.(?i:jpg|jpeg|png)$");
         if (url.length() > 500 || (!publicUrl && !uploadedImage)) {
             throw new IllegalArgumentException("Đường dẫn ảnh phải là URL http/https hợp lệ hoặc ảnh đã tải lên, tối đa 500 ký tự.");
         }
