@@ -607,5 +607,163 @@ class AssessmentScoringServiceTest {
         assertEquals(70, res70.getEarnedScore());
         assertFalse(res70.isPassed(), "70/150 points MUST FAIL when passingScore=80 raw marks");
     }
+
+    @Test
+    @DisplayName("Normal & Boundary: resolvePassingScore cho tất cả cấp độ JLPT (N1-N5), Milestone và Custom threshold")
+    void testResolvePassingScore_AllJlptLevels_AndCustomThresholds() {
+        // JLPT default passing scores
+        assertEquals(80, scoringService.resolvePassingScore("JLPT_MOCK", "N5", null));
+        assertEquals(90, scoringService.resolvePassingScore("JLPT_MOCK", "N4", null));
+        assertEquals(95, scoringService.resolvePassingScore("JLPT_MOCK", "N3", null));
+        assertEquals(90, scoringService.resolvePassingScore("JLPT_MOCK", "N2", null));
+        assertEquals(100, scoringService.resolvePassingScore("JLPT_MOCK", "N1", null));
+
+        // Unknown level / null level defaults to 80
+        assertEquals(80, scoringService.resolvePassingScore("JLPT_MOCK", "UNKNOWN", null));
+        assertEquals(80, scoringService.resolvePassingScore("JLPT_MOCK", null, null));
+
+        // Milestone default passing score is 50
+        assertEquals(50, scoringService.resolvePassingScore("MILESTONE", "N3", null));
+        assertEquals(50, scoringService.resolvePassingScore("MILESTONE", null, null));
+
+        // Custom passing score override (> 0)
+        assertEquals(120, scoringService.resolvePassingScore("JLPT_MOCK", "N5", 120));
+        assertEquals(75, scoringService.resolvePassingScore("MILESTONE", "N4", 75));
+
+        // Custom passing score non-positive should fall back to default
+        assertEquals(80, scoringService.resolvePassingScore("JLPT_MOCK", "N5", 0));
+        assertEquals(80, scoringService.resolvePassingScore("JLPT_MOCK", "N5", -10));
+    }
+
+    @Test
+    @DisplayName("Normal & Boundary: getSkillDisplayName cho tất cả các kỹ năng chuẩn hóa và fallback")
+    void testSkillDisplayName_AllCanonicalSkills() {
+        assertEquals("Chữ Hán (Kanji)", scoringService.getSkillDisplayName("KANJI"));
+        assertEquals("Từ vựng (Vocabulary)", scoringService.getSkillDisplayName("VOCABULARY"));
+        assertEquals("Ngữ pháp (Grammar)", scoringService.getSkillDisplayName("GRAMMAR"));
+        assertEquals("Đọc hiểu (Reading)", scoringService.getSkillDisplayName("READING"));
+        assertEquals("Nghe hiểu (Listening)", scoringService.getSkillDisplayName("LISTENING"));
+        assertEquals("Kiến thức ngôn ngữ (Từ vựng • Ngữ pháp)", scoringService.getSkillDisplayName("VOCAB_GRAMMAR"));
+
+        // Fallbacks
+        assertEquals("Kiến thức tổng hợp", scoringService.getSkillDisplayName(null));
+        assertEquals("CUSTOM_SKILL", scoringService.getSkillDisplayName("CUSTOM_SKILL"));
+    }
+
+    @Test
+    @DisplayName("Normal & Boundary: resolveCanonicalSkill phân loại chính xác dựa trên metadata và heuristics")
+    void testResolveCanonicalSkill_DetailedMetadataAndHeuristics() {
+        // SkillGroup direct matching
+        assertEquals("KANJI", scoringService.resolveCanonicalSkill(QuestionDto.builder().skillGroup("KANJI").build()));
+        assertEquals("VOCABULARY", scoringService.resolveCanonicalSkill(QuestionDto.builder().skillGroup("VOCABULARY").build()));
+        assertEquals("GRAMMAR", scoringService.resolveCanonicalSkill(QuestionDto.builder().skillGroup("GRAMMAR").build()));
+        assertEquals("READING", scoringService.resolveCanonicalSkill(QuestionDto.builder().skillGroup("READING").build()));
+        assertEquals("LISTENING", scoringService.resolveCanonicalSkill(QuestionDto.builder().skillGroup("LISTENING").build()));
+
+        // Authoritative category metadata
+        assertEquals("KANJI", scoringService.resolveCanonicalSkill(QuestionDto.builder().category("Chữ Hán N4").build()));
+        assertEquals("GRAMMAR", scoringService.resolveCanonicalSkill(QuestionDto.builder().category("Ngữ pháp Bunpou N3").build()));
+        assertEquals("VOCABULARY", scoringService.resolveCanonicalSkill(QuestionDto.builder().category("Từ vựng Goi N5").build()));
+        assertEquals("READING", scoringService.resolveCanonicalSkill(QuestionDto.builder().category("Đọc hiểu Dokkai").build()));
+        assertEquals("LISTENING", scoringService.resolveCanonicalSkill(QuestionDto.builder().category("Nghe hiểu Choukai").build()));
+
+        // AudioUrl heuristic -> LISTENING
+        assertEquals("LISTENING", scoringService.resolveCanonicalSkill(QuestionDto.builder().audioUrl("https://audio.mp3").build()));
+
+        // Content heuristics fallback
+        assertEquals("LISTENING", scoringService.resolveCanonicalSkill(QuestionDto.builder().content("Bài nghe số 1").build()));
+        assertEquals("READING", scoringService.resolveCanonicalSkill(QuestionDto.builder().content("Đoạn văn đọc hiểu sau").build()));
+        assertEquals("KANJI", scoringService.resolveCanonicalSkill(QuestionDto.builder().content("Chọn chữ hán đúng").build()));
+        assertEquals("GRAMMAR", scoringService.resolveCanonicalSkill(QuestionDto.builder().content("Điền ngữ pháp thích hợp").build()));
+        assertEquals("VOCABULARY", scoringService.resolveCanonicalSkill(QuestionDto.builder().content("Chọn từ vựng đúng").build()));
+
+        // Empty question defaults to VOCABULARY
+        assertEquals("VOCABULARY", scoringService.resolveCanonicalSkill(QuestionDto.builder().build()));
+    }
+
+    @Test
+    @DisplayName("Boundary: scoreQuestions với danh sách câu hỏi rỗng cho PLACEMENT_TEST và JLPT_MOCK")
+    void testBuildEmptyResult_PlacementAndMockExamVariations() {
+        // PLACEMENT_TEST with empty questions always passes with null passing score
+        ScoringEvaluationResult placementEmpty = scoringService.scoreQuestions(
+                Collections.emptyList(), Collections.emptyMap(), "PLACEMENT_TEST", "N5", null
+        );
+        assertNotNull(placementEmpty);
+        assertTrue(placementEmpty.isPassed());
+        assertNull(placementEmpty.getPassingScore());
+        assertEquals(0, placementEmpty.getTotalQuestions());
+        assertTrue(placementEmpty.getAiFeedback().contains("chưa có câu hỏi"));
+
+        // JLPT_MOCK with empty questions fails and has default passing score 80
+        ScoringEvaluationResult mockEmpty = scoringService.scoreQuestions(
+                Collections.emptyList(), Collections.emptyMap(), "JLPT_MOCK", "N5", null
+        );
+        assertNotNull(mockEmpty);
+        assertFalse(mockEmpty.isPassed());
+        assertEquals(80, mockEmpty.getPassingScore());
+    }
+
+    @Test
+    @DisplayName("Abnormal & Boundary: scoreSingleQuestion với câu trả lời sai hoặc không trả lời")
+    void testScoreSingleQuestion_InvalidAnswerAndUnanswered() {
+        QuestionDto question = QuestionDto.builder()
+                .id(99L)
+                .points(10)
+                .category("Ngữ pháp")
+                .options(List.of(
+                        OptionDto.builder().id(901L).text("A").correct(true).build(),
+                        OptionDto.builder().id(902L).text("B").correct(false).build()
+                ))
+                .build();
+
+        // Null raw answer -> Unanswered
+        SingleQuestionScoreResult resNull = scoringService.scoreSingleQuestion(question, null);
+        assertFalse(resNull.isCorrect());
+        assertTrue(resNull.isUnanswered());
+        assertEquals(0, resNull.getEarnedScore());
+
+        // Blank raw answer -> Unanswered
+        SingleQuestionScoreResult resBlank = scoringService.scoreSingleQuestion(question, "   ");
+        assertTrue(resBlank.isUnanswered());
+
+        // Non-numeric raw answer -> Unanswered
+        SingleQuestionScoreResult resInvalid = scoringService.scoreSingleQuestion(question, "invalid-option-id");
+        assertTrue(resInvalid.isUnanswered());
+
+        // Incorrect option
+        SingleQuestionScoreResult resWrong = scoringService.scoreSingleQuestion(question, "902");
+        assertFalse(resWrong.isCorrect());
+        assertFalse(resWrong.isUnanswered());
+        assertEquals(0, resWrong.getEarnedScore());
+
+        // Non-existent option ID -> Unanswered
+        SingleQuestionScoreResult resNotFound = scoringService.scoreSingleQuestion(question, "9999");
+        assertFalse(resNotFound.isCorrect());
+        assertFalse(resNotFound.isUnanswered());
+        assertEquals(0, resNotFound.getEarnedScore());
+    }
+
+    @Test
+    @DisplayName("Normal: scoreQuestions với Exam entity context")
+    void testScoreQuestions_WithExamEntityContext() {
+        com.jlpp.modules.exam.entity.Exam exam = new com.jlpp.modules.exam.entity.Exam(
+                50L, "Entity Exam Test", "JLPT_MOCK", "N3", 60, 0, 95, "ACTIVE", "Desc"
+        );
+
+        QuestionDto q1 = QuestionDto.builder()
+                .id(1L)
+                .points(10)
+                .category("Ngữ pháp")
+                .skillGroup("GRAMMAR")
+                .options(List.of(OptionDto.builder().id(11L).correct(true).build()))
+                .build();
+
+        Map<String, String> answers = Map.of("answer_1", "11");
+
+        ScoringEvaluationResult res = scoringService.scoreQuestions(List.of(q1), answers, exam);
+        assertNotNull(res);
+        assertEquals(10, res.getEarnedScore());
+        assertEquals(95, res.getPassingScore());
+    }
 }
 

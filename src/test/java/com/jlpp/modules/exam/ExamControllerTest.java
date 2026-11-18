@@ -53,6 +53,15 @@ public class ExamControllerTest {
     @MockBean
     private NotificationService notificationService;
 
+    @MockBean
+    private com.jlpp.modules.course.repository.CourseRepository courseRepository;
+
+    @MockBean
+    private com.jlpp.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
+
+    @MockBean
+    private com.jlpp.modules.course.service.CourseRecommendationService courseRecommendationService;
+
     @BeforeEach
     void setUp() {
         User user = User.builder()
