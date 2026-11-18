@@ -374,4 +374,71 @@ public class PasswordResetServiceTest {
         assertThat(view).isEqualTo("pages/auth/forgot-password");
         assertThat(model.containsAttribute("forgotPasswordRequest")).isTrue();
     }
+
+    @Test
+    @DisplayName("RP-19: Blank or null email in processForgotPassword - Throws IllegalArgumentException")
+    void testRP19_BlankOrNullEmail_ThrowsException() {
+        assertThatThrownBy(() -> passwordResetService.processForgotPassword(""))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Email không được để trống");
+
+        assertThatThrownBy(() -> passwordResetService.processForgotPassword(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Email không được để trống");
+    }
+
+    @Test
+    @DisplayName("RP-20: Inactive account (DISABLED/LOCKED) - Returns silently without sending email")
+    void testRP20_InactiveAccount_IgnoredSilently() {
+        testUser.setStatus("LOCKED");
+        when(userRepository.findByEmailIgnoreCase(testEmail)).thenReturn(Optional.of(testUser));
+
+        passwordResetService.processForgotPassword(testEmail);
+
+        verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("RP-21: validateResetToken with blank or null - Returns false")
+    void testRP21_BlankOrNullToken_ReturnsFalse() {
+        assertThat(passwordResetService.validateResetToken(null)).isFalse();
+        assertThat(passwordResetService.validateResetToken("   ")).isFalse();
+    }
+
+    @Test
+    @DisplayName("RP-22: resetPassword with blank or null token - Throws IllegalArgumentException")
+    void testRP22_BlankOrNullToken_ThrowsException() {
+        assertThatThrownBy(() -> passwordResetService.resetPassword("", "ValidPassword123!"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mã xác thực không hợp lệ");
+
+        assertThatThrownBy(() -> passwordResetService.resetPassword(null, "ValidPassword123!"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mã xác thực không hợp lệ");
+    }
+
+    @Test
+    @DisplayName("RP-23: resetPassword with invalid password pattern - Throws IllegalArgumentException")
+    void testRP23_InvalidPasswordPattern_ThrowsException() {
+        assertThatThrownBy(() -> passwordResetService.resetPassword("some-token", "weakpassword"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mật khẩu phải từ 8-64 ký tự");
+    }
+
+    @Test
+    @DisplayName("RP-24: resetPassword on LOCKED user account - Throws IllegalStateException")
+    void testRP24_LockedUser_ThrowsIllegalStateException() {
+        when(userRepository.findByEmailIgnoreCase(testEmail)).thenReturn(Optional.of(testUser));
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+
+        passwordResetService.processForgotPassword(testEmail);
+        verify(emailService).sendPasswordResetEmail(eq(testEmail), linkCaptor.capture());
+
+        String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
+        testUser.setStatus("LOCKED");
+
+        assertThatThrownBy(() -> passwordResetService.resetPassword(rawToken, "NewValidPass@123"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("khóa hoặc vô hiệu hóa");
+    }
 }

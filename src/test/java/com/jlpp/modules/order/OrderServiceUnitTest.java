@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,6 +101,19 @@ class OrderServiceUnitTest {
     }
 
     @Test
+    @DisplayName("Boundary: Học viên chưa có đơn hàng nào trả về danh sách rỗng (Screen 16)")
+    void getOrderHistory_emptyHistory_returnsEmptyList() {
+        User user = createSampleUser();
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(orderRepository.findByUserIdOrderByCreatedAtDescIdDesc(20L)).thenReturn(Collections.emptyList());
+
+        List<OrderHistoryItemResponse> list = orderService.getOrderHistory("learner@jeps.edu.vn", "ALL");
+
+        assertNotNull(list);
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
     @DisplayName("Normal: Lọc lịch sử đơn hàng theo trạng thái COMPLETED (Screen 16)")
     void getOrderHistory_filterCompleted_success() {
         User user = createSampleUser();
@@ -114,6 +128,13 @@ class OrderServiceUnitTest {
         assertNotNull(list);
         assertEquals(1, list.size());
         assertEquals("ORD-20260210-001", list.get(0).getOrderNumber());
+    }
+
+    @Test
+    @DisplayName("Abnormal: Lấy lịch sử đơn hàng với identifier rỗng ném ra IllegalArgumentException")
+    void getOrderHistory_blankIdentifier_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> orderService.getOrderHistory("", null));
+        assertThrows(IllegalArgumentException.class, () -> orderService.getOrderHistory(null, null));
     }
 
     @Test
@@ -157,5 +178,92 @@ class OrderServiceUnitTest {
 
         assertThrows(SecurityException.class,
                 () -> orderService.getOrderDetailByOrderNumber("learner@jeps.edu.vn", "ORD-OTHER-001"));
+    }
+
+    @Test
+    @DisplayName("Normal: Lấy chi tiết đơn hàng theo order ID thành công")
+    void getOrderDetailById_success() {
+        User user = createSampleUser();
+        Order order = createSampleOrder(user, "ORD-20260210-001", OrderStatus.COMPLETED);
+
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(orderRepository.findByIdAndUserIdWithItems(101L, 20L)).thenReturn(Optional.of(order));
+
+        OrderDetailResponse res = orderService.getOrderDetailById("learner@jeps.edu.vn", 101L);
+
+        assertNotNull(res);
+        assertEquals(101L, res.getId());
+        assertEquals("ORD-20260210-001", res.getOrderNumber());
+    }
+
+    @Test
+    @DisplayName("Abnormal: getOrderDetailById khi mã ID không tồn tại ném ra IllegalArgumentException")
+    void getOrderDetailById_notFound() {
+        User user = createSampleUser();
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(orderRepository.findByIdAndUserIdWithItems(999L, 20L)).thenReturn(Optional.empty());
+        when(orderRepository.existsById(999L)).thenReturn(false);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> orderService.getOrderDetailById("learner@jeps.edu.vn", 999L));
+    }
+
+    @Test
+    @DisplayName("Abnormal: getOrderDetailById khi đơn hàng thuộc người khác ném ra SecurityException")
+    void getOrderDetailById_foreignOrder_throwsSecurityException() {
+        User user = createSampleUser();
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(orderRepository.findByIdAndUserIdWithItems(888L, 20L)).thenReturn(Optional.empty());
+        when(orderRepository.existsById(888L)).thenReturn(true);
+
+        assertThrows(SecurityException.class,
+                () -> orderService.getOrderDetailById("learner@jeps.edu.vn", 888L));
+    }
+
+    @Test
+    @DisplayName("Normal: Đơn hàng có nhiều hơn 1 mặt hàng hiển thị tóm tắt (+N khóa học khác)")
+    void mapToHistoryItem_multipleItems_summarizedCorrectly() {
+        User user = createSampleUser();
+        Order order = createSampleOrder(user, "ORD-MULTI-001", OrderStatus.COMPLETED);
+
+        OrderItem item2 = OrderItem.builder()
+                .order(order)
+                .courseId(4L)
+                .itemName("Khóa học Nghe Hiểu Choukai N3")
+                .price(new BigDecimal("499000"))
+                .quantity(1)
+                .subtotal(new BigDecimal("499000"))
+                .build();
+        order.addItem(item2);
+
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(orderRepository.findByUserIdOrderByCreatedAtDescIdDesc(20L)).thenReturn(List.of(order));
+
+        List<OrderHistoryItemResponse> list = orderService.getOrderHistory("learner@jeps.edu.vn", null);
+
+        assertNotNull(list);
+        assertEquals(1, list.size());
+        assertEquals("Khóa học Chinh Phục JLPT N3 (+1 khóa học khác)", list.get(0).getItemSummary());
+        assertEquals(2, list.get(0).getItemCount());
+    }
+
+    @Test
+    @DisplayName("Boundary: Đơn hàng thiếu thông tin phương thức hoặc trạng thái thanh toán hiển thị mặc định")
+    void mapToDetailResponse_emptyPaymentInfo_defaultsCorrectly() {
+        User user = createSampleUser();
+        Order order = createSampleOrder(user, "ORD-EMPTY-PAY", OrderStatus.PROCESSING);
+        order.setPaymentMethod(null);
+        order.setPaymentStatus("");
+        order.setCreatedAt(null);
+
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(orderRepository.findByOrderNumberAndUserIdWithItems("ORD-EMPTY-PAY", 20L)).thenReturn(Optional.of(order));
+
+        OrderDetailResponse res = orderService.getOrderDetailByOrderNumber("learner@jeps.edu.vn", "ORD-EMPTY-PAY");
+
+        assertNotNull(res);
+        assertEquals("Chưa có thông tin", res.getPaymentMethod());
+        assertEquals("Chưa có thông tin", res.getPaymentStatus());
+        assertEquals("N/A", res.getOrderDateFormatted());
     }
 }

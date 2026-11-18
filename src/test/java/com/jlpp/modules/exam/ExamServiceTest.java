@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -759,6 +760,204 @@ public class ExamServiceTest {
         assertEquals(3, result.getSkillBreakdown().size());
         assertNull(result.getStrongestSkill());
         assertEquals("Toàn diện các kỹ năng (Kiến thức ngôn ngữ, Đọc hiểu, Nghe hiểu)", result.getWeakestSkill());
+    }
+
+    @Test
+    @DisplayName("Normal: JLPT N4 đạt điểm chuẩn và tất cả các phần thi đạt điểm tối thiểu -> PASSED")
+    void testJlptScoring_N4_Pass_Above90() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        Map<String, String> answers = Map.of(
+                "answer_101", "1001",
+                "answer_102", "1004",
+                "answer_103", "1005"
+        );
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, answers, 120);
+
+        assertTrue(result.getPassed());
+        assertEquals(180, result.getScore());
+        assertEquals(35, result.getPassingScore()); // configured passingScore in mockExamN4 is 35
+        assertEquals(3, result.getCorrectCount());
+        assertEquals(0, result.getIncorrectCount());
+    }
+
+    @Test
+    @DisplayName("Abnormal & Boundary: JLPT N1 đạt 60/180 điểm dưới ngưỡng 100 điểm chuẩn mặc định -> FAILED")
+    void testJlptScoring_N1_ScoreBelow100_Fails() {
+        Exam mockExamN1 = new Exam(11L, "JLPT N1 Mock Exam", "JLPT_MOCK", "N1", 60, 0, null, "ACTIVE", "N1 Desc");
+        when(examRepository.findById(11L)).thenReturn(Optional.of(mockExamN1));
+        when(questionReader.findQuestionsForEvaluation(11L)).thenReturn(evaluationQuestions);
+
+        // Trả lời đúng câu 1 (Vocab: 60đ) < 100
+        Map<String, String> answers = Map.of(
+                "answer_101", "1001", // correct (Vocab: 60đ)
+                "answer_102", "1003", // incorrect (Reading)
+                "answer_103", "1006"  // incorrect (Listening)
+        );
+
+        ExamResultResponse result = examService.evaluateSubmission(11L, answers, 100);
+
+        assertFalse(result.getPassed(), "Score 60/180 must FAIL when N1 passing threshold is 100");
+        assertEquals(100, result.getPassingScore());
+    }
+
+    @Test
+    @DisplayName("Normal: JLPT N1 đạt full 180 điểm vượt ngưỡng mặc định 100 -> PASSED")
+    void testJlptScoring_N1_ScoreAbove100_Passes() {
+        Exam mockExamN1 = new Exam(11L, "JLPT N1 Mock Exam", "JLPT_MOCK", "N1", 60, 0, null, "ACTIVE", "N1 Desc");
+        when(examRepository.findById(11L)).thenReturn(Optional.of(mockExamN1));
+        when(questionReader.findQuestionsForEvaluation(11L)).thenReturn(evaluationQuestions);
+
+        Map<String, String> answers = Map.of(
+                "answer_101", "1001",
+                "answer_102", "1004",
+                "answer_103", "1005"
+        );
+
+        ExamResultResponse result = examService.evaluateSubmission(11L, answers, 200);
+
+        assertTrue(result.getPassed());
+        assertEquals(180, result.getScore());
+        assertEquals(100, result.getPassingScore());
+    }
+
+    @Test
+    @DisplayName("Boundary: evaluateSubmission với Map rỗng -> toàn bộ câu hỏi unanswered, 0 điểm, FAILED")
+    void testEvaluateSubmission_EmptyAnswersMap_FailsAll() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, Collections.emptyMap(), 0);
+
+        assertEquals(0, result.getScore());
+        assertEquals(0, result.getCorrectCount());
+        assertEquals(3, result.getUnansweredCount());
+        assertFalse(result.getPassed());
+    }
+
+    @Test
+    @DisplayName("Abnormal: evaluateSubmission với option ID định dạng không phải số -> xử lý an toàn không crash")
+    void testEvaluateSubmission_InvalidOptionIdFormat_HandledGracefully() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        Map<String, String> answers = Map.of("answer_101", "not-a-number");
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, answers, 10);
+
+        assertNotNull(result);
+        assertEquals(3, result.getUnansweredCount());
+        assertEquals(0, result.getCorrectCount());
+    }
+
+    @Test
+    @DisplayName("Abnormal: evaluateSubmission với option ID không tồn tại trong danh sách options của câu hỏi")
+    void testEvaluateSubmission_NonExistentOptionId_TreatedAsUnanswered() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+
+        Map<String, String> answers = Map.of("answer_101", "999999");
+
+        ExamResultResponse result = examService.evaluateSubmission(8L, answers, 10);
+
+        assertNotNull(result);
+        assertEquals(3, result.getUnansweredCount());
+        assertEquals(0, result.getCorrectCount());
+    }
+
+    @Test
+    @DisplayName("Normal & Boundary: evaluateSubmission cho PLACEMENT_TEST không có jlptLevel -> tính điểm thô diagnostic")
+    void testEvaluateSubmission_PlacementTest_NoJlptLevel_RawScoring() {
+        Exam rawPlacementExam = new Exam(25L, "Diagnostic Test", "PLACEMENT_TEST", null, null, 0, 30, "ACTIVE", "Placement raw");
+        when(examRepository.findById(25L)).thenReturn(Optional.of(rawPlacementExam));
+        when(questionReader.findQuestionsForEvaluation(25L)).thenReturn(evaluationQuestions);
+
+        Map<String, String> answers = Map.of(
+                "answer_101", "1001", // 15 pts
+                "answer_102", "1004"  // 15 pts
+        );
+
+        ExamResultResponse result = examService.evaluateSubmission(25L, answers, 60);
+
+        assertNotNull(result);
+        assertTrue(result.getPassed(), "Placement exam always passes");
+        assertNull(result.getPassingScore());
+        assertEquals(30, result.getScore()); // 15 + 15 = 30 raw score
+        assertEquals(45, result.getTotalPossibleScore()); // 3 questions x 15 pts = 45 total
+    }
+
+    @Test
+    @DisplayName("Abnormal: getHistoricalResult với param null ném ra 400 Bad Request")
+    void testGetHistoricalResult_NullParams_ThrowsBadRequest() {
+        ResponseStatusException ex1 = assertThrows(ResponseStatusException.class,
+                () -> examService.getHistoricalResult(null, 1L));
+        assertEquals(HttpStatus.BAD_REQUEST, ex1.getStatusCode());
+
+        ResponseStatusException ex2 = assertThrows(ResponseStatusException.class,
+                () -> examService.getHistoricalResult(100L, null));
+        assertEquals(HttpStatus.BAD_REQUEST, ex2.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Boundary: getHistoricalResult với đáp án lưu trữ không hợp lệ được xử lý an toàn")
+    void testGetHistoricalResult_InvalidSelectedOption_TreatedAsUnanswered() {
+        ExamResultResponse mockHist = ExamResultResponse.builder()
+                .examId(8L)
+                .jlptLevel("N4")
+                .examType("JLPT_MOCK")
+                .score(60)
+                .passed(false)
+                .build();
+
+        when(resultReader.findExamResultByIdAndUserId(100L, 1L)).thenReturn(Optional.of(mockHist));
+        when(questionReader.findQuestionsForEvaluation(8L)).thenReturn(evaluationQuestions);
+        when(resultReader.findSelectedOptionsByResultId(100L)).thenReturn(Map.of(101L, "invalid-opt-id"));
+
+        ExamResultResponse res = examService.getHistoricalResult(100L, 1L);
+
+        assertNotNull(res);
+        assertEquals(3, res.getUnansweredCount());
+        assertTrue(res.isDetailsAvailable());
+    }
+
+    @Test
+    @DisplayName("Normal: resolveStatusNotice cho PLACEMENT_TEST, MILESTONE và JLPT_MOCK")
+    void testResolveStatusNotice_AllTypes() {
+        // PLACEMENT_TEST notice
+        when(examRepository.findById(7L)).thenReturn(Optional.of(mockPlacementExam));
+        when(questionReader.findQuestionsForEvaluation(7L)).thenReturn(evaluationQuestions);
+        ExamResultResponse placementRes = examService.evaluateSubmission(7L, Collections.emptyMap(), 0);
+        assertTrue(placementRes.getStatusNotice().contains("Đánh giá năng lực đầu vào"));
+
+        // MILESTONE Pass notice
+        when(examRepository.findById(10L)).thenReturn(Optional.of(mockMilestoneExam));
+        when(questionReader.findQuestionsForEvaluation(10L)).thenReturn(evaluationQuestions);
+        Map<String, String> allCorrect = Map.of("answer_101", "1001", "answer_102", "1004", "answer_103", "1005");
+        ExamResultResponse milestonePass = examService.evaluateSubmission(10L, allCorrect, 50);
+        assertTrue(milestonePass.getStatusNotice().contains("Chúc mừng bạn đã hoàn thành bài kiểm tra cột mốc"));
+
+        // MILESTONE Fail notice
+        ExamResultResponse milestoneFail = examService.evaluateSubmission(10L, Collections.emptyMap(), 0);
+        assertTrue(milestoneFail.getStatusNotice().contains("Bạn chưa đạt điểm yêu cầu"));
+    }
+
+    @Test
+    @DisplayName("Security & Anti-leakage: getExamForTaking không làm lộ cờ đáp án đúng correct của câu hỏi")
+    void testGetExamForTaking_DoesNotExposeCorrectOptionAnswers() {
+        when(examRepository.findById(8L)).thenReturn(Optional.of(mockExamN4));
+        when(questionReader.findQuestionsForTaking(8L)).thenReturn(takingQuestions);
+
+        ExamTakeResponse response = examService.getExamForTaking(8L);
+
+        assertNotNull(response);
+        for (QuestionDto q : response.getQuestions()) {
+            assertNull(q.getExplanation(), "Explanation must NOT be leaked during taking");
+            for (OptionDto opt : q.getOptions()) {
+                assertNull(opt.getCorrect(), "Option 'correct' flag must NOT be exposed to learner during taking");
+            }
+        }
     }
 }
 
