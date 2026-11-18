@@ -104,7 +104,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
 
         for (int i = 1; i <= 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     99900L + i,
                     testCourse.getId(),
@@ -348,7 +348,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
                 .build());
         for (int i = 0; i < 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     88100L + i,
                     zeroBasedCourse.getId(),
@@ -428,7 +428,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
                 .build());
         for (int i = 1; i <= 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     88200L + i,
                     stepCourse.getId(),
@@ -570,7 +570,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
                 .build());
         for (int i = 1; i <= 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     88300L + i,
                     reorderCourse.getId(),

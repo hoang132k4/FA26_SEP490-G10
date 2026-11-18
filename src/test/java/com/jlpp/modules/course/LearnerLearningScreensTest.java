@@ -85,12 +85,12 @@ public class LearnerLearningScreensTest {
                 .build());
 
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, lesson1Id, course.getId(), "Bài 1: Khởi động N4", 1, "Chương 1: Mở đầu", 25, "VIDEO", "### Nội dung bài 1");
 
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, lesson2Id, course.getId(), "Bài 2: Ngữ pháp N4", 2, "Chương 1: Mở đầu", 30, "READING", "### Nội dung bài 2");
 

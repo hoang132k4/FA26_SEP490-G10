@@ -31,4 +31,12 @@ public class Exercise {
 
     @Column(name = "status")
     private String status;
+
+    public Long getId() {
+        return exerciseId;
+    }
+
+    public void setId(Long id) {
+        this.exerciseId = id;
+    }
 }

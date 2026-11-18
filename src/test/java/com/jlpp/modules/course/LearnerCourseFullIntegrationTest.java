@@ -117,17 +117,17 @@ public class LearnerCourseFullIntegrationTest {
 
         // Insert lessons for activeCourse
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, 95001L, activeCourse.getId(), "Bài 1: Khởi động N4", 1, "Chương 1", 20, "THEORY", "Nội dung bài 1");
 
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, 95002L, activeCourse.getId(), "Bài 2: Ngữ pháp N4", 2, "Chương 1", 25, "GRAMMAR", "Nội dung bài 2");
 
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, 95003L, activeCourse.getId(), "Bài 3: Luyện tập N4", 3, "Chương 2", 30, "READING", "Nội dung bài 3");
 

@@ -44,7 +44,7 @@ public class ManagerDashboardService {
 
         double passRate = totalAttempts > 0 ? Math.round(((double) passedAttempts / totalAttempts) * 1000.0) / 10.0 : 0.0;
 
-        Map<String, Long> coursesByLevel = queryLevelCounts("courses", "jlpt_level");
+        Map<String, Long> coursesByLevel = queryLevelCounts("courses", "level");
         Map<String, Long> questionsByLevel = queryLevelCounts("questions", "jlpt_level");
 
         List<ManagerDashboardData.RecentCourse> recentCourses = queryRecentCourses();
@@ -111,7 +111,7 @@ public class ManagerDashboardService {
     private List<ManagerDashboardData.RecentCourse> queryRecentCourses() {
         try {
             String sql = """
-                    SELECT c.course_id, c.course_title, c.jlpt_level, c.status,
+                    SELECT c.course_id, c.title AS course_title, c.level AS jlpt_level, c.status,
                            (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.course_id) AS lesson_count
                     FROM courses c
                     ORDER BY c.course_id DESC
@@ -139,7 +139,7 @@ public class ManagerDashboardService {
                            e.exam_title, e.jlpt_level, r.total_score, r.percentage, r.passed_status, r.end_time
                     FROM exam_results r
                     JOIN exams e ON e.exam_id = r.exam_id
-                    LEFT JOIN users u ON u.id = r.user_id
+                    LEFT JOIN users u ON u.user_id = r.user_id
                     ORDER BY r.end_time DESC NULLS LAST
                     LIMIT 5
                     """;
@@ -163,10 +163,10 @@ public class ManagerDashboardService {
         try {
             String sql = """
                     SELECT r.user_id, COALESCE(u.full_name, u.username, u.email, 'Học viên') AS learner_name,
-                           c.course_title, c.jlpt_level, r.progress_percent, r.status, r.registered_at
+                           c.title AS course_title, c.level AS jlpt_level, r.progress_percent, r.status, r.registered_at
                     FROM course_registrations r
                     JOIN courses c ON c.course_id = r.course_id
-                    LEFT JOIN users u ON u.id = r.user_id
+                    LEFT JOIN users u ON u.user_id = r.user_id
                     ORDER BY r.registered_at DESC NULLS LAST
                     LIMIT 5
                     """;

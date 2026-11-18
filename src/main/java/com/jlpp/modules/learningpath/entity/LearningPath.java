@@ -51,4 +51,12 @@ public class LearningPath {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "lesson_progress", columnDefinition = "jsonb")
     private String lessonProgress;
+
+    public Long getLearningPathId() {
+        return id;
+    }
+
+    public void setLearningPathId(Long learningPathId) {
+        this.id = learningPathId;
+    }
 }

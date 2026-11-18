@@ -48,9 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // The production schema keys lessons by lesson_id; the H2 schema generated from JPA entities lacks that column.
 @Sql(statements = {
         "ALTER TABLE lessons ADD COLUMN IF NOT EXISTS lesson_id BIGINT",
-        "ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_id BIGINT",
-        "ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_title VARCHAR(255)",
-        "ALTER TABLE courses ADD COLUMN IF NOT EXISTS jlpt_level VARCHAR(10)"
+        "ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_id BIGINT"
 }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class ManagerQuizIntegrationTest {
 
@@ -63,8 +61,8 @@ class ManagerQuizIntegrationTest {
 
     @BeforeEach
     void seedLesson() {
-        jdbc.update("INSERT INTO lessons (id, lesson_id, title, lesson_title, section_name, order_index) VALUES (?, ?, ?, ?, ?, 1)",
-                LESSON_ID, LESSON_ID, MARK + "Bài 1", MARK + "Bài 1", MARK + "Chương 1");
+        jdbc.update("INSERT INTO lessons (lesson_id, title, section_name, order_index) VALUES (?, ?, ?, 1)",
+                LESSON_ID, MARK + "Bài 1", MARK + "Chương 1");
     }
 
     @Test

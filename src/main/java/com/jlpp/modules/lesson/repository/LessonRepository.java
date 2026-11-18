@@ -15,8 +15,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     @Query("""
             select new com.jlpp.modules.lesson.dto.LessonPreview(
                 lesson.lessonId,
-                coalesce(lesson.lessonTitle, lesson.title),
-                coalesce(lesson.orderIndex, lesson.lessonOrder),
+                lesson.title,
+                lesson.orderIndex,
                 lesson.skillType,
                 lesson.estimatedDuration,
                 lesson.durationMinutes,
@@ -25,7 +25,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
             )
             from PublicLesson lesson
             where lesson.courseId = :courseId
-            order by coalesce(lesson.orderIndex, lesson.lessonOrder), lesson.lessonId
+            order by lesson.orderIndex, lesson.lessonId
             """)
     List<LessonPreview> findPreviewsByCourseId(@Param("courseId") Long courseId);
 }

@@ -115,7 +115,7 @@ public class LearnerQuizFullIntegrationTest {
                 .build());
 
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, testLessonId, course.getId(), "Bài 1: Trắc nghiệm ngữ pháp", 1, "Chương 1", 20, "QUIZ", "Nội dung bài học");
 

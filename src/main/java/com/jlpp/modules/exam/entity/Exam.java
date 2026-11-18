@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -28,6 +30,9 @@ public class Exam {
 
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
+
+    @Column(name = "total_points")
+    private Integer totalPoints;
 
     @Column(name = "total_questions")
     private Integer totalQuestions;
@@ -78,10 +83,25 @@ public class Exam {
         this.courseId = courseId;
     }
 
+    @PrePersist
+    @PreUpdate
+    public void syncExamColumns() {
+        if (totalPoints == null) {
+            totalPoints = totalQuestions != null ? totalQuestions : 100;
+        }
+    }
+
     public Long getExamId() { return examId; }
     public Long getId() { return examId; }
+    public void setExamId(Long examId) { this.examId = examId; }
+    public void setId(Long id) { this.examId = id; }
     public String getExamTitle() { return examTitle; }
     public String getTitle() { return examTitle; }
+    public void setTitle(String title) { this.examTitle = title; }
+    public Integer getDuration() { return durationMinutes; }
+    public void setDuration(Integer duration) { this.durationMinutes = duration; }
+    public Integer getTotalPoints() { return totalPoints; }
+    public void setTotalPoints(Integer totalPoints) { this.totalPoints = totalPoints; }
     public String getExamType() { return examType; }
     public String getJlptLevel() { return jlptLevel; }
     public String getLevel() { return jlptLevel; }

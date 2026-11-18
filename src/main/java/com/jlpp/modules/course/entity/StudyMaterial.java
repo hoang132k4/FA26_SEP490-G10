@@ -48,6 +48,14 @@ public class StudyMaterial {
     @Builder.Default
     private String status = "ACTIVE";
 
+    public Long getId() {
+        return materialId;
+    }
+
+    public void setId(Long id) {
+        this.materialId = id;
+    }
+
     // Formatted helper methods
     public String getFormattedTypeBadge() {
         if (materialType == null) return "Tài liệu";
