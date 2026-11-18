@@ -65,19 +65,19 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         }
 
         // Populate legacy inferred count snapshot if not yet set and registration exists
-        if (dto.getLegacyInferredCount() == null) {
-            if (dto.getLessons().isEmpty()) {
-                Optional<CourseRegistration> regOpt = courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId);
-                if (regOpt.isPresent()) {
-                    int currentPercent = regOpt.get().getProgressPercent() != null ? regOpt.get().getProgressPercent() : 0;
-                    int totalLessons = lessonRepository.countByCourseId(courseId);
-                    int legacyCount = (totalLessons > 0 && currentPercent > 0)
-                            ? (int) Math.round((currentPercent / 100.0) * totalLessons)
-                            : 0;
-                    dto.setLegacyInferredCount(legacyCount);
-                }
-            } else {
-                dto.setLegacyInferredCount(0);
+        Optional<CourseRegistration> regOpt = courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId);
+        if (regOpt.isPresent()) {
+            int currentPercent = regOpt.get().getProgressPercent() != null ? regOpt.get().getProgressPercent() : 0;
+            int totalLessons = lessonRepository.countByCourseId(courseId);
+            int inferredFromPercent = (totalLessons > 0 && currentPercent > 0)
+                    ? (int) Math.round((currentPercent / 100.0) * totalLessons)
+                    : 0;
+
+            if (dto.getLegacyInferredCount() == null) {
+                int legacyCount = Math.max(0, inferredFromPercent - dto.getLessons().size());
+                dto.setLegacyInferredCount(legacyCount);
+            } else if (dto.getLegacyInferredCount() < inferredFromPercent && dto.getLessons().isEmpty()) {
+                dto.setLegacyInferredCount(inferredFromPercent);
             }
         }
         return dto;
@@ -167,17 +167,16 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
         int totalLessons = courseLessons.size();
 
+        int currentPercent = reg.getProgressPercent() != null ? reg.getProgressPercent() : 0;
+        int inferredFromPercent = (totalLessons > 0 && currentPercent > 0)
+                ? (int) Math.round((currentPercent / 100.0) * totalLessons)
+                : 0;
+
         if (progressDto.getLegacyInferredCount() == null) {
-            if (progressDto.getLessons().isEmpty()) {
-                // Initial adoption: snapshot pre-existing progress_percent BEFORE adding new verified lessons
-                int currentPercent = reg.getProgressPercent() != null ? reg.getProgressPercent() : 0;
-                int legacyCount = (totalLessons > 0 && currentPercent > 0)
-                        ? (int) Math.round((currentPercent / 100.0) * totalLessons)
-                        : 0;
-                progressDto.setLegacyInferredCount(legacyCount);
-            } else {
-                progressDto.setLegacyInferredCount(0);
-            }
+            int legacyCount = Math.max(0, inferredFromPercent - progressDto.getLessons().size());
+            progressDto.setLegacyInferredCount(legacyCount);
+        } else if (progressDto.getLegacyInferredCount() < inferredFromPercent && progressDto.getLessons().isEmpty()) {
+            progressDto.setLegacyInferredCount(inferredFromPercent);
         }
 
         // 6. Record verified completion
@@ -229,7 +228,8 @@ public class LessonProgressServiceImpl implements LessonProgressService {
                     .filter(l -> progressDto.isLessonCompleted(l.getId()) || legacyInferredLessonIds.contains(l.getId()))
                     .count();
 
-            int newPercent = Math.min(100, (int) Math.round((completedCount * 100.0) / totalLessons));
+            int calculatedPercent = Math.min(100, (int) Math.round((completedCount * 100.0) / totalLessons));
+            int newPercent = Math.max(currentPercent, calculatedPercent);
             reg.setProgressPercent(newPercent);
             if (newPercent >= 100) {
                 reg.setStatus("COMPLETED");
@@ -251,12 +251,11 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         }
 
         // Legacy compatibility fallback:
-        // Use frozen legacyInferredCount, NEVER the dynamic registrationProgressPercent which reflects new completions!
-        int legacyCount = progressDto.getLegacyInferredCount() != null
+        int legacyCount = (progressDto.getLegacyInferredCount() != null && progressDto.getLegacyInferredCount() > 0)
                 ? progressDto.getLegacyInferredCount()
                 : (progressDto.getLessons().isEmpty() && registrationProgressPercent > 0 && totalCourseLessons > 0
                     ? (int) Math.round((registrationProgressPercent / 100.0) * totalCourseLessons)
-                    : 0);
+                    : (progressDto.getLegacyInferredCount() != null ? progressDto.getLegacyInferredCount() : 0));
 
         if (legacyCount > 0) {
             // Check 1-based sequential position if valid (1 <= lessonOrderIndex <= totalCourseLessons)
@@ -307,6 +306,19 @@ public class LessonProgressServiceImpl implements LessonProgressService {
                 }
                 if (node != null && node.isObject()) {
                     return objectMapper.treeToValue(node, LearningPathProgressDto.class);
+                } else if (node != null && node.isArray()) {
+                    LearningPathProgressDto dto = new LearningPathProgressDto();
+                    for (com.fasterxml.jackson.databind.JsonNode item : node) {
+                        if (item.has("lessonId")) {
+                            long lId = item.get("lessonId").asLong();
+                            String completedAt = item.has("completedAt") ? item.get("completedAt").asText() : Instant.now().toString();
+                            dto.getLessons().put(String.valueOf(lId), LessonProgressItemDto.builder()
+                                    .status("COMPLETED")
+                                    .completedAt(completedAt)
+                                    .build());
+                        }
+                    }
+                    return dto;
                 }
             } catch (Exception e) {
                 log.warn("Failed to parse lesson_progress JSON: {}", e.getMessage());
