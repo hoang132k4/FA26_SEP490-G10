@@ -4,11 +4,8 @@ import com.jlpp.modules.quiz.dto.ExerciseQuestionRow;
 import com.jlpp.modules.quiz.dto.LessonOption;
 import com.jlpp.modules.quiz.dto.QuizOption;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -102,23 +99,19 @@ public class ManagerQuizRepository {
                 "SELECT EXISTS (SELECT 1 FROM lessons WHERE lesson_id = ?)", Boolean.class, lessonId));
     }
 
+    /** exercises.lesson_id is UNIQUE in the database. */
+    public boolean lessonHasOtherQuiz(long lessonId, Long excludeQuizId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM exercises WHERE lesson_id = ? AND exercise_id <> ?)",
+                Boolean.class, lessonId, excludeQuizId == null ? -1L : excludeQuizId));
+    }
+
     public long count() { return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM exercises", Long.class); }
 
-    public long insert(long lessonId, String title, int passingScore, String status) {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO exercises (lesson_id, exercise_title, total_questions, passing_score, status) VALUES (?, ?, 0, ?, ?)",
-                    new String[] {"exercise_id"});
-            statement.setLong(1, lessonId);
-            statement.setString(2, title);
-            statement.setInt(3, passingScore);
-            statement.setString(4, status);
-            return statement;
-        }, keyHolder);
-        Number key = keyHolder.getKey();
-        if (key == null) throw new IllegalStateException("Database không trả về mã quiz mới.");
-        return key.longValue();
+    public void insert(long lessonId, String title, int passingScore, String status) {
+        jdbcTemplate.update(
+                "INSERT INTO exercises (lesson_id, exercise_title, total_questions, passing_score, status) VALUES (?, ?, 0, ?, ?)",
+                lessonId, title, passingScore, status);
     }
 
     public int update(long id, long lessonId, String title, int passingScore, String status) {
@@ -144,33 +137,61 @@ public class ManagerQuizRepository {
                 FROM exercise_questions eq
                 JOIN questions q ON q.id = eq.question_id
                 WHERE eq.exercise_id = ?
-                ORDER BY eq.question_id
+                ORDER BY eq.question_order, eq.question_id
                 """, (rs, row) -> new ExerciseQuestionRow(
                         rs.getLong("id"), rs.getString("content"), rs.getString("question_type"),
                         rs.getString("jlpt_level"), rs.getString("skill_type")),
                 exerciseId);
     }
 
-    public long countExerciseQuestions(long exerciseId) {
-        Long c = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM exercise_questions WHERE exercise_id = ?", Long.class, exerciseId);
-        return c != null ? c : 0;
+    public List<Long> findInactiveQuestionIds(long exerciseId) {
+        return jdbcTemplate.queryForList("""
+                SELECT q.id FROM exercise_questions eq
+                JOIN questions q ON q.id = eq.question_id
+                WHERE eq.exercise_id = ? AND q.status <> 'ACTIVE'
+                ORDER BY q.id
+                """, Long.class, exerciseId);
     }
 
-    public List<ExerciseQuestionRow> findAvailableQuestions(long exerciseId, String jlptLevel, String skillType) {
-        return jdbcTemplate.query("""
-                SELECT q.id, q.content, q.question_type, q.jlpt_level, q.skill_type
-                FROM questions q
-                WHERE q.status = 'ACTIVE'
-                  AND q.parent_id IS NULL
-                  AND q.id NOT IN (SELECT eq.question_id FROM exercise_questions eq WHERE eq.exercise_id = ?)
-                  AND (? = '' OR q.jlpt_level = ?)
-                  AND (? = '' OR q.skill_type = ?)
-                ORDER BY q.id DESC
-                """, (rs, row) -> new ExerciseQuestionRow(
+    public long countExerciseQuestions(long exerciseId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM exercise_questions WHERE exercise_id = ?", Long.class, exerciseId);
+    }
+
+    private static final String AVAILABLE_QUESTIONS_WHERE = """
+            WHERE q.status = 'ACTIVE'
+              AND q.parent_id IS NULL
+              AND q.id NOT IN (SELECT eq.question_id FROM exercise_questions eq WHERE eq.exercise_id = ?)
+              AND (? = '' OR q.jlpt_level = ?)
+              AND (? = '' OR q.skill_type = ?)
+            """;
+
+    public List<ExerciseQuestionRow> findAvailableQuestions(long exerciseId, String jlptLevel, String skillType,
+                                                            int limit, long offset) {
+        return jdbcTemplate.query("SELECT q.id, q.content, q.question_type, q.jlpt_level, q.skill_type FROM questions q "
+                        + AVAILABLE_QUESTIONS_WHERE + " ORDER BY q.id DESC LIMIT ? OFFSET ?",
+                (rs, row) -> new ExerciseQuestionRow(
                         rs.getLong("id"), rs.getString("content"), rs.getString("question_type"),
                         rs.getString("jlpt_level"), rs.getString("skill_type")),
-                exerciseId, jlptLevel, jlptLevel, skillType, skillType);
+                exerciseId, jlptLevel, jlptLevel, skillType, skillType, limit, offset);
+    }
+
+    public long countAvailableQuestions(long exerciseId, String jlptLevel, String skillType) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM questions q " + AVAILABLE_QUESTIONS_WHERE,
+                Long.class, exerciseId, jlptLevel, jlptLevel, skillType, skillType);
+    }
+
+    /** Câu đơn ACTIVE chưa có trong quiz; bỏ qua bài đọc/nghe dạng PASSAGE vì quiz chưa hiển thị được câu con. */
+    public List<Long> findGeneratableQuestionIds(long exerciseId, String jlptLevel, String skillType) {
+        return jdbcTemplate.queryForList("""
+                SELECT q.id FROM questions q
+                WHERE q.status = 'ACTIVE'
+                  AND q.parent_id IS NULL
+                  AND q.question_type <> 'PASSAGE'
+                  AND q.jlpt_level = ?
+                  AND q.skill_type = ?
+                  AND q.id NOT IN (SELECT eq.question_id FROM exercise_questions eq WHERE eq.exercise_id = ?)
+                """, Long.class, jlptLevel, skillType, exerciseId);
     }
 
     public boolean exerciseQuestionExists(long exerciseId, long questionId) {
@@ -180,8 +201,10 @@ public class ManagerQuizRepository {
     }
 
     public void insertExerciseQuestion(long exerciseId, long questionId) {
-        jdbcTemplate.update("INSERT INTO exercise_questions (exercise_id, question_id) VALUES (?, ?)",
-                exerciseId, questionId);
+        jdbcTemplate.update("""
+                INSERT INTO exercise_questions (exercise_id, question_id, question_order)
+                SELECT ?, ?, COALESCE(MAX(question_order), 0) + 1 FROM exercise_questions WHERE exercise_id = ?
+                """, exerciseId, questionId, exerciseId);
     }
 
     public int deleteExerciseQuestion(long exerciseId, long questionId) {

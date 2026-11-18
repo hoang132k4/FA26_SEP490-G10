@@ -9,6 +9,9 @@ import com.jlpp.modules.question.repository.QuestionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,26 +28,28 @@ public class ManagerQuestionService {
         this.objectMapper = objectMapper;
     }
 
+    public static final int PAGE_SIZE = 20;
+
     @Transactional(readOnly = true)
-    public List<QuestionListRow> search(String search, String questionType,
-                                         String jlptLevel, String skillType, String status) {
-        List<Question> questions = questionRepository.searchForManager(
+    public Page<QuestionListRow> search(String search, String questionType,
+                                        String jlptLevel, String skillType, String status, int page) {
+        Page<Question> questions = questionRepository.searchForManager(
                 norm(search), norm(questionType),
-                norm(jlptLevel), norm(skillType), norm(status));
-        if (questions.isEmpty()) return List.of();
+                norm(jlptLevel), norm(skillType), norm(status),
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE));
+        if (questions.isEmpty()) return new PageImpl<>(List.of(), questions.getPageable(), questions.getTotalElements());
 
         List<Long> ids = questions.stream().map(Question::getId).toList();
         Map<Long, Long> examCounts = toBatchMap(questionRepository.batchCountExamUsages(ids));
         Map<Long, Long> quizCounts = toBatchMap(questionRepository.batchCountQuizUsages(ids));
         Map<Long, Long> childCounts = toBatchMap(questionRepository.batchCountChildren(ids));
 
-        return questions.stream().map(q -> new QuestionListRow(
+        return questions.map(q -> new QuestionListRow(
                 q.getId(), q.getContent(), q.getQuestionType(),
                 q.getJlptLevel(), q.getSkillType(), q.getStatus(),
                 examCounts.getOrDefault(q.getId(), 0L),
                 quizCounts.getOrDefault(q.getId(), 0L),
-                childCounts.getOrDefault(q.getId(), 0L)
-        )).toList();
+                childCounts.getOrDefault(q.getId(), 0L)));
     }
 
     @Transactional(readOnly = true)
@@ -140,7 +145,7 @@ public class ManagerQuestionService {
         return new ManagerQuestionOptions(
                 Arrays.stream(QuestionTypeEnum.values()).map(Enum::name).toList(),
                 Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList(),
-                Arrays.stream(SkillTypeEnum.values()).map(Enum::name).toList(),
+                SkillTypeEnum.questionSkillNames(),
                 Arrays.stream(QuestionStatusEnum.values()).map(Enum::name).toList()
         );
     }
@@ -191,7 +196,7 @@ public class ManagerQuestionService {
             throw new IllegalArgumentException("Cấp độ JLPT không hợp lệ.");
         }
         if (form.getSkillType() != null && !form.getSkillType().isBlank()
-                && Arrays.stream(SkillTypeEnum.values()).noneMatch(v -> v.name().equals(form.getSkillType()))) {
+                && !SkillTypeEnum.questionSkillNames().contains(form.getSkillType())) {
             throw new IllegalArgumentException("Loại kỹ năng không hợp lệ.");
         }
         if (!"PASSAGE".equals(form.getQuestionType())) {
@@ -201,9 +206,7 @@ public class ManagerQuestionService {
             if (form.getAnswerKeys() == null || form.getAnswerKeys().isEmpty()) {
                 throw new IllegalArgumentException("Vui lòng chọn đáp án đúng.");
             }
-            List<String> validKeys = new ArrayList<>();
-            if (!isBlank(form.getOptionA())) validKeys.add("A");
-            if (!isBlank(form.getOptionB())) validKeys.add("B");
+            List<String> validKeys = new ArrayList<>(List.of("A", "B"));
             if (!isBlank(form.getOptionC())) validKeys.add("C");
             if (!isBlank(form.getOptionD())) validKeys.add("D");
             for (String key : form.getAnswerKeys()) {
@@ -226,10 +229,11 @@ public class ManagerQuestionService {
         }
     }
 
+    /** validateDomain has already required options A and B. */
     private String buildOptionsJson(ManagerQuestionForm form) {
         List<Map<String, String>> opts = new ArrayList<>();
-        if (!isBlank(form.getOptionA())) opts.add(Map.of("key", "A", "text", form.getOptionA().trim()));
-        if (!isBlank(form.getOptionB())) opts.add(Map.of("key", "B", "text", form.getOptionB().trim()));
+        opts.add(Map.of("key", "A", "text", form.getOptionA().trim()));
+        opts.add(Map.of("key", "B", "text", form.getOptionB().trim()));
         if (!isBlank(form.getOptionC())) opts.add(Map.of("key", "C", "text", form.getOptionC().trim()));
         if (!isBlank(form.getOptionD())) opts.add(Map.of("key", "D", "text", form.getOptionD().trim()));
         return toJson(opts);
@@ -256,11 +260,7 @@ public class ManagerQuestionService {
     }
 
     private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Lỗi tạo JSON.", e);
-        }
+        return objectMapper.valueToTree(value).toString();
     }
 
     private Map<Long, Long> toBatchMap(List<Object[]> rows) {

@@ -35,7 +35,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0}
     username: ${SPRING_DATASOURCE_USERNAME:postgres.eztcijnvnmcievogjufk}
-    password: ${SPRING_DATASOURCE_PASSWORD:Cme85Dpt1b2HwrBQ}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -60,7 +60,7 @@ spring:
     host: ${SPRING_MAIL_HOST:smtp.gmail.com}
     port: ${SPRING_MAIL_PORT:587}
     username: ${SPRING_MAIL_USERNAME:phanmanh14122000@gmail.com}
-    password: ${SPRING_MAIL_PASSWORD:nfcqielpfwmsfjbw}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         debug: true

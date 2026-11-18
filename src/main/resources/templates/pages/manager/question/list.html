@@ -106,12 +106,14 @@
                         </a>
                     </td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(questions)}">
+                <tr th:if="${questions.isEmpty()}">
                     <td colspan="7" class="text-center text-muted py-5">Không tìm thấy câu hỏi.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
+    <div th:replace="~{fragments/components/pagination :: pagination(${questions}, ${pageUrl})}"></div>
+    <div th:replace="~{fragments/components/page-jump :: pageJump(${questions}, ${pageUrl})}"></div>
 </div>
 </div>

@@ -364,6 +364,15 @@ public class LessonDetailService {
         if (meaning.isBlank() && grammarEntry != null) {
             meaning = string(grammarEntry, "meaning");
         }
+        // Strict guard: Grammar meaning must NEVER be the lesson title or contain "Bài ", "Ngữ pháp", "Mẫu câu"
+        if (meaning != null && !meaning.isBlank()) {
+            String lower = meaning.trim().toLowerCase();
+            String titleLower = lesson.title() != null ? lesson.title().trim().toLowerCase() : "";
+            if (lower.startsWith("bài ") || lower.contains("ngữ pháp") || lower.contains("mẫu câu")
+                    || (!titleLower.isEmpty() && (lower.equals(titleLower) || lower.replace("–", "-").equals(titleLower.replace("–", "-"))))) {
+                meaning = "";
+            }
+        }
         result.put("meaning", meaning);
 
         String formation = string(payloadMap, "formation");

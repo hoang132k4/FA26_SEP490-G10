@@ -266,12 +266,26 @@
                                 <span class="badge bg-warning text-dark font-monospace small" style="font-size: 0.72rem;">Audio Track</span>
                             </div>
                             <p class="text-white-50 small mb-2" th:if="${audioMat.description != null}" th:text="${audioMat.description}">Mô tả bài nghe</p>
-                            <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
-                                <source th:src="${audioMat.audioUrl}" type="audio/wav">
-                                <source th:src="${audioMat.audioUrl}" type="audio/ogg">
-                                <source th:src="${audioMat.audioUrl}" type="audio/mpeg">
-                                Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
-                            </audio>
+                            <div class="audio-player-wrapper">
+                                <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                                    <source th:src="${audioMat.audioUrl}" type="audio/wav">
+                                    <source th:src="${audioMat.audioUrl}" type="audio/ogg">
+                                    <source th:src="${audioMat.audioUrl}" type="audio/mpeg">
+                                    Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
+                                </audio>
+                                <div class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="text-white-50 me-1 small"><i class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 0.75)">0.75x</button>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.25)">1.25x</button>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, -5)" title="Tua lùi 5 giây"><i class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, 5)" title="Tua tới 5 giây">+5s<i class="bi bi-arrow-clockwise ms-0.5"></i></button>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Collapsible Transcript if bodyContent is available -->
                             <div th:if="${audioMat.bodyContent != null and !audioMat.bodyContent.isBlank()}" class="mt-2">
@@ -299,11 +313,25 @@
                                 <span class="badge bg-warning text-dark font-monospace small" style="font-size: 0.72rem;">Audio Track</span>
                             </div>
                             <p class="text-white-50 small mb-2" th:text="${lesson.description != null ? lesson.description : 'Nghe đoạn hội thoại mẫu giọng chuẩn Tokyo và luyện phản xạ câu hỏi.'}">Mô tả</p>
-                            <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm">
-                                <source src="/audio/japanese_conversation_audio.wav" type="audio/wav">
-                                <source src="/audio/coffee_shop.ogg" type="audio/ogg">
-                                Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
-                            </audio>
+                            <div class="audio-player-wrapper">
+                                <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm">
+                                    <source src="/audio/japanese_conversation_audio.wav" type="audio/wav">
+                                    <source src="/audio/coffee_shop.ogg" type="audio/ogg">
+                                    Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
+                                </audio>
+                                <div class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="text-white-50 me-1 small"><i class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 0.75)">0.75x</button>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.25)">1.25x</button>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, -5)" title="Tua lùi 5 giây"><i class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
+                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, 5)" title="Tua tới 5 giây">+5s<i class="bi bi-arrow-clockwise ms-0.5"></i></button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,7 +396,13 @@
                                         <span class="kanji-compound-furigana"
                                             th:text="${comp['compoundReading'] != null and !#strings.isEmpty(comp['compoundReading']) ? comp['compoundReading'] : comp['reading']}">ふりがな</span>
                                         <span class="kanji-compound-word"
-                                            th:text="${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['word']}">漢字</span>
+                                            th:text="${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['compoundWord'] : comp['word']}">漢字</span>
+                                        <button type="button" class="btn btn-sm btn-link text-primary p-0 ms-1 border-0"
+                                            th:attr="data-speak=${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['compoundWord'] : comp['word']}"
+                                            onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                            title="Nghe phát âm chuẩn">
+                                            <i class="bi bi-volume-up-fill"></i>
+                                        </button>
                                     </div>
                                     <div class="kanji-compound-meaning"
                                         th:text="${comp['compoundMeaning'] != null and !#strings.isEmpty(comp['compoundMeaning']) ? comp['compoundMeaning'] : comp['meaning']}">
@@ -381,7 +415,7 @@
                 </div>
 
                 <!-- 2. GRAMMAR STUDY BOARD (Chỉ hiện khi có từ điển mẫu câu thực sự, KHÔNG hiện tiêu đề bài học làm ý nghĩa giả) -->
-                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.grammarDetail != null and ((studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning'])) or (studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])))}"
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.grammarDetail != null and (((studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Bài ') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Ngữ pháp & Mẫu câu') and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title))) or (studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])))}"
                     class="grammar-study-board mb-4">
                     <div class="grammar-study-card">
                         <!-- CẤU TRÚC KẾT HỢP -->
@@ -403,8 +437,8 @@
                                 trúc ngữ pháp</div>
                         </div>
 
-                        <!-- Ý NGHĨA (CHỈ HIỂN THỊ KHI CÓ Ý NGHĨA THỰC SỰ TRONG TỪ ĐIỂN) -->
-                        <div th:if="${studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title)}">
+                        <!-- Ý NGHĨA (CHỈ HIỂN THỊ KHI CÓ Ý NGHĨA THỰC SỰ TRONG TỪ ĐIỂN, TUYỆT ĐỐI KHÔNG HIỂN THỊ TIÊU ĐỀ BÀI HỌC) -->
+                        <div th:if="${studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Bài ') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Ngữ pháp & Mẫu câu') and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title)}">
                             <hr class="grammar-dashed-line">
                             <div class="grammar-meaning-wrap">
                                 <span class="grammar-meaning-label">Ý nghĩa:</span>
@@ -429,7 +463,14 @@
                             <div class="grammar-ex-item" th:each="ex : ${studyView.grammarDetail['examples']}">
                                 <span class="grammar-ex-bullet">•</span>
                                 <div class="grammar-ex-content">
-                                    <strong class="grammar-ex-jp" th:text="${ex['jp']}">日本語は、勉強すればするほど面白くなる。</strong>
+                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                        <strong class="grammar-ex-jp" th:text="${ex['jp']}">日本語は、勉強すればするほど面白くなる。</strong>
+                                        <button type="button" class="btn btn-sm btn-link text-primary p-0 border-0"
+                                            th:attr="data-speak=${ex['jp']}" onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                            title="Nghe phát âm câu ví dụ">
+                                            <i class="bi bi-volume-up-fill"></i>
+                                        </button>
+                                    </div>
                                     <span class="grammar-ex-vi"
                                         th:if="${ex['vi'] != null and !#strings.isEmpty(ex['vi'])}"
                                         th:text="|(${ex['vi']})|">(Càng học tiếng Nhật càng thấy thú vị.)</span>
@@ -450,6 +491,12 @@
                             <div class="vocab-info-col">
                                 <div class="vocab-header-line">
                                     <span class="vocab-word" th:text="${vWord['word']}">単語</span>
+                                    <button type="button" class="btn btn-sm btn-link text-primary p-0 ms-1 border-0"
+                                        th:attr="data-speak=${vWord['word']}"
+                                        onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                        title="Nghe phát âm từ vựng">
+                                        <i class="bi bi-volume-up-fill"></i>
+                                    </button>
                                     <span class="vocab-pos"
                                         th:if="${vWord['partOfSpeech'] != null and !#strings.isEmpty(vWord['partOfSpeech'])}"
                                         th:text="${vWord['partOfSpeech']}">(N)</span>
@@ -477,7 +524,14 @@
                                     <div class="vocab-example-item" th:each="ex : ${vWord['examples']}">
                                         <span class="vocab-bullet">•</span>
                                         <div class="vocab-example-text-wrap">
-                                            <span class="vocab-ex-jp" th:text="${ex['jp']}">毎日新しい単語を覚えます。</span>
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                <span class="vocab-ex-jp" th:text="${ex['jp']}">毎日新しい単語を覚えます。</span>
+                                                <button type="button" class="btn btn-sm btn-link text-primary p-0 border-0"
+                                                    th:attr="data-speak=${ex['jp']}" onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                                    title="Nghe phát âm câu ví dụ">
+                                                    <i class="bi bi-volume-up-fill"></i>
+                                                </button>
+                                            </div>
                                             <span class="vocab-ex-vi"
                                                 th:if="${ex['vi'] != null and !#strings.isEmpty(ex['vi'])}"
                                                 th:text="|(${ex['vi']})|">(Mỗi ngày tôi đều ghi nhớ từ mới.)</span>
@@ -935,6 +989,43 @@
         <!-- Markdown Parser Library (marked.js) for rendering formatted lesson contents -->
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <script>
+            function speakJapanese(text) {
+                if (!text || !('speechSynthesis' in window)) return;
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ja-JP';
+                    utterance.rate = 0.85;
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {
+                    console.warn('Speech synthesis error:', e);
+                }
+            }
+
+            function setAudioSpeed(btn, speed) {
+                const card = btn.closest('.audio-player-wrapper, .bg-white.bg-opacity-10, .card');
+                if (!card) return;
+                const audio = card.querySelector('audio');
+                if (audio) {
+                    audio.playbackRate = speed;
+                    card.querySelectorAll('.audio-speed-btn').forEach(b => {
+                        b.classList.remove('active', 'btn-warning', 'text-dark');
+                        b.classList.add('btn-outline-light', 'text-white');
+                    });
+                    btn.classList.add('active', 'btn-warning', 'text-dark');
+                    btn.classList.remove('btn-outline-light', 'text-white');
+                }
+            }
+
+            function skipAudio(btn, seconds) {
+                const card = btn.closest('.audio-player-wrapper, .bg-white.bg-opacity-10, .card');
+                if (!card) return;
+                const audio = card.querySelector('audio');
+                if (audio) {
+                    audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + seconds));
+                }
+            }
+
             function selectQuizOption(el) {
                 if (!el) return;
                 const parent = el.closest('.interactive-options');
@@ -1023,57 +1114,108 @@
         </script>
         <style>
             .markdown-body {
-                line-height: 1.8;
-                color: #334155;
+                line-height: 1.85;
+                color: #2d3748;
+                font-size: 1.02rem;
             }
 
-            .markdown-body h1,
-            .markdown-body h2,
-            .markdown-body h3,
-            .markdown-body h4 {
+            .markdown-body h1 {
                 color: var(--navy-dark);
+                font-size: 1.65rem;
+                font-weight: 800;
+                margin-top: 1.8rem;
+                margin-bottom: 1rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 2px solid #e2e8f0;
+            }
+
+            .markdown-body h2 {
+                color: var(--navy-dark);
+                font-size: 1.4rem;
+                font-weight: 750;
+                margin-top: 1.6rem;
+                margin-bottom: 0.85rem;
+                padding-bottom: 0.35rem;
+                border-bottom: 1.5px solid #edf2f7;
+            }
+
+            .markdown-body h3 {
+                color: #1e3a8a;
+                font-size: 1.25rem;
                 font-weight: 700;
-                margin-top: 1.5rem;
-                margin-bottom: 0.8rem;
+                margin-top: 1.7rem;
+                margin-bottom: 0.85rem;
+                padding: 6px 14px;
+                background: linear-gradient(90deg, rgba(239, 246, 255, 0.95) 0%, rgba(248, 250, 252, 0.4) 100%);
+                border-left: 4px solid #3b82f6;
+                border-radius: 0 8px 8px 0;
+            }
+
+            .markdown-body h4 {
+                color: #334155;
+                font-size: 1.1rem;
+                font-weight: 650;
+                margin-top: 1.3rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .markdown-body strong {
+                color: #0f172a;
+                font-weight: 700;
+            }
+
+            .markdown-body code {
+                background: #f1f5f9;
+                color: #0369a1;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.95em;
+                font-family: inherit;
             }
 
             .markdown-body table {
                 width: 100%;
                 border-collapse: collapse;
-                margin: 1.2rem 0;
-                border-radius: 8px;
+                margin: 1.4rem 0;
+                border-radius: 10px;
                 overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             }
 
             .markdown-body th,
             .markdown-body td {
-                padding: 10px 14px;
-                border: 1px solid #E2E8F0;
+                padding: 11px 16px;
+                border: 1px solid #e2e8f0;
             }
 
             .markdown-body th {
-                background-color: #F8FAFC;
-                color: var(--navy-dark);
-                font-weight: 600;
+                background-color: #f8fafc;
+                color: #1e293b;
+                font-weight: 650;
+            }
+
+            .markdown-body tr:nth-child(even) td {
+                background-color: #fafbfc;
             }
 
             .markdown-body blockquote {
-                border-left: 4px solid var(--steel-blue);
-                background-color: #F8FAFC;
+                border-left: 4px solid #f59e0b;
+                background-color: #fffbeb;
                 padding: 12px 18px;
-                margin: 1rem 0;
+                margin: 1.2rem 0;
                 border-radius: 0 8px 8px 0;
-                font-style: italic;
+                color: #92400e;
+                font-style: normal;
             }
 
             .markdown-body ul,
             .markdown-body ol {
                 padding-left: 1.5rem;
-                margin-bottom: 1rem;
+                margin-bottom: 1.1rem;
             }
 
             .markdown-body li {
-                margin-bottom: 0.4rem;
+                margin-bottom: 0.45rem;
             }
 
             .cursor-pointer {

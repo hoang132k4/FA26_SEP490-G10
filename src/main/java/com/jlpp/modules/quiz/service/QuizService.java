@@ -11,6 +11,8 @@ public interface QuizService {
 
     Exercise getOrCreateExerciseForLesson(Long lessonId);
 
+    Exercise getExercise(Long exerciseId);
+
     List<QuizQuestionDto> getQuestionsForExercise(Long exerciseId);
 
     QuizResultDto submitQuiz(Long exerciseId, Long userId, Map<Long, String> answers);

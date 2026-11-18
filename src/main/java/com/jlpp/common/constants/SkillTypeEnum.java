@@ -49,6 +49,15 @@ public enum SkillTypeEnum {
         return List.of(values());
     }
 
+    /** Skills a bank question may carry; DB constraint chk_questions_skill_type rejects KANJI. */
+    public static List<SkillTypeEnum> questionSkills() {
+        return List.of(VOCABULARY, GRAMMAR, LISTENING, READING);
+    }
+
+    public static List<String> questionSkillNames() {
+        return questionSkills().stream().map(Enum::name).toList();
+    }
+
     /** Returns the skill matching the request parameter, or {@code null} when absent/unknown. */
     public static SkillTypeEnum fromParam(String rawValue) {
         if (rawValue == null || rawValue.isBlank()) {

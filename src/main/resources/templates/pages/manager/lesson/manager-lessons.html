@@ -768,13 +768,13 @@
                                             <div class="grammar-formation-single" th:text="${studyView.grammarDetail['formation']}">Noun + は</div>
                                         </div>
 
-                                        <!-- ĐƯỜNG PHÂN CÁCH NÉT ĐỨT -->
-                                        <hr class="grammar-dashed-line">
-
                                         <!-- Ý NGHĨA -->
-                                        <div class="grammar-meaning-wrap">
-                                            <span class="grammar-meaning-label">Ý nghĩa:</span>
-                                            <span class="grammar-meaning-val" th:text="${studyView.grammarDetail != null and studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) ? studyView.grammarDetail['meaning'] : detailLesson.title}">Càng ~ càng ~</span>
+                                        <div th:if="${studyView.grammarDetail != null and studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Bài ') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Ngữ pháp') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Mẫu câu')}">
+                                            <hr class="grammar-dashed-line">
+                                            <div class="grammar-meaning-wrap">
+                                                <span class="grammar-meaning-label">Ý nghĩa:</span>
+                                                <span class="grammar-meaning-val" th:text="${studyView.grammarDetail['meaning']}">Càng ~ càng ~</span>
+                                            </div>
                                         </div>
 
                                         <!-- CÁCH DÙNG & GIẢI THÍCH (❖) -->
