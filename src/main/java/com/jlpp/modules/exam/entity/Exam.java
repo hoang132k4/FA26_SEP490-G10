@@ -32,7 +32,7 @@ public class Exam {
     private Integer durationMinutes;
 
     @Column(name = "total_points")
-    private Integer totalPoints;
+    private Integer totalPoints = JlptExamStructure.TOTAL_SCORE;
 
     @Column(name = "total_questions")
     private Integer totalQuestions;
@@ -45,9 +45,6 @@ public class Exam {
 
     @Column(name = "listening_questions")
     private Integer listeningQuestions;
-
-    @Column(name = "total_points")
-    private Integer totalPoints = JlptExamStructure.TOTAL_SCORE;
 
     @Column(name = "passing_score")
     private Integer passingScore;
@@ -110,7 +107,6 @@ public class Exam {
     public Integer getLanguageQuestions() { return languageQuestions; }
     public Integer getReadingQuestions() { return readingQuestions; }
     public Integer getListeningQuestions() { return listeningQuestions; }
-    public Integer getTotalPoints() { return totalPoints; }
     public Integer getPassingScore() { return passingScore; }
     public String getStatus() { return status; }
     public String getDescription() { return description; }
@@ -124,7 +120,6 @@ public class Exam {
     public void setLanguageQuestions(Integer languageQuestions) { this.languageQuestions = languageQuestions; }
     public void setReadingQuestions(Integer readingQuestions) { this.readingQuestions = readingQuestions; }
     public void setListeningQuestions(Integer listeningQuestions) { this.listeningQuestions = listeningQuestions; }
-    public void setTotalPoints(Integer totalPoints) { this.totalPoints = totalPoints; }
     public void setPassingScore(Integer passingScore) { this.passingScore = passingScore; }
     public void setStatus(String status) { this.status = status; }
     public void setDescription(String description) { this.description = description; }
