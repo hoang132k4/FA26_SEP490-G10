@@ -51,3 +51,27 @@ application-local.yml
 scratch/
 unpacked_*/
 *_Export/
+
+# Design & wireframe files
+*.epgz
+wireframe-generator/
+pencil-prompt.md
+
+# One-off scripts
+reorganize_course_lessons.js
+
+# Reports (submitted separately)
+Report-*.md
+Report-*.xls
+Report-*.xlsx
+
+# Docs / audit notes
+docs/
+
+# Unused Flyway migrations (project does not use Flyway)
+src/main/resources/db/migration/
+
+# AI config
+AGENTS.md
+CLAUDE.md
+CONTRIBUTING.md
