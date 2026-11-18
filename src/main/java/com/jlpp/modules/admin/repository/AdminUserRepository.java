@@ -14,8 +14,6 @@ public interface AdminUserRepository extends JpaRepository<AdminUser, Long>, Jpa
 
     boolean existsByEmailIgnoreCaseAndUserIdNot(String email, Long userId);
 
-    boolean existsByEmailAddressIgnoreCaseAndUserIdNot(String emailAddress, Long userId);
-
     @Query("""
             select count(u) from AdminUser u
             where upper(coalesce(u.accountStatus, u.legacyStatus)) = upper(:status)

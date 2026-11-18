@@ -33,7 +33,8 @@ public class CourseRepository {
 
     public List<CourseOption> findAll() {
         Set<String> columns = allCourseColumns();
-        return jdbcTemplate.query(courseSelect(columns) + " ORDER BY c.jlpt_level DESC, c.course_id", courseRowMapper);
+        String levelCol = columns.contains("level") ? "c.level" : (columns.contains("jlpt_level") ? "c.jlpt_level" : "c.course_id");
+        return jdbcTemplate.query(courseSelect(columns) + " ORDER BY " + levelCol + " DESC, c.course_id", courseRowMapper);
     }
 
     public Optional<CourseOption> findById(long courseId) {
@@ -42,7 +43,9 @@ public class CourseRepository {
     }
 
     private String courseSelect(Set<String> columns) {
-        return "SELECT c.course_id, " + optionalColumn(columns, "course_code", "code", "course_code") + ", c.course_title, c.jlpt_level, c.status, "
+        return "SELECT c.course_id, " + optionalColumn(columns, "course_code", "code", "course_code") + ", "
+                + optionalColumn(columns, "course_title", "title", "course_title") + ", "
+                + optionalColumn(columns, "jlpt_level", "level", "jlpt_level") + ", c.status, "
                 + optionalColumn(columns, "course_short_description", "short_description", "course_description", "description") + ", "
                 + optionalColumn(columns, "course_description", "full_description", "description") + ", "
                 + optionalColumn(columns, "course_thumbnail", "thumbnail_url", "thumbnail") + ", "

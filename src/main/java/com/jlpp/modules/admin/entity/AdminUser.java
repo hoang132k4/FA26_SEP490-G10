@@ -16,7 +16,7 @@ import java.time.Instant;
 public class AdminUser {
 
     @Id
-    @Column(name = "id")
+    @Column(name = "user_id")
     private Long userId;
 
     @Column(name = "full_name", nullable = false)
@@ -27,9 +27,6 @@ public class AdminUser {
 
     @Column(name = "email", nullable = false)
     private String email;
-
-    @Column(name = "email_address")
-    private String emailAddress;
 
     @Column(name = "password")
     private String password;
@@ -58,8 +55,24 @@ public class AdminUser {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    public Long getId() {
+        return userId;
+    }
+
+    public void setId(Long id) {
+        this.userId = id;
+    }
+
+    public String getEmailAddress() {
+        return email;
+    }
+
+    public void setEmailAddress(String emailAddress) {
+        this.email = emailAddress;
+    }
+
     public String getDisplayEmail() {
-        return emailAddress == null || emailAddress.isBlank() ? email : emailAddress;
+        return email;
     }
 
     public String getDisplayStatus() {

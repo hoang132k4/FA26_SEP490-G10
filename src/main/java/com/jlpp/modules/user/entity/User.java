@@ -12,6 +12,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "users")
+@AttributeOverride(name = "id", column = @Column(name = "user_id"))
 public class User extends BaseEntity {
 
     @Column(name = "full_name", length = 100)
@@ -61,4 +62,25 @@ public class User extends BaseEntity {
 
     @Column(name = "reset_token_expiry")
     private java.time.LocalDateTime resetTokenExpiry;
+
+    // Alias methods for compatibility across modules
+    public Long getUserId() {
+        return getId();
+    }
+
+    public void setUserId(Long userId) {
+        setId(userId);
+    }
+
+    public String getEmailAddress() {
+        return email;
+    }
+
+    public void syncUserColumns() {
+        // No-op for backwards compatibility after dropping redundant columns
+    }
+
+    public void setEmailAddress(String emailAddress) {
+        this.email = emailAddress;
+    }
 }

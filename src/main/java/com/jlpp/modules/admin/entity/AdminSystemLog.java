@@ -39,4 +39,12 @@ public class AdminSystemLog {
 
     @Column(name = "details")
     private String details;
+
+    public Long getId() {
+        return logId;
+    }
+
+    public void setId(Long id) {
+        this.logId = id;
+    }
 }

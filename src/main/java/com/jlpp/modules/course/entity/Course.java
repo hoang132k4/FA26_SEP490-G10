@@ -17,7 +17,8 @@ import java.util.List;
 public class Course {
 
     @Id
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "course_id")
     private Long id;
 
     @Column(name = "created_at", updatable = false)
@@ -103,6 +104,7 @@ public class Course {
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
         }
+        syncDualColumns();
     }
 
     @PreUpdate
@@ -124,6 +126,10 @@ public class Course {
     }
 
     // Alias methods for compatibility across modules
+    public void syncDualColumns() {
+        // No-op for backwards compatibility after dropping redundant columns
+    }
+
     public Long getCourseId() {
         return getId();
     }

@@ -112,7 +112,7 @@ public class LearningPathUserJourneyTest {
 
         for (long i = 1; i <= 3; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     800L + i,
                     testCourse.getId(),

@@ -33,15 +33,15 @@ public class ManagerReportRepository {
                            r.total_score, r.percentage, r.passed_status, r.end_time AS report_date
                     FROM exam_results r
                     JOIN exams e ON e.exam_id = r.exam_id
-                    LEFT JOIN users u ON u.id = r.user_id
+                    LEFT JOIN users u ON u.user_id = r.user_id
                     """
                 : """
                     SELECT r.user_id, COALESCE(u.full_name, u.username, u.email, 'Học viên') AS learner_name,
-                           c.course_title AS report_name, c.jlpt_level AS level,
+                           c.title AS report_name, c.level AS level,
                            r.progress_percent, r.status, r.registered_at AS report_date
                     FROM course_registrations r
                     JOIN courses c ON c.course_id = r.course_id
-                    LEFT JOIN users u ON u.id = r.user_id
+                    LEFT JOIN users u ON u.user_id = r.user_id
                     """);
 
         List<Object> parameters = new ArrayList<>();

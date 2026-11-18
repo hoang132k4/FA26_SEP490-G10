@@ -11,6 +11,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "lessons")
+@AttributeOverride(name = "id", column = @Column(name = "lesson_id"))
 public class Lesson extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -19,19 +20,6 @@ public class Lesson extends BaseEntity {
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
-
-    @Column(name = "lesson_title", length = 200)
-    private String lessonTitle;
-
-    @PrePersist
-    @PreUpdate
-    public void syncLessonTitle() {
-        if (lessonTitle == null && title != null) {
-            lessonTitle = title;
-        } else if (title == null && lessonTitle != null) {
-            title = lessonTitle;
-        }
-    }
 
     @Column(name = "order_index", nullable = false)
     @Builder.Default
@@ -130,6 +118,30 @@ public class Lesson extends BaseEntity {
 
     public Long getLessonId() {
         return getId();
+    }
+
+    public void setLessonId(Long lessonId) {
+        setId(lessonId);
+    }
+
+    public String getLessonTitle() {
+        return title;
+    }
+
+    public void setLessonTitle(String lessonTitle) {
+        this.title = lessonTitle;
+    }
+
+    public Integer getLessonOrder() {
+        return orderIndex;
+    }
+
+    public void syncLessonColumns() {
+        // No-op for backwards compatibility after dropping redundant columns
+    }
+
+    public void setLessonOrder(Integer lessonOrder) {
+        this.orderIndex = lessonOrder;
     }
 
     public String getTypeDisplayName() {
