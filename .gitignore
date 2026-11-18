@@ -71,7 +71,24 @@ docs/
 # Unused Flyway migrations (project does not use Flyway)
 src/main/resources/db/migration/
 
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
 # AI config
 AGENTS.md
 CLAUDE.md
 CONTRIBUTING.md
+.claude/
+
+# Binary documents (submit separately)
+*.docx
+*.pptx
+*.pdf
+
+# Environment & secrets
+*.env
+*.key
+*.pem
+*.p12

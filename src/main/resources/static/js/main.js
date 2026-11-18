@@ -1,4 +1,4 @@
-// JLPP Platform Main Scripts
+// JEPS Platform Main Scripts
 document.addEventListener('DOMContentLoaded', () => {
     // Flashcard Flip Listener
     document.querySelectorAll('.flashcard-inner').forEach(card => {

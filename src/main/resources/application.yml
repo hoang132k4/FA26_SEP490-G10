@@ -5,7 +5,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
   application:
-    name: jlpp-platform
+    name: jeps-platform
 
   servlet:
     multipart:
@@ -35,7 +35,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0}
     username: ${SPRING_DATASOURCE_USERNAME:postgres.eztcijnvnmcievogjufk}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    password: ${SPRING_DATASOURCE_PASSWORD:Cme85Dpt1b2HwrBQ}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -95,7 +95,7 @@ app:
 # Logging
 logging:
   level:
-    com.jlpp: DEBUG
+    com.jeps: DEBUG
     org.springframework.web: INFO
 
 ---
@@ -106,7 +106,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.eztcijnvnmcievogjufk.supabase.co:5432/postgres}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    password: ${SPRING_DATASOURCE_PASSWORD:Cme85Dpt1b2HwrBQ}
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
