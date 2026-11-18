@@ -153,12 +153,25 @@ public class LessonProgressServiceTest {
     void testMarkLessonCompleted_NotEnrolled_DoesNothing() {
         when(courseRegistrationRepository.findForUpdateByUserIdAndCourseId(userId, courseId))
                 .thenReturn(Optional.empty());
-        when(courseRegistrationRepository.existsByUserIdAndCourseId(userId, courseId)).thenReturn(false);
 
         lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id);
 
         verify(learningPathRepository, never()).save(any());
         verify(courseRegistrationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getCompletedLessonIds: Trả về tập hợp ID các bài học đã hoàn thành")
+    void testGetCompletedLessonIds() {
+        learningPath.setLessonProgress("{\"lessons\":{\"" + lesson1Id + "\":{\"status\":\"COMPLETED\"}}}");
+        when(courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId))
+                .thenReturn(Optional.of(registration));
+        when(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId)).thenReturn(List.of(lesson1, lesson2));
+        when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
+                .thenReturn(Optional.of(learningPath));
+
+        java.util.Set<Long> completedIds = lessonProgressService.getCompletedLessonIds(userId, courseId);
+        assertThat(completedIds).containsExactly(lesson1Id);
     }
 
     @Test

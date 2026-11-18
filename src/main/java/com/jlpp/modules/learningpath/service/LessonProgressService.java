@@ -21,5 +21,10 @@ public interface LessonProgressService {
      * với dữ liệu cũ (dựa trên progress_percent của course_registrations).
      */
     boolean isLessonCompleted(Long userId, Long courseId, Long lessonId, int lessonOrderIndex, int totalCourseLessons, int registrationProgressPercent);
+
+    /**
+     * Lấy danh sách ID các bài học đã hoàn thành của học viên trong khóa học.
+     */
+    java.util.Set<Long> getCompletedLessonIds(Long userId, Long courseId);
 }
 

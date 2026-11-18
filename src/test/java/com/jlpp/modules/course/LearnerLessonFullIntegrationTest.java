@@ -276,6 +276,25 @@ public class LearnerLessonFullIntegrationTest {
     }
 
     @Test
+    @DisplayName("Complete Lesson: Bấm sang bài tiếp theo sẽ đánh dấu hoàn thành bài cũ và tăng thanh tiến độ")
+    @WithMockUser(username = "learner_lesson_test@jeps.edu.vn", roles = {"LEARNER"})
+    void testCompleteLesson_IncrementsProgressAndMarksCompletedInSidebar() throws Exception {
+        // Complete lesson 1
+        mockMvc.perform(post("/learning/lessons/{lessonId}/complete", lesson1Id)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning/lessons/" + lesson2Id));
+
+        // Follow to lesson 2
+        mockMvc.perform(get("/learning/lessons/{lessonId}", lesson2Id))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/learning/lesson-study"))
+                .andExpect(model().attributeExists("completedLessonIds"))
+                .andExpect(model().attribute("completedLessonsCount", greaterThanOrEqualTo(1)))
+                .andExpect(model().attribute("registration", hasProperty("progressPercent", greaterThan(0))));
+    }
+
+    @Test
     @DisplayName("Complete Lesson: Hoàn thành bài học cuối cùng sẽ chuyển về danh sách bài học khóa học")
     @WithMockUser(username = "learner_lesson_test@jeps.edu.vn", roles = {"LEARNER"})
     void testCompleteLesson_LastLesson_RedirectsToLessonList() throws Exception {

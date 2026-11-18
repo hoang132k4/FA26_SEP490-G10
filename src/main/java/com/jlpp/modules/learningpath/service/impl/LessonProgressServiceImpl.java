@@ -6,20 +6,25 @@ import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.entity.CourseRegistration;
 import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
+import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
 import com.jlpp.modules.learningpath.dto.LearningPathProgressDto;
 import com.jlpp.modules.learningpath.dto.LessonProgressItemDto;
 import com.jlpp.modules.learningpath.entity.LearningPath;
 import com.jlpp.modules.learningpath.repository.LearningPathRepository;
 import com.jlpp.modules.learningpath.service.LessonProgressService;
+import com.jlpp.modules.user.entity.User;
+import com.jlpp.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +40,12 @@ public class LessonProgressServiceImpl implements LessonProgressService {
     private final LessonRepository lessonRepository;
     private final ObjectMapper objectMapper;
 
+    @Autowired(required = false)
+    private UserRepository userRepository;
+
+    @Autowired(required = false)
+    private CourseRepository courseRepository;
+
     @Override
     @Transactional(readOnly = true)
     public LearningPathProgressDto getLessonProgress(Long userId, Long courseId) {
@@ -47,7 +58,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
                 .or(() -> learningPathRepository.findFirstByUserIdOrderByScheduledDateDescIdDesc(userId));
 
         LearningPathProgressDto dto = new LearningPathProgressDto();
-        if (lpOpt.isPresent() && lpOpt.get().getCourseId().equals(courseId)) {
+        if (lpOpt.isPresent() && courseId.equals(lpOpt.get().getCourseId())) {
             String json = lpOpt.get().getLessonProgress();
             log.info("getLessonProgress raw json from lpId={}: {}", lpOpt.get().getId(), json);
             dto = parseProgressDto(json);
@@ -83,15 +94,29 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         // 1. Enrollment validation with Pessimistic Row Lock on CourseRegistration
         Optional<CourseRegistration> regOpt = courseRegistrationRepository.findForUpdateByUserIdAndCourseId(userId, courseId)
                 .or(() -> courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId));
+        CourseRegistration reg;
         if (regOpt.isEmpty()) {
-            if (courseRegistrationRepository.existsByUserIdAndCourseId(userId, courseId)) {
-                regOpt = Optional.of(CourseRegistration.builder().progressPercent(0).build());
+            User user = (userRepository != null) ? userRepository.findById(userId).orElse(null) : null;
+            Course enrolledCourse = (courseRepository != null) ? courseRepository.findById(courseId).orElse(null) : null;
+            if (user != null && enrolledCourse != null) {
+                CourseRegistration newReg = CourseRegistration.builder()
+                        .user(user)
+                        .course(enrolledCourse)
+                        .registeredAt(LocalDateTime.now())
+                        .status("ACTIVE")
+                        .progressPercent(0)
+                        .paymentMethod("FREE")
+                        .paidAmount(0.0)
+                        .build();
+                reg = courseRegistrationRepository.saveAndFlush(newReg);
+                log.info("Auto-enrolled userId={} in courseId={} during markLessonCompleted", userId, courseId);
             } else {
                 log.warn("Enrollment validation failed: userId={} is not enrolled in courseId={}", userId, courseId);
                 return;
             }
+        } else {
+            reg = regOpt.get();
         }
-        CourseRegistration reg = regOpt.get();
 
         // 2. Course-to-Lesson ownership validation
         Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
@@ -107,12 +132,13 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             Optional<LearningPath> fallbackLp = learningPathRepository
                     .findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId)
                     .or(() -> learningPathRepository.findFirstByUserIdOrderByScheduledDateDescIdDesc(userId));
-            lp = fallbackLp.filter(p -> p.getCourseId().equals(courseId)).orElse(null);
+            lp = fallbackLp.filter(p -> courseId.equals(p.getCourseId())).orElse(null);
         }
 
         // Auto-provision initial LearningPath if none exists, while holding the CourseRegistration lock
         if (lp == null) {
-            Course enrolledCourse = reg.getCourse();
+            Course enrolledCourse = (reg.getCourse() != null) ? reg.getCourse() :
+                    (courseRepository != null ? courseRepository.findById(courseId).orElse(null) : null);
             String targetLevel = (enrolledCourse != null && enrolledCourse.getLevel() != null)
                     ? enrolledCourse.getLevel()
                     : "N4";
@@ -250,6 +276,26 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         }
 
         return false;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Long> getCompletedLessonIds(Long userId, Long courseId) {
+        Set<Long> completedIds = new HashSet<>();
+        if (userId == null || courseId == null) {
+            return completedIds;
+        }
+        List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+        Optional<CourseRegistration> regOpt = courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId);
+        int progressPercent = regOpt.map(r -> r.getProgressPercent() != null ? r.getProgressPercent() : 0).orElse(0);
+
+        for (int i = 0; i < courseLessons.size(); i++) {
+            Lesson l = courseLessons.get(i);
+            if (isLessonCompleted(userId, courseId, l.getId(), i + 1, courseLessons.size(), progressPercent)) {
+                completedIds.add(l.getId());
+            }
+        }
+        return completedIds;
     }
 
     private LearningPathProgressDto parseProgressDto(String json) {
