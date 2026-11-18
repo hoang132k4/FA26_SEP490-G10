@@ -26,17 +26,19 @@ public class LessonDetailRepository {
     }
 
     public Optional<LessonDetail> findByLessonId(long lessonId) {
-        return jdbcTemplate.query(
-                        """
-                        SELECT lesson_id, skill_type, source_entry_id, audio_url, body, payload::text AS payload
-                        FROM lesson_details
-                        WHERE lesson_id = ?
-                           OR lesson_id = (SELECT lesson_id FROM lessons WHERE id = ? LIMIT 1)
-                           OR lesson_id = (SELECT id FROM lessons WHERE lesson_id = ? LIMIT 1)
-                        """,
-                        detailRowMapper, lessonId, lessonId, lessonId)
-                .stream()
-                .findFirst();
+        try {
+            return jdbcTemplate.query(
+                            """
+                            SELECT lesson_id, skill_type, source_entry_id, audio_url, body, payload::text AS payload
+                            FROM lesson_details
+                            WHERE lesson_id = ?
+                            """,
+                            detailRowMapper, lessonId)
+                    .stream()
+                    .findFirst();
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
     }
 
     public void save(long lessonId, String skillValue, Long sourceEntryId,
@@ -62,7 +64,7 @@ public class LessonDetailRepository {
 
     public java.util.List<java.util.Map<String, Object>> findExistingSkillContents(long courseId, String skillValue, Long excludeLessonId) {
         String sql = """
-                SELECT l.lesson_id, l.lesson_title, l.content, ld.payload::text AS payload
+                SELECT l.lesson_id, l.title AS lesson_title, l.content, ld.payload::text AS payload
                 FROM lessons l
                 LEFT JOIN lesson_details ld ON l.lesson_id = ld.lesson_id
                 WHERE l.course_id = ? AND COALESCE(l.skill_type, l.lesson_type) = ?

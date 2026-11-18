@@ -75,8 +75,7 @@ public class AdminService {
                 predicates.add(criteriaBuilder.or(
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("fullName")), pattern),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("username")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("emailAddress")), pattern)));
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), pattern)));
             }
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
@@ -102,14 +101,10 @@ public class AdminService {
         if (userRepository.existsByEmailIgnoreCaseAndUserIdNot(email, userId)) {
             throw new IllegalArgumentException("Email đã được sử dụng.");
         }
-        if (userRepository.existsByEmailAddressIgnoreCaseAndUserIdNot(email, userId)) {
-            throw new IllegalArgumentException("Email đã được sử dụng.");
-        }
 
         user.setFullName(request.getFullName().trim());
         user.setUsername(username);
         user.setEmail(email);
-        user.setEmailAddress(email);
         user.setRole(request.getRole().name());
         user.setAccountStatus(normalizeStatus(request.getAccountStatus()));
         user.setUpdatedAt(Instant.now());

@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -29,6 +31,9 @@ public class Exam {
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
+    @Column(name = "total_points")
+    private Integer totalPoints = JlptExamStructure.TOTAL_SCORE;
+
     @Column(name = "total_questions")
     private Integer totalQuestions;
 
@@ -40,9 +45,6 @@ public class Exam {
 
     @Column(name = "listening_questions")
     private Integer listeningQuestions;
-
-    @Column(name = "total_points")
-    private Integer totalPoints = JlptExamStructure.TOTAL_SCORE;
 
     @Column(name = "passing_score")
     private Integer passingScore;
@@ -78,10 +80,25 @@ public class Exam {
         this.courseId = courseId;
     }
 
+    @PrePersist
+    @PreUpdate
+    public void syncExamColumns() {
+        if (totalPoints == null) {
+            totalPoints = totalQuestions != null ? totalQuestions : 100;
+        }
+    }
+
     public Long getExamId() { return examId; }
     public Long getId() { return examId; }
+    public void setExamId(Long examId) { this.examId = examId; }
+    public void setId(Long id) { this.examId = id; }
     public String getExamTitle() { return examTitle; }
     public String getTitle() { return examTitle; }
+    public void setTitle(String title) { this.examTitle = title; }
+    public Integer getDuration() { return durationMinutes; }
+    public void setDuration(Integer duration) { this.durationMinutes = duration; }
+    public Integer getTotalPoints() { return totalPoints; }
+    public void setTotalPoints(Integer totalPoints) { this.totalPoints = totalPoints; }
     public String getExamType() { return examType; }
     public String getJlptLevel() { return jlptLevel; }
     public String getLevel() { return jlptLevel; }
@@ -90,7 +107,6 @@ public class Exam {
     public Integer getLanguageQuestions() { return languageQuestions; }
     public Integer getReadingQuestions() { return readingQuestions; }
     public Integer getListeningQuestions() { return listeningQuestions; }
-    public Integer getTotalPoints() { return totalPoints; }
     public Integer getPassingScore() { return passingScore; }
     public String getStatus() { return status; }
     public String getDescription() { return description; }
@@ -104,7 +120,6 @@ public class Exam {
     public void setLanguageQuestions(Integer languageQuestions) { this.languageQuestions = languageQuestions; }
     public void setReadingQuestions(Integer readingQuestions) { this.readingQuestions = readingQuestions; }
     public void setListeningQuestions(Integer listeningQuestions) { this.listeningQuestions = listeningQuestions; }
-    public void setTotalPoints(Integer totalPoints) { this.totalPoints = totalPoints; }
     public void setPassingScore(Integer passingScore) { this.passingScore = passingScore; }
     public void setStatus(String status) { this.status = status; }
     public void setDescription(String description) { this.description = description; }

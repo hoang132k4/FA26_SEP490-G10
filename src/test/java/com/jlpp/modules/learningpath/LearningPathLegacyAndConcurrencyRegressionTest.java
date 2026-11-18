@@ -77,7 +77,10 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
     void setUp() {
         learningPathRepository.deleteAll();
         courseRegistrationRepository.deleteAll();
-        jdbcTemplate.execute("DELETE FROM lessons WHERE course_id = 9999");
+        jdbcTemplate.execute("DELETE FROM lessons WHERE course_id = 9999 OR course_id IN (SELECT course_id FROM courses WHERE code = 'JLPT-N3-REGRESSION')");
+        jdbcTemplate.execute("DELETE FROM course_registrations WHERE course_id IN (SELECT course_id FROM courses WHERE code = 'JLPT-N3-REGRESSION')");
+        jdbcTemplate.execute("DELETE FROM learning_paths WHERE course_id IN (SELECT course_id FROM courses WHERE code = 'JLPT-N3-REGRESSION')");
+        jdbcTemplate.execute("DELETE FROM courses WHERE code = 'JLPT-N3-REGRESSION'");
         courseRepository.findById(9999L).ifPresent(courseRepository::delete);
         userRepository.findByEmailIgnoreCase("defect_learner@jeps.edu.vn").ifPresent(userRepository::delete);
 
@@ -104,7 +107,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
 
         for (int i = 1; i <= 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     99900L + i,
                     testCourse.getId(),
@@ -348,7 +351,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
                 .build());
         for (int i = 0; i < 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     88100L + i,
                     zeroBasedCourse.getId(),
@@ -428,7 +431,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
                 .build());
         for (int i = 1; i <= 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     88200L + i,
                     stepCourse.getId(),
@@ -570,7 +573,7 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
                 .build());
         for (int i = 1; i <= 10; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, skill_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     88300L + i,
                     reorderCourse.getId(),
@@ -623,8 +626,8 @@ public class LearningPathLegacyAndConcurrencyRegressionTest {
         assertThat(originalCompletedAt).isNotNull();
 
         // Manager reorders: swaps Lesson 10 into slot 1 (orderIndex = 1) and Lesson 1 into slot 10 (orderIndex = 10)
-        jdbcTemplate.update("UPDATE lessons SET order_index = 10 WHERE id = ?", lesson1.getId());
-        jdbcTemplate.update("UPDATE lessons SET order_index = 1 WHERE id = ?", lesson10.getId());
+        jdbcTemplate.update("UPDATE lessons SET order_index = 10 WHERE lesson_id = ?", lesson1.getId());
+        jdbcTemplate.update("UPDATE lessons SET order_index = 1 WHERE lesson_id = ?", lesson10.getId());
 
         // Verify:
         // 1. Verified Lesson 6 ID is INVARIANT: still completed with exact same timestamp

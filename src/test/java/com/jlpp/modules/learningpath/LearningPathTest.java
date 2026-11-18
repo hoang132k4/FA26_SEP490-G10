@@ -120,7 +120,7 @@ public class LearningPathTest {
         // Insert 4 lessons for courseN4 directly via JdbcTemplate to bypass H2 identity mismatch
         for (long i = 1; i <= 4; i++) {
             jdbcTemplate.update(
-                    "INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type) " +
+                    "INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?)",
                     200L + i,
                     courseN4.getId(),

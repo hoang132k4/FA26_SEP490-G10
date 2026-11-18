@@ -23,7 +23,7 @@ public class ManagerQuizRepository {
 
     public List<QuizOption> search(String search, String level, String section, String status) {
         return jdbcTemplate.query("""
-                SELECT e.exercise_id, e.lesson_id, l.lesson_title, e.exercise_title,
+                SELECT e.exercise_id, e.lesson_id, l.title AS lesson_title, e.exercise_title,
                        e.total_questions, e.passing_score, e.status,
                        COUNT(eq.question_id) AS linked_question_count
                 FROM exercises e
@@ -31,10 +31,10 @@ public class ManagerQuizRepository {
                 LEFT JOIN courses c ON c.course_id = l.course_id
                 LEFT JOIN exercise_questions eq ON eq.exercise_id = e.exercise_id
                 WHERE (? = '' OR LOWER(e.exercise_title) LIKE LOWER(?))
-                  AND (? = '' OR c.jlpt_level = ?)
+                  AND (? = '' OR c.level = ?)
                   AND (? = '' OR l.section_name = ?)
                   AND (? = '' OR UPPER(e.status) = UPPER(?))
-                GROUP BY e.exercise_id, e.lesson_id, l.lesson_title, e.exercise_title,
+                GROUP BY e.exercise_id, e.lesson_id, l.title, e.exercise_title,
                          e.total_questions, e.passing_score, e.status
                 ORDER BY e.exercise_id DESC
                 """, (rs, row) -> mapQuiz(rs.getLong("exercise_id"), rs.getLong("lesson_id"),
@@ -47,11 +47,11 @@ public class ManagerQuizRepository {
     public Map<String, List<String>> findLevelSections() {
         Map<String, List<String>> result = new LinkedHashMap<>();
         jdbcTemplate.query("""
-                SELECT c.jlpt_level, l.section_name, MIN(l.order_index) AS first_order
+                SELECT c.level AS jlpt_level, l.section_name, MIN(l.order_index) AS first_order
                 FROM lessons l JOIN courses c ON c.course_id = l.course_id
-                WHERE c.jlpt_level IS NOT NULL AND c.jlpt_level <> ''
-                GROUP BY c.jlpt_level, l.section_name
-                ORDER BY c.jlpt_level DESC, first_order
+                WHERE c.level IS NOT NULL AND c.level <> ''
+                GROUP BY c.level, l.section_name
+                ORDER BY c.level DESC, first_order
                 """, rs -> {
             List<String> sections = result.computeIfAbsent(rs.getString("jlpt_level"), k -> new ArrayList<>());
             String section = rs.getString("section_name");
@@ -62,14 +62,14 @@ public class ManagerQuizRepository {
 
     public Optional<QuizOption> findById(long id) {
         return jdbcTemplate.query("""
-                SELECT e.exercise_id, e.lesson_id, l.lesson_title, e.exercise_title,
+                SELECT e.exercise_id, e.lesson_id, l.title AS lesson_title, e.exercise_title,
                        e.total_questions, e.passing_score, e.status,
                        COUNT(eq.question_id) AS linked_question_count
                 FROM exercises e
                 LEFT JOIN lessons l ON l.lesson_id = e.lesson_id
                 LEFT JOIN exercise_questions eq ON eq.exercise_id = e.exercise_id
                 WHERE e.exercise_id = ?
-                GROUP BY e.exercise_id, e.lesson_id, l.lesson_title, e.exercise_title,
+                GROUP BY e.exercise_id, e.lesson_id, l.title, e.exercise_title,
                          e.total_questions, e.passing_score, e.status
                 """, (rs, row) -> mapQuiz(rs.getLong("exercise_id"), rs.getLong("lesson_id"),
                         rs.getString("lesson_title"), rs.getString("exercise_title"),
@@ -79,9 +79,9 @@ public class ManagerQuizRepository {
 
     public List<LessonOption> findLessons() {
         return jdbcTemplate.query("""
-                SELECT l.lesson_id, l.lesson_title, l.section_name, c.course_title, c.jlpt_level
+                SELECT l.lesson_id, l.title AS lesson_title, l.section_name, c.title AS course_title, c.level AS jlpt_level
                 FROM lessons l LEFT JOIN courses c ON c.course_id = l.course_id
-                ORDER BY c.jlpt_level DESC, c.course_id, l.order_index, l.lesson_id
+                ORDER BY c.level DESC, c.course_id, l.order_index, l.lesson_id
                 """,
                 (rs, row) -> {
                     String section = rs.getString("section_name");

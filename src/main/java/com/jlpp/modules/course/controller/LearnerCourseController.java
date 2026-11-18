@@ -102,12 +102,29 @@ public class LearnerCourseController {
             activeCourse = activeRegistration.getCourse();
             List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(activeCourse.getId());
             activeCourseLessonCount = lessons.size();
+            Set<Long> completedIds = lessonProgressService.getCompletedLessonIds(learner.getId(), activeCourse.getId());
             int progress = activeRegistration.getProgressPercent() != null ? activeRegistration.getProgressPercent() : 0;
-            activeCourseCompletedLessons = (int) Math.round((activeCourseLessonCount * progress) / 100.0);
+            activeCourseCompletedLessons = Math.max(completedIds.size(), (int) Math.round((activeCourseLessonCount * progress) / 100.0));
+            int calculatedPercent = (activeCourseLessonCount > 0) ? Math.min(100, (int) Math.round((activeCourseCompletedLessons * 100.0) / activeCourseLessonCount)) : 0;
+            int effectiveProgress = Math.max(progress, calculatedPercent);
+            if (activeRegistration.getProgressPercent() == null || activeRegistration.getProgressPercent() < effectiveProgress) {
+                activeRegistration.setProgressPercent(effectiveProgress);
+                if (effectiveProgress >= 100) {
+                    activeRegistration.setStatus("COMPLETED");
+                }
+                courseRegistrationRepository.saveAndFlush(activeRegistration);
+            }
 
             // Next lesson is the first uncompleted lesson
-            int nextIdx = Math.min(activeCourseCompletedLessons, Math.max(0, activeCourseLessonCount - 1));
-            if (!lessons.isEmpty()) {
+            nextLesson = null;
+            for (Lesson l : lessons) {
+                if (!completedIds.contains(l.getId())) {
+                    nextLesson = l;
+                    break;
+                }
+            }
+            if (nextLesson == null && !lessons.isEmpty()) {
+                int nextIdx = Math.min(activeCourseCompletedLessons, Math.max(0, activeCourseLessonCount - 1));
                 nextLesson = lessons.get(nextIdx);
             }
         }
@@ -181,17 +198,29 @@ public class LearnerCourseController {
                 ));
 
         CourseRegistration registration = registrationService.getRegistration(learner.getId(), targetCourseId);
+        Set<Long> completedLessonIds = lessonProgressService.getCompletedLessonIds(learner.getId(), targetCourseId);
         int progress = (registration != null && registration.getProgressPercent() != null) ? registration.getProgressPercent() : 0;
-        int completedCount = (int) Math.round((lessons.size() * progress) / 100.0);
+        int completedCount = Math.max(completedLessonIds.size(), (int) Math.round((lessons.size() * progress) / 100.0));
+        int calculatedPercent = lessons.isEmpty() ? 0 : Math.min(100, (int) Math.round((completedCount * 100.0) / lessons.size()));
+        int effectiveProgress = Math.max(progress, calculatedPercent);
+
+        if (registration != null && (registration.getProgressPercent() == null || registration.getProgressPercent() < effectiveProgress)) {
+            registration.setProgressPercent(effectiveProgress);
+            if (effectiveProgress >= 100) {
+                registration.setStatus("COMPLETED");
+            }
+            courseRegistrationRepository.saveAndFlush(registration);
+        }
 
         model.addAttribute("learner", learner);
         model.addAttribute("course", course);
         model.addAttribute("lessons", lessons);
         model.addAttribute("groupedLessons", groupedLessons);
         model.addAttribute("registration", registration);
-        model.addAttribute("progressPercent", progress);
+        model.addAttribute("progressPercent", effectiveProgress);
         model.addAttribute("completedCount", completedCount);
         model.addAttribute("totalCount", lessons.size());
+        model.addAttribute("completedLessonIds", completedLessonIds);
         model.addAttribute("activeMenu", "my-courses");
         return "pages/learning/lesson-list";
     }
@@ -299,15 +328,26 @@ public class LearnerCourseController {
 
         // Registration & progress
         CourseRegistration registration = registrationService.getRegistration(learner.getId(), course.getId());
+        Set<Long> completedLessonIds = lessonProgressService.getCompletedLessonIds(learner.getId(), course.getId());
         int progress = (registration != null && registration.getProgressPercent() != null) ? registration.getProgressPercent() : 0;
-        int completedLessonsCount = (int) Math.round((courseLessons.size() * progress) / 100.0);
+        int completedLessonsCount = Math.max(completedLessonIds.size(), (int) Math.round((courseLessons.size() * progress) / 100.0));
+        int calculatedPercent = (courseLessons.size() > 0) ? Math.min(100, (int) Math.round((completedLessonsCount * 100.0) / courseLessons.size())) : 0;
+        int effectiveProgress = Math.max(progress, calculatedPercent);
+
+        if (registration != null && (registration.getProgressPercent() == null || registration.getProgressPercent() < effectiveProgress)) {
+            registration.setProgressPercent(effectiveProgress);
+            if (effectiveProgress >= 100) {
+                registration.setStatus("COMPLETED");
+            }
+            courseRegistrationRepository.saveAndFlush(registration);
+        }
 
         // Enforce Milestone exam gate: if there is an uncompleted Milestone lesson before this lesson, require taking it first
         for (int i = 0; i < currentIdx; i++) {
             Lesson prev = courseLessons.get(i);
             if (prev.isMilestoneExam()) {
                 boolean prevDone = lessonProgressService.isLessonCompleted(
-                        learner.getId(), course.getId(), prev.getId(), i + 1, courseLessons.size(), progress);
+                        learner.getId(), course.getId(), prev.getId(), i + 1, courseLessons.size(), effectiveProgress);
                 if (!prevDone) {
                     session.setAttribute("ACTIVE_MILESTONE_COURSE_ID", course.getId());
                     session.setAttribute("ACTIVE_MILESTONE_LESSON_ID", prev.getId());
@@ -344,6 +384,8 @@ public class LearnerCourseController {
         model.addAttribute("currentLessonIndex", currentIdx + 1);
         model.addAttribute("totalLessonsCount", courseLessons.size());
         model.addAttribute("completedLessonsCount", completedLessonsCount);
+        model.addAttribute("completedLessonIds", completedLessonIds);
+        model.addAttribute("progressPercent", effectiveProgress);
         model.addAttribute("prevLesson", prevLesson);
         model.addAttribute("nextLesson", nextLesson);
         model.addAttribute("attachedMaterials", attachedMaterials);

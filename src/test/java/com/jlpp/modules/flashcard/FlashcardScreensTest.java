@@ -68,9 +68,9 @@ public class FlashcardScreensTest {
         // Insert lesson using jdbcTemplate to be consistent across entity ID variations
         testLessonId = 88001L;
         jdbcTemplate.update("DELETE FROM flashcards WHERE lesson_id = ?", testLessonId);
-        jdbcTemplate.update("DELETE FROM lessons WHERE id = ?", testLessonId);
+        jdbcTemplate.update("DELETE FROM lessons WHERE lesson_id = ?", testLessonId);
         jdbcTemplate.update(
-                "INSERT INTO lessons (id, course_id, title, order_index, lesson_type, status, duration_minutes) " +
+                "INSERT INTO lessons (lesson_id, course_id, title, order_index, lesson_type, status, duration_minutes) " +
                 "VALUES (?, ?, 'Bài 1: Từ vựng N4 nền tảng', 1, 'VIDEO', 'PUBLISHED', 25)",
                 testLessonId, course.getId()
         );

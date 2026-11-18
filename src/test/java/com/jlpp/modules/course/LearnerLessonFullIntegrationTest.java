@@ -98,31 +98,31 @@ public class LearnerLessonFullIntegrationTest {
 
         // 1. Lesson 1: Theory
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, lesson1Id, testCourse.getId(), "Bài 1: Bắt đầu N4", 1, "Chương 1: Khởi động", 20, "THEORY", "Nội dung bài 1");
 
         // 2. Lesson 2: Grammar
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, lesson2Id, testCourse.getId(), "Bài 2: Ngữ pháp ~te kudasai", 2, "Chương 1: Khởi động", 30, "GRAMMAR", "Nội dung bài 2");
 
         // 3. Lesson 3: Reading
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, lesson3Id, testCourse.getId(), "Bài 3: Đọc hiểu ngắn", 3, "Chương 2: Luyện tập", 35, "READING", "Nội dung bài 3");
 
         // 4. Lesson 4: Milestone Exam
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, milestoneLessonId, testCourse.getId(), "Bài 4: Đánh giá cột mốc Milestone giữa khóa", 4, "Chương 2: Luyện tập", 45, "EXAM", "Nội dung bài thi cột mốc");
 
         // 5. Lesson 5: Final Lesson
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, lessonAfterMilestoneId, testCourse.getId(), "Bài 5: Tổng kết khóa học N4", 5, "Chương 3: Kết thúc", 40, "THEORY", "Nội dung tổng kết");
 
@@ -273,6 +273,25 @@ public class LearnerLessonFullIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/learning/lessons/" + lesson2Id))
                 .andExpect(flash().attributeExists("successMessage"));
+    }
+
+    @Test
+    @DisplayName("Complete Lesson: Bấm sang bài tiếp theo sẽ đánh dấu hoàn thành bài cũ và tăng thanh tiến độ")
+    @WithMockUser(username = "learner_lesson_test@jeps.edu.vn", roles = {"LEARNER"})
+    void testCompleteLesson_IncrementsProgressAndMarksCompletedInSidebar() throws Exception {
+        // Complete lesson 1
+        mockMvc.perform(post("/learning/lessons/{lessonId}/complete", lesson1Id)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning/lessons/" + lesson2Id));
+
+        // Follow to lesson 2
+        mockMvc.perform(get("/learning/lessons/{lessonId}", lesson2Id))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/learning/lesson-study"))
+                .andExpect(model().attributeExists("completedLessonIds"))
+                .andExpect(model().attribute("completedLessonsCount", greaterThanOrEqualTo(1)))
+                .andExpect(model().attribute("registration", hasProperty("progressPercent", greaterThan(0))));
     }
 
     @Test

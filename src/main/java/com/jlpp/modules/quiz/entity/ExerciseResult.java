@@ -44,6 +44,14 @@ public class ExerciseResult {
     @Column(name = "feedback", columnDefinition = "TEXT")
     private String feedback;
 
+    public Long getId() {
+        return exerciseResultId;
+    }
+
+    public void setId(Long id) {
+        this.exerciseResultId = id;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (submittedDate == null) submittedDate = ZonedDateTime.now();

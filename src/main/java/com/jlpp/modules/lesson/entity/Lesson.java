@@ -2,7 +2,11 @@ package com.jlpp.modules.lesson.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity(name = "PublicLesson")
@@ -10,26 +14,21 @@ import jakarta.persistence.Table;
 public class Lesson {
 
     @Id
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "lesson_id")
     private Long lessonId;
 
     @Column(name = "course_id")
     private Long courseId;
 
-    @Column(name = "lesson_title")
-    private String lessonTitle;
+    @Column(name = "title")
+    private String title;
 
     @Column(name = "description")
     private String description;
 
-    @Column(name = "title")
-    private String title;
-
     @Column(name = "order_index")
     private Integer orderIndex;
-
-    @Column(name = "lesson_order")
-    private Integer lessonOrder;
 
     @Column(name = "skill_type")
     private String skillType;
@@ -57,10 +56,8 @@ public class Lesson {
                   String lessonType, String sectionName, String status, String description) {
         this.lessonId = lessonId;
         this.courseId = courseId;
-        this.lessonTitle = lessonTitle;
         this.title = title != null ? title : lessonTitle;
-        this.orderIndex = orderIndex;
-        this.lessonOrder = lessonOrder;
+        this.orderIndex = orderIndex != null ? orderIndex : lessonOrder;
         this.skillType = skillType;
         this.estimatedDuration = estimatedDuration;
         this.durationMinutes = durationMinutes;
@@ -70,13 +67,24 @@ public class Lesson {
         this.description = description;
     }
 
+    public void syncColumns() {
+        // No-op for backwards compatibility after dropping redundant columns
+    }
+
+    public void syncLessonColumns() {
+        // No-op for backwards compatibility after dropping redundant columns
+    }
+
     public Long getLessonId() { return lessonId; }
+    public Long getId() { return lessonId; }
+    public void setLessonId(Long lessonId) { this.lessonId = lessonId; }
+    public void setId(Long id) { this.lessonId = id; }
     public Long getCourseId() { return courseId; }
-    public String getLessonTitle() { return lessonTitle; }
+    public String getLessonTitle() { return title; }
     public String getDescription() { return description; }
     public String getTitle() { return title; }
     public Integer getOrderIndex() { return orderIndex; }
-    public Integer getLessonOrder() { return lessonOrder; }
+    public Integer getLessonOrder() { return orderIndex; }
     public String getSkillType() { return skillType; }
     public String getEstimatedDuration() { return estimatedDuration; }
     public Integer getDurationMinutes() { return durationMinutes; }

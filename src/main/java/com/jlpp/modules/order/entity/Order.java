@@ -16,6 +16,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "orders")
+@AttributeOverride(name = "id", column = @Column(name = "order_id"))
 public class Order extends BaseEntity {
 
     @Column(name = "order_number", nullable = false, unique = true, length = 50)
@@ -46,6 +47,18 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
+
+    public Long getOrderId() {
+        return getId();
+    }
+
+    public void setOrderId(Long orderId) {
+        setId(orderId);
+    }
+
+    public void syncOrderColumns() {
+        // No-op for backwards compatibility after dropping redundant columns
+    }
 
     public void addItem(OrderItem item) {
         items.add(item);

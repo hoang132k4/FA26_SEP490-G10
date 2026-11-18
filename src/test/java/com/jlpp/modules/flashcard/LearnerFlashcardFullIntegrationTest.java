@@ -83,7 +83,7 @@ public class LearnerFlashcardFullIntegrationTest {
                 .build());
 
         jdbcTemplate.update("""
-            INSERT INTO lessons (id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
+            INSERT INTO lessons (lesson_id, course_id, title, order_index, section_name, duration_minutes, lesson_type, content)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, testLessonId, course.getId(), "Bài 1: Từ vựng Flashcard", 1, "Chương 1", 20, "VOCABULARY", "Nội dung từ vựng");
 

@@ -40,8 +40,8 @@ public class LessonRepository {
     private static final String LESSON_SELECT = """
             SELECT lesson_id,
                    course_id,
-                   lesson_title,
-                   skill_type AS skill_value,
+                   title AS lesson_title,
+                   COALESCE(skill_type, lesson_type) AS skill_value,
                    order_index,
                    description,
                    content,
@@ -78,14 +78,14 @@ public class LessonRepository {
 
     public Optional<LessonRow> findById(long lessonId) {
         try {
-            return jdbcTemplate.query(LESSON_SELECT + " WHERE lesson_id = ? OR id = ?", lessonRowMapper, lessonId, lessonId)
+            return jdbcTemplate.query(LESSON_SELECT + " WHERE lesson_id = ?", lessonRowMapper, lessonId)
                     .stream()
                     .findFirst();
         } catch (Exception ex) {
-            // Schema fallback for test environments (e.g. H2 Hibernate auto DDL where only 'id' and 'title' exist)
+            // Schema fallback for test environments
             try {
                 return jdbcTemplate.query("""
-                        SELECT id AS lesson_id,
+                        SELECT lesson_id,
                                course_id,
                                title AS lesson_title,
                                COALESCE(skill_type, lesson_type) AS skill_value,
@@ -96,8 +96,8 @@ public class LessonRepository {
                                duration_minutes,
                                is_free_preview,
                                status
-                        FROM lessons WHERE id = ? OR lesson_id = ?
-                        """, lessonRowMapper, lessonId, lessonId)
+                        FROM lessons WHERE lesson_id = ?
+                        """, lessonRowMapper, lessonId)
                         .stream()
                         .findFirst();
             } catch (Exception fallbackEx) {
@@ -130,19 +130,19 @@ public class LessonRepository {
         String skillType = input.skill();
         String lessonType = (skillType != null && !skillType.isBlank()) ? skillType : "EXAM";
         jdbcTemplate.update("""
-                        INSERT INTO lessons (lesson_id, id, course_id,
-                                             lesson_title, title,
+                        INSERT INTO lessons (lesson_id, course_id,
+                                             title,
                                              skill_type, lesson_type,
-                                             order_index, lesson_order,
+                                             order_index,
                                              description, content, section_name,
                                              duration_minutes, is_free_preview, status,
                                              created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                         """,
-                lessonId, lessonId, courseId,
-                input.title(), input.title(),
+                lessonId, courseId,
+                input.title(),
                 skillType, lessonType,
-                orderIndex, orderIndex,
+                orderIndex,
                 input.description(), input.content(), input.sectionName(),
                 input.durationMinutes(), input.freePreview(), input.status());
         return lessonId;
@@ -153,17 +153,17 @@ public class LessonRepository {
         String lessonType = (skillType != null && !skillType.isBlank()) ? skillType : "EXAM";
         jdbcTemplate.update("""
                         UPDATE lessons
-                        SET lesson_title = ?, title = ?,
+                        SET title = ?,
                             skill_type = ?, lesson_type = ?,
-                            order_index = ?, lesson_order = ?,
+                            order_index = ?,
                             description = ?, content = ?, section_name = ?,
                             duration_minutes = ?, is_free_preview = ?, status = ?,
                             updated_at = NOW()
                         WHERE lesson_id = ?
                         """,
-                input.title(), input.title(),
+                input.title(),
                 skillType, lessonType,
-                orderIndex, orderIndex,
+                orderIndex,
                 input.description(), input.content(), input.sectionName(),
                 input.durationMinutes(), input.freePreview(), input.status(),
                 lessonId);
@@ -200,20 +200,19 @@ public class LessonRepository {
 
     public void updateOrder(long lessonId, int orderIndex) {
         jdbcTemplate.update(
-                "UPDATE lessons SET order_index = ?, lesson_order = ?, updated_at = NOW() WHERE lesson_id = ?",
-                orderIndex, orderIndex, lessonId);
+                "UPDATE lessons SET order_index = ?, updated_at = NOW() WHERE lesson_id = ?",
+                orderIndex, lessonId);
     }
 
     public void batchUpdateOrders(List<Long> orderedLessonIds) {
         if (orderedLessonIds == null || orderedLessonIds.isEmpty()) return;
-        String sql = "UPDATE lessons SET order_index = ?, lesson_order = ?, updated_at = NOW() WHERE lesson_id = ?";
+        String sql = "UPDATE lessons SET order_index = ?, updated_at = NOW() WHERE lesson_id = ?";
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 int order = i + 1;
                 ps.setInt(1, order);
-                ps.setInt(2, order);
-                ps.setLong(3, orderedLessonIds.get(i));
+                ps.setLong(2, orderedLessonIds.get(i));
             }
 
             @Override
@@ -225,14 +224,13 @@ public class LessonRepository {
 
     public void batchUpdateOrders(List<Long> lessonIds, List<Integer> orders) {
         if (lessonIds == null || lessonIds.isEmpty()) return;
-        String sql = "UPDATE lessons SET order_index = ?, lesson_order = ?, updated_at = NOW() WHERE lesson_id = ?";
+        String sql = "UPDATE lessons SET order_index = ?, updated_at = NOW() WHERE lesson_id = ?";
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 int order = orders.get(i);
                 ps.setInt(1, order);
-                ps.setInt(2, order);
-                ps.setLong(3, lessonIds.get(i));
+                ps.setLong(2, lessonIds.get(i));
             }
 
             @Override

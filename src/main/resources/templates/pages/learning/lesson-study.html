@@ -82,26 +82,32 @@
                 </div>
 
                 <!-- ================= 0. COURSERA GRADED ASSESSMENT HUB ================= -->
-                <div th:if="${lesson.isExam() or effectiveSkill == 'EXAM' or exam != null}" 
-                    class="card p-0 kotoba-card mb-4 border-0 shadow-sm overflow-hidden lesson-exam-card" 
-                     style="border-radius: 20px; background: #FFFFFF;">
+                <div th:if="${lesson.isExam() or effectiveSkill == 'EXAM' or exam != null}"
+                    class="card p-0 kotoba-card mb-4 border-0 shadow-sm overflow-hidden lesson-exam-card"
+                    style="border-radius: 20px; background: #FFFFFF;">
                     <!-- Top Hero Banner (Coursera Deep Navy Gradient) -->
-                    <div class="p-4 p-md-5 lesson-exam-hero" style="background: linear-gradient(135deg, #0F2744 0%, #173B57 50%, #204B6E 100%); color: white;">
+                    <div class="p-4 p-md-5 lesson-exam-hero"
+                        style="background: linear-gradient(135deg, #0F2744 0%, #173B57 50%, #204B6E 100%); color: white;">
                         <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-                            <span class="badge rounded-pill px-3 py-1.5 fw-bold shadow-sm" style="background: #FEE2E2; color: #991B1B; font-size: 0.85rem;">
-                                <i class="bi bi-award-fill me-1 text-danger"></i> GRADED ASSESSMENT &bull; ĐÁNH GIÁ CÓ TÍNH ĐIỂM
+                            <span class="badge rounded-pill px-3 py-1.5 fw-bold shadow-sm"
+                                style="background: #FEE2E2; color: #991B1B; font-size: 0.85rem;">
+                                <i class="bi bi-award-fill me-1 text-danger"></i> GRADED ASSESSMENT &bull; ĐÁNH GIÁ CÓ
+                                TÍNH ĐIỂM
                             </span>
-                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5" th:if="${course != null}" th:text="'Khóa học: ' + ${course.title}">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5"
+                                th:if="${course != null}" th:text="'Khóa học: ' + ${course.title}">
                                 Khóa học JLPT
                             </span>
-                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5" th:if="${course != null}" th:text="'Cấp độ: ' + ${course.level}">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5"
+                                th:if="${course != null}" th:text="'Cấp độ: ' + ${course.level}">
                                 Cấp độ: N4
                             </span>
                         </div>
 
-                        <h2 class="fw-bold mb-3 text-white" th:text="${lesson.title}">Bài thi đánh giá giữa kì (Midterm Assessment)</h2>
-                        <p class="text-white-50 mb-0" style="font-size: 1.05rem; line-height: 1.6; max-width: 750px;" 
-                           th:text="${lesson.description != null ? lesson.description : 'Bài kiểm tra năng lực chính thức của khóa học nhằm đánh giá toàn diện trình độ tiếng Nhật (Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu). Điểm số sẽ được ghi nhận vào bảng kết quả học tập.'}">
+                        <h2 class="fw-bold mb-3 text-white" th:text="${lesson.title}">Bài thi đánh giá giữa kì (Midterm
+                            Assessment)</h2>
+                        <p class="text-white-50 mb-0" style="font-size: 1.05rem; line-height: 1.6; max-width: 750px;"
+                            th:text="${lesson.description != null ? lesson.description : 'Bài kiểm tra năng lực chính thức của khóa học nhằm đánh giá toàn diện trình độ tiếng Nhật (Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu). Điểm số sẽ được ghi nhận vào bảng kết quả học tập.'}">
                             Bài kiểm tra năng lực chính thức của khóa học.
                         </p>
                     </div>
@@ -111,30 +117,42 @@
                         <div class="row g-3">
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-clock-history text-warning me-1"></i> Thời lượng thi</div>
-                                    <div class="fs-4 fw-bold text-dark font-monospace" th:text="${(exam != null ? exam.durationMinutes : (lesson.durationMinutes != null ? lesson.durationMinutes : 35)) + ' phút'}">35 phút</div>
+                                    <div class="text-muted small mb-1"><i
+                                            class="bi bi-clock-history text-warning me-1"></i> Thời lượng thi</div>
+                                    <div class="fs-4 fw-bold text-dark font-monospace"
+                                        th:text="${(exam != null ? exam.durationMinutes : (lesson.durationMinutes != null ? lesson.durationMinutes : 35)) + ' phút'}">
+                                        35 phút</div>
                                     <div class="small text-muted" style="font-size: 0.75rem;">Đếm ngược tự động</div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-check2-circle text-success me-1"></i> Yêu cầu đạt</div>
-                                    <div class="fs-4 fw-bold text-success font-monospace" th:text="${(exam != null && exam.passingScore != null ? exam.passingScore : 50) + '%'}">50%</div>
+                                    <div class="text-muted small mb-1"><i
+                                            class="bi bi-check2-circle text-success me-1"></i> Yêu cầu đạt</div>
+                                    <div class="fs-4 fw-bold text-success font-monospace"
+                                        th:text="${(exam != null && exam.passingScore != null ? exam.passingScore : 50) + '%'}">
+                                        50%</div>
                                     <div class="small text-muted" style="font-size: 0.75rem;">Điểm sàn qua môn</div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-question-circle text-primary me-1"></i> Định dạng đề</div>
-                                    <div class="fs-4 fw-bold text-primary font-monospace" th:text="${(exam != null && exam.totalQuestions != null ? exam.totalQuestions : 10) + ' câu'}">10 câu</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">Trắc nghiệm chuẩn JLPT</div>
+                                    <div class="text-muted small mb-1"><i
+                                            class="bi bi-question-circle text-primary me-1"></i> Định dạng đề</div>
+                                    <div class="fs-4 fw-bold text-primary font-monospace"
+                                        th:text="${(exam != null && exam.totalQuestions != null ? exam.totalQuestions : 10) + ' câu'}">
+                                        10 câu</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Trắc nghiệm chuẩn JLPT
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-shield-check text-info me-1"></i> Chế độ thi</div>
+                                    <div class="text-muted small mb-1"><i class="bi bi-shield-check text-info me-1"></i>
+                                        Chế độ thi</div>
                                     <div class="fs-5 fw-bold text-dark mt-1">Phòng thi ảo</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">Tập trung (Focus Mode)</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Tập trung (Focus Mode)
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -143,22 +161,29 @@
                     <!-- Body: Instructions & CTA Button -->
                     <div class="p-4 p-md-5">
                         <h5 class="fw-bold text-dark mb-3">
-                            <i class="bi bi-info-circle-fill text-primary me-2"></i>Hướng dẫn quy chế thi &amp; Tiêu chuẩn hoàn thành
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>Hướng dẫn quy chế thi &amp; Tiêu
+                            chuẩn hoàn thành
                         </h5>
-                        <div class="p-3.5 rounded-3 mb-4" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; line-height: 1.8;">
+                        <div class="p-3.5 rounded-3 mb-4"
+                            style="background-color: #F8FAFC; border: 1px solid #E2E8F0; line-height: 1.8;">
                             <ul class="mb-0 text-secondary ps-3 small" style="font-size: 0.95rem;">
-                                <li><b>Chuẩn bị:</b> Đảm bảo đường truyền internet ổn định và không gian yên tĩnh trước khi nhấn nút bắt đầu.</li>
-                                <li><b>Quy trình làm bài:</b> Hệ thống sẽ đưa bạn vào <b>Phòng thi ảo chuyên dụng</b> (tương tự như kỳ thi thử JLPT và Đánh giá đầu vào). Bạn có thể tự do di chuyển giữa các câu hỏi, đặt cờ các câu khó để xem lại trước khi nộp.</li>
-                                <li><b>Thời gian làm bài:</b> Đồng hồ sẽ tự động đếm ngược. Khi hết giờ làm bài, hệ thống sẽ tự động thu bài và chấm điểm ngay lập tức.</li>
-                                <li><b>Công nhận kết quả:</b> Điểm số đạt được sẽ được lưu vào cơ sở dữ liệu học tập của bạn để tính điều kiện hoàn thành khóa học và cấp chứng nhận.</li>
+                                <li><b>Chuẩn bị:</b> Đảm bảo đường truyền internet ổn định và không gian yên tĩnh trước
+                                    khi nhấn nút bắt đầu.</li>
+                                <li><b>Quy trình làm bài:</b> Hệ thống sẽ đưa bạn vào <b>Phòng thi ảo chuyên dụng</b>
+                                    (tương tự như kỳ thi thử JLPT và Đánh giá đầu vào). Bạn có thể tự do di chuyển giữa
+                                    các câu hỏi, đặt cờ các câu khó để xem lại trước khi nộp.</li>
+                                <li><b>Thời gian làm bài:</b> Đồng hồ sẽ tự động đếm ngược. Khi hết giờ làm bài, hệ
+                                    thống sẽ tự động thu bài và chấm điểm ngay lập tức.</li>
+                                <li><b>Công nhận kết quả:</b> Điểm số đạt được sẽ được lưu vào cơ sở dữ liệu học tập của
+                                    bạn để tính điều kiện hoàn thành khóa học và cấp chứng nhận.</li>
                             </ul>
                         </div>
 
                         <!-- Big Coursera CTA Hero Button -->
                         <div class="text-center py-3">
                             <a th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}"
-                               class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center gap-3 transition-all"
-                               style="font-size: 1.25rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); border: none;">
+                                class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center gap-3 transition-all"
+                                style="font-size: 1.25rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); border: none;">
                                 <i class="bi bi-mortarboard-fill fs-3"></i>
                                 <span>VÀO PHÒNG THI ẢO NGAY</span>
                                 <i class="bi bi-arrow-right fs-4"></i>
@@ -173,8 +198,7 @@
                 <!-- ================= SKILL-SPECIFIC LESSON CONTENT BOARDS ================= -->
 
                 <!-- 0. EXAM HERO BOARD (DÀNH CHO BÀI THI GIỮA KÌ & CUỐI KÌ) -->
-                <div th:if="${false}"
-                    class="card p-4 p-md-5 mb-4 shadow-sm border-0 text-center"
+                <div th:if="${false}" class="card p-4 p-md-5 mb-4 shadow-sm border-0 text-center"
                     style="background: linear-gradient(135deg, #173B57 0%, #0F2338 100%); color: #FFFFFF; border-radius: 20px;">
                     <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-3 p-3 rounded-circle"
                         style="background-color: rgba(239, 68, 68, 0.2); width: 80px; height: 80px;">
@@ -240,7 +264,8 @@
                     style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0D4E5B 100%);">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background: rgba(245, 158, 11, 0.25); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);">
+                            <span class="badge rounded-pill px-3 py-1.5 fw-bold"
+                                style="background: rgba(245, 158, 11, 0.25); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);">
                                 <i class="bi bi-soundwave me-1"></i> BÀI NGHE AUDIO &amp; LUYỆN ÂM BẢN XỨ
                             </span>
                             <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-2.5 py-1 small">
@@ -261,42 +286,70 @@
                             <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-play-circle-fill text-warning fs-4"></i>
-                                    <strong class="text-white small" th:text="${audioMat.materialTitle != null ? audioMat.materialTitle : 'Audio luyện nghe bài học'}">Audio bài nghe</strong>
+                                    <strong class="text-white small"
+                                        th:text="${audioMat.materialTitle != null ? audioMat.materialTitle : 'Audio luyện nghe bài học'}">Audio
+                                        bài nghe</strong>
                                 </div>
-                                <span class="badge bg-warning text-dark font-monospace small" style="font-size: 0.72rem;">Audio Track</span>
+                                <span class="badge bg-warning text-dark font-monospace small"
+                                    style="font-size: 0.72rem;">Audio Track</span>
                             </div>
-                            <p class="text-white-50 small mb-2" th:if="${audioMat.description != null}" th:text="${audioMat.description}">Mô tả bài nghe</p>
+                            <p class="text-white-50 small mb-2" th:if="${audioMat.description != null}"
+                                th:text="${audioMat.description}">Mô tả bài nghe</p>
                             <div class="audio-player-wrapper">
-                                <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                                <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm"
+                                    style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
                                     <source th:src="${audioMat.audioUrl}" type="audio/wav">
                                     <source th:src="${audioMat.audioUrl}" type="audio/ogg">
                                     <source th:src="${audioMat.audioUrl}" type="audio/mpeg">
                                     Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
                                 </audio>
-                                <div class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
+                                <div
+                                    class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
                                     <div class="d-flex align-items-center gap-1">
-                                        <span class="text-white-50 me-1 small"><i class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 0.75)">0.75x</button>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.25)">1.25x</button>
+                                        <span class="text-white-50 me-1 small"><i
+                                                class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 0.75)">0.75x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark"
+                                            style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 1.25)">1.25x</button>
                                     </div>
                                     <div class="d-flex align-items-center gap-1.5">
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, -5)" title="Tua lùi 5 giây"><i class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, 5)" title="Tua tới 5 giây">+5s<i class="bi bi-arrow-clockwise ms-0.5"></i></button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, -5)"
+                                            title="Tua lùi 5 giây"><i
+                                                class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, 5)"
+                                            title="Tua tới 5 giây">+5s<i
+                                                class="bi bi-arrow-clockwise ms-0.5"></i></button>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Collapsible Transcript if bodyContent is available -->
-                            <div th:if="${audioMat.bodyContent != null and !audioMat.bodyContent.isBlank()}" class="mt-2">
-                                <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 small text-white border-opacity-50"
-                                        type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#scriptMat' + ${audioMat.materialId}"
-                                        aria-expanded="false">
-                                    <i class="bi bi-card-text me-1 text-warning"></i> Xem lời thoại &amp; Bản dịch (Script)
+                            <div th:if="${audioMat.bodyContent != null and !audioMat.bodyContent.isBlank()}"
+                                class="mt-2">
+                                <button
+                                    class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 small text-white border-opacity-50"
+                                    type="button" data-bs-toggle="collapse"
+                                    th:attr="data-bs-target='#scriptMat' + ${audioMat.materialId}"
+                                    aria-expanded="false">
+                                    <i class="bi bi-card-text me-1 text-warning"></i> Xem lời thoại &amp; Bản dịch
+                                    (Script)
                                 </button>
                                 <div class="collapse mt-2" th:id="'scriptMat' + ${audioMat.materialId}">
                                     <div class="p-3 rounded-3 bg-dark bg-opacity-50 text-white-75 border border-white border-opacity-10 small font-monospace"
-                                         style="line-height: 1.8; white-space: pre-wrap;" th:text="${audioMat.bodyContent}">
+                                        style="line-height: 1.8; white-space: pre-wrap;"
+                                        th:text="${audioMat.bodyContent}">
                                     </div>
                                 </div>
                             </div>
@@ -308,27 +361,49 @@
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-play-circle-fill text-warning fs-4"></i>
-                                    <strong class="text-white small" th:text="${lesson.title}">Bài nghe hội thoại</strong>
+                                    <strong class="text-white small" th:text="${lesson.title}">Bài nghe hội
+                                        thoại</strong>
                                 </div>
-                                <span class="badge bg-warning text-dark font-monospace small" style="font-size: 0.72rem;">Audio Track</span>
+                                <span class="badge bg-warning text-dark font-monospace small"
+                                    style="font-size: 0.72rem;">Audio Track</span>
                             </div>
-                            <p class="text-white-50 small mb-2" th:text="${lesson.description != null ? lesson.description : 'Nghe đoạn hội thoại mẫu giọng chuẩn Tokyo và luyện phản xạ câu hỏi.'}">Mô tả</p>
+                            <p class="text-white-50 small mb-2"
+                                th:text="${lesson.description != null ? lesson.description : 'Nghe đoạn hội thoại mẫu giọng chuẩn Tokyo và luyện phản xạ câu hỏi.'}">
+                                Mô tả</p>
                             <div class="audio-player-wrapper">
                                 <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm">
                                     <source src="/audio/japanese_conversation_audio.wav" type="audio/wav">
                                     <source src="/audio/coffee_shop.ogg" type="audio/ogg">
                                     Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
                                 </audio>
-                                <div class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
+                                <div
+                                    class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
                                     <div class="d-flex align-items-center gap-1">
-                                        <span class="text-white-50 me-1 small"><i class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 0.75)">0.75x</button>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn" style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.25)">1.25x</button>
+                                        <span class="text-white-50 me-1 small"><i
+                                                class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 0.75)">0.75x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark"
+                                            style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 1.25)">1.25x</button>
                                     </div>
                                     <div class="d-flex align-items-center gap-1.5">
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, -5)" title="Tua lùi 5 giây"><i class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
-                                        <button type="button" class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white" style="font-size: 0.75rem;" onclick="skipAudio(this, 5)" title="Tua tới 5 giây">+5s<i class="bi bi-arrow-clockwise ms-0.5"></i></button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, -5)"
+                                            title="Tua lùi 5 giây"><i
+                                                class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, 5)"
+                                            title="Tua tới 5 giây">+5s<i
+                                                class="bi bi-arrow-clockwise ms-0.5"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -344,8 +419,7 @@
                         <div class="kanji-overview-col">
                             <div class="kanji-stroke-box">
                                 <span class="kanji-main-char" th:text="${studyView.kanjiDetail['character']}">字</span>
-                                <span class="kanji-stroke-badge"
-                                    th:if="${studyView.kanjiDetail['strokeCount'] != null}"
+                                <span class="kanji-stroke-badge" th:if="${studyView.kanjiDetail['strokeCount'] != null}"
                                     th:text="|${studyView.kanjiDetail['strokeCount']} nét|">6 nét</span>
                             </div>
 
@@ -438,11 +512,13 @@
                         </div>
 
                         <!-- Ý NGHĨA (CHỈ HIỂN THỊ KHI CÓ Ý NGHĨA THỰC SỰ TRONG TỪ ĐIỂN, TUYỆT ĐỐI KHÔNG HIỂN THỊ TIÊU ĐỀ BÀI HỌC) -->
-                        <div th:if="${studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Bài ') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Ngữ pháp & Mẫu câu') and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title)}">
+                        <div
+                            th:if="${studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Bài ') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Ngữ pháp & Mẫu câu') and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title)}">
                             <hr class="grammar-dashed-line">
                             <div class="grammar-meaning-wrap">
                                 <span class="grammar-meaning-label">Ý nghĩa:</span>
-                                <span class="grammar-meaning-val" th:text="${studyView.grammarDetail['meaning']}">Ý nghĩa mẫu ngữ pháp</span>
+                                <span class="grammar-meaning-val" th:text="${studyView.grammarDetail['meaning']}">Ý
+                                    nghĩa mẫu ngữ pháp</span>
                             </div>
                         </div>
 
@@ -464,9 +540,11 @@
                                 <span class="grammar-ex-bullet">•</span>
                                 <div class="grammar-ex-content">
                                     <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                        <strong class="grammar-ex-jp" th:text="${ex['jp']}">日本語は、勉強すればするほど面白くなる。</strong>
+                                        <strong class="grammar-ex-jp"
+                                            th:text="${ex['jp']}">日本語は、勉強すればするほど面白くなる。</strong>
                                         <button type="button" class="btn btn-sm btn-link text-primary p-0 border-0"
-                                            th:attr="data-speak=${ex['jp']}" onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                            th:attr="data-speak=${ex['jp']}"
+                                            onclick="speakJapanese(this.getAttribute('data-speak'))"
                                             title="Nghe phát âm câu ví dụ">
                                             <i class="bi bi-volume-up-fill"></i>
                                         </button>
@@ -526,8 +604,10 @@
                                         <div class="vocab-example-text-wrap">
                                             <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                                 <span class="vocab-ex-jp" th:text="${ex['jp']}">毎日新しい単語を覚えます。</span>
-                                                <button type="button" class="btn btn-sm btn-link text-primary p-0 border-0"
-                                                    th:attr="data-speak=${ex['jp']}" onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                                <button type="button"
+                                                    class="btn btn-sm btn-link text-primary p-0 border-0"
+                                                    th:attr="data-speak=${ex['jp']}"
+                                                    onclick="speakJapanese(this.getAttribute('data-speak'))"
                                                     title="Nghe phát âm câu ví dụ">
                                                     <i class="bi bi-volume-up-fill"></i>
                                                 </button>
@@ -613,8 +693,10 @@
                     </h5>
 
                     <!-- Đoạn văn đọc hiểu -->
-                    <div class="manager-reading-content mb-4" th:if="${studyView.readingPassage != null and !studyView.readingPassage.isBlank()}">
-                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-text me-1 text-secondary"></i>Đoạn văn đọc hiểu:</h6>
+                    <div class="manager-reading-content mb-4"
+                        th:if="${studyView.readingPassage != null and !studyView.readingPassage.isBlank()}">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-text me-1 text-secondary"></i>Đoạn văn
+                            đọc hiểu:</h6>
                         <div class="p-3.5 rounded-3 border bg-light-subtle text-dark"
                             style="font-size: 1.05rem; line-height: 1.85; white-space: pre-wrap;"
                             th:text="${studyView.readingPassage}">
@@ -683,11 +765,14 @@
                         <h5 class="fw-bold text-dark mb-2">
                             <i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học
                         </h5>
-                        <p class="text-muted" style="line-height: 1.8;" th:text="${lesson.description}">Mô tả bài học.</p>
+                        <p class="text-muted" style="line-height: 1.8;" th:text="${lesson.description}">Mô tả bài học.
+                        </p>
                     </div>
-                    <div th:if="${lesson.description == null or lesson.description.isBlank()}" class="text-center py-4 text-muted">
+                    <div th:if="${lesson.description == null or lesson.description.isBlank()}"
+                        class="text-center py-4 text-muted">
                         <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                        <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi tài liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
+                        <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi tài
+                            liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
                     </div>
                 </div>
 
@@ -819,15 +904,15 @@
 
                         <!-- Quiz / Exam Button -->
                         <div>
-                            <a th:if="${lesson.isExam() or exam != null}" 
-                               th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}" 
-                               class="btn btn-danger d-flex align-items-center gap-2 px-4 rounded-pill fw-bold text-white shadow-sm">
+                            <a th:if="${lesson.isExam() or exam != null}"
+                                th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}"
+                                class="btn btn-danger d-flex align-items-center gap-2 px-4 rounded-pill fw-bold text-white shadow-sm">
                                 <i class="bi bi-mortarboard-fill"></i>
                                 <span>Vào phòng thi ảo</span>
                             </a>
-                            <a th:unless="${lesson.isExam() or exam != null}" 
-                               th:href="@{/quiz/do(lessonId=${lesson.id})}" 
-                               class="btn btn-outline-primary d-flex align-items-center gap-1.5 px-3">
+                            <a th:unless="${lesson.isExam() or exam != null}"
+                                th:href="@{/quiz/do(lessonId=${lesson.id})}"
+                                class="btn btn-outline-primary d-flex align-items-center gap-1.5 px-3">
                                 <i class="bi bi-pencil-square"></i>
                                 <span>Làm bài trắc nghiệm</span>
                             </a>
@@ -851,7 +936,8 @@
 
             <!-- Right Column: Course Curriculum & Lessons (4 Columns) -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 p-3 p-xl-4 bg-white sticky-top lesson-curriculum-card" style="top: 85px; z-index: 10;">
+                <div class="card border-0 shadow-sm rounded-4 p-3 p-xl-4 bg-white sticky-top lesson-curriculum-card"
+                    style="top: 85px; z-index: 10;">
 
                     <!-- Top Meta: Level & Label -->
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -877,12 +963,20 @@
                             style="font-size: 0.8rem;">
                             <span class="text-muted fw-medium">Tiến độ hoàn thành</span>
                             <span class="fw-bold text-primary fs-6"
-                                th:text="${registration != null ? registration.progressPercent : 0} + '%'">0%</span>
+                                th:text="${registration != null && registration.progressPercent != null ? registration.progressPercent : 0} + '%'">0%</span>
                         </div>
                         <div class="progress" style="height: 6px; border-radius: 4px; background-color: #E2E8F0;">
                             <div class="progress-bar bg-primary"
-                                th:style="'width: ' + (${registration != null ? registration.progressPercent : 0}) + '%; border-radius: 4px;'">
+                                role="progressbar"
+                                th:aria-valuenow="${registration != null && registration.progressPercent != null ? registration.progressPercent : 0}"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                th:style="'width: ' + (${registration != null && registration.progressPercent != null ? registration.progressPercent : 0}) + '%; border-radius: 4px;'">
                             </div>
+                        </div>
+                        <div class="mt-1.5 d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                            <span>Đã học: <b class="text-dark" th:text="${completedLessonsCount != null ? completedLessonsCount : 0}">0</b>/<span th:text="${totalLessonsCount != null ? totalLessonsCount : 0}">0</span> bài</span>
+                            <span th:text="${registration != null && registration.progressPercent != null && registration.progressPercent >= 100 ? 'Đã hoàn thành' : 'Đang học'}">Đang học</span>
                         </div>
                     </div>
 
@@ -929,8 +1023,12 @@
                                                     class="bi bi-clipboard2-check-fill text-danger fs-5"
                                                     title="Bài thi đánh giá"></i>
                                                 <i th:if="${!sLesson.isExam() && sLesson.id == lesson.id}"
-                                                    class="bi bi-play-circle-fill text-primary fs-5"></i>
-                                                <i th:if="${!sLesson.isExam() && sLesson.id != lesson.id}"
+                                                    class="bi bi-play-circle-fill text-primary fs-5"
+                                                    title="Đang học"></i>
+                                                <i th:if="${!sLesson.isExam() && sLesson.id != lesson.id && completedLessonIds != null && completedLessonIds.contains(sLesson.id)}"
+                                                    class="bi bi-check-circle-fill text-success fs-5"
+                                                    title="Đã hoàn thành"></i>
+                                                <i th:if="${!sLesson.isExam() && sLesson.id != lesson.id && (completedLessonIds == null || !completedLessonIds.contains(sLesson.id))}"
                                                     class="bi bi-circle text-secondary opacity-50"
                                                     style="font-size: 0.95rem;"></i>
                                             </div>
@@ -944,6 +1042,11 @@
                                                     Tên bài học
                                                 </div>
                                                 <div class="d-flex align-items-center justify-content-end gap-2 mt-1">
+                                                    <span th:if="${completedLessonIds != null && completedLessonIds.contains(sLesson.id)}"
+                                                        class="badge bg-success-subtle text-success border border-success-subtle rounded-pill"
+                                                        style="font-size: 0.65rem; font-weight: 600;">
+                                                        <i class="bi bi-check2 me-0.5"></i>Đã học
+                                                    </span>
                                                     <span class="badge rounded-pill"
                                                         th:classappend="${sLesson.isExam()} ? 'bg-danger text-white' : (${sLesson.id == lesson.id} ? 'bg-primary text-white' : 'bg-light text-secondary border')"
                                                         style="font-size: 0.65rem; font-weight: 500;"
@@ -1247,16 +1350,16 @@
                 font-size: 0.78rem;
             }
 
-            .lesson-study-page .breadcrumb-item + .breadcrumb-item::before {
+            .lesson-study-page .breadcrumb-item+.breadcrumb-item::before {
                 color: #cbd5e1;
                 padding-right: 1rem;
             }
 
-            .lesson-study-page .breadcrumb-item + .breadcrumb-item {
+            .lesson-study-page .breadcrumb-item+.breadcrumb-item {
                 padding-left: 1rem;
             }
 
-            .lesson-study-page > .row {
+            .lesson-study-page>.row {
                 --bs-gutter-x: 1rem;
             }
 
@@ -1277,16 +1380,16 @@
                 line-height: 1.25;
             }
 
-            .lesson-study-page .lesson-exam-card > .border-bottom {
+            .lesson-study-page .lesson-exam-card>.border-bottom {
                 padding: 1rem 1.4rem !important;
             }
 
-            .lesson-study-page .lesson-exam-card > .border-bottom .card {
+            .lesson-study-page .lesson-exam-card>.border-bottom .card {
                 border: 1px solid #e2e8f0 !important;
                 box-shadow: none !important;
             }
 
-            .lesson-study-page .lesson-exam-card > .p-4:last-child {
+            .lesson-study-page .lesson-exam-card>.p-4:last-child {
                 padding: 1.2rem 1.4rem 1.45rem !important;
             }
 
@@ -1322,6 +1425,7 @@
                 .lesson-study-page .lesson-curriculum-card {
                     max-height: none;
                 }
+
                 .lesson-study-page .curriculum-scroll-container {
                     max-height: 400px !important;
                 }
