@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -63,6 +64,7 @@ public class SecurityConfig {
         http
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/sepay").permitAll()
                         // Public / Guest static & page resources
                         .requestMatchers(
                                 "/",
@@ -175,6 +177,7 @@ public class SecurityConfig {
                 )
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
+                                new AntPathRequestMatcher("/api/webhooks/sepay", "POST"),
                                 new AntPathRequestMatcher("/h2-console/**"),
                                 new AntPathRequestMatcher("/quiz/submit"),
                                 new AntPathRequestMatcher("/api/notifications/**")

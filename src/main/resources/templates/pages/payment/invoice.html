@@ -1,0 +1,81 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Hóa đơn - JEPS',
+    activeMenu='orders',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/orders}" class="text-decoration-none" style="color: var(--fuji-blue)">Đơn hàng</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Hóa đơn</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Hóa đơn thanh toán</h3>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-xl-5 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <div class="text-muted small text-uppercase">Invoice</div>
+                    <h4 class="fw-bold mb-0" style="color: var(--navy-dark)" th:text="${invoice.orderCode}">JLPP</h4>
+                </div>
+                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2" th:text="${invoice.status}">PAID</span>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light rounded-4 p-3 h-100">
+                        <div class="text-muted small mb-2">Khách hàng</div>
+                        <div class="fw-bold" th:text="${invoice.customerName}">Tên khách hàng</div>
+                        <div class="text-muted" th:text="${invoice.customerEmail}">email@example.com</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light rounded-4 p-3 h-100">
+                        <div class="text-muted small mb-2">Thông tin thanh toán</div>
+                        <div>Ngân hàng: <strong th:text="${invoice.bankName}">-</strong></div>
+                        <div>Phương thức: <strong th:text="${invoice.paymentMethod}">SEPAY</strong></div>
+                        <div>Thời gian: <strong th:text="${#temporals.format(invoice.paidAt, 'dd/MM/yyyy HH:mm')}">-</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6">
+                    <div class="text-muted small">Khóa học</div>
+                    <div class="fw-bold" th:text="${invoice.courseTitle}">Khóa học</div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="text-muted small">Số tiền</div>
+                    <div class="fw-bold fs-4" style="color: var(--navy-dark)" th:text="${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</div>
+                </div>
+            </div>
+
+            <div class="card border-0 bg-light rounded-4 p-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Nội dung chuyển khoản</span>
+                    <strong th:text="${invoice.transferContent}">-</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Mã giao dịch</span>
+                    <strong th:text="${invoice.transactionId != null ? invoice.transactionId : 'Chưa có'}">-</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-0">
+                    <span class="text-muted">Trạng thái</span>
+                    <strong th:text="${invoice.status}">PAID</strong>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <a th:href="@{/payment/{paymentId}(paymentId=${invoice.paymentId})}" class="btn btn-outline-secondary rounded-pill px-4 me-2">Quay lại</a>
+                <a th:href="@{/orders}" class="btn btn-primary rounded-pill px-4">Về danh sách đơn hàng</a>
+            </div>
+        </div>
+    </div>
+</div>

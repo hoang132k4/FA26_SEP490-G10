@@ -1,0 +1,222 @@
+<div th:replace="~{layouts/learner-layout :: html(
+    pageTitle='Thanh toán - JEPS',
+    activeMenu='orders',
+    content=~{::#mainContent}
+)}">
+    <div id="mainContent">
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none" style="color: var(--fuji-blue)">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/orders}" class="text-decoration-none" style="color: var(--fuji-blue)">Đơn hàng</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Thanh toán</li>
+                    </ol>
+                </nav>
+                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Thanh toán khóa học</h3>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            <div class="row g-0">
+                <div class="col-lg-5 border-end">
+                    <div class="p-4 p-xl-5">
+                        <div class="mb-4">
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">Mã đơn: <span th:text="${payment.orderCode}">JLPP</span></span>
+                        </div>
+                        <div id="payment-status-panel"
+                             class="alert alert-info mb-4"
+                             th:data-status-url="@{/api/payments/{paymentId}/status(paymentId=${payment.id})}"
+                             th:data-invoice-url="@{/invoice/{paymentId}(paymentId=${payment.id})}"
+                             th:data-initial-status="${payment.status}"
+                             th:data-polling-deadline="${paymentPollingDeadlineEpochMillis}">
+                            <strong id="payment-status-text"
+                                    th:text="${payment.status == 'PAID' ? 'Thanh toán thành công.' : (payment.status == 'PENDING' ? 'Đang chờ xác nhận thanh toán.' : payment.status)}">
+                                Đang chờ xác nhận thanh toán.
+                            </strong>
+                            <span id="payment-status-detail" class="d-block small mt-1"></span>
+                        </div>
+                        <div th:if="${paymentNotice != null}" class="alert alert-warning" role="alert"
+                             th:text="${paymentNotice}"></div>
+                        <h5 class="fw-bold mb-3" style="color: var(--navy-dark)" th:text="${payment.courseTitle}">Khóa học</h5>
+                        <div class="mb-3">
+                            <div class="text-muted small">Tổng tiền</div>
+                            <div class="fw-bold fs-3" style="color: var(--navy-dark)" th:text="${#numbers.formatDecimal(payment.amount, 0, 'COMMA', 0, 'POINT') + ' VND'}">0 VND</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Nội dung chuyển khoản</div>
+                            <div class="fw-semibold" th:text="${payment.transferContent}">JLPP...</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Thời hạn</div>
+                            <div th:text="${#temporals.format(payment.expiresAt, 'dd/MM/yyyy HH:mm')}" class="fw-semibold"></div>
+                        </div>
+                        <div class="alert alert-info small mb-0">Vui lòng chuyển đúng số tiền và nội dung chuyển khoản để hệ thống tự xác nhận thanh toán.</div>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="p-4 p-xl-5">
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold mb-3" style="color: var(--navy-dark)">Quét mã VietQR</h5>
+                            <img th:if="${payment.qrCodeUrl != null}" th:src="${payment.qrCodeUrl}"
+                                 alt="VietQR payment code"
+                                 class="img-fluid rounded-4 border shadow-sm"
+                                 style="max-width: 320px; background: white;">
+                            <div th:if="${payment.qrCodeUrl == null}" class="alert alert-warning" role="alert">
+                                Thanh toán hiện chưa khả dụng do thiếu cấu hình ngân hàng hoặc SePay. Vui lòng liên hệ hỗ trợ.
+                            </div>
+                        </div>
+
+                        <div th:if="${payment.qrCodeUrl != null}" class="card bg-light border-0 rounded-4 p-3 mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Ngân hàng</span>
+                                <strong th:text="${payment.bankCode}">MBBank</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Số tài khoản</span>
+                                <strong th:text="${payment.bankAccountNumber}">-</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-0">
+                                <span class="text-muted">Tên tài khoản</span>
+                                <strong th:text="${payment.bankAccountName}">-</strong>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a id="payment-invoice-link"
+                               th:href="@{/invoice/{paymentId}(paymentId=${payment.id})}"
+                               th:classappend="${payment.status == 'PAID' ? '' : ' d-none'}"
+                               class="btn btn-primary rounded-pill px-4">
+                                Xem hóa đơn
+                            </a>
+                            <a th:href="@{/orders}" class="btn btn-outline-secondary rounded-pill px-4">
+                                Quay lại đơn hàng
+                            </a>
+                        </div>
+                    </div>
+
+                    <script>
+                        (() => {
+                            const panel = document.getElementById("payment-status-panel");
+                            if (!panel) {
+                                return;
+                            }
+
+                            const statusText = document.getElementById("payment-status-text");
+                            const statusDetail = document.getElementById("payment-status-detail");
+                            const invoiceLink = document.getElementById("payment-invoice-link");
+                            const terminalStatuses = new Set(["PAID", "FAILED", "CANCELLED"]);
+                            const configuredPollingDeadline = Number(panel.dataset.pollingDeadline);
+                            const pollingDeadline = Number.isFinite(configuredPollingDeadline)
+                                && configuredPollingDeadline > 0
+                                ? configuredPollingDeadline
+                                : Date.now() + 30 * 60 * 1000;
+                            const statusMessages = {
+                                PAID: "Thanh toán thành công.",
+                                PENDING: "Đang chờ xác nhận thanh toán.",
+                                FAILED: "Thanh toán thất bại.",
+                                CANCELLED: "Thanh toán đã bị hủy.",
+                                EXPIRED: "Thanh toán đã hết hạn; hệ thống vẫn đang kiểm tra giao dịch đến muộn."
+                            };
+                            let failures = 0;
+                            let timer = null;
+                            let activeRequest = null;
+                            let stopped = terminalStatuses.has(panel.dataset.initialStatus);
+
+                            function stopPolling() {
+                                stopped = true;
+                                if (timer !== null) {
+                                    clearTimeout(timer);
+                                }
+                                if (activeRequest !== null) {
+                                    activeRequest.abort();
+                                }
+                            }
+
+                            function showStatus(status) {
+                                statusText.textContent = statusMessages[status] || "Trạng thái thanh toán: " + status;
+                                panel.classList.remove("alert-info", "alert-success", "alert-warning", "alert-danger");
+                                panel.classList.add(status === "PAID" ? "alert-success"
+                                    : status === "PENDING" ? "alert-info" : "alert-warning");
+                                if (status === "PAID") {
+                                    invoiceLink.classList.remove("d-none");
+                                }
+                            }
+
+                            function stopAfterPollingWindow() {
+                                showStatus(panel.dataset.latestStatus || panel.dataset.initialStatus || "PENDING");
+                                statusDetail.textContent =
+                                    "Chưa nhận được xác nhận trong thời gian chờ. Hãy tải lại trang hoặc kiểm tra lại sau.";
+                                stopPolling();
+                            }
+
+                            async function pollStatus() {
+                                if (stopped) {
+                                    return;
+                                }
+                                activeRequest = new AbortController();
+                                const timeout = setTimeout(() => activeRequest.abort(), 8000);
+                                let nextDelay = 5000;
+                                try {
+                                    const response = await fetch(panel.dataset.statusUrl, {
+                                        headers: { "Accept": "application/json" },
+                                        cache: "no-store",
+                                        credentials: "same-origin",
+                                        signal: activeRequest.signal
+                                    });
+                                    if (!response.ok) {
+                                        if (response.status >= 400 && response.status < 500) {
+                                            statusDetail.textContent = "Không thể kiểm tra trạng thái thanh toán cho tài khoản này.";
+                                            stopPolling();
+                                            return;
+                                        }
+                                        throw new Error("Status request failed.");
+                                    }
+
+                                    const data = await response.json();
+                                    const status = String(data.status || "").toUpperCase();
+                                    if (!status) {
+                                        throw new Error("Status response is invalid.");
+                                    }
+                                    showStatus(status);
+                                    panel.dataset.latestStatus = status;
+                                    statusDetail.textContent = "";
+                                    if (terminalStatuses.has(status)) {
+                                        stopPolling();
+                                        return;
+                                    }
+                                    failures = 0;
+                                } catch (error) {
+                                    if (stopped) {
+                                        return;
+                                    }
+                                    failures++;
+                                    statusDetail.textContent = "Không thể cập nhật trạng thái. Hệ thống sẽ thử lại.";
+                                    nextDelay = Math.min(5000 * (2 ** (failures - 1)), 30000);
+                                } finally {
+                                    clearTimeout(timeout);
+                                    activeRequest = null;
+                                }
+
+                                if (!stopped) {
+                                    const remaining = pollingDeadline - Date.now();
+                                    if (remaining <= 0) {
+                                        stopAfterPollingWindow();
+                                    } else {
+                                        timer = setTimeout(pollStatus, Math.min(nextDelay, remaining));
+                                    }
+                                }
+                            }
+
+                            window.addEventListener("pagehide", stopPolling, { once: true });
+                            if (!stopped) {
+                                pollStatus();
+                            }
+                        })();
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
