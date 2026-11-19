@@ -98,7 +98,7 @@
                         <span class="text-secondary small">Khóa học:</span>
                         <span class="fw-bold text-dark text-truncate" style="max-width: 320px;" th:text="${path.courseTitle}">Khóa học JLPT</span>
                         <span class="badge rounded-pill ms-1" style="background-color: #EBF3F8; color: #173B57; border: 1px solid #CBDCE7;"
-                              th:text="${path.courseLevel != null ? path.courseLevel : 'N3'}">N3</span>
+                              th:text="${path.courseLevel != null ? path.courseLevel : '--'}">N3</span>
                     </div>
                 </div>
             </div>
@@ -509,7 +509,7 @@
                                     <div>
                                         <div class="small text-secondary" style="font-size: 12px;">Tổng thời gian</div>
                                         <strong class="text-dark fs-6" id="summaryTotalWeeks"
-                                                th:text="${preview != null and preview.weeksNeeded != null ? '≈ ' + preview.weeksNeeded + ' tuần' : '≈ 5 tuần'}">≈ 5 tuần</strong>
+                                                th:text="${preview != null and preview.weeksNeeded != null ? '≈ ' + preview.weeksNeeded + ' tuần' : '--'}">≈ 5 tuần</strong>
                                     </div>
                                 </div>
                             </div>
@@ -543,7 +543,7 @@
                                         <i class="bi bi-rocket-takeoff text-success fs-5 flex-shrink-0 mt-0.5"></i>
                                         <div>
                                             <div class="small fw-bold text-success" id="badgeVsCurrent"
-                                                 th:text="${preview != null and preview.daysDifferenceText != null ? preview.daysDifferenceText : 'Hoàn thành sớm hơn 17 ngày'}">Hoàn thành sớm hơn 17 ngày</div>
+                                                 th:text="${preview != null and preview.daysDifferenceText != null ? preview.daysDifferenceText : '--'}">Hoàn thành sớm hơn 17 ngày</div>
                                             <div class="text-secondary" style="font-size: 11.5px;">so với Kế hoạch hiện tại (đang áp dụng)</div>
                                         </div>
                                     </div>
@@ -553,7 +553,7 @@
                                         <i class="bi bi-hourglass-split text-warning fs-5 flex-shrink-0 mt-0.5"></i>
                                         <div>
                                             <div class="small fw-bold text-warning-emphasis" id="badgeVsBaseline"
-                                                 th:text="${preview != null and preview.daysDiffFromBaselineText != null ? preview.daysDiffFromBaselineText : 'Kéo dài thêm 19 ngày so với Kế hoạch ban đầu'}">Kéo dài thêm 19 ngày</div>
+                                                 th:text="${preview != null and preview.daysDiffFromBaselineText != null ? preview.daysDiffFromBaselineText : '--'}">Kéo dài thêm 19 ngày</div>
                                             <div class="text-secondary" style="font-size: 11.5px;">so với Kế hoạch ban đầu lúc mới bắt đầu khóa học</div>
                                         </div>
                                     </div>
@@ -1020,9 +1020,9 @@
                             <tbody>
                                 <tr>
                                     <td class="ps-3 fw-semibold text-dark"><i class="bi bi-clock me-1.5 text-primary"></i> Số giờ học mỗi ngày</td>
-                                    <td class="text-secondary" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? path.dailyHours + ' giờ/ngày' : '1.00 giờ/ngày')}">1.00 giờ/ngày</td>
+                                    <td class="text-secondary" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? path.dailyHours + ' giờ/ngày' : '--')}">1.00 giờ/ngày</td>
                                     <td class="fw-bold text-primary">
-                                        <span th:text="${preview.dailyHours != null ? preview.dailyHours + ' giờ/ngày' : (preview.newWeeklyHours != null ? preview.newWeeklyHours + ' giờ/tuần' : '1.50 giờ/ngày')}">1.50 giờ/ngày</span>
+                                        <span th:text="${preview.dailyHours != null ? preview.dailyHours + ' giờ/ngày' : (preview.newWeeklyHours != null ? preview.newWeeklyHours + ' giờ/tuần' : '--')}">1.50 giờ/ngày</span>
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 11px;">Mới</span>
                                     </td>
                                 </tr>

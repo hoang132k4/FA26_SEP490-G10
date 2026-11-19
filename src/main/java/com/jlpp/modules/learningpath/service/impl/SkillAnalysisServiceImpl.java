@@ -353,32 +353,32 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
             return standardTarget.equalsIgnoreCase(examLvl);
         }
 
-        // 2. Kiểm tra qua Exam entity trong database (nếu có examRepository)
+        // 2. Kiểm tra qua tiêu đề bài thi (Exam Title)
+        String titleLvl = extractStandardLevel(examTitle);
+        if (titleLvl != null) {
+            return standardTarget.equalsIgnoreCase(titleLvl);
+        }
+
+        // 3. Kiểm tra qua Exam entity trong database (nếu có examRepository)
         if (examId != null && examRepository != null) {
             try {
                 Exam exam = examRepository.findById(examId).orElse(null);
                 if (exam != null) {
-                    if (exam.getCourseId() != null && courseId != null && exam.getCourseId().equals(courseId)) {
-                        return true;
-                    }
                     String entityLvl = extractStandardLevel(exam.getJlptLevel());
                     if (entityLvl != null) {
                         return standardTarget.equalsIgnoreCase(entityLvl);
                     }
-                    String entityTitleLvl = extractStandardLevel(exam.getTitle());
+                    String entityTitleLvl = extractStandardLevel(exam.getTitle() != null ? exam.getTitle() : exam.getExamTitle());
                     if (entityTitleLvl != null) {
                         return standardTarget.equalsIgnoreCase(entityTitleLvl);
+                    }
+                    if (exam.getCourseId() != null && courseId != null && exam.getCourseId().equals(courseId)) {
+                        return true;
                     }
                 }
             } catch (Exception ex) {
                 log.warn("Error checking exam entity for examId={}: {}", examId, ex.getMessage());
             }
-        }
-
-        // 3. Kiểm tra qua tiêu đề bài thi (Exam Title)
-        String titleLvl = extractStandardLevel(examTitle);
-        if (titleLvl != null) {
-            return standardTarget.equalsIgnoreCase(titleLvl);
         }
 
         return false;

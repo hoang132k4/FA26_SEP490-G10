@@ -93,7 +93,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                         .map(r -> CourseOptionDto.builder()
                                 .courseId(r.getCourse().getId())
                                 .courseTitle(r.getCourse().getTitle())
-                                .courseLevel(r.getCourse().getLevel() != null ? r.getCourse().getLevel() : "N4")
+                                .courseLevel(resolveLevelFromCourse(r.getCourse()))
                                 .progressPercent(r.getProgressPercent() != null ? r.getProgressPercent() : 0)
                                 .selected(false)
                                 .build())
@@ -135,16 +135,18 @@ public class LearningPathServiceImpl implements LearningPathService {
         String courseTitle = (course.getTitle() != null)
                 ? course.getTitle()
                 : "Khóa học #" + lp.getCourseId();
-        String courseLevel = (course.getLevel() != null)
-                ? course.getLevel()
-                : lp.getTargetLevel();
+        String courseLevel = resolveLevelFromCourse(course);
+        if (!"Chưa xác định".equalsIgnoreCase(courseLevel) && !courseLevel.equalsIgnoreCase(lp.getTargetLevel())) {
+            lp.setTargetLevel(courseLevel);
+            learningPathRepository.save(lp);
+        }
 
         // Build enrolled course options for Course Switcher
         List<CourseOptionDto> enrolledCourses = publishedRegistrations.stream()
                 .map(r -> CourseOptionDto.builder()
                         .courseId(r.getCourse().getId())
                         .courseTitle(r.getCourse().getTitle())
-                        .courseLevel(r.getCourse().getLevel() != null ? r.getCourse().getLevel() : "N4")
+                        .courseLevel(resolveLevelFromCourse(r.getCourse()))
                         .progressPercent(r.getProgressPercent() != null ? r.getProgressPercent() : 0)
                         .selected(r.getCourse().getId().equals(lp.getCourseId()))
                         .build())
@@ -296,6 +298,10 @@ public class LearningPathServiceImpl implements LearningPathService {
         String planComparisonStatus = "ON_TRACK";
 
         boolean isAllCompleted = (totalLessons > 0 && completedLessons >= totalLessons) || progressPercent >= 100;
+        if (isAllCompleted && !"COMPLETED".equalsIgnoreCase(lp.getPathStatus())) {
+            lp.setPathStatus("COMPLETED");
+            learningPathRepository.save(lp);
+        }
 
         if (isAllCompleted) {
             // Xác định ngày hoàn thành thực tế của bài học cuối cùng
@@ -489,9 +495,7 @@ public class LearningPathServiceImpl implements LearningPathService {
         String courseTitle = (course != null && course.getTitle() != null)
                 ? course.getTitle()
                 : "Khóa học #" + lp.getCourseId();
-        String courseLevel = (course != null && course.getLevel() != null)
-                ? course.getLevel()
-                : lp.getTargetLevel();
+        String courseLevel = resolveLevelFromCourse(course);
 
         List<CourseRegistration> allRegistrations = courseRegistrationRepository.findByUserIdWithCourse(user.getId());
         List<CourseOptionDto> courseOptions = allRegistrations.stream()
@@ -499,7 +503,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                 .map(r -> CourseOptionDto.builder()
                         .courseId(r.getCourse().getId())
                         .courseTitle(r.getCourse().getTitle())
-                        .courseLevel(r.getCourse().getLevel() != null ? r.getCourse().getLevel() : "N4")
+                        .courseLevel(resolveLevelFromCourse(r.getCourse()))
                         .progressPercent(r.getProgressPercent() != null ? r.getProgressPercent() : 0)
                         .selected(r.getCourse().getId().equals(lp.getCourseId()))
                         .build())
@@ -751,14 +755,13 @@ public class LearningPathServiceImpl implements LearningPathService {
             return Collections.emptyList();
         }
 
-        if (studyDays == null || studyDays.isEmpty()) {
-            studyDays = EnumSet.allOf(DayOfWeek.class);
-        }
+        Set<DayOfWeek> effectiveStudyDays = (studyDays != null && !studyDays.isEmpty())
+                ? EnumSet.copyOf(studyDays)
+                : EnumSet.allOf(DayOfWeek.class);
 
         LocalDate referenceDate = LocalDate.now();
         LocalDate courseStart = (startDate != null) ? startDate : referenceDate;
-        courseStart = findNextOrSameStudyDate(courseStart, studyDays, leaveDates);
-        studyDays.add(courseStart.getDayOfWeek());
+        courseStart = findNextOrSameStudyDate(courseStart, effectiveStudyDays, leaveDates);
         LocalDate currentDate = courseStart;
 
         List<LearningPathTimelineItemDto> items = new ArrayList<>(lessons.size());
@@ -802,7 +805,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                             ? startDate
                             : referenceDate;
                     if (currentDate.isBefore(effectiveStart)) {
-                        currentDate = findNextOrSameStudyDate(effectiveStart, studyDays, leaveDates);
+                        currentDate = findNextOrSameStudyDate(effectiveStart, effectiveStudyDays, leaveDates);
                         accumulatedMinutesToday = 0;
                     }
                 }
@@ -810,7 +813,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                 accumulatedMinutesToday += duration;
 
                 if (accumulatedMinutesToday > dailyMinutesLimit && accumulatedMinutesToday > duration) {
-                    currentDate = findNextStudyDate(currentDate, studyDays, leaveDates);
+                    currentDate = findNextStudyDate(currentDate, effectiveStudyDays, leaveDates);
                     accumulatedMinutesToday = duration;
                 }
                 itemDate = currentDate;
@@ -1275,11 +1278,11 @@ public class LearningPathServiceImpl implements LearningPathService {
         }
 
         if (request != null) {
-            int daysCount = (request.getStudyDays() != null && !request.getStudyDays().isEmpty())
+            int daysCount = Math.max(1, (request.getStudyDays() != null && !request.getStudyDays().isEmpty())
                     ? request.getStudyDays().size()
                     : (lp.getStudyDays() != null && !lp.getStudyDays().isBlank()
                             ? parseStudyDays(lp.getStudyDays(), null).size()
-                            : 7);
+                            : 7));
 
             if (request.getDailyHours() != null && request.getDailyHours().compareTo(BigDecimal.ZERO) > 0) {
                 lp.setDailyHoursSetup(request.getDailyHours());
@@ -1295,10 +1298,6 @@ public class LearningPathServiceImpl implements LearningPathService {
 
             if (request.getStartDate() != null) {
                 lp.setScheduledDate(request.getStartDate());
-                String startDayName = request.getStartDate().getDayOfWeek().name();
-                if (lp.getStudyDays() != null && !lp.getStudyDays().contains(startDayName)) {
-                    lp.setStudyDays(lp.getStudyDays() + "," + startDayName);
-                }
             }
 
             if (request.getTargetExamDate() != null) {
@@ -1356,7 +1355,7 @@ public class LearningPathServiceImpl implements LearningPathService {
 
             // Auto-provision LearningPath for this registered course
             Course c = matchReg.get().getCourse();
-            String targetLevel = c.getLevel() != null ? c.getLevel() : "N4";
+            String targetLevel = resolveLevelFromCourse(c);
             LocalDate startDate = matchReg.get().getRegisteredAt() != null
                     ? matchReg.get().getRegisteredAt().toLocalDate()
                     : LocalDate.now();
@@ -1392,7 +1391,7 @@ public class LearningPathServiceImpl implements LearningPathService {
         // If no existing path matches registered courses, auto-provision for the first
         // registered course
         Course firstCourse = publishedRegs.get(0).getCourse();
-        String targetLevel = firstCourse.getLevel() != null ? firstCourse.getLevel() : "N4";
+        String targetLevel = resolveLevelFromCourse(firstCourse);
         LocalDate startDate = publishedRegs.get(0).getRegisteredAt() != null
                 ? publishedRegs.get(0).getRegisteredAt().toLocalDate()
                 : LocalDate.now();
@@ -1702,19 +1701,33 @@ public class LearningPathServiceImpl implements LearningPathService {
         }
 
         boolean streakActiveToday = activeDates.contains(today);
+
+        // Chuỗi ngày học tính toán theo quy tắc:
+        // 1. Nếu hôm nay đã học -> tính từ hôm nay.
+        // 2. Nếu hôm nay chưa học:
+        //    - Đang nghỉ phép: bảo lưu chuỗi, kiểm tra từ hôm qua.
+        //    - Khóa học đã hoàn thành: kiểm tra từ ngày hoàn thành cuối cùng.
+        //    - Ngày nghỉ theo lịch học cá nhân (ví dụ T7, CN của lịch 2-4-6): kiểm tra từ hôm qua.
+        //    - Ngày học theo lịch nhưng chưa học: kiểm tra từ hôm qua để giữ chuỗi chờ học trong ngày.
         LocalDate checkDate = streakActiveToday ? today
                 : (isCourseCompleted && lastCompletionDate != null ? lastCompletionDate : today.minusDays(1));
+
         int streakDays = 0;
-        while (activeDates.contains(checkDate) || allLeaveDates.contains(checkDate)) {
+        int maxLookbackDays = 1000;
+        while (checkDate != null && maxLookbackDays-- > 0) {
             if (activeDates.contains(checkDate)) {
                 streakDays++;
+                checkDate = checkDate.minusDays(1);
+            } else if (allLeaveDates.contains(checkDate)) {
+                // Ngày nghỉ phép được phê duyệt -> bắc cầu bảo lưu chuỗi, không ngắt
+                checkDate = checkDate.minusDays(1);
+            } else if (studyDays != null && !studyDays.isEmpty() && !studyDays.contains(checkDate.getDayOfWeek())) {
+                // Ngày nghỉ theo lịch học cá nhân -> bắc cầu ngày nghỉ theo kế hoạch
+                checkDate = checkDate.minusDays(1);
+            } else {
+                // Rơi vào ngày học theo lịch mà không học và không có đơn báo nghỉ -> đứt chuỗi
+                break;
             }
-            checkDate = checkDate.minusDays(1);
-        }
-
-        // Fallback for new learner / demo if completed lessons exist
-        if (streakDays == 0 && completedCount > 0) {
-            streakDays = Math.min(completedCount, 3);
         }
 
         String streakMessage;
@@ -1733,6 +1746,9 @@ public class LearningPathServiceImpl implements LearningPathService {
         } else if (streakActiveToday) {
             streakMessage = "Đã học hôm nay! Chuỗi ngày học an toàn";
             streakBadgeClass = "text-success";
+        } else if (!isStudyDay && streakDays > 0) {
+            streakMessage = "Hôm nay là ngày nghỉ theo lịch! Chuỗi (" + streakDays + " ngày) an toàn 🌿";
+            streakBadgeClass = "text-primary";
         } else if (streakDays > 0) {
             streakMessage = "Học bài hôm nay để duy trì chuỗi 🔥";
             streakBadgeClass = "text-danger";
@@ -1761,7 +1777,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                 .actionButtonText(actionButtonText)
                 .statusMessage(statusMessage)
                 .streakDays(streakDays)
-                .streakActiveToday(streakActiveToday || onLeaveToday || isCourseCompleted)
+                .streakActiveToday(streakActiveToday || onLeaveToday || (!isStudyDay && streakDays > 0) || isCourseCompleted)
                 .streakMessage(streakMessage)
                 .streakBadgeClass(streakBadgeClass)
                 .onLeaveToday(onLeaveToday)
@@ -1780,8 +1796,9 @@ public class LearningPathServiceImpl implements LearningPathService {
             return dates;
         }
 
-        // 1. Gather active study dates across all registered learning paths of this
-        // user
+        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+
+        // 1. Gather active study dates across all registered learning paths of this user
         try {
             List<LearningPath> userPaths = learningPathRepository.findByUserIdOrderByScheduledDateDescIdDesc(userId);
             for (LearningPath p : userPaths) {
@@ -1793,7 +1810,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                             if ("COMPLETED".equalsIgnoreCase(item.getStatus()) && item.getCompletedAt() != null) {
                                 try {
                                     LocalDate d = Instant.parse(item.getCompletedAt())
-                                            .atZone(ZoneId.systemDefault())
+                                            .atZone(vnZone)
                                             .toLocalDate();
                                     dates.add(d);
                                 } catch (Exception ignored) {
@@ -1806,17 +1823,19 @@ public class LearningPathServiceImpl implements LearningPathService {
         } catch (Exception ignored) {
         }
 
-        // 2. Gather active exam / test completion dates
-
+        // 2. Gather active exam / test completion dates (support both dd/MM/yyyy and dd/MM/yyyy HH:mm)
         if (examService != null) {
             try {
                 List<ExamHistoryDto> history = examService.getLearnerExamHistory(userId);
                 if (history != null) {
                     for (ExamHistoryDto h : history) {
-                        if (h.getFormattedDate() != null) {
+                        if (h.getFormattedDate() != null && !h.getFormattedDate().isBlank() && !"N/A".equalsIgnoreCase(h.getFormattedDate())) {
                             try {
-                                LocalDate d = LocalDate.parse(h.getFormattedDate(), DATE_FORMATTER);
-                                dates.add(d);
+                                String raw = h.getFormattedDate().trim();
+                                if (raw.length() >= 10) {
+                                    LocalDate d = LocalDate.parse(raw.substring(0, 10), DATE_FORMATTER);
+                                    dates.add(d);
+                                }
                             } catch (Exception ignored) {
                             }
                         }
@@ -1825,6 +1844,22 @@ public class LearningPathServiceImpl implements LearningPathService {
             } catch (Exception ignored) {
             }
         }
+
+        // 3. Fallback for legacy completed lessons without JSON timestamp
+        if (dates.isEmpty() && courseId != null) {
+            try {
+                Optional<CourseRegistration> regOpt = courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId);
+                if (regOpt.isPresent() && regOpt.get().getProgressPercent() != null && regOpt.get().getProgressPercent() > 0) {
+                    LocalDate baseDate = regOpt.get().getUpdatedAt() != null ? regOpt.get().getUpdatedAt().toLocalDate()
+                            : (regOpt.get().getRegisteredAt() != null ? regOpt.get().getRegisteredAt().toLocalDate() : null);
+                    if (baseDate != null) {
+                        dates.add(baseDate);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
         return dates;
     }
 
@@ -1836,6 +1871,9 @@ public class LearningPathServiceImpl implements LearningPathService {
         }
         if (request.getStartDate().isAfter(request.getEndDate())) {
             throw new IllegalArgumentException("Ngày bắt đầu nghỉ không được sau ngày kết thúc nghỉ.");
+        }
+        if (request.getEndDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Ngày kết thúc nghỉ không được ở trong quá khứ.");
         }
 
         User user = findUserByUsername(username);
@@ -1977,5 +2015,23 @@ public class LearningPathServiceImpl implements LearningPathService {
             }
         }
         return dates;
+    }
+    private String resolveLevelFromCourse(Course c) {
+        if (c == null) {
+            return "Chưa xác định";
+        }
+        if (c.getLevel() != null && !c.getLevel().isBlank()) {
+            return c.getLevel().trim().toUpperCase();
+        }
+        if (c.getTitle() != null) {
+            String titleUpper = c.getTitle().toUpperCase();
+            for (String lvl : List.of("N1", "N2", "N3", "N4", "N5")) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?<![A-Z0-9])" + lvl + "(?![A-Z0-9])").matcher(titleUpper);
+                if (m.find()) {
+                    return lvl;
+                }
+            }
+        }
+        return "Chưa xác định";
     }
 }

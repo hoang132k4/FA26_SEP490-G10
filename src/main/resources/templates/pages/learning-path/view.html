@@ -131,7 +131,7 @@
                             <span class="text-secondary small">Khóa học:</span>
                             <span class="fw-bold text-dark text-truncate" style="max-width: 240px;" th:text="${path.courseTitle}">Khóa học JLPT</span>
                             <span class="badge rounded-pill ms-1" style="background-color: #EBF3F8; color: #173B57; border: 1px solid #CBDCE7;"
-                                  th:text="${path.courseLevel != null ? path.courseLevel : 'N3'}">N3</span>
+                                  th:text="${path.courseLevel != null ? path.courseLevel : '--'}">N3</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2" aria-labelledby="courseSwitcherDropdown" style="min-width: 320px;">
                             <li class="dropdown-header text-uppercase small fw-bold text-muted px-3 py-2">
@@ -396,7 +396,7 @@
                                         <i class="bi bi-bullseye fs-5" style="color: #173B57;"></i>
                                         <span class="fw-bold fs-6 text-dark">Kế hoạch học tập tổng quan</span>
                                         <span class="badge rounded-pill ms-1" style="background-color: #EBF3F8; color: #173B57; border: 1px solid #CBDCE7; font-size: 11.5px;"
-                                              th:text="${path.courseLevel != null ? path.courseLevel : 'N3'}">N3</span>
+                                              th:text="${path.courseLevel != null ? path.courseLevel : '--'}">N3</span>
                                     </div>
                                     <h5 class="fw-bold text-dark mb-0 text-truncate" style="font-size: 18px;"
                                         th:text="${path.courseTitle != null ? path.courseTitle : 'Khóa học JLPT'}">
@@ -414,7 +414,7 @@
                                             <div class="d-flex align-items-center flex-wrap">
                                                 <span class="text-secondary">Dự kiến hoàn thành ban đầu:</span>
                                                 <strong class="text-dark fw-bold ms-1"
-                                                        th:text="${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : (path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '03/12/2026')}">03/12/2026</strong>
+                                                        th:text="${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : (path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '--')}">--</strong>
                                                 <span class="plan-info-tooltip-wrapper ms-2">
                                                     <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
                                                           role="button" tabindex="0"
@@ -434,7 +434,7 @@
                                             <div class="d-flex align-items-center flex-wrap">
                                                 <span class="text-secondary">Dự kiến hoàn thành hiện tại:</span>
                                                 <strong class="text-primary fw-bold ms-1"
-                                                        th:text="${path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '06/01/2027'}">06/01/2027</strong>
+                                                        th:text="${path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '--'}">--</strong>
                                                 <span class="plan-info-tooltip-wrapper ms-2">
                                                     <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
                                                           role="button" tabindex="0"
@@ -455,8 +455,8 @@
                                                   class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-2 text-wrap text-start shadow-none"
                                                   style="background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; font-size: 13px;">
                                                 <i class="bi bi-exclamation-triangle-fill text-warning"></i>
-                                                <span th:text="'Trễ ' + ${path.baselineDaysVariance} + ' ngày so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : '03/12/2026'}) + ')'">
-                                                    Trễ 34 ngày so với Kế hoạch ban đầu (03/12/2026)
+                                                <span th:text="'Trễ ' + ${path.baselineDaysVariance} + ' ngày so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : (path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '--')}) + ')'">
+                                                    Trễ so với Kế hoạch ban đầu
                                                 </span>
                                             </span>
 
@@ -465,7 +465,7 @@
                                                   class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-2 text-wrap text-start shadow-none"
                                                   style="background-color: #ECFDF5; color: #15803D; border: 1px solid #BBF7D0; font-size: 13px;">
                                                 <i class="bi bi-rocket-takeoff-fill text-success"></i>
-                                                <span th:text="'Hoàn thành sớm hơn ' + ${T(java.lang.Math).abs(path.baselineDaysVariance)} + ' ngày so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : '03/12/2026'}) + ')'">
+                                                <span th:text="'Hoàn thành sớm hơn ' + ${T(java.lang.Math).abs(path.baselineDaysVariance)} + ' ngày so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : (path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '--')}) + ')'">
                                                     Hoàn thành sớm hơn so với Kế hoạch ban đầu
                                                 </span>
                                             </span>
@@ -475,8 +475,8 @@
                                                   class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-2 text-wrap text-start shadow-none"
                                                   style="background-color: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; font-size: 13px;">
                                                 <i class="bi bi-check-circle-fill text-primary"></i>
-                                                <span th:text="'Đúng tiến độ so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : '03/12/2026'}) + ')'">
-                                                    Đúng tiến độ so với Kế hoạch ban đầu (03/12/2026)
+                                                <span th:text="'Đúng tiến độ so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : (path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '--')}) + ')'">
+                                                    Đúng tiến độ so với Kế hoạch ban đầu
                                                 </span>
                                             </span>
                                         </div>
@@ -493,7 +493,7 @@
                                                 <i class="bi bi-calendar-event fs-5" style="color: #2563EB;"></i>
                                                 <div class="text-truncate">
                                                     <span class="text-secondary">Bắt đầu:</span>
-                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.startDateFormatted != null ? path.startDateFormatted : '18/11/2026'}">18/11/2026</strong>
+                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.startDateFormatted != null ? path.startDateFormatted : '--'}">--</strong>
                                                 </div>
                                             </div>
                                         </div>
@@ -504,7 +504,7 @@
                                                 <i class="bi bi-clock fs-5" style="color: #F59E0B;"></i>
                                                 <div class="text-truncate">
                                                     <span class="text-secondary">Giờ học:</span>
-                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? (path.dailyHours + ' giờ/ngày') : '1.00 giờ/ngày')}">1.00 giờ/ngày</strong>
+                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? (path.dailyHours + ' giờ/ngày') : '--')}">--</strong>
                                                 </div>
                                             </div>
                                         </div>
@@ -515,7 +515,7 @@
                                                 <i class="bi bi-calendar-check fs-5" style="color: #10B981;"></i>
                                                 <div class="text-truncate">
                                                     <span class="text-secondary">Ngày học:</span>
-                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.studyDaysText != null and !path.studyDaysText.isEmpty() ? path.studyDaysText : 'Thứ 2, Thứ 4, Thứ 6 (3 buổi/tuần)'}">Thứ 2, Thứ 4, Thứ 6 (3 buổi/tuần)</strong>
+                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.studyDaysText != null and !path.studyDaysText.isEmpty() ? path.studyDaysText : '--'}">--</strong>
                                                 </div>
                                             </div>
                                         </div>
@@ -1541,13 +1541,13 @@
                         <div class="col-sm-6 col-lg-3">
                             <div class="p-3 rounded-3 border bg-light h-100">
                                 <div class="text-secondary small mb-1"><i class="bi bi-clock me-1 text-primary"></i> Số giờ học mỗi ngày</div>
-                                <div class="fw-bold fs-5 text-dark" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? (path.dailyHours + ' giờ/ngày') : '1.00 giờ/ngày')}">1.00 giờ/ngày</div>
+                                <div class="fw-bold fs-5 text-dark" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? (path.dailyHours + ' giờ/ngày') : '--')}">1.00 giờ/ngày</div>
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-3">
                             <div class="p-3 rounded-3 border bg-light h-100">
                                 <div class="text-secondary small mb-1"><i class="bi bi-hourglass-split me-1 text-success"></i> Thời lượng hàng tuần</div>
-                                <div class="fw-bold fs-5 text-dark" th:text="${path.weeklyHours != null ? path.weeklyHours + ' giờ/tuần' : '5 giờ/tuần'}">5 giờ/tuần</div>
+                                <div class="fw-bold fs-5 text-dark" th:text="${path.weeklyHours != null ? path.weeklyHours + ' giờ/tuần' : '--'}">5 giờ/tuần</div>
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-3">

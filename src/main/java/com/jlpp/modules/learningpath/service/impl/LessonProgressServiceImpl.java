@@ -139,9 +139,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         if (lp == null) {
             Course enrolledCourse = (reg.getCourse() != null) ? reg.getCourse() :
                     (courseRepository != null ? courseRepository.findById(courseId).orElse(null) : null);
-            String targetLevel = (enrolledCourse != null && enrolledCourse.getLevel() != null)
-                    ? enrolledCourse.getLevel()
-                    : "N4";
+            String targetLevel = resolveLevelFromCourse(enrolledCourse);
             LocalDate startDate = reg.getRegisteredAt() != null
                     ? reg.getRegisteredAt().toLocalDate()
                     : LocalDate.now();
@@ -363,6 +361,25 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             }
         }
         return new LearningPathProgressDto();
+    }
+
+    private String resolveLevelFromCourse(Course c) {
+        if (c == null) {
+            return "Chưa xác định";
+        }
+        if (c.getLevel() != null && !c.getLevel().isBlank()) {
+            return c.getLevel().trim().toUpperCase();
+        }
+        if (c.getTitle() != null) {
+            String titleUpper = c.getTitle().toUpperCase();
+            for (String lvl : List.of("N1", "N2", "N3", "N4", "N5")) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?<![A-Z0-9])" + lvl + "(?![A-Z0-9])").matcher(titleUpper);
+                if (m.find()) {
+                    return lvl;
+                }
+            }
+        }
+        return "Chưa xác định";
     }
 }
 
