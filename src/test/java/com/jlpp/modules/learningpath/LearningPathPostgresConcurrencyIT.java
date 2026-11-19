@@ -1,11 +1,12 @@
 package com.jlpp.modules.learningpath;
 
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
+
 import com.jlpp.common.constants.RoleEnum;
 import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.entity.CourseRegistration;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.CourseRepository;
-import com.jlpp.modules.learningpath.dto.LearningPathProgressDto;
 import com.jlpp.modules.learningpath.entity.LearningPath;
 import com.jlpp.modules.learningpath.repository.LearningPathRepository;
 import com.jlpp.modules.learningpath.service.LessonProgressService;

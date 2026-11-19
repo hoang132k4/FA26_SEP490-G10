@@ -1,12 +1,13 @@
 package com.jlpp.modules.learningpath;
 
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.entity.CourseRegistration;
 import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
-import com.jlpp.modules.learningpath.dto.LearningPathProgressDto;
 import com.jlpp.modules.learningpath.entity.LearningPath;
 import com.jlpp.modules.learningpath.repository.LearningPathRepository;
 import com.jlpp.modules.learningpath.service.impl.LessonProgressServiceImpl;

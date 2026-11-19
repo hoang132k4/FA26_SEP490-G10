@@ -12,7 +12,7 @@ import com.jlpp.modules.exam.dto.ExamResultResponse;
 import com.jlpp.modules.exam.dto.QuestionDto;
 import com.jlpp.modules.exam.service.ExamService;
 import com.jlpp.modules.flashcard.repository.FlashcardRepository;
-import com.jlpp.modules.learningpath.dto.*;
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
 import com.jlpp.modules.learningpath.entity.LearningPath;
 import com.jlpp.modules.learningpath.repository.LearningPathRepository;
 import com.jlpp.modules.learningpath.service.LearningPathService;

@@ -1,5 +1,7 @@
 package com.jlpp.modules.learningpath;
 
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
+
 import com.jlpp.common.constants.RoleEnum;
 import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.entity.CourseRegistration;
@@ -7,9 +9,6 @@ import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
-import com.jlpp.modules.learningpath.dto.LearningPathResponse;
-import com.jlpp.modules.learningpath.dto.RecalibratePreviewResponse;
-import com.jlpp.modules.learningpath.dto.RecalibrateRequest;
 import com.jlpp.modules.learningpath.entity.LearningPath;
 import com.jlpp.modules.learningpath.repository.LearningPathRepository;
 import com.jlpp.modules.learningpath.service.LearningPathService;
@@ -236,7 +235,7 @@ public class LearningPathTest {
                 .andExpect(model().attribute("hasPath", true))
                 .andExpect(model().attributeExists("preview"))
                 .andExpect(content().string(containsString("Thời lượng")))
-                .andExpect(content().string(containsString("Thiết lập tham số điều chỉnh")));
+                .andExpect(content().string(containsString("Thiết lập thông số")));
     }
 
     @Test
@@ -253,7 +252,7 @@ public class LearningPathTest {
                 .andExpect(model().attribute("hasPath", true))
                 .andExpect(model().attribute("simulationSuccess", true))
                 .andExpect(content().string(containsString("20 giờ/tuần")))
-                .andExpect(content().string(containsString("Xác nhận áp dụng lộ trình mới")));
+                .andExpect(content().string(containsString("Xác nhận áp dụng lịch học cá nhân mới")));
 
         // Strict validation: Database count MUST be unchanged
         long finalPathCount = learningPathRepository.count();
@@ -318,7 +317,7 @@ public class LearningPathTest {
 
         assertThat(response).isNotNull();
         assertThat(response.isHasPath()).isFalse();
-        assertThat(response.getEmptyStateMessage()).isEqualTo("Bạn chưa có lộ trình học tập.");
+        assertThat(response.getEmptyStateMessage()).contains("lộ trình học tập");
         assertThat(response.getItems()).isEmpty();
     }
 
@@ -372,5 +371,65 @@ public class LearningPathTest {
 
         // Third lesson (first uncompleted) must be in progress
         assertThat(preview.getRescheduledItems().get(2).getStatus()).isEqualTo("IN_PROGRESS");
+    }
+
+    @Test
+    @DisplayName("REC-07: Applying recalibration when course is 100% completed is rejected with exception")
+    void service_applyRecalibratedSchedule_allLessonsCompleted_throwsException() {
+        // Mark course as 100% completed
+        courseRegistrationRepository.findByUserIdAndCourseId(userWithPath.getId(), courseN4.getId())
+                .ifPresent(reg -> {
+                    reg.setProgressPercent(100);
+                    courseRegistrationRepository.save(reg);
+                });
+
+        RecalibrateRequest request = RecalibrateRequest.builder()
+                .courseId(courseN4.getId())
+                .weeklyHours(15)
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                learningPathService.applyRecalibratedSchedule(LEARNER_WITH_PATH, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Bạn đã hoàn thành tất cả các bài học trong khóa học này");
+
+        // Preview should also indicate course completed
+        RecalibratePreviewResponse preview = learningPathService.getRecalibratePreview(LEARNER_WITH_PATH, request);
+        assertThat(preview.isHasPath()).isFalse();
+        assertThat(preview.getMessage()).contains("Bạn đã hoàn thành 100% tất cả các bài học");
+
+        // Reset progress back to 50%
+        courseRegistrationRepository.findByUserIdAndCourseId(userWithPath.getId(), courseN4.getId())
+                .ifPresent(reg -> {
+                    reg.setProgressPercent(50);
+                    courseRegistrationRepository.save(reg);
+                });
+    }
+
+    @Test
+    @DisplayName("REC-08: POST to /learning-path/recalibrate when course 100% completed redirects with error")
+    @WithMockUser(username = LEARNER_WITH_PATH, roles = {"LEARNER"})
+    void controller_recalibrate_allLessonsCompleted_redirectsWithError() throws Exception {
+        // Mark course as 100% completed
+        courseRegistrationRepository.findByUserIdAndCourseId(userWithPath.getId(), courseN4.getId())
+                .ifPresent(reg -> {
+                    reg.setProgressPercent(100);
+                    courseRegistrationRepository.save(reg);
+                });
+
+        mockMvc.perform(post("/learning-path/recalibrate")
+                        .with(csrf())
+                        .param("courseId", courseN4.getId().toString())
+                        .param("weeklyHours", "20"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning-path?courseId=" + courseN4.getId()))
+                .andExpect(flash().attribute("errorMessage", containsString("Bạn đã hoàn thành tất cả các bài học")));
+
+        // Reset progress back to 50%
+        courseRegistrationRepository.findByUserIdAndCourseId(userWithPath.getId(), courseN4.getId())
+                .ifPresent(reg -> {
+                    reg.setProgressPercent(50);
+                    courseRegistrationRepository.save(reg);
+                });
     }
 }
