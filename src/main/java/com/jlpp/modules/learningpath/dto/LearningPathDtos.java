@@ -411,6 +411,14 @@ public final class LearningPathDtos {
         private int totalDays;
         private boolean activeNow;
         private boolean upcoming;
+
+        public int getDaysCount() {
+            return totalDays;
+        }
+
+        public boolean isActive() {
+            return activeNow;
+        }
     }
 
     @Data

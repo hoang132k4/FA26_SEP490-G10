@@ -1587,11 +1587,11 @@
                                             <span th:text="${lr.startDateFormatted}">10/11/2026</span> - <span th:text="${lr.endDateFormatted}">12/11/2026</span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light text-dark border" th:text="${lr.daysCount} + ' ngày'">3 ngày</span>
+                                            <span class="badge bg-light text-dark border" th:text="${lr.totalDays} + ' ngày'">3 ngày</span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-success-subtle text-success" th:if="${lr.active}">Đang nghỉ</span>
-                                            <span class="badge bg-secondary-subtle text-secondary" th:unless="${lr.active}">Đã qua</span>
+                                            <span class="badge bg-success-subtle text-success" th:if="${lr.activeNow}">Đang nghỉ</span>
+                                            <span class="badge bg-secondary-subtle text-secondary" th:unless="${lr.activeNow}">Đã qua</span>
                                         </td>
                                     </tr>
                                 </tbody>
