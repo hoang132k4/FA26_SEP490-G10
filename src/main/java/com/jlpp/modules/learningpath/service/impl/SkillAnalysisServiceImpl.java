@@ -1,12 +1,17 @@
 package com.jlpp.modules.learningpath.service.impl;
 
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
+
+import com.jlpp.modules.course.entity.Course;
+import com.jlpp.modules.course.entity.Lesson;
+import com.jlpp.modules.course.repository.CourseRepository;
+import com.jlpp.modules.course.repository.LessonRepository;
 import com.jlpp.modules.exam.dto.ExamHistoryDto;
 import com.jlpp.modules.exam.dto.ExamResultResponse;
 import com.jlpp.modules.exam.dto.QuestionDto;
+import com.jlpp.modules.exam.entity.Exam;
+import com.jlpp.modules.exam.repository.ExamRepository;
 import com.jlpp.modules.exam.service.ExamService;
-import com.jlpp.modules.learningpath.dto.SkillMetricDto;
-import com.jlpp.modules.learningpath.dto.SkillProfileDto;
-import com.jlpp.modules.learningpath.dto.SkillProficiency;
 import com.jlpp.modules.learningpath.service.SkillAnalysisService;
 import com.jlpp.modules.exam.service.AssessmentScoringService;
 import com.jlpp.modules.exam.service.impl.AssessmentScoringServiceImpl;
@@ -25,15 +30,31 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
 
     private final ExamService examService;
     private final AssessmentScoringService scoringService;
+    private final ExamRepository examRepository;
+    private final CourseRepository courseRepository;
+    private final LessonRepository lessonRepository;
 
     public SkillAnalysisServiceImpl(ExamService examService) {
-        this(examService, new AssessmentScoringServiceImpl());
+        this(examService, new AssessmentScoringServiceImpl(), null, null, null);
+    }
+
+    public SkillAnalysisServiceImpl(ExamService examService, AssessmentScoringService scoringService) {
+        this(examService, scoringService, null, null, null);
+    }
+
+    public SkillAnalysisServiceImpl(ExamService examService, AssessmentScoringService scoringService, ExamRepository examRepository) {
+        this(examService, scoringService, examRepository, null, null);
     }
 
     @Autowired
-    public SkillAnalysisServiceImpl(ExamService examService, AssessmentScoringService scoringService) {
+    public SkillAnalysisServiceImpl(ExamService examService, AssessmentScoringService scoringService,
+                                   ExamRepository examRepository, CourseRepository courseRepository,
+                                   LessonRepository lessonRepository) {
         this.examService = examService;
         this.scoringService = scoringService;
+        this.examRepository = examRepository;
+        this.courseRepository = courseRepository;
+        this.lessonRepository = lessonRepository;
     }
 
     // Configurable heuristic thresholds
@@ -42,17 +63,47 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
 
     @Override
     public SkillProfileDto analyzeLearnerSkills(Long userId, Long resultId) {
+        return analyzeLearnerSkills(userId, resultId, null, null);
+    }
+
+    @Override
+    public SkillProfileDto analyzeLearnerSkills(Long userId, Long resultId, Long courseId) {
+        return analyzeLearnerSkills(userId, resultId, courseId, null);
+    }
+
+    @Override
+    public SkillProfileDto analyzeLearnerSkills(Long userId, Long resultId, Long courseId, String courseLevel) {
         if (userId == null) {
             return buildEmptyProfile(null, null);
         }
 
+        String standardLevel = resolveCourseLevel(courseId, courseLevel);
+
         Long targetResultId = resultId;
+        // Nếu resultId được truyền vào, kiểm tra xem nó có đúng level của khóa học không (tránh lấy nhầm kết quả của level khác)
+        if (targetResultId != null && standardLevel != null) {
+            try {
+                ExamResultResponse checkResult = examService.getHistoricalResult(targetResultId, userId);
+                if (checkResult != null) {
+                    boolean matches = isExamMatchingLevel(checkResult.getExamId(), checkResult.getExamTitle(), checkResult.getJlptLevel(), courseId, standardLevel);
+                    if (!matches) {
+                        log.info("ResultId={} does not match level {}. Discarding and searching for level-matching placement result.", targetResultId, standardLevel);
+                        targetResultId = null;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not verify historical resultId={} against level {}: {}", targetResultId, standardLevel, e.getMessage());
+            }
+        }
+
+        // 2. Nếu chưa có targetResultId hợp lệ, tìm bài thi Đánh giá đầu vào (Placement Test) mới nhất CÙNG CẤP ĐỘ với khóa học
         if (targetResultId == null) {
-            targetResultId = findLatestPlacementResultId(userId);
+            targetResultId = findLatestPlacementResultId(userId, courseId, standardLevel);
         }
 
         if (targetResultId == null) {
-            log.info("No placement assessment record found for userId={}. Returning UNKNOWN profile.", userId);
+            log.info("No placement assessment record found matching level {} for userId={}, courseId={}. Returning standard/unknown profile.",
+                    standardLevel, userId, courseId);
             return buildEmptyProfile(userId, null);
         }
 
@@ -69,23 +120,268 @@ public class SkillAnalysisServiceImpl implements SkillAnalysisService {
         }
     }
 
-    private Long findLatestPlacementResultId(Long userId) {
+    @Override
+    public SkillProfileDto analyzeAndRecalibrateSkills(Long userId, Long courseId, Long fallbackResultId) {
+        return analyzeAndRecalibrateSkills(userId, courseId, null, fallbackResultId);
+    }
+
+    @Override
+    public SkillProfileDto analyzeAndRecalibrateSkills(Long userId, Long courseId, String courseLevel, Long fallbackResultId) {
+        if (userId == null) {
+            return buildEmptyProfile(null, null);
+        }
+
+        String standardLevel = resolveCourseLevel(courseId, courseLevel);
+
+        // 1. Tìm kết quả bài thi Cột mốc (Milestone Exam) gần nhất của học viên thuộc đúng khóa học / cấp độ
+        Long latestMilestoneResultId = findLatestMilestoneResultId(userId, courseId, standardLevel);
+
+        if (latestMilestoneResultId != null) {
+            try {
+                ExamResultResponse milestoneResult = examService.getHistoricalResult(latestMilestoneResultId, userId);
+                if (milestoneResult != null) {
+                    SkillProfileDto recalibratedProfile = buildProfileFromResult(userId, latestMilestoneResultId, milestoneResult);
+                    recalibratedProfile.setRecalibratedFromMilestone(true);
+                    recalibratedProfile.setMilestoneExamTitle(milestoneResult.getExamTitle() != null ? milestoneResult.getExamTitle() : "Bài kiểm tra Cột mốc");
+                    recalibratedProfile.setMilestoneCompletionDate(milestoneResult.getCompletionDate());
+                    recalibratedProfile.setMilestoneScore(milestoneResult.getPercentage() != null ? milestoneResult.getPercentage().intValue() : null);
+                    recalibratedProfile.setRecalibrationNote(
+                            String.format("Đã tái hiệu chỉnh theo Bài thi Cột mốc: %s",
+                                    recalibratedProfile.getMilestoneExamTitle()));
+
+                    // So sánh với điểm bài test đầu vào ban đầu (cùng cấp độ) để tính độ chênh lệch tiến bộ (accuracyDelta)
+                    SkillProfileDto baselineProfile = analyzeLearnerSkills(userId, fallbackResultId, courseId, standardLevel);
+                    if (baselineProfile != null && baselineProfile.isAssessmentTaken()) {
+                        for (Map.Entry<String, SkillMetricDto> entry : recalibratedProfile.getSkills().entrySet()) {
+                            String skillKey = entry.getKey();
+                            SkillMetricDto metric = entry.getValue();
+                            SkillMetricDto baseMetric = baselineProfile.getSkill(skillKey);
+                            if (baseMetric != null && baseMetric.getAccuracyPercentage() != null && metric.getAccuracyPercentage() != null) {
+                                metric.setPreviousAccuracy(baseMetric.getAccuracyPercentage());
+                                BigDecimal delta = metric.getAccuracyPercentage().subtract(baseMetric.getAccuracyPercentage());
+                                metric.setAccuracyDelta(delta);
+                                metric.setImproved(delta.compareTo(BigDecimal.ZERO) > 0);
+                            }
+                        }
+                    }
+
+                    log.info("Successfully recalibrated skills from Milestone Exam resultId={} for userId={}, courseId={}, level={}",
+                            latestMilestoneResultId, userId, courseId, standardLevel);
+                    return recalibratedProfile;
+                }
+            } catch (Exception ex) {
+                log.warn("Failed to load milestone exam resultId={} for recalibration: {}", latestMilestoneResultId, ex.getMessage());
+            }
+        }
+
+        // 2. Nếu chưa có bài thi cột mốc nào cho khóa học này, fallback về phân tích bài test đầu vào (Placement Test) của ĐÚNG cấp độ
+        return analyzeLearnerSkills(userId, fallbackResultId, courseId, standardLevel);
+    }
+
+    private Long findLatestMilestoneResultId(Long userId, Long courseId, String targetCourseLevel) {
         try {
             List<ExamHistoryDto> history = examService.getLearnerExamHistory(userId);
             if (history == null || history.isEmpty()) {
                 return null;
             }
 
+            String standardLevel = resolveCourseLevel(courseId, targetCourseLevel);
+
+            // Thu thập danh sách examId của các bài thi Cột mốc thuộc khóa học này
+            Set<Long> courseMilestoneExamIds = new HashSet<>();
+
+            // 2a. Lấy từ các bài học cột mốc (milestone lessons) trong khóa học
+            if (courseId != null && lessonRepository != null) {
+                try {
+                    List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+                    if (lessons != null) {
+                        for (Lesson l : lessons) {
+                            if (l.isMilestoneExam() && l.getExamId() != null) {
+                                courseMilestoneExamIds.add(l.getExamId());
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("Could not query milestone lessons for courseId={}: {}", courseId, ex.getMessage());
+                }
+            }
+
+            // 2b. Lấy từ ExamRepository theo courseId
+            if (courseId != null && examRepository != null) {
+                try {
+                    List<Exam> byCourse = examRepository.findByCourseIdAndExamTypeIgnoreCase(courseId, "MILESTONE");
+                    if (byCourse != null) {
+                        for (Exam e : byCourse) {
+                            courseMilestoneExamIds.add(e.getExamId());
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("Could not query milestone exams by courseId={}: {}", courseId, ex.getMessage());
+                }
+            }
+
+            // 2c. Lấy từ ExamRepository theo JLPT level của khóa học (ví dụ: "N3")
+            if (standardLevel != null && !standardLevel.isBlank() && examRepository != null) {
+                try {
+                    List<Exam> byLevel = examRepository.findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase("MILESTONE", standardLevel);
+                    if (byLevel != null) {
+                        for (Exam e : byLevel) {
+                            courseMilestoneExamIds.add(e.getExamId());
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("Could not query milestone exams by level={}: {}", standardLevel, ex.getMessage());
+                }
+            }
+
+            final String targetLevel = standardLevel;
+
             return history.stream()
-                    .filter(h -> "PLACEMENT_TEST".equalsIgnoreCase(h.getExamType())
-                            || (h.getExamTitle() != null && h.getExamTitle().toLowerCase().contains("đánh giá năng lực")))
+                    .filter(h -> {
+                        // Bắt buộc phải là bài thi Cột mốc
+                        boolean isMilestone = "MILESTONE".equalsIgnoreCase(h.getExamType())
+                                || (h.getExamTitle() != null && (
+                                        h.getExamTitle().toLowerCase().contains("cột mốc") ||
+                                        h.getExamTitle().toLowerCase().contains("milestone")));
+                        if (!isMilestone) {
+                            return false;
+                        }
+
+                        // Nếu bài thi nằm trong danh sách ExamId được xác định của khóa học này -> Chấp nhận
+                        if (!courseMilestoneExamIds.isEmpty() && h.getExamId() != null && courseMilestoneExamIds.contains(h.getExamId())) {
+                            return true;
+                        }
+
+                        // Nếu khóa học có cấp độ xác định (ví dụ N2, N3...)
+                        if (targetLevel != null && !targetLevel.isBlank()) {
+                            return isExamMatchingLevel(h.getExamId(), h.getExamTitle(), h.getJlptLevel(), courseId, targetLevel);
+                        }
+
+                        // Nếu không có courseId và không có targetLevel (chế độ không có ngữ cảnh khóa học)
+                        return courseMilestoneExamIds.isEmpty();
+                    })
                     .max(Comparator.comparing(ExamHistoryDto::getResultId))
                     .map(ExamHistoryDto::getResultId)
                     .orElse(null);
         } catch (Exception e) {
-            log.warn("Error finding latest placement result for userId={}: {}", userId, e.getMessage());
+            log.warn("Error finding latest milestone result for userId={}, courseId={}: {}", userId, courseId, e.getMessage());
             return null;
         }
+    }
+
+    private Long findLatestPlacementResultId(Long userId, Long courseId, String targetCourseLevel) {
+        try {
+            List<ExamHistoryDto> history = examService.getLearnerExamHistory(userId);
+            if (history == null || history.isEmpty()) {
+                return null;
+            }
+
+            String standardLevel = resolveCourseLevel(courseId, targetCourseLevel);
+
+            return history.stream()
+                    .filter(h -> {
+                        boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(h.getExamType())
+                                || (h.getExamTitle() != null && (
+                                        h.getExamTitle().toLowerCase().contains("đánh giá năng lực") ||
+                                        h.getExamTitle().toLowerCase().contains("placement")));
+                        if (!isPlacement) {
+                            return false;
+                        }
+
+                        // Nếu khóa học có cấp độ xác định (ví dụ N2): BẮT BUỘC bài thi phải thuộc cấp độ N2
+                        if (standardLevel != null) {
+                            return isExamMatchingLevel(h.getExamId(), h.getExamTitle(), h.getJlptLevel(), courseId, standardLevel);
+                        }
+
+                        return true;
+                    })
+                    .max(Comparator.comparing(ExamHistoryDto::getResultId))
+                    .map(ExamHistoryDto::getResultId)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("Error finding latest placement result for userId={}, courseId={}, level={}: {}", userId, courseId, targetCourseLevel, e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractStandardLevel(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String upper = text.toUpperCase();
+        for (String lvl : List.of("N1", "N2", "N3", "N4", "N5")) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?<![A-Z0-9])" + lvl + "(?![A-Z0-9])").matcher(upper);
+            if (m.find()) {
+                return lvl;
+            }
+        }
+        return null;
+    }
+
+    private String resolveCourseLevel(Long courseId, String explicitLevel) {
+        String lvl = extractStandardLevel(explicitLevel);
+        if (lvl != null) {
+            return lvl;
+        }
+        if (courseId != null && courseRepository != null) {
+            try {
+                Course course = courseRepository.findById(courseId).orElse(null);
+                if (course != null) {
+                    lvl = extractStandardLevel(course.getLevel());
+                    if (lvl != null) return lvl;
+                    lvl = extractStandardLevel(course.getTitle());
+                    if (lvl != null) return lvl;
+                    lvl = extractStandardLevel(course.getCode());
+                    if (lvl != null) return lvl;
+                }
+            } catch (Exception ex) {
+                log.warn("Could not query Course for courseId={}: {}", courseId, ex.getMessage());
+            }
+        }
+        return null;
+    }
+
+    private boolean isExamMatchingLevel(Long examId, String examTitle, String jlptLevel, Long courseId, String targetCourseLevel) {
+        String standardTarget = extractStandardLevel(targetCourseLevel);
+        if (standardTarget == null) {
+            return true;
+        }
+
+        // 1. Kiểm tra qua jlptLevel nếu có trong kết quả / DTO
+        String examLvl = extractStandardLevel(jlptLevel);
+        if (examLvl != null) {
+            return standardTarget.equalsIgnoreCase(examLvl);
+        }
+
+        // 2. Kiểm tra qua Exam entity trong database (nếu có examRepository)
+        if (examId != null && examRepository != null) {
+            try {
+                Exam exam = examRepository.findById(examId).orElse(null);
+                if (exam != null) {
+                    if (exam.getCourseId() != null && courseId != null && exam.getCourseId().equals(courseId)) {
+                        return true;
+                    }
+                    String entityLvl = extractStandardLevel(exam.getJlptLevel());
+                    if (entityLvl != null) {
+                        return standardTarget.equalsIgnoreCase(entityLvl);
+                    }
+                    String entityTitleLvl = extractStandardLevel(exam.getTitle());
+                    if (entityTitleLvl != null) {
+                        return standardTarget.equalsIgnoreCase(entityTitleLvl);
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Error checking exam entity for examId={}: {}", examId, ex.getMessage());
+            }
+        }
+
+        // 3. Kiểm tra qua tiêu đề bài thi (Exam Title)
+        String titleLvl = extractStandardLevel(examTitle);
+        if (titleLvl != null) {
+            return standardTarget.equalsIgnoreCase(titleLvl);
+        }
+
+        return false;
     }
 
     private SkillProfileDto buildProfileFromResult(Long userId, Long resultId, ExamResultResponse result) {

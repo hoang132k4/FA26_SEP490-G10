@@ -1,6 +1,11 @@
 package com.jlpp.modules.learningpath.service;
 
-import com.jlpp.modules.learningpath.dto.LearningPathProgressDto;
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
+
+import com.jlpp.modules.course.entity.Lesson;
+
+import java.util.List;
+import java.util.Set;
 
 public interface LessonProgressService {
 
@@ -23,8 +28,14 @@ public interface LessonProgressService {
     boolean isLessonCompleted(Long userId, Long courseId, Long lessonId, int lessonOrderIndex, int totalCourseLessons, int registrationProgressPercent);
 
     /**
-     * Lấy danh sách ID các bài học đã hoàn thành của học viên trong khóa học.
+     * Batch-query trạng thái hoàn thành của toàn bộ bài học trong khóa học trong 1 lần duy nhất,
+     * loại bỏ hoàn toàn vấn đề N+1 query lặp qua database.
      */
-    java.util.Set<Long> getCompletedLessonIds(Long userId, Long courseId);
+    Set<Long> getCompletedLessonIds(Long userId, Long courseId, List<Lesson> courseLessons, int progressPercent);
+
+    /**
+     * Lấy danh sách ID các bài học đã hoàn thành của người dùng trong một khóa học.
+     */
+    Set<Long> getCompletedLessonIds(Long userId, Long courseId);
 }
 

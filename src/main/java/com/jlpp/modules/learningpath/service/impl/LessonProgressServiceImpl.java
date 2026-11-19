@@ -1,5 +1,7 @@
 package com.jlpp.modules.learningpath.service.impl;
 
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.modules.course.entity.Course;
@@ -8,8 +10,6 @@ import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
-import com.jlpp.modules.learningpath.dto.LearningPathProgressDto;
-import com.jlpp.modules.learningpath.dto.LessonProgressItemDto;
 import com.jlpp.modules.learningpath.entity.LearningPath;
 import com.jlpp.modules.learningpath.repository.LearningPathRepository;
 import com.jlpp.modules.learningpath.service.LessonProgressService;
@@ -238,6 +238,44 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             log.info("Authoritative sync courseRegistration progressPercent={} (completedCount={}/{}) for userId={}, courseId={}",
                     newPercent, completedCount, totalLessons, userId, courseId);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Long> getCompletedLessonIds(Long userId, Long courseId, List<Lesson> courseLessons, int progressPercent) {
+        Set<Long> completedIds = new HashSet<>();
+        if (userId == null || courseId == null || courseLessons == null || courseLessons.isEmpty()) {
+            return completedIds;
+        }
+
+        LearningPathProgressDto progressDto = getLessonProgress(userId, courseId);
+        int totalLessons = courseLessons.size();
+
+        // 1. Direct verified completions from JSONB
+        for (Lesson l : courseLessons) {
+            if (l != null && l.getId() != null && progressDto.isLessonCompleted(l.getId())) {
+                completedIds.add(l.getId());
+            }
+        }
+
+        // 2. Legacy inferred completions
+        int legacyCount = progressDto.getLegacyInferredCount() != null
+                ? progressDto.getLegacyInferredCount()
+                : (progressDto.getLessons().isEmpty() && progressPercent > 0 && totalLessons > 0
+                    ? (int) Math.round((progressPercent / 100.0) * totalLessons)
+                    : 0);
+
+        if (legacyCount > 0) {
+            int count = Math.min(legacyCount, courseLessons.size());
+            for (int i = 0; i < count; i++) {
+                Lesson l = courseLessons.get(i);
+                if (l != null && l.getId() != null) {
+                    completedIds.add(l.getId());
+                }
+            }
+        }
+
+        return completedIds;
     }
 
     @Override

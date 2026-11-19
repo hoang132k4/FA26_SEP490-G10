@@ -1,8 +1,8 @@
 package com.jlpp.modules.learningpath.service;
 
+import com.jlpp.modules.learningpath.dto.LearningPathDtos.*;
+
 import com.jlpp.modules.course.entity.Lesson;
-import com.jlpp.modules.learningpath.dto.LessonSkillFocusDto;
-import com.jlpp.modules.learningpath.dto.SkillProfileDto;
 
 import java.util.List;
 

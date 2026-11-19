@@ -1,40 +1,211 @@
 <div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Lộ trình học tập - JEPS',
+    pageTitle='Lộ trình học tập cá nhân hóa - JEPS',
     activeMenu='learning-path',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
 
-        <!-- A. Top Section: Heading, Japanese-inspired Banner & Action Button -->
-        <div class="mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div>
-                    <h3 class="fw-bold mb-1" style="color: #0F172A; letter-spacing: -0.5px;">Lộ trình học tập cá nhân hóa</h3>
-                    <p class="small mb-0 fw-medium" style="color: #475569;">Hệ thống gợi ý và tự động điều chỉnh tiến độ dựa trên mục tiêu JLPT và thời gian thực tế của bạn.</p>
+        <!-- Top Header Area with Japanese Theme Artwork (Seamless layout matching Image 1) -->
+        <div class="position-relative mb-4 pt-1" style="min-height: 140px;">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/learning-path(courseId=${path.courseId})}" class="text-decoration-none fw-semibold" style="color: #64748B;">
+                            <i class="bi bi-house-door me-1"></i> Lộ trình học tập
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active fw-medium text-muted" aria-current="page"></li>
+                </ol>
+            </nav>
+
+            <!-- Japanese Artwork Background (Mount Fuji + Torii Gate + Sakura motif) floating seamlessly in top-right -->
+            <div class="position-absolute end-0 top-0 d-none d-md-block" style="width: 340px; height: 140px; pointer-events: none; opacity: 0.95; z-index: 1;">
+                <svg viewBox="0 0 340 140" width="100%" height="100%" preserveAspectRatio="xMaxYMid meet" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="fujiGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#E2E8F0" stop-opacity="0.95"/>
+                            <stop offset="35%" stop-color="#CBD5E1" stop-opacity="0.85"/>
+                            <stop offset="100%" stop-color="#94A3B8" stop-opacity="0.2"/>
+                        </linearGradient>
+                        <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#FCA5A5" stop-opacity="0.75"/>
+                            <stop offset="100%" stop-color="#EF4444" stop-opacity="0.3"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Rising Red Sun -->
+                    <circle cx="170" cy="85" r="48" fill="url(#sunGrad)"/>
+                    <!-- Mount Fuji -->
+                    <path d="M 85 140 L 150 48 L 190 48 L 255 140 Z" fill="url(#fujiGrad)"/>
+                    <!-- Snow Cap -->
+                    <path d="M 150 48 L 155 64 L 165 58 L 175 66 L 185 60 L 190 48 Z" fill="#FFFFFF" opacity="0.95"/>
+                    <!-- Torii Gate -->
+                    <g transform="translate(255, 52) scale(0.68)" stroke="#D94B3F" stroke-width="4" stroke-linecap="round" fill="none">
+                        <!-- Top Curved Beam (Kasagi) -->
+                        <path d="M -5 10 Q 30 0 65 10" stroke-width="6"/>
+                        <!-- Second Straight Beam (Nuki) -->
+                        <line x1="5" y1="22" x2="55" y2="22" stroke-width="4"/>
+                        <!-- Pillars (Hashira) -->
+                        <line x1="15" y1="12" x2="13" y2="80" stroke-width="5"/>
+                        <line x1="45" y1="12" x2="47" y2="80" stroke-width="5"/>
+                        <!-- Center strut (Gakuzuka) -->
+                        <line x1="30" y1="10" x2="30" y2="22" stroke-width="3"/>
+                    </g>
+                    <!-- Sakura Branch & Petals -->
+                    <g fill="#FDA4AF" opacity="0.85">
+                        <circle cx="295" cy="95" r="4"/>
+                        <circle cx="310" cy="105" r="5"/>
+                        <circle cx="285" cy="120" r="4"/>
+                        <circle cx="320" cy="85" r="3.5"/>
+                        <circle cx="302" cy="70" r="4.5"/>
+                        <circle cx="275" cy="100" r="3"/>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="position-relative" style="z-index: 2;">
+                <!-- Title & Icon -->
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                         style="width: 48px; height: 48px; background-color: #EBF3F8; border: 1.5px solid #CBDCE7;">
+                        <i class="bi bi-calendar3 fs-4" style="color: #173B57;"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.5px; font-size: 26px;">
+                            Lộ trình học tập cá nhân
+                        </h2>
+                        <p class="small mb-0 text-secondary mt-1">
+                            Lịch học được thiết kế linh hoạt theo mục tiêu JLPT và thời gian của bạn.
+                        </p>
+                    </div>
                 </div>
-                <div th:if="${hasPath}">
-                    <a th:href="@{/learning-path/recalibrate}" class="btn btn-outline-primary px-3 py-2 rounded-3 shadow-sm fw-semibold d-flex align-items-center gap-2" style="border-color: #3B82F6; color: #1D4ED8; background-color: #EFF6FF;">
-                        <i class="bi bi-sliders"></i>
-                        <span>Điều chỉnh lịch học</span>
-                    </a>
+
+                <!-- Action Buttons & Prominent Course Dropdown Bar -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-2">
+                    <!-- Left: 3 Action Buttons -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <!-- 1. Thiết lập lịch học cá nhân (Đã hoàn thành 100% -> hiển thị thông báo khóa) -->
+                        <button th:if="${hasPath and path != null and path.allLessonsCompleted}"
+                                type="button"
+                                class="btn btn-light border px-3 py-2 rounded-3 shadow-sm fw-semibold d-flex align-items-center gap-2 text-secondary"
+                                data-bs-toggle="modal" data-bs-target="#courseCompletedRecalibrateModal"
+                                style="background-color: #F8FAFC; border-color: #CBD5E1 !important; font-size: 14px;"
+                                title="Khóa học đã hoàn thành 100% tất cả các bài học">
+                            <i class="bi bi-calendar-check text-success"></i>
+                            <span>Thiết lập lịch học cá nhân</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 11px;">Đã xong</span>
+                        </button>
+
+                        <a th:if="${hasPath and (path == null or !path.allLessonsCompleted)}"
+                           th:href="@{/learning-path/recalibrate(courseId=${path != null ? path.courseId : ''})}"
+                           class="btn btn-outline-primary px-3 py-2 rounded-3 shadow-sm fw-semibold d-flex align-items-center gap-2"
+                           style="border-color: #3B82F6; color: #1D4ED8; background-color: #EFF6FF; font-size: 14px;">
+                            <i class="bi bi-calendar-event"></i>
+                            <span>Thiết lập lịch học cá nhân</span>
+                        </a>
+
+                        <!-- 2. Làm bài kiểm tra năng lực -->
+                        <a th:href="@{/exams/placement}"
+                           class="btn btn-outline-warning px-3 py-2 rounded-3 shadow-sm fw-semibold d-flex align-items-center gap-2"
+                           style="background-color: #FEFCE8; border-color: #F59E0B; color: #B45309; font-size: 14px;"
+                           title="Làm bài đánh giá năng lực để hệ thống tự động tối ưu lộ trình">
+                            <i class="bi bi-bullseye" style="color: #173B57;"></i>
+                            <span>Làm bài kiểm tra năng lực</span>
+                        </a>
+
+                        <!-- 3. Báo nghỉ -->
+                        <button th:if="${hasPath}" type="button" class="btn btn-outline-secondary px-3 py-2 rounded-3 shadow-sm fw-semibold d-flex align-items-center gap-2"
+                                data-bs-toggle="modal" data-bs-target="#leaveModal"
+                                style="background-color: #FFFFFF; border-color: #64748B; color: #334155; font-size: 14px;">
+                            <i class="bi bi-calendar-x"></i>
+                            <span>Báo nghỉ</span>
+                        </button>
+                    </div>
+
+                    <!-- Right: Thanh Dropdown Khóa Học (Course Switcher) -->
+                    <div class="dropdown">
+                        <button class="btn btn-white border shadow-sm dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 fw-semibold"
+                                type="button" id="courseSwitcherDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                                style="background-color: #FFFFFF; border-color: #CBD5E1 !important; font-size: 14px;">
+                            <i class="bi bi-journal-bookmark-fill" style="color: #173B57;"></i>
+                            <span class="text-secondary small">Khóa học:</span>
+                            <span class="fw-bold text-dark text-truncate" style="max-width: 240px;" th:text="${path.courseTitle}">Khóa học JLPT</span>
+                            <span class="badge rounded-pill ms-1" style="background-color: #EBF3F8; color: #173B57; border: 1px solid #CBDCE7;"
+                                  th:text="${path.courseLevel != null ? path.courseLevel : 'N3'}">N3</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2" aria-labelledby="courseSwitcherDropdown" style="min-width: 320px;">
+                            <li class="dropdown-header text-uppercase small fw-bold text-muted px-3 py-2">
+                                <i class="bi bi-collection me-1"></i> Chọn khóa học theo dõi lộ trình
+                            </li>
+                            <th:block th:if="${path.enrolledCourses != null and !path.enrolledCourses.isEmpty()}">
+                                <li th:each="c : ${path.enrolledCourses}">
+                                    <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between mb-1"
+                                       th:classappend="${c.selected} ? 'active fw-bold' : ''"
+                                       th:href="@{/learning-path(courseId=${c.courseId})}">
+                                        <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                                            <i class="bi" th:classappend="${c.selected} ? 'bi-check-circle-fill text-white' : 'bi-journal-text text-secondary'"></i>
+                                            <span class="text-truncate" th:text="${c.courseTitle}">Khóa học JLPT</span>
+                                        </div>
+                                        <span class="badge rounded-pill"
+                                              th:classappend="${c.selected} ? 'bg-white text-dark' : 'bg-light text-dark border'"
+                                              th:text="${c.courseLevel}">N3</span>
+                                    </a>
+                                </li>
+                            </th:block>
+                            <th:block th:if="${path.enrolledCourses == null or path.enrolledCourses.isEmpty()}">
+                                <li>
+                                    <a class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between active fw-bold" href="javascript:void(0)">
+                                        <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                                            <i class="bi bi-check-circle-fill text-white"></i>
+                                            <span class="text-truncate" th:text="${path.courseTitle}">Khóa học hiện tại</span>
+                                        </div>
+                                        <span class="badge bg-white text-dark rounded-pill" th:text="${path.courseLevel}">N3</span>
+                                    </a>
+                                </li>
+                            </th:block>
+                            <li><hr class="dropdown-divider my-2"></li>
+                            <li>
+                                <a class="dropdown-item rounded-3 py-2 px-3 small text-primary d-flex align-items-center gap-2" th:href="@{/learning/courses}">
+                                    <i class="bi bi-plus-circle"></i>
+                                    <span>Đăng ký thêm khóa học khác</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
-
-        <!-- STATE 1: EMPTY STATE (Khi Database chưa có Learning Path) -->
+        <!-- STATE 1: EMPTY STATE -->
         <div th:if="${!hasPath}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
             <div class="mb-4">
                 <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
-                     style="width: 88px; height: 88px; background-color: rgba(224, 109, 83, 0.1); color: #E06D53;">
+                    style="width: 88px; height: 88px; background-color: rgba(23, 59, 87, 0.08); color: #173B57;">
                     <i class="bi bi-compass fs-1"></i>
                 </div>
             </div>
             <h4 class="fw-bold mb-2" style="color: #173B57">Bạn chưa có lộ trình học tập</h4>
-            <p class="text-secondary mx-auto mb-4" style="max-width: 580px; line-height: 1.6;">
-                Hệ thống chưa tìm thấy dữ liệu lộ trình học tập được kích hoạt cho tài khoản của bạn. Để xây dựng lộ trình cá nhân hóa tối ưu nhất, bạn có thể thực hiện bài đánh giá năng lực hoặc tham gia một khóa học JLPT.
+            <p class="text-secondary mx-auto mb-4" style="max-width: 580px; line-height: 1.6;"
+               th:text="${emptyMessage != null ? emptyMessage : 'Hệ thống chưa tìm thấy dữ liệu lộ trình học tập được kích hoạt cho tài khoản của bạn. Để xây dựng lộ trình cá nhân hóa tối ưu nhất, bạn có thể thực hiện bài đánh giá năng lực hoặc tham gia một khóa học JLPT.'}">
+                Hệ thống chưa tìm thấy dữ liệu lộ trình học tập...
             </p>
-            <div class="d-flex justify-content-center gap-3">
+
+            <!-- Suggest user's registered courses if available -->
+            <div th:if="${path.enrolledCourses != null and !path.enrolledCourses.isEmpty()}" class="mb-4">
+                <div class="small fw-semibold text-secondary mb-2">Các khóa học bạn đã đăng ký:</div>
+                <div class="d-flex flex-wrap justify-content-center gap-2">
+                    <a th:each="c : ${path.enrolledCourses}"
+                       th:href="@{/learning-path(courseId=${c.courseId})}"
+                       class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5">
+                        <i class="bi bi-journal-check me-1"></i> <span th:text="${c.courseTitle}">Khóa học</span> (<span th:text="${c.courseLevel}">N4</span>)
+                    </a>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a th:href="@{/exams/placement}" class="btn btn-warning px-4 py-2 rounded-3 shadow-sm text-dark fw-bold">
+                    <i class="bi bi-patch-check-fill me-1"></i> Làm bài kiểm tra năng lực
+                </a>
                 <a th:href="@{/learning/courses}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
                     <i class="bi bi-collection-play me-1"></i> Khám phá khóa học
                 </a>
@@ -44,406 +215,1976 @@
             </div>
         </div>
 
-        <!-- STATE 2: POPULATED STATE (Khi đã có Learning Path thực tế) -->
+        <!-- STATE 2: POPULATED STATE -->
         <div th:if="${hasPath}">
 
-            <!-- B. Learning Path Summary Card (White rounded card with Left Info & Right Progress) -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important;">
-                <div class="row g-4 align-items-center">
-                    
-                    <!-- Left Column: Course & Path Information -->
-                    <div class="col-lg-7">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge px-3 py-1 rounded-pill fw-bold" style="background-color: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; font-size: 13px;"
-                                  th:text="'Mục tiêu: ' + ${path.targetLevel}">Mục tiêu: N4</span>
-                            <span class="badge px-3 py-1 rounded-pill fw-bold" style="background-color: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; font-size: 13px;"
-                                  th:text="${path.pathStatus}">ACTIVE</span>
-                        </div>
-                        <h4 class="fw-bold mb-3" style="color: #0F172A;" th:text="${path.courseTitle}">
-                            Khóa học JLPT N4 Toàn diện
-                        </h4>
-                        
-                        <div class="row g-3 small">
-                            <div class="col-sm-4">
-                                <div class="p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #F1F5F9;">
-                                    <div class="text-secondary fw-semibold mb-1"><i class="bi bi-calendar3 me-1 text-primary"></i> Bắt đầu</div>
-                                    <strong class="text-dark fs-6 fw-bold" th:text="${path.startDateFormatted}">01/10/2026</strong>
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div class="p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #F1F5F9;">
-                                    <div class="text-secondary fw-semibold mb-1"><i class="bi bi-flag me-1 text-danger"></i> Dự kiến xong</div>
-                                    <strong class="text-dark fs-6 fw-bold" th:text="${path.projectedEndDateFormatted}">15/12/2026</strong>
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div class="p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #F1F5F9;">
-                                    <div class="text-secondary fw-semibold mb-1"><i class="bi bi-clock-history me-1 text-warning"></i> Cường độ</div>
-                                    <strong class="text-dark fs-6 fw-bold" th:text="${path.weeklyHours} + ' giờ/tuần'">10 giờ/tuần</strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Flash Alert Messages -->
+            <div th:if="${successMessage}"
+                class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMessage}"
+                class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
 
-                    <!-- Right Column: Progress Gauge & Stats Breakdown -->
-                    <div class="col-lg-5 border-start-lg ps-lg-4" style="border-left: 1px solid #E2E8F0;">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-dark small fw-bold">Tiến độ hoàn thành lộ trình</span>
-                            <span class="fs-3 fw-bolder text-primary" style="color: #2563EB !important;" th:text="${path.progressPercent} + '%'">50%</span>
-                        </div>
-                        <div class="progress rounded-pill mb-3" style="height: 12px; background-color: #E2E8F0;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated rounded-pill"
-                                 role="progressbar"
-                                 style="background-color: #2563EB;"
-                                 th:style="'width: ' + ${path.progressPercent} + '%; background-color: #2563EB;'"
-                                 th:aria-valuenow="${path.progressPercent}"
-                                 aria-valuemin="0"
-                                 aria-valuemax="100"></div>
-                        </div>
-                        <div class="d-flex justify-content-between small">
-                            <span><i class="bi bi-check-circle-fill text-success me-1"></i> <strong class="text-dark" th:text="${path.completedLessons}">5</strong> bài đã xong</span>
-                            <span><i class="bi bi-hourglass-split text-secondary me-1"></i> Còn <strong class="text-dark" th:text="${path.remainingLessons}">5</strong> bài</span>
-                            <span><i class="bi bi-book text-primary me-1"></i> Tổng <strong class="text-dark" th:text="${path.totalLessons}">10</strong> bài</span>
-                        </div>
+            <!-- Banner: Đang trong kỳ báo nghỉ -->
+            <div th:if="${path.currentlyOnLeave}"
+                class="alert border-0 shadow-sm rounded-4 p-3 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-3"
+                style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); border-left: 5px solid #0284C7 !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-white shadow-sm flex-shrink-0"
+                         style="width: 44px; height: 44px; color: #0284C7;">
+                        <i class="bi bi-calendar2-range-fill fs-4"></i>
                     </div>
-
+                    <div>
+                        <h6 class="fw-bold mb-1 text-dark">Bạn đang trong kỳ báo nghỉ học</h6>
+                        <p class="small text-secondary mb-0">
+                            Nghỉ đến hết ngày <strong class="text-dark" th:text="${path.currentLeaveEndDateFormatted}">20/11/2026</strong>. Các bài học đã tự động dời lại và chuỗi ngày học liên tục được bảo lưu an toàn.
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-light btn-sm rounded-pill px-3 fw-bold border shadow-sm text-primary"
+                            data-bs-toggle="modal" data-bs-target="#leaveModal">
+                        <i class="bi bi-list-check me-1"></i> Quản lý ngày nghỉ
+                    </button>
                 </div>
             </div>
 
-            <!-- B2. Personalized Skill Profile & Assessment Analysis Card -->
-            <div th:if="${path.skillProfile != null}" class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important;">
+            <!-- Banner: Đang BẬT Chế độ Bù bài (Catch-up Mode) -->
+            <div th:if="${path.catchUpMode}"
+                class="alert border-0 shadow-sm rounded-4 p-3 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-3"
+                style="background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); border-left: 5px solid #10B981 !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-white shadow-sm flex-shrink-0"
+                         style="width: 44px; height: 44px; color: #10B981;">
+                        <i class="bi bi-rocket-takeoff-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-dark">
+                            <span>Chế độ Bù bài đang hoạt động</span>
+                            <span class="badge bg-success ms-2 px-2 py-1 rounded-pill" th:text="'+' + ${path.catchUpExtraMinutes} + ' phút/ngày'">+30 phút/ngày</span>
+                            <span th:if="${path.catchUpIncludeWeekends}" class="badge bg-primary ms-1 px-2 py-1 rounded-pill">+ Cuối tuần</span>
+                        </h6>
+                        <p class="small text-secondary mb-0">
+                            Hệ thống đang tăng cường độ học mỗi ngày để giúp bạn sớm bắt kịp Kế hoạch ban đầu.
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <form th:action="@{/learning-path/catch-up}" method="post" class="d-inline">
+                        <input type="hidden" name="courseId" th:value="${path.courseId}">
+                        <input type="hidden" name="enable" value="false">
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold shadow-sm">
+                            <i class="bi bi-stop-circle me-1"></i> Tắt chế độ bù bài
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-light btn-sm rounded-pill px-3 fw-bold border shadow-sm text-dark"
+                            data-bs-toggle="modal" data-bs-target="#catchUpModal">
+                        <i class="bi bi-gear me-1"></i> Tùy chỉnh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Banner: Gợi ý bật Chế độ Bù bài khi bị trễ hạn (chỉ xuất hiện khi đang chậm hơn kế hoạch ban đầu và chưa hoàn thành 100%) -->
+            <div th:if="${!path.catchUpMode and (path.progressPercent == null or path.progressPercent < 100) and (path.totalLessons == null or path.completedLessons == null or path.completedLessons < path.totalLessons) and path.planComparisonStatus == 'DELAYED' and path.baselineDaysVariance != null and path.baselineDaysVariance > 0}"
+                class="card border-0 shadow-sm rounded-4 p-3 mb-4 d-flex flex-wrap flex-row justify-content-between align-items-center gap-3"
+                style="background: linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 100%); border-left: 6px solid #F59E0B !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-white shadow-sm flex-shrink-0"
+                         style="width: 44px; height: 44px; color: #F59E0B;">
+                        <i class="bi bi-lightbulb-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-dark">
+                            <span>Lộ trình đang chậm hơn Kế hoạch ban đầu </span>
+                            <span class="text-danger fw-bolder" th:text="${path.baselineDaysVariance} + ' ngày'">34 ngày</span>
+                        </h6>
+                        <p class="small text-secondary mb-0">
+                            Kích hoạt <strong>Chế độ Bù bài</strong> để tự động tăng nhẹ 15–30 phút/ngày hoặc mở thêm ngày học cuối tuần!
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn rounded-3 px-3 py-2 fw-bold text-dark shadow-sm d-flex align-items-center gap-2"
+                            data-bs-toggle="modal" data-bs-target="#catchUpModal"
+                            style="background-color: #FBBF24; border: 1px solid #F59E0B; font-size: 13.5px;">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                        <span>Bật Bù bài ngay</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CTA Banner: Prompt Placement Test if not yet taken -->
+            <div th:if="${path.skillProfile == null or !path.skillProfile.assessmentTaken}"
+                class="card border-0 shadow-sm rounded-4 p-4 mb-4 text-white position-relative overflow-hidden"
+                style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25) !important;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative"
+                    style="z-index: 2;">
+                    <div>
+                        <span class="badge bg-white fw-bold px-3 py-1 rounded-pill mb-2 shadow-sm" style="color: #1D4ED8 !important; font-size: 12px;">
+                            <i class="bi bi-stars me-1 text-warning"></i> Gợi ý tối ưu lộ trình
+                        </span>
+                        <h5 class="fw-bold mb-2 text-white" style="font-size: 18px; letter-spacing: -0.2px;">Bạn chưa thực hiện bài thi đánh giá năng lực đầu vào?</h5>
+                        <p class="mb-0" style="max-width: 680px; color: #F1F5F9; font-size: 13.5px; line-height: 1.6; opacity: 0.95;">
+                            Làm bài đánh giá ngắn (khoảng 15-20 phút) để hệ thống nhận diện điểm mạnh, điểm yếu trong 5
+                            kỹ năng JLPT (Từ vựng, Hán tự, Ngữ pháp, Đọc, Nghe) và tự động tối ưu thời lượng từng bài
+                            học!
+                        </p>
+                    </div>
+                    <div>
+                        <a th:href="@{/exams/placement}"
+                            class="btn bg-white px-4 py-2.5 rounded-3 fw-bold shadow text-nowrap d-inline-flex align-items-center gap-2"
+                            style="color: #1E40AF; font-size: 14px; border: none;">
+                            <i class="bi bi-pencil-square text-primary"></i>
+                            <span>Làm bài kiểm tra năng lực</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0 text-white opacity-10"
+                    style="font-size: 140px; transform: translate(20px, 40px); pointer-events: none;">
+                    <i class="bi bi-award-fill"></i>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs Bar (3 tabs: Tổng quan, Tiến trình bài học, Lịch học) -->
+            <div class="card border rounded-3 shadow-none p-1.5 mb-4 bg-white" style="border-color: #E2E8F0 !important;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <button type="button" class="btn rounded-3 px-4 py-2 fw-bold tab-nav-btn active text-white text-center flex-grow-1"
+                            id="tabBtnOverview" onclick="switchMainTab('OVERVIEW')"
+                            style="background-color: #173B57; border: none; font-size: 14.5px;">
+                        Tổng quan
+                    </button>
+                    
+                    <div class="vr mx-2 text-muted opacity-25" style="height: 24px;"></div>
+                    
+                    <button type="button" class="btn rounded-3 px-3 py-2 fw-semibold text-secondary tab-nav-btn text-center flex-grow-1"
+                            id="tabBtnCurriculum" onclick="switchMainTab('CURRICULUM')"
+                            style="font-size: 14.5px;">
+                        <i class="bi bi-book me-1.5"></i> Tiến trình bài học
+                    </button>
+                    
+                    <div class="vr mx-2 text-muted opacity-25" style="height: 24px;"></div>
+                    
+                    <button type="button" class="btn rounded-3 px-3 py-2 fw-semibold text-secondary tab-nav-btn text-center flex-grow-1"
+                            id="tabBtnSchedule" onclick="switchMainTab('SCHEDULE')"
+                            style="font-size: 14.5px;">
+                        <i class="bi bi-calendar3 me-1.5"></i> Lịch học
+                    </button>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 1: TỔNG QUAN (KHỚP HOÀN TOÀN HÌNH ẢNH) -->
+            <!-- ========================================== -->
+            <div id="tabContentOverview" class="tab-pane-content">
+                <!-- Dashboard 2x2 Grid Section (Khớp hoàn toàn với Hình 1) -->
+                <div id="overviewGridSection">
+                <!-- HÀNG 1: Kế hoạch hiện tại (Trái) & Tiến độ lộ trình (Phải) -->
+                <div class="row g-4 mb-4 align-items-stretch">
+                    <!-- Thẻ 1: Kế hoạch tổng quan (Kế hoạch ban đầu & Kế hoạch hiện tại - Chuẩn UI/UX Pro Max) -->
+                    <div class="col-lg-7">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 position-relative overflow-hidden d-flex flex-column justify-content-between"
+                             style="border: 1px solid #E2E8F0 !important;">
+                            <div>
+                                <!-- Header Thẻ: Tiêu đề & Khóa học -->
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="bi bi-bullseye fs-5" style="color: #173B57;"></i>
+                                        <span class="fw-bold fs-6 text-dark">Kế hoạch học tập tổng quan</span>
+                                        <span class="badge rounded-pill ms-1" style="background-color: #EBF3F8; color: #173B57; border: 1px solid #CBDCE7; font-size: 11.5px;"
+                                              th:text="${path.courseLevel != null ? path.courseLevel : 'N3'}">N3</span>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-0 text-truncate" style="font-size: 18px;"
+                                        th:text="${path.courseTitle != null ? path.courseTitle : 'Khóa học JLPT'}">
+                                        Khóa học Chinh Phục JLPT N3 Toàn Diện
+                                    </h5>
+                                </div>
+
+                                <!-- Card Đối chiếu Kế hoạch & Thông số (Khớp hoàn toàn với Yêu cầu giao diện) -->
+                                <div class="p-3.5 p-md-4 rounded-4 bg-white border" style="border: 1.5px solid #E2E8F0 !important;">
+                                    <!-- Phần 1: Mốc kế hoạch & Chênh lệch tiến độ -->
+                                    <div class="d-flex flex-column gap-2.5">
+                                        <!-- Dòng 1: Dự kiến hoàn thành ban đầu (Icon + chữ chuẩn cỡ Bắt đầu/Giờ học/Ngày học, không bọc trong ô) -->
+                                        <div class="d-flex align-items-center gap-2 text-secondary" style="font-size: 14px;">
+                                            <i class="bi bi-pin-angle-fill fs-5" style="color: #64748B;"></i>
+                                            <div class="d-flex align-items-center flex-wrap">
+                                                <span class="text-secondary">Dự kiến hoàn thành ban đầu:</span>
+                                                <strong class="text-dark fw-bold ms-1"
+                                                        th:text="${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : (path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '03/12/2026')}">03/12/2026</strong>
+                                                <span class="plan-info-tooltip-wrapper ms-2">
+                                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                                                          role="button" tabindex="0"
+                                                          style="width: 17px; height: 17px; background-color: #F1F5F9; border: 1px solid #CBD5E1; color: #475569; font-size: 11px; font-weight: bold; cursor: pointer; flex-shrink: 0;">
+                                                        !
+                                                    </span>
+                                                    <span class="plan-custom-tooltip shadow-sm">
+                                                        Mốc hoàn thành cố định tính từ ngày đầu bạn đăng ký lộ trình học tập, dùng làm mỏ neo chuẩn và không bị ghi đè khi đổi lịch hay nghỉ học.
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Dòng 2: Dự kiến hoàn thành hiện tại (Icon + chữ chuẩn cỡ Bắt đầu/Giờ học/Ngày học, không bọc trong ô) -->
+                                        <div class="d-flex align-items-center gap-2 text-secondary" style="font-size: 14px;">
+                                            <i class="bi bi-clock-history fs-5" style="color: #2563EB;"></i>
+                                            <div class="d-flex align-items-center flex-wrap">
+                                                <span class="text-secondary">Dự kiến hoàn thành hiện tại:</span>
+                                                <strong class="text-primary fw-bold ms-1"
+                                                        th:text="${path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '06/01/2027'}">06/01/2027</strong>
+                                                <span class="plan-info-tooltip-wrapper ms-2">
+                                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                                                          role="button" tabindex="0"
+                                                          style="width: 17px; height: 17px; background-color: #EFF6FF; border: 1px solid #BFDBFE; color: #1D4ED8; font-size: 11px; font-weight: bold; cursor: pointer; flex-shrink: 0;">
+                                                        !
+                                                    </span>
+                                                    <span class="plan-custom-tooltip shadow-sm">
+                                                        Thời gian hoàn thành tính theo lịch học và tiến độ thực tế hiện tại của bạn, tự động cập nhật khi bạn điều chỉnh lịch học hoặc nghỉ học.
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Dòng 3: Alert badge so sánh tiến độ -->
+                                        <div class="pt-0.5">
+                                            <!-- Trễ hạn -->
+                                            <span th:if="${path.baselineDaysVariance != null and path.baselineDaysVariance > 0}"
+                                                  class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-2 text-wrap text-start shadow-none"
+                                                  style="background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; font-size: 13px;">
+                                                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                                <span th:text="'Trễ ' + ${path.baselineDaysVariance} + ' ngày so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : '03/12/2026'}) + ')'">
+                                                    Trễ 34 ngày so với Kế hoạch ban đầu (03/12/2026)
+                                                </span>
+                                            </span>
+
+                                            <!-- Hoàn thành sớm -->
+                                            <span th:if="${path.baselineDaysVariance != null and path.baselineDaysVariance < 0}"
+                                                  class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-2 text-wrap text-start shadow-none"
+                                                  style="background-color: #ECFDF5; color: #15803D; border: 1px solid #BBF7D0; font-size: 13px;">
+                                                <i class="bi bi-rocket-takeoff-fill text-success"></i>
+                                                <span th:text="'Hoàn thành sớm hơn ' + ${T(java.lang.Math).abs(path.baselineDaysVariance)} + ' ngày so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : '03/12/2026'}) + ')'">
+                                                    Hoàn thành sớm hơn so với Kế hoạch ban đầu
+                                                </span>
+                                            </span>
+
+                                            <!-- Đúng tiến độ -->
+                                            <span th:if="${path.baselineDaysVariance == null or path.baselineDaysVariance == 0}"
+                                                  class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-2 text-wrap text-start shadow-none"
+                                                  style="background-color: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; font-size: 13px;">
+                                                <i class="bi bi-check-circle-fill text-primary"></i>
+                                                <span th:text="'Đúng tiến độ so với Kế hoạch ban đầu (' + (${path.baselineEndDateFormatted != null and path.baselineEndDateFormatted != '--' ? path.baselineEndDateFormatted : '03/12/2026'}) + ')'">
+                                                    Đúng tiến độ so với Kế hoạch ban đầu (03/12/2026)
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Đường kẻ ngang phân cách -->
+                                    <hr class="my-3" style="border-color: #E2E8F0; opacity: 0.85;">
+
+                                    <!-- Phần 2: Các thông số lịch học (Bắt đầu | Giờ học | Ngày học) -->
+                                    <div class="row g-2 align-items-center small text-secondary">
+                                        <!-- Cột 1: Bắt đầu -->
+                                        <div class="col-md-4 col-sm-6">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-calendar-event fs-5" style="color: #2563EB;"></i>
+                                                <div class="text-truncate">
+                                                    <span class="text-secondary">Bắt đầu:</span>
+                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.startDateFormatted != null ? path.startDateFormatted : '18/11/2026'}">18/11/2026</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Cột 2: Giờ học -->
+                                        <div class="col-md-3 col-sm-6">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-clock fs-5" style="color: #F59E0B;"></i>
+                                                <div class="text-truncate">
+                                                    <span class="text-secondary">Giờ học:</span>
+                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? (path.dailyHours + ' giờ/ngày') : '1.00 giờ/ngày')}">1.00 giờ/ngày</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Cột 3: Ngày học -->
+                                        <div class="col-md-5 col-sm-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-calendar-check fs-5" style="color: #10B981;"></i>
+                                                <div class="text-truncate">
+                                                    <span class="text-secondary">Ngày học:</span>
+                                                    <strong class="text-dark fw-bold ms-1" th:text="${path.studyDaysText != null and !path.studyDaysText.isEmpty() ? path.studyDaysText : 'Thứ 2, Thứ 4, Thứ 6 (3 buổi/tuần)'}">Thứ 2, Thứ 4, Thứ 6 (3 buổi/tuần)</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Đường kẻ ngang phân cách mỏng -->
+                                    <hr class="my-2.5" style="border-color: #F1F5F9; opacity: 0.85;">
+
+                                    <!-- Phần 3: Ghi chú giải thích -->
+                                    <div class="small text-secondary d-flex align-items-start gap-2 pt-0.5" style="font-size: 12px; line-height: 1.5;">
+                                        <i class="bi bi-info-circle text-primary flex-shrink-0 mt-0.5"></i>
+                                        <span>Khi nghỉ học hoặc điều chỉnh lịch, hệ thống cập nhật <strong>Dự kiến hoàn thành hiện tại</strong> và giữ nguyên <strong>Dự kiến hoàn thành ban đầu</strong> làm mốc so sánh.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thẻ 2: Tiến độ lộ trình -->
+                    <div class="col-lg-5">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between"
+                             style="border: 1px solid #E2E8F0 !important;">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-speedometer2 fs-5" style="color: #173B57;"></i>
+                                        <span class="fw-bold fs-6 text-dark">Tiến độ lộ trình</span>
+                                    </div>
+                                    <span class="fs-3 fw-bolder text-primary" style="font-size: 28px;" th:text="(${path.progressPercent != null ? path.progressPercent : 0}) + '%'">41%</span>
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div class="progress rounded-pill mb-3" style="height: 10px; background-color: #E2E8F0;">
+                                    <div class="progress-bar rounded-pill" role="progressbar"
+                                         style="background-color: #2563EB;"
+                                         th:style="'width: ' + (${path.progressPercent != null ? path.progressPercent : 0}) + '%; background-color: #2563EB;'"
+                                         th:aria-valuenow="${path.progressPercent != null ? path.progressPercent : 0}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+
+                                <!-- Checklist Breakdown -->
+                                <div class="d-flex flex-column gap-2 small text-secondary mt-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                                        <span>Đã hoàn thành: <strong class="text-dark" th:text="(${path.completedLessons != null ? path.completedLessons : 0}) + ' bài'">13 bài</strong></span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-circle text-muted fs-6"></i>
+                                        <span>Còn lại: <strong class="text-dark" th:text="(${path.remainingLessons != null ? path.remainingLessons : 0}) + ' bài'">19 bài</strong></span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-circle text-muted fs-6"></i>
+                                        <span>Tổng: <strong class="text-dark" th:text="(${path.totalLessons != null ? path.totalLessons : 0}) + ' bài'">32 bài</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HÀNG 2: Mục tiêu học tập hôm nay (Trái) & Chuỗi học tập (Phải) -->
+                <div class="row g-4 mb-4 align-items-stretch">
+                    <!-- Thẻ 3: Mục tiêu học tập hôm nay -->
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between"
+                             style="border: 1px solid #E2E8F0 !important;">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-bullseye fs-5" style="color: #173B57;"></i>
+                                        <span class="fw-bold fs-6 text-dark">Mục tiêu học tập hôm nay</span>
+                                    </div>
+                                    <a href="javascript:void(0)" onclick="switchMainTab('CURRICULUM')" class="text-decoration-none small fw-semibold text-primary">
+                                        Xem chi tiết <i class="bi bi-chevron-right small"></i>
+                                    </a>
+                                </div>
+                                <div class="small text-secondary mb-3" th:text="${path.todayFocus != null and path.todayFocus.todayFormatted != null ? path.todayFocus.todayFormatted : 'Hôm nay'}">
+                                    Hôm nay (Thứ 5, 19/11/2026)
+                                </div>
+
+                                <!-- Case 1: Đã hoàn thành 100% toàn bộ khóa học -->
+                                <div th:if="${path.todayFocus != null and path.todayFocus.courseCompleted}" class="p-3 rounded-3 border bg-success-subtle text-success small mb-2">
+                                    <div class="fw-bold fs-6 mb-1"><i class="bi bi-trophy-fill text-warning me-1"></i> Xuất sắc! Bạn đã hoàn thành toàn bộ lộ trình khóa học!</div>
+                                    <div class="text-secondary" th:text="${path.todayFocus.statusMessage}">Lộ trình đã hoàn tất 100%. Bạn có thể xem lại bài học hoặc làm bài thi thử bất cứ lúc nào.</div>
+                                </div>
+
+                                <!-- Case 2: Đang trong kỳ báo nghỉ -->
+                                <div th:if="${path.todayFocus != null and !path.todayFocus.courseCompleted and path.todayFocus.onLeaveToday}" class="p-3 rounded-3 border bg-info-subtle text-info-emphasis small mb-2">
+                                    <div class="fw-bold mb-1"><i class="bi bi-shield-fill-check me-1"></i> Đang trong kỳ báo nghỉ</div>
+                                    <div class="text-secondary" th:text="${path.todayFocus.statusMessage}">Hệ thống đang bảo lưu an toàn chuỗi ngày học của bạn. Chúc bạn kỳ nghỉ vui vẻ!</div>
+                                </div>
+
+                                <!-- Case 3: Có bài học hôm nay -->
+                                <div th:if="${path.todayFocus != null and !path.todayFocus.courseCompleted and !path.todayFocus.onLeaveToday and path.todayFocus.todayLessons != null and !path.todayFocus.todayLessons.isEmpty()}" class="d-flex flex-column gap-2">
+                                    <div th:each="item : ${path.todayFocus.todayLessons}"
+                                         class="d-flex flex-wrap align-items-center justify-content-between p-2.5 px-3 rounded-3 border"
+                                         style="background-color: #FAFCFF;">
+                                        <div class="d-flex align-items-center gap-2.5 me-2 text-truncate">
+                                            <!-- Styled Checkbox matching image -->
+                                            <input type="checkbox" class="form-check-input mt-0 rounded-2 flex-shrink-0"
+                                                   th:checked="${item.status == 'COMPLETED'}" disabled
+                                                   style="width: 18px; height: 18px; border-color: #CBD5E1; cursor: default;">
+                                            <a th:href="${item.actionUrl}" class="fw-semibold text-dark text-decoration-none small text-truncate" th:text="${item.title}">
+                                                Bài 5.2: Ngữ pháp & Mẫu câu
+                                            </a>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                                            <span class="badge rounded-pill px-2.5 py-1 small fw-medium"
+                                                  th:style="${item.skillDisplayName == 'Ngữ pháp' ? 'background-color: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;' : (item.skillDisplayName == 'Từ vựng' ? 'background-color: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0;' : (item.skillDisplayName == 'Nghe hiểu' ? 'background-color: #FAF5FF; color: #9333EA; border: 1px solid #E9D5FF;' : 'background-color: #FFF7ED; color: #EA580C; border: 1px solid #FED7AA;'))}"
+                                                  th:text="${item.skillDisplayName != null ? item.skillDisplayName : 'Kỹ năng'}">
+                                                Ngữ pháp
+                                            </span>
+                                            <span class="small text-muted text-nowrap">
+                                                <i class="bi bi-clock me-1"></i><span th:text="${item.durationFormatted}">≈ 30 phút</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Case 4: Không có bài hôm nay (hoặc ngày nghỉ) -->
+                                <div th:if="${path.todayFocus == null or (!path.todayFocus.courseCompleted and !path.todayFocus.onLeaveToday and (path.todayFocus.todayLessons == null or path.todayFocus.todayLessons.isEmpty()))}" class="p-3 rounded-3 border bg-light text-center small text-secondary">
+                                    <i class="bi bi-cup-hot fs-4 text-warning d-block mb-1"></i>
+                                    <span th:text="${path.todayFocus != null and path.todayFocus.studyDayToday ? 'Hôm nay bạn không có bài học lên lịch.' : 'Hôm nay là ngày nghỉ theo lịch học của bạn.'}">
+                                        Hôm nay là ngày nghỉ theo lịch học của bạn.
+                                    </span>
+                                    <div class="mt-2" th:if="${path.todayFocus != null and path.todayFocus.nextLessonUrl != null}">
+                                        <a th:href="${path.todayFocus.nextLessonUrl}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="bi bi-play-circle me-1"></i> Học bài tiếp theo
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thẻ 4: Chuỗi học tập (Streak) - Thiết kế tinh tế theo UI/UX PRO MAX -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 position-relative overflow-hidden d-flex flex-column justify-content-between"
+                             style="background: linear-gradient(135deg, #FFFDF8 0%, #FFF8EE 100%); border: 1.5px solid #FED7AA !important;">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="bi bi-calendar-check fs-5" style="color: #173B57;"></i>
+                                    <span class="fw-bold fs-6 text-dark">Chuỗi học tập</span>
+                                </div>
+
+                                <div class="d-flex align-items-baseline gap-2 mt-3 mb-1">
+                                    <span class="fw-bolder text-dark" style="font-size: 48px; line-height: 1;"
+                                          th:text="${path.todayFocus != null ? path.todayFocus.streakDays : 0}">3</span>
+                                    <span class="fw-bold text-dark fs-6">ngày liên tiếp</span>
+                                </div>
+                            </div>
+
+                            <!-- Styled Vector Flame Watermark Graphic on Right (Replaces Emoji per Rule no-emoji-icons) -->
+                            <div class="position-absolute end-0 top-50 translate-middle-y me-2 opacity-50" style="pointer-events: none;">
+                                <svg width="90" height="90" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <linearGradient id="streakFlameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#FB923C"/>
+                                            <stop offset="50%" stop-color="#F97316"/>
+                                            <stop offset="100%" stop-color="#EA580C"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M12 2C9.5 5.5 10 8 8 10C6 12 5 14 5 16.5C5 20.1 7.9 23 11.5 23C15.1 23 18 20.1 18 16.5C18 13.5 16 11 15 9.5C14 8 14 6 12 2Z" fill="url(#streakFlameGrad)" opacity="0.45"/>
+                                    <path d="M12 11C11 13 10 14 9.5 15.5C9 17 9.8 19 11.5 19C13.2 19 14.5 17.5 14.5 16C14.5 14.5 13.5 13 12 11Z" fill="#FBBF24" opacity="0.75"/>
+                                </svg>
+                            </div>
+
+                            <!-- Footer message with flame icon -->
+                            <div class="pt-3 border-top mt-3" style="border-color: #FED7AA !important;">
+                                <div class="small fw-semibold d-flex align-items-center gap-1.5" style="color: #D97706;">
+                                    <i class="bi bi-fire fs-6"></i>
+                                    <span th:text="${path.todayFocus != null and path.todayFocus.streakMessage != null ? path.todayFocus.streakMessage : 'Học bài hôm nay để duy trì chuỗi liên tục!'}">
+                                        Học bài hôm nay để duy trì chuỗi!
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div> <!-- End #overviewGridSection -->
+
+                <!-- B2. Personalized Skill Profile & Assessment Analysis Card -->
+            <div th:if="${path.skillProfile != null}" class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4"
+                style="border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                     <div>
                         <h5 class="fw-bold mb-1" style="color: #0F172A;">
                             <i class="bi bi-person-check-fill text-primary me-2"></i> Hồ sơ năng lực kỹ năng & Gợi ý học tập
                         </h5>
                         <p class="small text-secondary mb-0">
-                            Phân tích theo 3 nhóm năng lực JLPT: Kiến thức ngôn ngữ (Ngữ pháp, Từ vựng, Chữ Hán), Đọc hiểu, Nghe hiểu. Lộ trình giữ nguyên trình tự bài học của khóa học và điều chỉnh thời lượng, bài tập ôn luyện theo năng lực thực tế.
+                            Phân tích chi tiết theo từng kỹ năng JLPT. Lộ trình giữ nguyên cấu trúc bài học và tự động tối ưu thời lượng ôn luyện theo năng lực thực tế.
                         </p>
                     </div>
-                    <span th:if="${path.skillProfile.assessmentTaken}" class="badge px-3 py-2 rounded-pill fw-semibold bg-primary-subtle text-primary border border-primary-subtle">
+                    <!-- Badges phân loại nguồn đánh giá -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap" th:if="${path.skillProfile.recalibratedFromMilestone}">
+                        <span class="badge px-3 py-2 rounded-pill fw-semibold bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-arrow-repeat me-1"></i> Tái hiệu chỉnh theo Bài thi Cột mốc
+                        </span>
+                        <span class="badge px-3 py-2 rounded-pill fw-semibold bg-primary-subtle text-primary border border-primary-subtle">
+                            <i class="bi bi-award-fill me-1"></i> <span th:text="${path.skillProfile.milestoneExamTitle}">Bài thi Cột mốc</span>
+                            <span th:if="${path.skillProfile.milestoneScore != null}" class="ms-1" th:text="'(' + ${path.skillProfile.milestoneScore} + 'đ)'"></span>
+                        </span>
+                    </div>
+                    <span th:if="${!path.skillProfile.recalibratedFromMilestone and path.skillProfile.assessmentTaken}"
+                        class="badge px-3 py-2 rounded-pill fw-semibold bg-primary-subtle text-primary border border-primary-subtle">
                         <i class="bi bi-award me-1"></i> <span th:text="${path.skillProfile.assessmentTitle}">Bài đánh giá năng lực đầu vào</span>
                     </span>
-                    <span th:if="${!path.skillProfile.assessmentTaken}" class="badge px-3 py-2 rounded-pill fw-semibold bg-secondary-subtle text-secondary border">
+                    <span th:if="${!path.skillProfile.recalibratedFromMilestone and !path.skillProfile.assessmentTaken}"
+                        class="badge px-3 py-2 rounded-pill fw-semibold bg-secondary-subtle text-secondary border">
                         <i class="bi bi-info-circle me-1"></i> Áp dụng thời lượng chuẩn (Chưa thi đánh giá)
                     </span>
                 </div>
 
-                <div class="row g-3">
-                    <div class="col-md-6 col-lg-3" th:each="skillEntry : ${path.skillProfile.displaySkillGroups}">
-                        <div class="p-3 rounded-3 h-100 border" style="background-color: #F8FAFC;">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold text-dark small" th:text="${skillEntry.skillName}">Từ vựng</span>
-                                <span class="badge rounded-pill fw-semibold"
-                                      th:classappend="${skillEntry.proficiency.badgeBootstrapClass}"
-                                      style="font-size: 11px;"
-                                      th:text="${skillEntry.proficiency.label}">Cần cải thiện</span>
+                <!-- Thông báo tái hiệu chỉnh năng lực sau bài thi cột mốc nếu có -->
+                <div th:if="${path.skillProfile.recalibratedFromMilestone and path.skillProfile.recalibrationNote != null}"
+                     class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-3 border-0 bg-success-subtle text-success-emphasis small">
+                    <i class="bi bi-check2-circle fs-5 text-success"></i>
+                    <div>
+                        <strong class="fw-semibold">Cột mốc mới được cập nhật:</strong>
+                        <span th:text="${path.skillProfile.recalibrationNote}">Hồ sơ năng lực và hệ số điều chỉnh thời lượng học đã được tự động tái hiệu chỉnh theo kết quả bài thi cột mốc gần nhất.</span>
+                    </div>
+                </div>
+
+                <div class="row g-4 align-items-stretch">
+                    <!-- Khối 1: Kiến thức ngôn ngữ (Từ vựng, Ngữ pháp, Kanji) -->
+                    <div class="col-lg-5 col-md-12">
+                        <div class="p-3 p-md-4 rounded-4 border h-100" style="background-color: #FAFAFA; border-color: #E2E8F0 !important;">
+                            <div class="mb-3 pb-2 border-bottom">
+                                <span class="fw-bold text-dark small text-uppercase">
+                                    <i class="bi bi-translate text-danger me-1"></i> Kiến thức ngôn ngữ
+                                </span>
                             </div>
-                            <div th:if="${skillEntry.evidenceAvailable}" class="d-flex align-items-center gap-2 mt-2">
-                                <div class="progress flex-grow-1" style="height: 6px;">
-                                    <div class="progress-bar"
-                                         th:classappend="${skillEntry.proficiency.name() == 'WEAK' ? 'bg-danger' : (skillEntry.proficiency.name() == 'STRONG' ? 'bg-success' : 'bg-warning')}"
-                                         th:style="'width: ' + ${skillEntry.accuracyPercentage} + '%;'"></div>
+
+                            <div class="d-flex flex-column gap-3">
+                                <div th:each="skillEntry : ${path.skillProfile.languageKnowledgeSkills}"
+                                     class="d-flex align-items-center gap-3">
+                                    <!-- Ký tự Nhật Bản (あ / 文 / 漢) -->
+                                    <span class="fw-bold fs-4 text-center"
+                                          style="min-width: 32px; color: #DC2626; font-family: 'Noto Sans JP', 'Hiragino Sans', 'Meiryo', sans-serif;"
+                                          th:text="${skillEntry.iconSymbol}">あ</span>
+
+                                    <!-- Tên kỹ năng -->
+                                    <span class="fw-semibold text-dark small"
+                                          style="min-width: 75px;"
+                                          th:text="${skillEntry.shortSkillName}">Từ vựng</span>
+
+                                    <!-- Thanh tiến trình chuẩn theo hình mẫu -->
+                                    <div class="progress flex-grow-1 rounded-pill" style="height: 14px; background-color: #E2E8F0;">
+                                        <div class="progress-bar rounded-pill"
+                                             th:style="'width: ' + (${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage : 0}) + '%; background-color: ' + ${skillEntry.progressBarColorHex} + ';'"
+                                             role="progressbar"
+                                             th:aria-valuenow="${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage : 0}"
+                                             aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+
+                                    <!-- Tỷ lệ % số in đậm bên phải & Huy hiệu delta tiến bộ -->
+                                    <div class="d-flex align-items-center justify-content-end gap-1" style="min-width: 85px;">
+                                        <span class="fw-bold text-dark small text-end"
+                                              th:text="${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage + '%' : '--'}">85%</span>
+                                        <span th:if="${skillEntry.accuracyDelta != null and skillEntry.accuracyDelta > 0}"
+                                              class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-1 py-0"
+                                              style="font-size: 10px;"
+                                              th:title="'Tăng ' + ${skillEntry.accuracyDelta} + '% so với đầu vào'">
+                                            +<span th:text="${skillEntry.accuracyDelta}"></span>%&uarr;
+                                        </span>
+                                        <span th:if="${skillEntry.accuracyDelta != null and skillEntry.accuracyDelta < 0}"
+                                              class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-1 py-0"
+                                              style="font-size: 10px;"
+                                              th:title="'Giảm ' + ${skillEntry.accuracyDelta} + '% so với đầu vào'">
+                                            <span th:text="${skillEntry.accuracyDelta}"></span>%&darr;
+                                        </span>
+                                    </div>
                                 </div>
-                                <span class="small fw-bold text-dark" th:text="${skillEntry.accuracyPercentage} + '%'">45%</span>
-                            </div>
-                            <div th:if="${!skillEntry.evidenceAvailable}" class="text-secondary small mt-2 fst-italic">
-                                Chưa có câu hỏi đánh giá
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-lg-3">
-                        <div class="p-3 rounded-3 h-100 border d-flex flex-column justify-content-center" style="background-color: #EFF6FF; border-color: #BFDBFE !important;">
-                            <div class="small fw-bold text-primary mb-1"><i class="bi bi-sliders2 me-1"></i> Quy tắc gợi ý:</div>
-                            <div class="small text-secondary" style="font-size: 12px; line-height: 1.5;">
-                                <div>• <strong>Kỹ năng yếu (&lt;50%):</strong> Gợi ý x1.5 thời lượng & bài tập bổ trợ.</div>
-                                <div>• <strong>Kỹ năng vững (&ge;70%):</strong> Gợi ý x0.75 thời lượng ôn nhanh.</div>
+
+                    <!-- Cột 2: Đọc hiểu và Nghe hiểu được tách riêng thành 2 khối độc lập -->
+                    <div class="col-lg-4 col-md-12 d-flex flex-column gap-3">
+                        <!-- Khối riêng 1: Đọc hiểu -->
+                        <div class="p-3 p-md-3 rounded-4 border flex-grow-1 d-flex flex-column justify-content-center"
+                             style="background-color: #FAFAFA; border-color: #E2E8F0 !important;">
+                            <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
+                                <span class="d-flex align-items-center justify-content-center" style="color: #DC2626;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                    </svg>
+                                </span>
+                                <span class="fw-bold text-dark small text-uppercase">Đọc hiểu</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3" th:with="skillEntry=${path.skillProfile.readingSkill}">
+                                <div class="progress flex-grow-1 rounded-pill" style="height: 14px; background-color: #E2E8F0;">
+                                    <div class="progress-bar rounded-pill"
+                                         th:style="'width: ' + (${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage : 0}) + '%; background-color: ' + ${skillEntry.progressBarColorHex} + ';'"
+                                         role="progressbar"
+                                         th:aria-valuenow="${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage : 0}"
+                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-end gap-1" style="min-width: 85px;">
+                                    <span class="fw-bold text-dark small text-end"
+                                          th:text="${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage + '%' : '--'}">75%</span>
+                                    <span th:if="${skillEntry.accuracyDelta != null and skillEntry.accuracyDelta > 0}"
+                                          class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-1 py-0"
+                                          style="font-size: 10px;"
+                                          th:title="'Tăng ' + ${skillEntry.accuracyDelta} + '% so với đầu vào'">
+                                        +<span th:text="${skillEntry.accuracyDelta}"></span>%&uarr;
+                                    </span>
+                                    <span th:if="${skillEntry.accuracyDelta != null and skillEntry.accuracyDelta < 0}"
+                                          class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-1 py-0"
+                                          style="font-size: 10px;"
+                                          th:title="'Giảm ' + ${skillEntry.accuracyDelta} + '% so với đầu vào'">
+                                        <span th:text="${skillEntry.accuracyDelta}"></span>%&darr;
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối riêng 2: Nghe hiểu -->
+                        <div class="p-3 p-md-3 rounded-4 border flex-grow-1 d-flex flex-column justify-content-center"
+                             style="background-color: #FAFAFA; border-color: #E2E8F0 !important;">
+                            <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
+                                <span class="d-flex align-items-center justify-content-center" style="color: #DC2626;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                                        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                                    </svg>
+                                </span>
+                                <span class="fw-bold text-dark small text-uppercase">Nghe hiểu</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3" th:with="skillEntry=${path.skillProfile.listeningSkill}">
+                                <div class="progress flex-grow-1 rounded-pill" style="height: 14px; background-color: #E2E8F0;">
+                                    <div class="progress-bar rounded-pill"
+                                         th:style="'width: ' + (${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage : 0}) + '%; background-color: ' + ${skillEntry.progressBarColorHex} + ';'"
+                                         role="progressbar"
+                                         th:aria-valuenow="${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage : 0}"
+                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-end gap-1" style="min-width: 85px;">
+                                    <span class="fw-bold text-dark small text-end"
+                                          th:text="${skillEntry.evidenceAvailable and skillEntry.accuracyPercentage != null ? skillEntry.accuracyPercentage + '%' : '--'}">70%</span>
+                                    <span th:if="${skillEntry.accuracyDelta != null and skillEntry.accuracyDelta > 0}"
+                                          class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-1 py-0"
+                                          style="font-size: 10px;"
+                                          th:title="'Tăng ' + ${skillEntry.accuracyDelta} + '% so với đầu vào'">
+                                        +<span th:text="${skillEntry.accuracyDelta}"></span>%&uarr;
+                                    </span>
+                                    <span th:if="${skillEntry.accuracyDelta != null and skillEntry.accuracyDelta < 0}"
+                                          class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-1 py-0"
+                                          style="font-size: 10px;"
+                                          th:title="'Giảm ' + ${skillEntry.accuracyDelta} + '% so với đầu vào'">
+                                        <span th:text="${skillEntry.accuracyDelta}"></span>%&darr;
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Khối 3: Quy tắc gợi ý điều chỉnh lộ trình - Tách riêng độc lập -->
+                    <div class="col-lg-3 col-md-12">
+                        <div class="p-3 p-md-4 rounded-4 border h-100 d-flex flex-column justify-content-between"
+                             style="background-color: #EFF6FF; border-color: #BFDBFE !important;">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom border-primary-subtle">
+                                    <span class="fw-bold text-primary small text-uppercase">
+                                        <i class="bi bi-sliders2 me-1"></i> Quy tắc gợi ý lộ trình
+                                    </span>
+                                </div>
+                                <div class="d-flex flex-column gap-2 small" style="font-size: 12px; line-height: 1.5;">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <span class="badge bg-danger rounded-pill px-2 py-1 mt-1" style="font-size: 10px;">&lt; 50%</span>
+                                        <div>
+                                            <strong class="text-danger">Kỹ năng yếu:</strong> Gợi ý <strong>x1.5</strong> thời lượng học & bài tập bổ trợ.
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-start gap-2">
+                                        <span class="badge bg-success rounded-pill px-2 py-1 mt-1" style="font-size: 10px;">&ge; 70%</span>
+                                        <div>
+                                            <strong class="text-success">Kỹ năng vững:</strong> Gợi ý <strong>x0.75</strong> thời lượng ôn nhanh.
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-start gap-2">
+                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-1 mt-1" style="font-size: 10px;">50-69%</span>
+                                        <div>
+                                            <strong class="text-warning-emphasis">Trung bình:</strong> Áp dụng thời lượng chuẩn bài học.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2 border-top border-primary-subtle text-muted fst-italic" style="font-size: 11px;">
+                                <i class="bi bi-magic text-primary me-1"></i> Thời lượng từng bài học trong lộ trình bên dưới đã được tính toán tự động.
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            </div>
 
-            <!-- C. Learning Timeline Table -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4" style="border: 1px solid #E2E8F0 !important;">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center" style="border-color: #E2E8F0 !important;">
-                    <h5 class="fw-bold mb-0" style="color: #0F172A">
-                        <i class="bi bi-list-check me-2 text-primary"></i> Chi tiết tiến trình bài học (Timeline)
-                    </h5>
-                    <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small fw-semibold" th:text="'Tổng số: ' + ${path.totalLessons} + ' bài'">
-                        Tổng số: 10 bài
-                    </span>
-                </div>
+            <!-- =============================================================== -->
+            <!-- TAB 2: TIẾN TRÌNH BÀI HỌC (TIẾN TRÌNH LỘ TRÌNH BÀI HỌC)         -->
+            <!-- =============================================================== -->
+            <div id="tabContentCurriculum" class="tab-pane-content" style="display: none;">
+                <!-- C. Learning Timeline Section (Dual View: Visual Roadmap & Detailed Table) -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4"
+                    style="border: 1px solid #E2E8F0 !important;">
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="timelineTable" style="font-size: 14px;">
-                        <thead style="background-color: #F8FAFC; color: #1E293B; font-weight: 700; border-bottom: 2px solid #E2E8F0;">
-                            <tr>
-                                <th class="text-center py-3" style="width: 70px;">Thứ tự</th>
-                                <th class="py-3">Nội dung bài học</th>
-                                <th class="py-3" style="width: 140px;">Thời lượng</th>
-                                <th class="py-3" style="width: 160px;">Ngày dự kiến</th>
-                                <th class="text-center py-3" style="width: 150px;">Trạng thái</th>
-                                <th class="text-center py-3" style="width: 150px;">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Iterate timeline items -->
-                            <tr th:each="item, iterStat : ${path.items}">
-                                <!-- Thứ tự -->
-                                <td class="text-center fw-bold text-secondary" th:text="${item.orderIndex}">1</td>
-
-                                <!-- Nội dung bài học -->
-                                <td>
-                                    <div class="fw-bold text-dark mb-1" style="color: #0F172A !important;" th:text="${item.title}">Bài 1: Giới thiệu cấu trúc câu cơ bản</div>
-                                    <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
-                                        <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 11px;" th:text="${item.sectionName}">Chương 1</span>
-                                        <span class="badge rounded-pill border" style="font-size: 11px; background-color: #F8FAFC; color: #475569;" th:text="${item.skillDisplayName}">Ngữ pháp (Grammar)</span>
-                                        
-                                        <!-- Skill-Aware Focus Badges -->
-                                        <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'WEAK'}"
-                                              class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size: 11px;">
-                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Trọng tâm cần củng cố [x1.5]
-                                        </span>
-                                        <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'STRONG'}"
-                                              class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 11px;">
-                                            <i class="bi bi-lightning-charge-fill me-1"></i>Nền tảng vững [x0.75]
-                                        </span>
-                                        
-                                        <span th:if="${item.contentType == 'EXAM' or item.contentType == 'MILESTONE'}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill" style="font-size: 11px;">
-                                            <i class="bi bi-award-fill me-1"></i> Milestone
-                                        </span>
-                                    </div>
-
-                                    <!-- Recommendation Reason Note -->
-                                    <div th:if="${item.recommendationReason != null}" class="text-secondary small mt-1" style="font-size: 12px; line-height: 1.4;">
-                                        <i class="bi bi-lightbulb text-warning me-1"></i><span th:text="${item.recommendationReason}">Lý do gợi ý...</span>
-                                    </div>
-
-                                    <!-- Available Review Resources -->
-                                    <div th:if="${item.hasReviewResources}" class="small mt-1 text-primary fw-medium" style="font-size: 12px;">
-                                        <i class="bi bi-collection me-1"></i>Tài nguyên bổ trợ: <span th:text="${item.reviewResourcesSummary}"></span>
-                                    </div>
-                                </td>
-
-                                <!-- Thời lượng -->
-                                <td>
-                                    <div>
-                                        <span class="text-dark fw-medium"><i class="bi bi-clock me-1 text-primary"></i> <span th:text="${item.durationFormatted}">1 giờ</span></span>
-                                    </div>
-                                    <div th:if="${item.recommendedDurationMinutes != item.durationMinutes}" class="mt-1" style="font-size: 12px;">
-                                        <span class="badge rounded-pill"
-                                              th:classappend="${item.recommendedDurationMinutes > item.durationMinutes} ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'"
-                                              th:text="'Gợi ý: ' + ${item.recommendedDurationFormatted}">Gợi ý: 45 phút</span>
-                                    </div>
-                                    <div th:if="${item.isOverflowDay}" class="small text-danger fw-semibold mt-1" style="font-size: 11px;" title="Thời lượng bài học vượt ngân sách học 1 ngày">
-                                        <i class="bi bi-exclamation-circle-fill"></i> Vượt ngân sách ngày
-                                    </div>
-                                </td>
-
-                                <!-- Ngày dự kiến -->
-                                <td>
-                                    <div class="fw-semibold text-dark" th:text="${item.plannedDateFormatted}">01/10/2026</div>
-                                    <small class="text-muted fw-medium" th:text="'Tuần ' + ${item.targetWeek}">Tuần 1</small>
-                                </td>
-
-                                <!-- Trạng thái -->
-                                <td class="text-center">
-                                    <span th:if="${item.status == 'COMPLETED'}" class="badge px-3 py-1 rounded-pill fw-bold" style="background-color: #ECFDF5; color: #047857; border: 1px solid #6EE7B7;">
-                                        <i class="bi bi-check-circle-fill me-1"></i> Đã hoàn thành
-                                    </span>
-                                    <span th:if="${item.status == 'IN_PROGRESS'}" class="badge px-3 py-1 rounded-pill fw-bold" style="background-color: #EFF6FF; color: #1D4ED8; border: 1px solid #93C5FD;">
-                                        <i class="bi bi-play-circle-fill me-1"></i> Đang học
-                                    </span>
-                                    <span th:if="${item.status == 'UPCOMING' or item.status == 'NOT_STARTED'}" class="badge px-3 py-1 rounded-pill fw-semibold" style="background-color: #F1F5F9; color: #475569; border: 1px solid #CBD5E1;">
-                                        Chưa học
-                                    </span>
-                                </td>
-
-                                <!-- Thao tác -->
-                                <td class="text-center">
-                                    <th:block th:if="${item.contentType == 'EXAM' or item.contentType == 'MILESTONE'}">
-                                        <a th:if="${item.status == 'COMPLETED'}"
-                                           th:href="@{${item.actionUrl}}"
-                                           class="btn btn-sm btn-outline-success px-3 py-1 rounded-pill fw-semibold">
-                                            <i class="bi bi-arrow-repeat me-1"></i> Làm lại
-                                        </a>
-                                        <a th:if="${item.status != 'COMPLETED'}"
-                                           th:href="@{${item.actionUrl}}"
-                                           class="btn btn-sm btn-primary px-3 py-1 rounded-pill fw-semibold shadow-sm" style="background-color: #2563EB; border-color: #2563EB;">
-                                            <i class="bi bi-pencil-square me-1"></i> Làm bài
-                                        </a>
-                                    </th:block>
-                                    <th:block th:if="${item.contentType != 'EXAM' and item.contentType != 'MILESTONE'}">
-                                        <a th:if="${item.status == 'COMPLETED'}"
-                                           th:href="@{${item.actionUrl}}"
-                                           class="btn btn-sm btn-outline-success px-3 py-1 rounded-pill fw-semibold">
-                                            <i class="bi bi-arrow-repeat me-1"></i> Ôn lại
-                                        </a>
-                                        <a th:if="${item.status == 'IN_PROGRESS'}"
-                                           th:href="@{${item.actionUrl}}"
-                                           class="btn btn-sm btn-primary px-3 py-1 rounded-pill fw-semibold shadow-sm" style="background-color: #2563EB; border-color: #2563EB;">
-                                            <i class="bi bi-play-fill me-1"></i> Học tiếp
-                                        </a>
-                                        <a th:if="${item.status == 'UPCOMING' or item.status == 'NOT_STARTED'}"
-                                           th:href="@{${item.actionUrl}}"
-                                           class="btn btn-sm btn-outline-primary px-3 py-1 rounded-pill fw-semibold">
-                                            Bắt đầu học
-                                        </a>
-                                    </th:block>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- D. Pagination Footer -->
-                <div class="card-footer bg-white border-top py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3" style="border-color: #E2E8F0 !important;" id="timelinePaginationFooter">
-                    <div class="small text-secondary fw-medium" id="timelinePaginationInfo">
-                        Hiển thị <span class="fw-bold text-dark" id="timelineStartItem">1</span> - <span class="fw-bold text-dark" id="timelineEndItem">6</span> trong tổng số <span class="fw-bold text-dark" th:text="${path.totalLessons}">12</span> bài học
+                <!-- Section Header with Dropdown & View Mode Switcher -->
+                <div class="card-header bg-white border-bottom py-3 px-3 px-md-4 d-flex flex-row justify-content-between align-items-center gap-2 gap-md-3 flex-nowrap"
+                    style="border-color: #E2E8F0 !important;">
+                    <div class="me-2 me-md-3" style="min-width: 0; flex: 1 1 auto; overflow: hidden;">
+                        <h5 class="fw-bold mb-1 text-truncate" style="color: #0F172A">
+                            <i class="bi bi-signpost-split-fill me-2 text-primary"></i> Tiến trình lộ trình bài học
+                        </h5>
+                        <div class="small text-secondary text-truncate">Lộ trình được chia theo từng tuần học với lịch trình và bài học cá nhân hóa.</div>
                     </div>
-                    <nav aria-label="Timeline navigation">
-                        <ul class="pagination pagination-sm mb-0 gap-1" id="timelinePaginationControls">
-                            <!-- Populated dynamically by JavaScript -->
-                            <li class="page-item disabled" id="prevPageLi">
-                                <button class="page-link rounded-2 px-3 py-1 fw-semibold text-secondary" type="button" tabindex="-1" aria-disabled="true">&laquo; Trước</button>
-                            </li>
-                            <li class="page-item active" id="pageLi1">
-                                <button class="page-link rounded-2 px-3 py-1 fw-semibold bg-primary text-white border-primary shadow-sm" type="button">1</button>
-                            </li>
-                            <li class="page-item" id="pageLi2" th:if="${path.totalLessons > 6}">
-                                <button class="page-link rounded-2 px-3 py-1 fw-semibold text-dark" type="button">2</button>
-                            </li>
-                            <li class="page-item" id="nextPageLi" th:classappend="${path.totalLessons <= 6} ? 'disabled' : ''">
-                                <button class="page-link rounded-2 px-3 py-1 fw-semibold text-secondary" type="button">Sau &raquo;</button>
-                            </li>
-                        </ul>
-                    </nav>
+
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-nowrap ms-auto">
+                        <!-- Thanh Dropdown chọn tuần (Week Selector Dropdown) -->
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            <label for="weekSelectDropdown" class="small fw-bold text-secondary text-nowrap d-none d-sm-inline">
+                                <i class="bi bi-calendar-week me-1 text-primary"></i> Chọn tuần:
+                            </label>
+                            <select id="weekSelectDropdown" class="form-select form-select-sm rounded-pill fw-semibold border shadow-none"
+                                style="width: auto; min-width: 175px; max-width: 215px; background-color: #F8FAFC;"
+                                onchange="onWeekDropdownChange(this.value)">
+                                <option value="ALL" th:text="'Tất cả các tuần (' + ${#lists.size(path.weeks)} + ' tuần)'">Tất cả các tuần</option>
+                                <option th:each="week : ${path.weeks}"
+                                    th:value="${week.weekNumber}"
+                                    th:text="${week.weekTitle} + ' (' + ${week.dateRangeFormatted} + ')'">
+                                    Tuần 1 (17/11/2026 - 22/11/2026)
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Nút Mở tất cả / Thu gọn (Cố định width để không bao giờ làm xô lệch hay nhảy dòng) -->
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-semibold d-inline-flex align-items-center justify-content-center"
+                            id="btnToggleAllWeeks" onclick="toggleAllWeeksAccordion()"
+                            style="width: 140px; min-width: 140px; white-space: nowrap;">
+                            <i class="bi bi-arrows-expand me-1" id="toggleAllWeeksIcon"></i>
+                            <span id="toggleAllWeeksText">Mở tất cả</span>
+                        </button>
+
+                        <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small fw-semibold flex-shrink-0"
+                            th:text="'Tổng: ' + ${path.totalLessons} + ' bài (' + ${#lists.size(path.weeks)} + ' tuần)'">
+                            Tổng: 32 bài
+                        </span>
+                    </div>
                 </div>
+
+                <!-- Quick Filter Bar (Bộ lọc bài học nhanh: không dùng icon, trực quan, gọn nhẹ) -->
+                <div class="px-4 py-3 bg-white border-bottom" style="border-color: #E2E8F0 !important;">
+                    <div class="row g-2.5 align-items-center">
+                        <!-- 1. Ô tìm kiếm bài học nhanh (không icon) -->
+                        <div class="col-12 col-md-4">
+                            <div class="position-relative">
+                                <input type="text" id="lessonSearchInput" class="form-control form-control-sm bg-light rounded-pill px-3"
+                                       placeholder="Tìm kiếm bài học, chương học..."
+                                       oninput="applyQuickLessonFilter()"
+                                       style="font-size: 13px;">
+                                <button class="btn btn-sm btn-link text-muted text-decoration-none position-absolute end-0 top-50 translate-middle-y me-2 p-0"
+                                        type="button" id="btnClearSearch" onclick="clearLessonSearch()"
+                                        style="display: none; font-size: 12px; line-height: 1;">
+                                    Xóa
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Lọc theo trạng thái (không icon/emoji, bỏ bài thi cột mốc) -->
+                        <div class="col-6 col-md-3">
+                            <select id="lessonStatusFilter" class="form-select form-select-sm fw-semibold bg-light rounded-pill"
+                                    onchange="applyQuickLessonFilter()" style="font-size: 13px;">
+                                <option value="ALL">Trạng thái: Tất cả</option>
+                                <option value="IN_PROGRESS">Đang học</option>
+                                <option value="UPCOMING">Chưa học</option>
+                                <option value="COMPLETED">Đã hoàn thành</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Lọc theo kỹ năng (thuần tiếng Việt, bỏ phần tiếng Anh) -->
+                        <div class="col-6 col-md-3">
+                            <select id="lessonSkillFilter" class="form-select form-select-sm fw-semibold bg-light rounded-pill"
+                                    onchange="applyQuickLessonFilter()" style="font-size: 13px;">
+                                <option value="ALL">Kỹ năng: Tất cả</option>
+                                <option value="Từ vựng">Từ vựng</option>
+                                <option value="Ngữ pháp">Ngữ pháp</option>
+                                <option value="Hán tự">Hán tự</option>
+                                <option value="Đọc hiểu">Đọc hiểu</option>
+                                <option value="Nghe hiểu">Nghe hiểu</option>
+                                <option value="Cột mốc">Kiểm tra cột mốc</option>
+                            </select>
+                        </div>
+
+                        <!-- 4. Đếm số lượng kết quả & Nút Đặt lại (không icon) -->
+                        <div class="col-12 col-md-2 text-md-end d-flex align-items-center justify-content-between justify-content-md-end gap-2">
+                            <span id="filterResultCount" class="small fw-bold text-secondary" style="font-size: 12.5px;">
+                                <span class="text-primary" th:text="${path.totalLessons} + ' bài'">32 bài</span>
+                            </span>
+                            <button type="button" id="btnResetQuickFilter" class="btn btn-sm btn-link text-decoration-none p-0 text-danger small fw-semibold"
+                                    onclick="resetQuickLessonFilter()" style="display: none; font-size: 12px;">
+                                Đặt lại
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Filter Pills (không icon, chỉ text tinh giản, bỏ cột mốc) -->
+                    <div class="d-flex flex-wrap align-items-center gap-1.5 mt-2.5 pt-2 border-top border-light-subtle">
+                        <span class="small text-muted me-1" style="font-size: 11.5px;">Phím tắt:</span>
+                        <button type="button" class="btn btn-sm py-0.5 px-3 rounded-pill border fw-semibold filter-pill active"
+                                data-filter-type="status" data-filter-val="ALL" onclick="setFilterPill('status', 'ALL', this)"
+                                style="font-size: 11.5px; background-color: #173B57; color: #FFFFFF; border-color: #173B57 !important;">
+                            Tất cả
+                        </button>
+                        <button type="button" class="btn btn-sm py-0.5 px-3 rounded-pill border fw-semibold filter-pill"
+                                data-filter-type="status" data-filter-val="IN_PROGRESS" onclick="setFilterPill('status', 'IN_PROGRESS', this)"
+                                style="font-size: 11.5px; background-color: #F8FAFC; color: #173B57; border-color: #BFDBFE !important;">
+                            Đang học
+                        </button>
+                        <button type="button" class="btn btn-sm py-0.5 px-3 rounded-pill border fw-semibold filter-pill"
+                                data-filter-type="status" data-filter-val="UPCOMING" onclick="setFilterPill('status', 'UPCOMING', this)"
+                                style="font-size: 11.5px; background-color: #F8FAFC; color: #475569; border-color: #CBD5E1 !important;">
+                            Chưa học
+                        </button>
+                        <button type="button" class="btn btn-sm py-0.5 px-3 rounded-pill border fw-semibold filter-pill"
+                                data-filter-type="status" data-filter-val="COMPLETED" onclick="setFilterPill('status', 'COMPLETED', this)"
+                                style="font-size: 11.5px; background-color: #F8FAFC; color: #15803D; border-color: #BBF7D0 !important;">
+                            Đã xong
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DANH SÁCH BÀI HỌC ĐƯỢC CHIA THEO TUẦN VỚI THANH DROPDOWN TUẦN -->
+                <div class="p-3 p-md-4" style="background-color: #F8FAFC;" id="weeklyTimelineContainer">
+
+                    <!-- Empty state if no search/filter results -->
+                    <div id="filterNoResultsMessage" class="p-5 text-center bg-white rounded-4 border mb-3 shadow-xs" style="display: none;">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 56px; height: 56px; background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                            <i class="bi bi-search text-muted fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1">Không tìm thấy bài học phù hợp</h6>
+                        <p class="small text-secondary mb-3">
+                            Không có bài học nào khớp với các tiêu chí tìm kiếm hoặc bộ lọc hiện tại.
+                        </p>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold"
+                                onclick="resetQuickLessonFilter()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại bộ lọc
+                        </button>
+                    </div>
+
+                    <!-- Empty state if no weeks -->
+                    <div th:if="${path.weeks == null or path.weeks.isEmpty()}" class="p-4 text-center text-muted">
+                        Chưa có bài học nào trong lộ trình.
+                    </div>
+
+                    <!-- Lặp qua từng Tuần -->
+                    <div th:each="week : ${path.weeks}"
+                         class="week-container mb-3"
+                         th:id="'week-container-' + ${week.weekNumber}"
+                         th:attr="data-week-num=${week.weekNumber}">
+
+                        <!-- Thanh Dropdown Tuần (Accordion Header Bar) -->
+                        <div class="card border rounded-4 shadow-sm overflow-hidden week-card"
+                             th:classappend="${week.isCurrentWeek ? 'border-primary' : 'border-light-subtle'}"
+                             style="background-color: #FFFFFF;">
+
+                            <div class="p-3 p-md-3 d-flex flex-wrap justify-content-between align-items-center gap-3 week-header-clickable"
+                                 style="cursor: pointer; user-select: none;"
+                                 th:onclick="'toggleWeekAccordion(' + ${week.weekNumber} + ')'">
+
+                                <!-- Khối Trái: Tên tuần & Khoảng ngày (từ ngày nào đến ngày nào) -->
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-3 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0"
+                                         style="width: 44px; height: 44px;"
+                                         th:styleappend="${week.status == 'COMPLETED' ? 'background: linear-gradient(135deg, #10B981, #059669);' : (week.status == 'IN_PROGRESS' ? 'background: linear-gradient(135deg, #2563EB, #1D4ED8);' : 'background: linear-gradient(135deg, #64748B, #475569);')}">
+                                        <i th:if="${week.status == 'COMPLETED'}" class="bi bi-check2-circle fs-4"></i>
+                                        <i th:if="${week.status == 'IN_PROGRESS'}" class="bi bi-play-circle-fill fs-4"></i>
+                                        <i th:if="${week.status != 'COMPLETED' and week.status != 'IN_PROGRESS'}" class="bi bi-calendar2-week fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;" th:text="${week.weekTitle}">Tuần 1</h6>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small fw-semibold">
+                                                <i class="bi bi-calendar-range me-1"></i>
+                                                <span th:text="${week.dateRangeFormatted}">17/11/2026 - 22/11/2026</span>
+                                            </span>
+                                            <span th:if="${week.isCurrentWeek}" class="badge bg-primary text-white rounded-pill px-2 py-1 small shadow-sm">
+                                                <i class="bi bi-lightning-charge-fill me-1"></i> Tuần hiện tại
+                                            </span>
+                                        </div>
+                                        <div class="small text-secondary mt-1">
+                                            <span class="fw-semibold text-dark" th:text="${week.completedLessons} + '/' + ${week.totalLessons}">3/5</span> bài hoàn thành
+                                            <span class="mx-1 text-muted">•</span>
+                                            <span>Thời lượng: <strong class="text-dark" th:text="${week.totalDurationFormatted}">5 giờ</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Khối Phải: Tiến độ tuần, Huy hiệu trạng thái & Mũi tên dropdown -->
+                                <div class="d-flex align-items-center gap-3 ms-auto">
+                                    <!-- Thanh tiến trình tuần -->
+                                    <div class="d-flex flex-column" style="min-width: 140px; max-width: 180px;">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="text-secondary fw-semibold" style="font-size: 11px;">Tiến độ tuần</span>
+                                            <span class="fw-bold" style="font-size: 11px;"
+                                                  th:classappend="${week.status == 'COMPLETED' ? 'text-success' : 'text-primary'}"
+                                                  th:text="${week.progressPercent != null ? week.progressPercent : (week.totalLessons > 0 ? (week.completedLessons * 100 / week.totalLessons) : 0)} + '%'">60%</span>
+                                        </div>
+                                        <div class="progress rounded-pill shadow-none" style="height: 6px; background-color: #E2E8F0;">
+                                            <div class="progress-bar rounded-pill"
+                                                 role="progressbar"
+                                                 th:style="'width: ' + ${week.progressPercent != null ? week.progressPercent : (week.totalLessons > 0 ? (week.completedLessons * 100 / week.totalLessons) : 0)} + '%;'"
+                                                 th:classappend="${week.status == 'COMPLETED' ? 'bg-success' : 'bg-primary'}"
+                                                 th:aria-valuenow="${week.progressPercent != null ? week.progressPercent : (week.totalLessons > 0 ? (week.completedLessons * 100 / week.totalLessons) : 0)}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+
+                                    <span class="badge px-3 py-2 rounded-pill fw-semibold"
+                                          th:classappend="${week.statusBadgeClass}"
+                                          th:text="${week.statusDisplay}">Đang học</span>
+                                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                                         style="width: 32px; height: 32px;">
+                                        <i class="bi bi-chevron-down text-secondary week-chevron-icon transition-all"
+                                           th:id="'chevron-' + ${week.weekNumber}"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- BÊN TRONG THANH DROPDOWN TUẦN: CÁC DROPDOWN NGÀY HỌC -->
+                            <div th:id="'week-body-' + ${week.weekNumber}"
+                                 class="week-collapse-content border-top p-3 p-md-4"
+                                 style="background-color: #FAFCFF;"
+                                 th:styleappend="${week.isCurrentWeek ? 'display: block;' : 'display: none;'}">
+
+                                <!-- Sub-header: Tóm tắt ngày học và nút Mở/Thu gọn tất cả ngày trong tuần -->
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                    <div class="small text-secondary fw-semibold">
+                                        <i class="bi bi-calendar-check me-1 text-primary"></i>
+                                        Lịch học: <span class="text-dark fw-bold" th:text="${#lists.size(week.days)} + ' ngày trong tuần'">3 ngày</span>
+                                        <span class="text-muted ms-1">(Mỗi ngày học được phân bổ đúng hạn mức giờ đã thiết lập)</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 small fw-semibold text-primary"
+                                            th:onclick="'toggleAllDaysInWeek(' + ${week.weekNumber} + ')'">
+                                        <i class="bi bi-arrows-expand me-1"></i>
+                                        <span th:id="'toggle-days-text-' + ${week.weekNumber}">Mở tất cả các ngày</span>
+                                    </button>
+                                </div>
+
+                                <!-- Empty state if no days -->
+                                <div th:if="${week.days == null or week.days.isEmpty()}" class="p-3 text-center text-muted small">
+                                    Chưa có bài học được xếp vào tuần này.
+                                </div>
+
+                                <!-- LẶP QUA TỪNG NGÀY TRONG TUẦN (MỖI NGÀY LÀ MỘT DROPDOWN) -->
+                                <div th:each="day : ${week.days}"
+                                     class="day-container mb-3"
+                                     th:id="'day-container-' + ${week.weekNumber} + '-' + ${day.dayIndex}">
+
+                                    <div class="card border rounded-3 shadow-none day-card overflow-hidden"
+                                         th:classappend="${day.isCurrentDay ? 'border-primary' : 'border-light-subtle'}"
+                                         style="background-color: #FFFFFF;">
+
+                                        <!-- THANH DROPDOWN NGÀY (HEADER BAR) -->
+                                        <div class="p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 day-header-clickable"
+                                             style="cursor: pointer; user-select: none; background-color: #F8FAFC;"
+                                             th:onclick="'toggleDayAccordion(' + ${week.weekNumber} + ', ' + ${day.dayIndex} + ')'">
+
+                                            <!-- Trái: Thứ, Ngày tháng & Huy hiệu ngày -->
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <span class="badge rounded-pill px-2 py-1 small fw-bold text-white shadow-sm"
+                                                      th:styleappend="${day.status == 'COMPLETED' ? 'background-color: #10B981;' : (day.status == 'IN_PROGRESS' ? 'background-color: #2563EB;' : 'background-color: #64748B;')}">
+                                                    <span th:text="${day.dayOfWeekFormatted}">Thứ 3</span>
+                                                </span>
+                                                <span class="fw-bold text-dark" style="font-size: 14px;" th:text="${day.fullDateDisplay}">Thứ 3, 17/11/2026</span>
+                                                <span th:if="${day.isToday}" class="badge bg-danger text-white rounded-pill px-2 py-0 small">Hôm nay</span>
+                                                <span th:if="${day.isCurrentDay and !day.isToday}" class="badge bg-primary text-white rounded-pill px-2 py-0 small">Đang học</span>
+                                            </div>
+
+                                            <!-- Phải: Số bài, thời lượng học của ngày, trạng thái & mũi tên -->
+                                            <div class="d-flex align-items-center gap-3 ms-auto">
+                                                <span class="small text-secondary">
+                                                    <span class="fw-bold text-dark" th:text="${day.totalLessons}">2</span> bài học
+                                                    <span class="mx-1">•</span>
+                                                    <span>Thời lượng: <strong class="text-dark" th:text="${day.totalDurationFormatted}">1 giờ 5 phút</strong></span>
+                                                </span>
+                                                <span class="badge px-2 py-1 rounded-pill fw-semibold small"
+                                                      th:classappend="${day.statusBadgeClass}"
+                                                      th:text="${day.statusDisplay}">Đang học</span>
+                                                <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center"
+                                                     style="width: 26px; height: 26px;">
+                                                    <i class="bi bi-chevron-down text-secondary day-chevron-icon transition-all"
+                                                       th:id="'chevron-day-' + ${week.weekNumber} + '-' + ${day.dayIndex}"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- BÊN TRONG DROPDOWN NGÀY: DANH SÁCH BÀI HỌC CỦA NGÀY ĐÓ -->
+                                        <div th:id="'day-body-' + ${week.weekNumber} + '-' + ${day.dayIndex}"
+                                             class="day-collapse-content border-top"
+                                             th:styleappend="${day.isCurrentDay or (week.isCurrentWeek and day.dayIndex == 1) ? 'display: block;' : 'display: none;'}">
+
+                                            <!-- THẺ BÀI HỌC CỦA NGÀY (THẺ LỘ TRÌNH) -->
+                                            <div class="p-3">
+                                                <div class="row g-2">
+                                                    <div th:each="item : ${day.items}" class="col-12 lesson-item-wrapper"
+                                                         th:attr="data-status=${item.status},
+                                                                  data-content-type=${item.contentType},
+                                                                  data-is-milestone=${item.contentType == 'EXAM' or item.contentType == 'MILESTONE'},
+                                                                  data-skill=${item.skillDisplayName != null ? item.skillDisplayName : ''},
+                                                                  data-title=${item.title != null ? #strings.toLowerCase(item.title) : ''},
+                                                                  data-section=${item.sectionName != null ? #strings.toLowerCase(item.sectionName) : ''}">
+                                                        <div class="card border rounded-3 p-3 shadow-none bg-white"
+                                                             th:classappend="${item.status == 'IN_PROGRESS' ? 'border-primary border-2 shadow-sm' : (item.contentType == 'EXAM' or item.contentType == 'MILESTONE' ? 'border-warning-subtle' : 'border-light-subtle')}">
+                                                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                                                <!-- Thông tin bài học -->
+                                                                <div class="flex-grow-1">
+                                                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                                                        <span class="badge bg-light text-secondary border rounded-pill small"
+                                                                              th:text="${item.sectionName}">Chương 1</span>
+                                                                        <span class="badge bg-light text-dark border rounded-pill">
+                                                                            <i class="bi bi-clock me-1 text-primary"></i>
+                                                                            <span th:text="${item.durationFormatted}">30 phút</span>
+                                                                        </span>
+                                                                        <span class="badge rounded-pill border"
+                                                                              style="font-size: 11px; background-color: #F8FAFC; color: #475569;"
+                                                                              th:text="${item.skillDisplayName}">Kỹ năng</span>
+                                                                        <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'WEAK'}"
+                                                                              class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill small">
+                                                                            Trọng tâm [x1.5]
+                                                                        </span>
+                                                                        <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'STRONG'}"
+                                                                              class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                                                                            Nền tảng vững [x0.75]
+                                                                        </span>
+                                                                        <span th:if="${item.contentType == 'EXAM' or item.contentType == 'MILESTONE'}"
+                                                                              class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill small">
+                                                                            <i class="bi bi-award-fill me-1"></i> Cột mốc đánh giá
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div class="d-flex align-items-baseline gap-2">
+                                                                        <span class="badge bg-light text-secondary border rounded-pill px-2 py-0 small fw-bold" th:text="'#' + ${item.orderIndex}">#1</span>
+                                                                        <h6 class="fw-bold text-dark mb-1" th:text="${item.title}">Bài 1: Giới thiệu ngữ pháp</h6>
+                                                                    </div>
+
+                                                                    <div th:if="${item.recommendationReason != null}" class="text-secondary small mt-1">
+                                                                        <i class="bi bi-lightbulb text-warning me-1"></i>
+                                                                        <span th:text="${item.recommendationReason}"></span>
+                                                                    </div>
+
+                                                                    <div th:if="${item.hasReviewResources}" class="small text-primary mt-1 fw-medium">
+                                                                        <i class="bi bi-collection me-1"></i> Tài nguyên bổ trợ: <span th:text="${item.reviewResourcesSummary}"></span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Thao tác và trạng thái -->
+                                                                <div class="text-md-end d-flex flex-row flex-md-column align-items-center align-items-md-end justify-content-between gap-2">
+                                                                    <span class="badge px-3 py-1 rounded-pill fw-semibold"
+                                                                          th:classappend="${item.status == 'COMPLETED'} ? 'bg-success-subtle text-success border border-success-subtle' : (${item.status == 'IN_PROGRESS'} ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-secondary border')"
+                                                                          th:text="${item.statusDisplay}">Đang học</span>
+                                                                    <a th:href="@{${item.actionUrl}}"
+                                                                       class="btn btn-sm px-3 py-1 rounded-pill fw-semibold text-nowrap"
+                                                                       th:classappend="${item.status == 'COMPLETED'} ? 'btn-outline-success' : (${item.status == 'IN_PROGRESS'} ? 'btn-primary shadow-sm' : 'btn-outline-primary')">
+                                                                        <i th:class="${item.status == 'COMPLETED'} ? 'bi bi-arrow-repeat me-1' : (${item.status == 'IN_PROGRESS'} ? 'bi bi-play-fill me-1' : 'bi bi-pencil-square me-1')"></i>
+                                                                        <span th:text="${item.actionText}">Học tiếp</span>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </div>
 
-        <!-- Timeline Pagination Script (INSIDE #mainContent) -->
+        <!-- Custom CSS for Dropdown Accordion Transitions -->
+        <style>
+            .week-header-clickable:hover {
+                background-color: #F8FAFC;
+            }
+            .day-header-clickable:hover {
+                background-color: #F1F5F9 !important;
+            }
+            .week-chevron-icon, .day-chevron-icon {
+                transition: transform 0.25s ease-in-out;
+            }
+            .week-chevron-icon.rotate-180, .day-chevron-icon.rotate-180 {
+                transform: rotate(180deg);
+            }
+            .transition-all {
+                transition: all 0.25s ease-in-out;
+            }
+            .tooltip {
+                z-index: 1080 !important;
+            }
+            .tooltip-inner {
+                max-width: 320px;
+                padding: 8px 12px;
+                font-size: 12.5px;
+                line-height: 1.45;
+                text-align: left;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            }
+            /* Custom anchored tooltip for Plan Info - 100% stable beside the ! icon */
+            .plan-info-tooltip-wrapper {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                vertical-align: middle;
+            }
+            .plan-info-tooltip-wrapper .plan-custom-tooltip {
+                visibility: hidden;
+                opacity: 0;
+                position: absolute;
+                left: calc(100% + 8px);
+                top: 50%;
+                transform: translateY(-50%);
+                background-color: #1E293B;
+                color: #FFFFFF;
+                font-size: 12px;
+                font-weight: 500;
+                line-height: 1.45;
+                padding: 7px 11px;
+                border-radius: 8px;
+                width: 270px;
+                max-width: calc(100vw - 40px);
+                z-index: 1050;
+                pointer-events: none;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+                transition: opacity 0.2s ease, visibility 0.2s ease;
+            }
+            .plan-info-tooltip-wrapper .plan-custom-tooltip::after {
+                content: "";
+                position: absolute;
+                right: 100%;
+                top: 50%;
+                transform: translateY(-50%);
+                border-width: 5px;
+                border-style: solid;
+                border-color: transparent #1E293B transparent transparent;
+            }
+            .plan-info-tooltip-wrapper:hover .plan-custom-tooltip,
+            .plan-info-tooltip-wrapper:focus-within .plan-custom-tooltip {
+                visibility: visible;
+                opacity: 1;
+            }
+            @media (max-width: 768px) {
+                .plan-info-tooltip-wrapper .plan-custom-tooltip {
+                    left: auto;
+                    right: 0;
+                    top: calc(100% + 6px);
+                    transform: none;
+                    width: 230px;
+                }
+                .plan-info-tooltip-wrapper .plan-custom-tooltip::after {
+                    right: 10px;
+                    top: -10px;
+                    transform: none;
+                    border-color: transparent transparent #1E293B transparent;
+                }
+            }
+        </style>
+
+            <!-- ========================================== -->
+            <!-- MODAL: BÁO NGHỈ HỌC (LEAVE OF ABSENCE)     -->
+            <!-- ========================================== -->
+            <div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                            <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="leaveModalLabel">
+                                <i class="bi bi-calendar-x text-primary fs-4"></i>
+                                <span>Báo nghỉ học</span>
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 py-4">
+                            <!-- Form báo nghỉ mới -->
+                            <form th:action="@{/learning-path/leave}" method="post">
+                                <input type="hidden" name="courseId" th:value="${path.courseId}">
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-dark">
+                                            <i class="bi bi-calendar-event me-1 text-primary"></i> Từ ngày:
+                                        </label>
+                                        <input type="date" name="startDate" class="form-control rounded-3"
+                                               th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-dark">
+                                            <i class="bi bi-calendar-check me-1 text-primary"></i> Đến hết ngày:
+                                        </label>
+                                        <input type="date" name="endDate" class="form-control rounded-3"
+                                               th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Box giải thích cơ chế thông minh -->
+                                <div class="p-3 rounded-4 mb-4 border" style="background-color: #F8FAFC; border-color: #E2E8F0 !important;">
+                                    <div class="fw-bold small text-dark mb-2">
+                                        <i class="bi bi-magic text-primary me-1"></i> Cơ chế thích ứng tự động của hệ thống:
+                                    </div>
+                                    <ul class="small text-secondary ps-3 mb-0" style="line-height: 1.6;">
+                                        <li><strong>Tự động dời lịch bài học:</strong> Các bài học trong kỳ nghỉ sẽ được chuyển sang các ngày học kế tiếp theo đúng thứ tự.</li>
+                                        <li><strong>Bảo lưu chuỗi ngày học liên tục 🔥:</strong> Chuỗi ngày học liên tục được đóng băng an toàn, bạn không bị mất chuỗi vì lý do chính đáng.</li>
+                                        <li><strong>Giữ nguyên Kế hoạch ban đầu:</strong> Mốc kế hoạch ban đầu không đổi để bạn dễ dàng đối chiếu mức độ chênh lệch.</li>
+                                    </ul>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Xác nhận báo nghỉ
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Danh sách các đợt đã báo nghỉ -->
+                            <div th:if="${path.leaveRecords != null and !path.leaveRecords.isEmpty()}" class="mt-4 pt-4 border-top">
+                                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i class="bi bi-clock-history text-secondary"></i>
+                                    <span>Danh sách các đợt đã báo nghỉ</span>
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle small mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Thời gian nghỉ</th>
+                                                <th>Số ngày</th>
+                                                <th>Trạng thái</th>
+                                                <th class="text-end">Hành động</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="r : ${path.leaveRecords}">
+                                                <td class="fw-semibold text-dark">
+                                                    <span th:text="${r.startDateFormatted} + ' - ' + ${r.endDateFormatted}">18/11/2026 - 20/11/2026</span>
+                                                </td>
+                                                <td th:text="${r.totalDays} + ' ngày'">3 ngày</td>
+                                                <td>
+                                                    <span th:if="${r.activeNow}" class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill">Đang nghỉ</span>
+                                                    <span th:if="${r.upcoming}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Sắp tới</span>
+                                                    <span th:if="${!r.activeNow and !r.upcoming}" class="badge bg-light text-secondary border rounded-pill">Đã qua</span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <form th:action="@{/learning-path/leave/cancel}" method="post" class="d-inline">
+                                                        <input type="hidden" name="courseId" th:value="${path.courseId}">
+                                                        <input type="hidden" name="leaveId" th:value="${r.id}">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2 py-0"
+                                                                onclick="return confirm('Bạn có chắc chắn muốn hủy đợt báo nghỉ này để đi học lại bình thường?');">
+                                                            <i class="bi bi-trash me-1"></i> Hủy
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 3: LỊCH HỌC                            -->
+            <!-- ========================================== -->
+            <div id="tabContentSchedule" class="tab-pane-content" style="display: none;">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important;">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom">
+                        <div>
+                            <h5 class="fw-bold mb-1" style="color: #0F172A;">
+                                <i class="bi bi-calendar3-week text-primary me-2"></i> Lịch học cá nhân & Thời gian biểu
+                            </h5>
+                            <p class="small text-secondary mb-0">
+                                Kế hoạch học tập được phân bổ theo lịch rảnh hàng tuần và mục tiêu JLPT của bạn.
+                            </p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a th:href="@{/learning-path/recalibrate(courseId=${path.courseId})}"
+                               class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-sliders me-1"></i> Điều chỉnh thời gian học
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold"
+                                    data-bs-toggle="modal" data-bs-target="#leaveModal">
+                                <i class="bi bi-calendar-x me-1"></i> Báo nghỉ học
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Study Days -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-calendar-check me-1 text-primary"></i> Các ngày học trong tuần
+                        </h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <div class="p-3 rounded-3 text-center border flex-grow-1"
+                                 th:each="day : ${#strings.arraySplit('T2,T3,T4,T5,T6,T7,CN', ',')}"
+                                 th:with="isActive=${path.studyDaysText != null and #strings.contains(path.studyDaysText, day == 'T2' ? 'Thứ 2' : (day == 'T3' ? 'Thứ 3' : (day == 'T4' ? 'Thứ 4' : (day == 'T5' ? 'Thứ 5' : (day == 'T6' ? 'Thứ 6' : (day == 'T7' ? 'Thứ 7' : 'Chủ Nhật'))))))}"
+                                 th:style="${isActive ? 'background-color: #EFF6FF; border-color: #93C5FD !important;' : 'background-color: #F8FAFC; border-color: #E2E8F0 !important; opacity: 0.6;'}">
+                                <div class="fw-bold fs-6" th:classappend="${isActive ? 'text-primary' : 'text-muted'}" th:text="${day}">T2</div>
+                                <span class="badge rounded-pill mt-1"
+                                      th:classappend="${isActive ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'}"
+                                      th:text="${isActive ? 'Ngày học' : 'Nghỉ'}">Ngày học</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metric Boxes -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 rounded-3 border bg-light h-100">
+                                <div class="text-secondary small mb-1"><i class="bi bi-clock me-1 text-primary"></i> Số giờ học mỗi ngày</div>
+                                <div class="fw-bold fs-5 text-dark" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? (path.dailyHours + ' giờ/ngày') : '1.00 giờ/ngày')}">1.00 giờ/ngày</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 rounded-3 border bg-light h-100">
+                                <div class="text-secondary small mb-1"><i class="bi bi-hourglass-split me-1 text-success"></i> Thời lượng hàng tuần</div>
+                                <div class="fw-bold fs-5 text-dark" th:text="${path.weeklyHours != null ? path.weeklyHours + ' giờ/tuần' : '5 giờ/tuần'}">5 giờ/tuần</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 rounded-3 border bg-light h-100">
+                                <div class="text-secondary small mb-1"><i class="bi bi-calendar-event me-1 text-info"></i> Ngày bắt đầu</div>
+                                <div class="fw-bold fs-5 text-dark" th:text="${path.startDateFormatted}">18/11/2026</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="p-3 rounded-3 border bg-light h-100">
+                                <div class="text-secondary small mb-1"><i class="bi bi-flag-fill me-1 text-danger"></i> Dự kiến hoàn thành</div>
+                                <div class="fw-bold fs-5 text-dark" th:text="${path.projectedEndDateFormatted}">06/01/2027</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lịch sử báo nghỉ học -->
+                    <div>
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-calendar-x me-1 text-secondary"></i> Lịch sử báo nghỉ học
+                        </h6>
+                        <div th:if="${path.leaveRecords == null or path.leaveRecords.isEmpty()}" class="p-4 rounded-3 border text-center text-muted small bg-light">
+                            <i class="bi bi-info-circle me-1"></i> Bạn chưa có đợt báo nghỉ học nào. Khi cần nghỉ, bấm nút "Báo nghỉ" bên trên để hệ thống tự động bảo lưu chuỗi học tập và dời lịch học.
+                        </div>
+                        <div th:if="${path.leaveRecords != null and !path.leaveRecords.isEmpty()}" class="table-responsive border rounded-3">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3">Thời gian nghỉ</th>
+                                        <th>Số ngày</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="lr : ${path.leaveRecords}">
+                                        <td class="ps-3 fw-semibold">
+                                            <span th:text="${lr.startDateFormatted}">10/11/2026</span> - <span th:text="${lr.endDateFormatted}">12/11/2026</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border" th:text="${lr.daysCount} + ' ngày'">3 ngày</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success-subtle text-success" th:if="${lr.active}">Đang nghỉ</span>
+                                            <span class="badge bg-secondary-subtle text-secondary" th:unless="${lr.active}">Đã qua</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- MODAL: CHẾ ĐỘ BÙ BÀI (CATCH-UP MODE)       -->
+            <!-- ========================================== -->
+            <div class="modal fade" id="catchUpModal" tabindex="-1" aria-labelledby="catchUpModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                            <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="catchUpModalLabel">
+                                <i class="bi bi-rocket-takeoff-fill text-warning fs-4"></i>
+                                <span>Chế độ Bù bài</span>
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 py-4">
+                            <form th:action="@{/learning-path/catch-up}" method="post">
+                                <input type="hidden" name="courseId" th:value="${path.courseId}">
+                                <input type="hidden" name="enable" value="true">
+
+                                <p class="small text-secondary mb-3">
+                                    Khi bạn bị chậm tiến độ (do nghỉ học hoặc lịch bận), Chế độ Bù bài sẽ tính toán dồn bài thông minh bằng cách tăng nhẹ thời lượng mỗi buổi học hoặc mở thêm ngày học cuối tuần, giúp bạn nhanh chóng xóa bỏ số ngày trễ và đạt mục tiêu thi JLPT đúng hạn!
+                                </p>
+
+                                <!-- Tùy chọn tăng phút mỗi ngày -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-dark mb-2">
+                                        <i class="bi bi-clock-history text-primary me-1"></i> Tăng thời lượng học mỗi ngày:
+                                    </label>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="extraMinutes" id="extra15" value="15"
+                                                   th:checked="${path.catchUpExtraMinutes == 15}">
+                                            <label class="btn btn-outline-primary w-100 py-2 rounded-3 text-start small fw-semibold" for="extra15">
+                                                <div>+15 phút/ngày</div>
+                                                <div class="text-muted fw-normal" style="font-size: 11px;">Nhẹ nhàng, ôn từ vựng</div>
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="extraMinutes" id="extra30" value="30"
+                                                   th:checked="${path.catchUpExtraMinutes == null or path.catchUpExtraMinutes == 30}">
+                                            <label class="btn btn-outline-primary w-100 py-2 rounded-3 text-start small fw-semibold border-2" for="extra30">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>+30 phút/ngày</span>
+                                                    <span class="badge bg-warning text-dark" style="font-size: 9px;">Gợi ý</span>
+                                                </div>
+                                                <div class="text-muted fw-normal" style="font-size: 11px;">Tối ưu, giải thêm 1 bài</div>
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="extraMinutes" id="extra45" value="45"
+                                                   th:checked="${path.catchUpExtraMinutes == 45}">
+                                            <label class="btn btn-outline-primary w-100 py-2 rounded-3 text-start small fw-semibold" for="extra45">
+                                                <div>+45 phút/ngày</div>
+                                                <div class="text-muted fw-normal" style="font-size: 11px;">Tăng tốc vừa phải</div>
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="radio" class="btn-check" name="extraMinutes" id="extra60" value="60"
+                                                   th:checked="${path.catchUpExtraMinutes == 60}">
+                                            <label class="btn btn-outline-primary w-100 py-2 rounded-3 text-start small fw-semibold" for="extra60">
+                                                <div>+60 phút/ngày</div>
+                                                <div class="text-muted fw-normal" style="font-size: 11px;">Tăng tốc cao độ</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tùy chọn mở thêm ngày học cuối tuần -->
+                                <div class="p-3 rounded-4 mb-4 border" style="background-color: #F8FAFC;">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="includeWeekends"
+                                               name="includeWeekends" value="true" th:checked="${path.catchUpIncludeWeekends}">
+                                        <label class="form-check-label small fw-bold text-dark ms-2" for="includeWeekends">
+                                            Học thêm vào Thứ 7 & Chủ Nhật (Cuối tuần)
+                                        </label>
+                                        <div class="small text-muted ms-2 mt-1" style="font-size: 11.5px;">
+                                            Tận dụng 2 ngày cuối tuần giúp rút ngắn 30-40% số ngày cần để bắt kịp kế hoạch!
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <div th:if="${path.catchUpMode}">
+                                        <button type="button" class="btn btn-outline-danger rounded-pill px-3 btn-sm fw-bold"
+                                                onclick="document.getElementById('formDisableCatchUp').submit();">
+                                            <i class="bi bi-stop-circle me-1"></i> Tắt chế độ bù bài
+                                        </button>
+                                    </div>
+                                    <div th:unless="${path.catchUpMode}">
+                                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm text-dark">
+                                        <i class="bi bi-rocket-takeoff-fill me-1"></i>
+                                        <span th:text="${path.catchUpMode == true ? 'Lưu thay đổi' : 'Kích hoạt Chế độ Bù bài'}">Kích hoạt</span>
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Hidden form for disabling catch up mode -->
+                            <form id="formDisableCatchUp" th:action="@{/learning-path/catch-up}" method="post" style="display: none;">
+                                <input type="hidden" name="courseId" th:value="${path.courseId}">
+                                <input type="hidden" name="enable" value="false">
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================ -->
+            <!-- MODAL: THÔNG BÁO KHÓA THIẾT LẬP LỊCH HỌC KHI ĐÃ HOÀN THÀNH 100% -->
+            <!-- ================================================================ -->
+            <div class="modal fade" id="courseCompletedRecalibrateModal" tabindex="-1" aria-labelledby="completedRecalibrateLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-success-subtle text-success"
+                                     style="width: 38px; height: 38px;">
+                                    <i class="bi bi-trophy-fill fs-5"></i>
+                                </div>
+                                <h5 class="modal-title fw-bold text-dark mb-0" id="completedRecalibrateLabel">
+                                    Khóa học đã hoàn thành 100%
+                                </h5>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 py-4 text-center">
+                            <div class="mb-3">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                                     style="width: 72px; height: 72px; background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); color: #10B981;">
+                                    <i class="bi bi-patch-check-fill fs-1"></i>
+                                </div>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2">Chúc mừng bạn đã hoàn tất lộ trình!</h5>
+                            <p class="text-secondary small mb-3" style="line-height: 1.6;">
+                                Bạn đã học xong tất cả <strong><span th:text="${path.totalLessons != null ? path.totalLessons : 0}">32</span> bài học</strong> của khóa học 
+                                <strong th:text="${path.courseTitle}">Khóa học JLPT</strong>. 
+                                Toàn bộ nội dung đã hoàn thành và chuỗi học tập được ghi nhận trọn vẹn, do đó không cần thiết lập hoặc điều chỉnh lại thời khóa biểu cho khóa học này.
+                            </p>
+                            <div class="p-3 rounded-3 bg-light border text-start small mb-2">
+                                <div class="fw-bold text-dark mb-1"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Gợi ý bước tiếp theo:</div>
+                                <ul class="mb-0 text-secondary ps-3">
+                                    <li>Làm bài <strong>Thi thử JLPT</strong> để kiểm tra tổng quát kỹ năng thực tế.</li>
+                                    <li>Xem lại các bài học trọng tâm cần củng cố kiến thức.</li>
+                                    <li>Đăng ký thêm khóa học ở cấp độ cao hơn (N2, N1).</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top px-4 py-3 bg-light-subtle d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                            <a th:href="@{/exams/placement}" class="btn btn-warning rounded-pill px-4 fw-bold text-dark shadow-sm">
+                                <i class="bi bi-award-fill me-1"></i> Thi thử JLPT ngay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <!-- View Switcher & Weekly / Daily Accordion Scripts -->
         <script>
-            (function initTimelinePagination() {
-                function run() {
-                    var rows = document.querySelectorAll("#timelineTable tbody tr");
-                    var totalRows = rows.length;
-                    var pageSize = 6;
-                    var footer = document.getElementById("timelinePaginationFooter");
-                    var controls = document.getElementById("timelinePaginationControls");
-                    var startSpan = document.getElementById("timelineStartItem");
-                    var endSpan = document.getElementById("timelineEndItem");
+            var currentTimelineViewMode = 'ROADMAP';
+            var allWeeksExpanded = false;
+            var weekDaysExpandedState = {};
 
-                    if (!rows || totalRows === 0) return;
+            function toggleWeekAccordion(weekNum) {
+                var body = document.getElementById("week-body-" + weekNum);
+                var chevron = document.getElementById("chevron-" + weekNum);
+                if (!body) return;
 
-                    if (totalRows <= pageSize) {
-                        if (startSpan && endSpan) {
-                            startSpan.textContent = "1";
-                            endSpan.textContent = totalRows.toString();
-                        }
-                        if (controls) {
-                            controls.innerHTML = '<li class="page-item active"><button class="page-link rounded-2 px-3 py-1 fw-semibold bg-primary text-white border-primary" type="button">1</button></li>';
-                        }
-                        return;
+                var isHidden = body.style.display === "none";
+                body.style.display = isHidden ? "block" : "none";
+
+                if (chevron) {
+                    if (isHidden) {
+                        chevron.classList.add("rotate-180");
+                    } else {
+                        chevron.classList.remove("rotate-180");
                     }
+                }
+            }
 
-                    var totalPages = Math.ceil(totalRows / pageSize);
-                    var currentPage = 1;
+            function toggleDayAccordion(weekNum, dayIdx) {
+                var body = document.getElementById("day-body-" + weekNum + "-" + dayIdx);
+                var chevron = document.getElementById("chevron-day-" + weekNum + "-" + dayIdx);
+                if (!body) return;
 
-                    function showPage(page) {
-                        currentPage = page;
-                        var start = (page - 1) * pageSize;
-                        var end = Math.min(start + pageSize, totalRows);
+                var isHidden = body.style.display === "none";
+                body.style.display = isHidden ? "block" : "none";
 
-                        rows.forEach(function (row, idx) {
-                            if (idx >= start && idx < end) {
-                                row.style.setProperty('display', '', '');
+                if (chevron) {
+                    if (isHidden) {
+                        chevron.classList.add("rotate-180");
+                    } else {
+                        chevron.classList.remove("rotate-180");
+                    }
+                }
+            }
+
+            function toggleAllDaysInWeek(weekNum) {
+                var weekBody = document.getElementById("week-body-" + weekNum);
+                if (!weekBody) return;
+
+                var dayBodies = weekBody.querySelectorAll(".day-collapse-content");
+                var dayChevrons = weekBody.querySelectorAll(".day-chevron-icon");
+                var btnText = document.getElementById("toggle-days-text-" + weekNum);
+
+                var isAllExpanded = weekDaysExpandedState[weekNum] || false;
+                var targetState = !isAllExpanded;
+                weekDaysExpandedState[weekNum] = targetState;
+
+                dayBodies.forEach(function (body) {
+                    body.style.display = targetState ? "block" : "none";
+                });
+
+                dayChevrons.forEach(function (ch) {
+                    if (targetState) {
+                        ch.classList.add("rotate-180");
+                    } else {
+                        ch.classList.remove("rotate-180");
+                    }
+                });
+
+                if (btnText) {
+                    btnText.textContent = targetState ? "Thu gọn các ngày" : "Mở tất cả các ngày";
+                }
+            }
+
+            function toggleAllWeeksAccordion() {
+                var bodies = document.querySelectorAll(".week-collapse-content");
+                var chevrons = document.querySelectorAll(".week-chevron-icon");
+                var dayBodies = document.querySelectorAll(".day-collapse-content");
+                var dayChevrons = document.querySelectorAll(".day-chevron-icon");
+                var btnText = document.getElementById("toggleAllWeeksText");
+                var btnIcon = document.getElementById("toggleAllWeeksIcon");
+
+                allWeeksExpanded = !allWeeksExpanded;
+
+                bodies.forEach(function (body) {
+                    body.style.display = allWeeksExpanded ? "block" : "none";
+                });
+
+                chevrons.forEach(function (ch) {
+                    if (allWeeksExpanded) {
+                        ch.classList.add("rotate-180");
+                    } else {
+                        ch.classList.remove("rotate-180");
+                    }
+                });
+
+                dayBodies.forEach(function (body) {
+                    body.style.display = allWeeksExpanded ? "block" : "none";
+                });
+
+                dayChevrons.forEach(function (ch) {
+                    if (allWeeksExpanded) {
+                        ch.classList.add("rotate-180");
+                    } else {
+                        ch.classList.remove("rotate-180");
+                    }
+                });
+
+                if (btnText) {
+                    btnText.textContent = allWeeksExpanded ? "Thu gọn tất cả" : "Mở tất cả";
+                }
+                if (btnIcon) {
+                    btnIcon.className = allWeeksExpanded ? "bi bi-arrows-collapse me-1" : "bi bi-arrows-expand me-1";
+                }
+            }
+
+            // ==============================================================
+            // BỘ LỌC BÀI HỌC NHANH (QUICK LESSON FILTER ENGINE)
+            // ==============================================================
+            function applyQuickLessonFilter() {
+                var searchInput = document.getElementById("lessonSearchInput");
+                var keyword = searchInput ? searchInput.value.trim().toLowerCase() : "";
+                var statusSelect = document.getElementById("lessonStatusFilter");
+                var selectedStatus = statusSelect ? statusSelect.value : "ALL";
+                var skillSelect = document.getElementById("lessonSkillFilter");
+                var selectedSkill = skillSelect ? skillSelect.value : "ALL";
+                var weekDropdown = document.getElementById("weekSelectDropdown");
+                var selectedWeek = weekDropdown ? weekDropdown.value : "ALL";
+
+                // Show/hide nút xóa tìm kiếm
+                var btnClearSearch = document.getElementById("btnClearSearch");
+                if (btnClearSearch) {
+                    btnClearSearch.style.display = keyword ? "inline-block" : "none";
+                }
+
+                var isFilterActive = keyword !== "" || selectedStatus !== "ALL" || selectedSkill !== "ALL" || selectedWeek !== "ALL";
+                var btnReset = document.getElementById("btnResetQuickFilter");
+                if (btnReset) {
+                    btnReset.style.display = isFilterActive ? "inline-block" : "none";
+                }
+
+                // Cập nhật giao diện dải nút phím tắt (filter pills)
+                var pills = document.querySelectorAll(".filter-pill[data-filter-type='status']");
+                pills.forEach(function (pill) {
+                    var val = pill.getAttribute("data-filter-val");
+                    if (val === selectedStatus) {
+                        pill.style.backgroundColor = "#0F172A";
+                        pill.style.color = "#FFFFFF";
+                        pill.style.borderColor = "#0F172A";
+                        pill.classList.add("active");
+                    } else {
+                        pill.style.backgroundColor = "#F8FAFC";
+                        pill.style.color = val === "IN_PROGRESS" ? "#1D4ED8" : (val === "COMPLETED" ? "#15803D" : (val === "MILESTONE" ? "#B45309" : "#475569"));
+                        pill.style.borderColor = val === "IN_PROGRESS" ? "#BFDBFE" : (val === "COMPLETED" ? "#BBF7D0" : (val === "MILESTONE" ? "#FDE68A" : "#CBD5E1"));
+                        pill.classList.remove("active");
+                    }
+                });
+
+                var totalLessons = 0;
+                var visibleLessons = 0;
+
+                // Lọc qua từng tuần và ngày
+                var weekContainers = document.querySelectorAll(".week-container");
+                weekContainers.forEach(function (weekEl) {
+                    var weekNum = weekEl.getAttribute("data-week-num");
+                    var weekMatchesWeekFilter = (selectedWeek === "ALL" || selectedWeek === weekNum);
+                    var weekVisibleLessonCount = 0;
+
+                    var dayContainers = weekEl.querySelectorAll(".day-container");
+                    dayContainers.forEach(function (dayEl) {
+                        var dayVisibleCount = 0;
+
+                        // Kiểm tra thẻ bài học (Chế độ Thẻ lộ trình duy nhất)
+                        var cardItems = dayEl.querySelectorAll(".lesson-item-wrapper");
+                        cardItems.forEach(function (card) {
+                            totalLessons++;
+                            var matches = checkLessonMatchesFilter(card, selectedStatus, selectedSkill, keyword);
+                            if (matches) {
+                                card.style.display = "";
+                                dayVisibleCount++;
+                                if (weekMatchesWeekFilter) {
+                                    visibleLessons++;
+                                }
                             } else {
-                                row.style.setProperty('display', 'none', 'important');
+                                card.style.display = "none";
                             }
                         });
 
-                        if (startSpan) startSpan.textContent = (start + 1).toString();
-                        if (endSpan) endSpan.textContent = end.toString();
-
-                        renderButtons();
-                    }
-
-                    function renderButtons() {
-                        if (!controls) return;
-                        controls.innerHTML = "";
-
-                        // Previous button
-                        var prevLi = document.createElement("li");
-                        prevLi.className = "page-item " + (currentPage === 1 ? "disabled" : "");
-                        var prevBtn = document.createElement("button");
-                        prevBtn.type = "button";
-                        prevBtn.className = "page-link rounded-2 px-3 py-1 fw-semibold text-secondary";
-                        prevBtn.innerHTML = "&laquo; Trước";
-                        if (currentPage === 1) {
-                            prevBtn.setAttribute("tabindex", "-1");
-                            prevBtn.setAttribute("aria-disabled", "true");
+                        // Hiển thị hoặc ẩn khối ngày
+                        if (dayVisibleCount > 0 && weekMatchesWeekFilter) {
+                            dayEl.style.display = "";
+                            weekVisibleLessonCount += dayVisibleCount;
+                            if (isFilterActive) {
+                                var dayCollapse = dayEl.querySelector(".day-collapse-content");
+                                var dayChevron = dayEl.querySelector(".day-chevron-icon");
+                                if (dayCollapse) dayCollapse.style.display = "block";
+                                if (dayChevron) dayChevron.classList.add("rotate-180");
+                            }
                         } else {
-                            prevBtn.onclick = function () {
-                                showPage(currentPage - 1);
-                                var tbl = document.getElementById("timelineTable");
-                                if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            };
+                            dayEl.style.display = "none";
                         }
-                        prevLi.appendChild(prevBtn);
-                        controls.appendChild(prevLi);
+                    });
 
-                        // Page numbers
-                        for (var p = 1; p <= totalPages; p++) {
-                            (function (pageNum) {
-                                var li = document.createElement("li");
-                                li.className = "page-item " + (pageNum === currentPage ? "active" : "");
-                                var btn = document.createElement("button");
-                                btn.type = "button";
-                                btn.className = "page-link rounded-2 px-3 py-1 fw-semibold " + (pageNum === currentPage ? "bg-primary text-white border-primary shadow-sm" : "text-dark");
-                                btn.textContent = pageNum.toString();
-                                btn.onclick = function () {
-                                    showPage(pageNum);
-                                    var tbl = document.getElementById("timelineTable");
-                                    if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                };
-                                li.appendChild(btn);
-                                controls.appendChild(li);
-                            })(p);
+                    // Hiển thị hoặc ẩn khối tuần
+                    if (weekVisibleLessonCount > 0 && weekMatchesWeekFilter) {
+                        weekEl.style.display = "";
+                        if (isFilterActive) {
+                            var weekBody = weekEl.querySelector(".week-collapse-content");
+                            var weekChevron = weekEl.querySelector(".week-chevron-icon");
+                            if (weekBody) weekBody.style.display = "block";
+                            if (weekChevron) weekChevron.classList.add("rotate-180");
                         }
-
-                        // Next button
-                        var nextLi = document.createElement("li");
-                        nextLi.className = "page-item " + (currentPage === totalPages ? "disabled" : "");
-                        var nextBtn = document.createElement("button");
-                        nextBtn.type = "button";
-                        nextBtn.className = "page-link rounded-2 px-3 py-1 fw-semibold text-secondary";
-                        nextBtn.innerHTML = "Sau &raquo;";
-                        if (currentPage === totalPages) {
-                            nextBtn.setAttribute("tabindex", "-1");
-                            nextBtn.setAttribute("aria-disabled", "true");
-                        } else {
-                            nextBtn.onclick = function () {
-                                showPage(currentPage + 1);
-                                var tbl = document.getElementById("timelineTable");
-                                if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            };
-                        }
-                        nextLi.appendChild(nextBtn);
-                        controls.appendChild(nextLi);
+                    } else {
+                        weekEl.style.display = "none";
                     }
+                });
 
-                    showPage(1);
+                // Cập nhật bộ đếm bài học
+                var countEl = document.getElementById("filterResultCount");
+                if (countEl) {
+                    if (isFilterActive) {
+                        countEl.innerHTML = '<span class="text-primary fw-bold">' + visibleLessons + '</span>/' + totalLessons + ' bài';
+                    } else {
+                        countEl.textContent = 'Tổng: ' + totalLessons + ' bài';
+                    }
                 }
 
-                if (document.readyState === "loading") {
-                    document.addEventListener("DOMContentLoaded", run);
+                // Thông báo khi không có bài học nào khớp bộ lọc
+                var emptyFilterEl = document.getElementById("filterNoResultsMessage");
+                if (emptyFilterEl) {
+                    emptyFilterEl.style.display = (visibleLessons === 0 && isFilterActive) ? "block" : "none";
+                }
+
+                // Đồng bộ giao diện active cho các nút phím tắt trạng thái (không icon)
+                var pills = document.querySelectorAll(".filter-pill");
+                pills.forEach(function (pill) {
+                    var pVal = pill.getAttribute("data-filter-val");
+                    if (pVal === selectedStatus) {
+                        pill.classList.add("active");
+                        pill.style.setProperty("background-color", "#173B57", "important");
+                        pill.style.setProperty("color", "#FFFFFF", "important");
+                        pill.style.setProperty("border-color", "#173B57", "important");
+                    } else {
+                        pill.classList.remove("active");
+                        pill.style.setProperty("background-color", "#F8FAFC", "important");
+                        pill.style.setProperty("color", pVal === "IN_PROGRESS" ? "#173B57" : (pVal === "COMPLETED" ? "#15803D" : (pVal === "MILESTONE" ? "#B45309" : "#475569")), "important");
+                        pill.style.setProperty("border-color", pVal === "IN_PROGRESS" ? "#BFDBFE" : (pVal === "COMPLETED" ? "#BBF7D0" : (pVal === "MILESTONE" ? "#FDE68A" : "#CBD5E1")), "important");
+                    }
+                });
+            }
+
+            function checkLessonMatchesFilter(el, status, skill, keyword) {
+                var itemStatus = el.getAttribute("data-status");
+                var itemContentType = el.getAttribute("data-content-type");
+                var itemIsMilestone = el.getAttribute("data-is-milestone") === "true";
+                var itemSkill = el.getAttribute("data-skill") || "";
+                var itemTitle = el.getAttribute("data-title") || "";
+                var itemSection = el.getAttribute("data-section") || "";
+
+                // 1. Kiểm tra trạng thái
+                if (status === "IN_PROGRESS" && itemStatus !== "IN_PROGRESS") return false;
+                if (status === "UPCOMING" && itemStatus !== "UPCOMING") return false;
+                if (status === "COMPLETED" && itemStatus !== "COMPLETED") return false;
+                if (status === "MILESTONE" && !itemIsMilestone && itemContentType !== "EXAM" && itemContentType !== "MILESTONE") return false;
+
+                // 2. Kiểm tra kỹ năng
+                if (skill !== "ALL") {
+                    if (skill === "Cột mốc") {
+                        if (!itemIsMilestone && itemContentType !== "EXAM" && itemContentType !== "MILESTONE") return false;
+                    } else if (!itemSkill.toLowerCase().includes(skill.toLowerCase())) {
+                        return false;
+                    }
+                }
+
+                // 3. Kiểm tra từ khóa tìm kiếm
+                if (keyword && !itemTitle.includes(keyword) && !itemSection.includes(keyword)) {
+                    return false;
+                }
+
+                return true;
+            }
+
+            function onWeekDropdownChange(weekVal) {
+                applyQuickLessonFilter();
+                if (weekVal !== "ALL") {
+                    var targetWeek = document.getElementById("week-container-" + weekVal);
+                    if (targetWeek && targetWeek.style.display !== "none") {
+                        targetWeek.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }
+
+            function setFilterPill(type, val, pillEl) {
+                if (type === "status") {
+                    var statusSelect = document.getElementById("lessonStatusFilter");
+                    if (statusSelect) {
+                        statusSelect.value = val;
+                        applyQuickLessonFilter();
+                    }
+                }
+            }
+
+            function clearLessonSearch() {
+                var searchInput = document.getElementById("lessonSearchInput");
+                if (searchInput) {
+                    searchInput.value = "";
+                    applyQuickLessonFilter();
+                    searchInput.focus();
+                }
+            }
+
+            function resetQuickLessonFilter() {
+                var searchInput = document.getElementById("lessonSearchInput");
+                if (searchInput) searchInput.value = "";
+                var statusSelect = document.getElementById("lessonStatusFilter");
+                if (statusSelect) statusSelect.value = "ALL";
+                var skillSelect = document.getElementById("lessonSkillFilter");
+                if (skillSelect) skillSelect.value = "ALL";
+                var weekDropdown = document.getElementById("weekSelectDropdown");
+                if (weekDropdown) weekDropdown.value = "ALL";
+                applyQuickLessonFilter();
+            }
+
+            // Main Navigation Tab Switcher (Tổng quan, Tiến trình bài học, Lịch học)
+            function switchMainTab(tab) {
+                var btnOverview = document.getElementById('tabBtnOverview');
+                var btnCurriculum = document.getElementById('tabBtnCurriculum');
+                var btnSchedule = document.getElementById('tabBtnSchedule');
+                
+                var paneOverview = document.getElementById('tabContentOverview');
+                var paneCurriculum = document.getElementById('tabContentCurriculum');
+                var paneSchedule = document.getElementById('tabContentSchedule');
+
+                var allBtns = [btnOverview, btnCurriculum, btnSchedule];
+                allBtns.forEach(function (btn) {
+                    if (btn) {
+                        btn.style.backgroundColor = 'transparent';
+                        btn.style.color = '#64748B';
+                        btn.classList.remove('active', 'text-white');
+                        btn.classList.add('text-secondary');
+                    }
+                });
+
+                if (paneOverview) paneOverview.style.display = 'none';
+                if (paneCurriculum) paneCurriculum.style.display = 'none';
+                if (paneSchedule) paneSchedule.style.display = 'none';
+
+                if (tab === 'OVERVIEW') {
+                    if (btnOverview) {
+                        btnOverview.style.backgroundColor = '#173B57';
+                        btnOverview.style.color = '#FFFFFF';
+                        btnOverview.classList.add('active', 'text-white');
+                        btnOverview.classList.remove('text-secondary');
+                    }
+                    if (paneOverview) {
+                        paneOverview.style.display = 'block';
+                    }
+                } else if (tab === 'CURRICULUM') {
+                    if (btnCurriculum) {
+                        btnCurriculum.style.backgroundColor = '#173B57';
+                        btnCurriculum.style.color = '#FFFFFF';
+                        btnCurriculum.classList.add('active', 'text-white');
+                        btnCurriculum.classList.remove('text-secondary');
+                    }
+                    if (paneCurriculum) {
+                        paneCurriculum.style.display = 'block';
+                        paneCurriculum.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                } else if (tab === 'SCHEDULE') {
+                    if (btnSchedule) {
+                        btnSchedule.style.backgroundColor = '#173B57';
+                        btnSchedule.style.color = '#FFFFFF';
+                        btnSchedule.classList.add('active', 'text-white');
+                        btnSchedule.classList.remove('text-secondary');
+                    }
+                    if (paneSchedule) {
+                        paneSchedule.style.display = 'block';
+                        paneSchedule.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }
+
+            // Sync initial state of chevrons on page load
+            document.addEventListener("DOMContentLoaded", function () {
+                var weekBodies = document.querySelectorAll(".week-collapse-content");
+                weekBodies.forEach(function (b) {
+                    var id = b.id; // e.g. "week-body-1"
+                    var num = id.replace("week-body-", "");
+                    var ch = document.getElementById("chevron-" + num);
+                    if (ch && b.style.display !== "none") {
+                        ch.classList.add("rotate-180");
+                    }
+                });
+
+                var dayBodies = document.querySelectorAll(".day-collapse-content");
+                dayBodies.forEach(function (b) {
+                    var id = b.id; // e.g. "day-body-1-1"
+                    var parts = id.replace("day-body-", "");
+                    var ch = document.getElementById("chevron-day-" + parts);
+                    if (ch && b.style.display !== "none") {
+                        ch.classList.add("rotate-180");
+                    }
+                });
+
+                // Khởi tạo Bootstrap Tooltips cho dấu ! giải thích kế hoạch (hiển thị ngay bên cạnh)
+                if (window.bootstrap && bootstrap.Tooltip) {
+                    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                        new bootstrap.Tooltip(tooltipTriggerEl, {
+                            container: 'body',
+                            placement: 'right',
+                            trigger: 'hover focus click',
+                            fallbackPlacements: ['bottom', 'top', 'left']
+                        });
+                    });
+                }
+
+                // Khởi tạo bộ đếm và trạng thái lọc bài học ban đầu
+                applyQuickLessonFilter();
+
+                // Read URL query param ?tab= or hash #
+                var urlParams = new URLSearchParams(window.location.search);
+                var tabParam = urlParams.get('tab');
+                var hashParam = window.location.hash ? window.location.hash.replace('#', '') : null;
+                var activeTab = (tabParam || hashParam || 'OVERVIEW').toUpperCase();
+                if (activeTab === 'CURRICULUM' || activeTab === 'SCHEDULE') {
+                    switchMainTab(activeTab);
                 } else {
-                    run();
+                    switchMainTab('OVERVIEW');
                 }
-            })();
+            });
         </script>
     </div>
 </div>
