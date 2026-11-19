@@ -2,6 +2,7 @@ package com.jlpp.modules.auth;
 
 import com.jlpp.common.constants.RoleEnum;
 import com.jlpp.modules.auth.controller.AuthController;
+import com.jlpp.modules.auth.security.InternalSavedRequestResolver;
 import com.jlpp.modules.auth.dto.ForgotPasswordRequest;
 import com.jlpp.modules.auth.dto.ResetPasswordRequest;
 import com.jlpp.modules.auth.service.EmailService;
@@ -78,7 +79,8 @@ public class PasswordResetServiceTest {
         ReflectionTestUtils.setField(passwordResetService, "baseUrl", "http://localhost:8081");
         ReflectionTestUtils.setField(passwordResetService, "tokenValidityMinutes", 15);
 
-        authController = new AuthController(registerService, passwordResetService, changePasswordService, userRepository);
+        authController = new AuthController(registerService, passwordResetService, changePasswordService,
+                userRepository, new InternalSavedRequestResolver());
         validator = Validation.buildDefaultValidatorFactory().getValidator();
 
         testUser = User.builder()

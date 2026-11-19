@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,9 +21,11 @@ import java.util.Collection;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+    private final InternalSavedRequestResolver savedRequestResolver;
 
     @Override
     public void onAuthenticationSuccess(
@@ -43,7 +46,10 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             }
         }
 
-        String targetUrl = determineTargetUrl(authentication);
+        String targetUrl = savedRequestResolver.resolveAndConsume(request, response);
+        if (targetUrl == null) {
+            targetUrl = determineTargetUrl(authentication);
+        }
         log.info("User '{}' authenticated successfully, redirecting to: {}", authentication.getName(), targetUrl);
 
         if (response.isCommitted()) {

@@ -7,10 +7,13 @@ import com.jlpp.modules.auth.dto.ResetPasswordRequest;
 import com.jlpp.modules.auth.dto.RegisterRequest;
 import com.jlpp.modules.auth.exception.DuplicateEmailException;
 import com.jlpp.modules.auth.exception.DuplicatePhoneException;
+import com.jlpp.modules.auth.security.InternalSavedRequestResolver;
 import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.auth.service.ChangePasswordService;
 import com.jlpp.modules.auth.service.PasswordResetService;
 import com.jlpp.modules.auth.service.RegisterService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final ChangePasswordService changePasswordService;
     private final com.jlpp.modules.user.repository.UserRepository userRepository;
+    private final InternalSavedRequestResolver savedRequestResolver;
 
     @GetMapping("/login")
     public String loginPage(
@@ -286,7 +290,9 @@ public class AuthController {
             BindingResult bindingResult,
             Principal principal,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse) {
 
         if (principal == null) {
             return "redirect:/auth/login";
@@ -318,6 +324,7 @@ public class AuthController {
 
         log.info("Profile completed for Google user: {} with phone: {}", user.getEmail(), user.getPhone());
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ thành công! Chào mừng bạn đến với JEPS.");
-        return "redirect:/";
+        String savedTarget = savedRequestResolver.resolveAndConsume(servletRequest, servletResponse);
+        return savedTarget == null ? "redirect:/" : "redirect:" + savedTarget;
     }
 }

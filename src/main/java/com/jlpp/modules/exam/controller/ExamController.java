@@ -8,8 +8,8 @@ import com.jlpp.modules.exam.dto.ExamTakeResponse;
 import com.jlpp.modules.exam.service.ExamService;
 import com.jlpp.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,7 +23,6 @@ import java.util.Map;
 
 @Slf4j
 @Controller
-@RequiredArgsConstructor
 public class ExamController {
 
     private final ExamService examService;
@@ -32,6 +31,22 @@ public class ExamController {
     private final com.jlpp.modules.course.repository.CourseRepository courseRepository;
     private final com.jlpp.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
     private final com.jlpp.modules.course.service.CourseRecommendationService courseRecommendationService;
+
+    @Autowired
+    public ExamController(
+            ExamService examService,
+            CurrentUserSession currentUserSession,
+            UserRepository userRepository,
+            @Autowired(required = false) com.jlpp.modules.course.repository.CourseRepository courseRepository,
+            @Autowired(required = false) com.jlpp.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository,
+            @Autowired(required = false) com.jlpp.modules.course.service.CourseRecommendationService courseRecommendationService) {
+        this.examService = examService;
+        this.currentUserSession = currentUserSession;
+        this.userRepository = userRepository;
+        this.courseRepository = courseRepository;
+        this.courseRegistrationRepository = courseRegistrationRepository;
+        this.courseRecommendationService = courseRecommendationService;
+    }
 
     private boolean isAuthenticated(HttpSession session, Principal principal) {
         return principal != null || (session != null && currentUserSession.isAuthenticated(session));

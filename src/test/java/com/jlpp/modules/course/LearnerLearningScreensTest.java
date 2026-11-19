@@ -165,6 +165,54 @@ public class LearnerLearningScreensTest {
     }
 
     @Test
+    @DisplayName("Course detail links paid courses to checkout using each actual course ID")
+    @WithMockUser(username = "test_learner@jeps.edu.vn", roles = {"LEARNER"})
+    void testPaidCourseDetailLinksToItsCheckout() throws Exception {
+        Course courseA = courseRepository.saveAndFlush(Course.builder()
+                .id(8889L)
+                .title("Khóa học A")
+                .level("N4")
+                .status("PUBLISHED")
+                .price(250000.0)
+                .build());
+        Course courseB = courseRepository.saveAndFlush(Course.builder()
+                .id(8890L)
+                .title("Khóa học B")
+                .level("N3")
+                .status("PUBLISHED")
+                .price(350000.0)
+                .build());
+
+        mockMvc.perform(get("/courses/{id}", courseA.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/checkout/8889\"")))
+                .andExpect(content().string(containsString("Thanh toán ngay")));
+
+        mockMvc.perform(get("/courses/{id}", courseB.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/checkout/8890\"")))
+                .andExpect(content().string(containsString("Thanh toán ngay")));
+    }
+
+    @Test
+    @DisplayName("Registered course detail does not offer a duplicate checkout action")
+    @WithMockUser(username = "test_learner@jeps.edu.vn", roles = {"LEARNER"})
+    void testRegisteredCourseDoesNotShowCheckoutButton() throws Exception {
+        mockMvc.perform(get("/courses/{id}", course.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("href=\"/checkout/" + course.getId() + "\""))))
+                .andExpect(content().string(containsString("Tiếp tục bài học")));
+    }
+
+    @Test
+    @DisplayName("Anonymous checkout requests use the existing login flow")
+    void testAnonymousCheckoutRedirectsToLogin() throws Exception {
+        mockMvc.perform(get("/checkout/{courseId}", 8889L))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("http://localhost/auth/login"));
+    }
+
+    @Test
     @DisplayName("UC: Complete Lesson - đánh dấu hoàn thành và cập nhật tiến độ")
     @WithMockUser(username = "test_learner@jeps.edu.vn", roles = {"LEARNER"})
     void testCompleteLesson() throws Exception {

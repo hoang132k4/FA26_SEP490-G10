@@ -11,10 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -170,5 +172,39 @@ public class GoogleOAuth2IntegrationTest {
 
         User updated = userRepository.findByEmailIgnoreCase("needphone@gmail.com").orElseThrow();
         assertThat(updated.getPhone()).isEqualTo("0934567890");
+    }
+
+    @Test
+    @DisplayName("Completing a required OAuth profile resumes the saved checkout")
+    void testCompleteProfileResumesSavedCheckout() throws Exception {
+        User incompleteUser = User.builder()
+                .fullName("OAuth Checkout")
+                .username("oauth_checkout")
+                .email("checkout-profile@gmail.com")
+                .password(passwordEncoder.encode("Secret123"))
+                .role(RoleEnum.LEARNER)
+                .status("ACTIVE")
+                .authProvider("GOOGLE")
+                .providerId("sub_checkout_456")
+                .phone(null)
+                .build();
+        userRepository.save(incompleteUser);
+
+        MvcResult checkoutRequest = mockMvc.perform(get("/checkout/{courseId}", 123L))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/auth/login"))
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) checkoutRequest.getRequest().getSession(false);
+        CustomUserDetails principal = new CustomUserDetails(incompleteUser);
+
+        mockMvc.perform(post("/auth/complete-profile")
+                        .session(session)
+                        .with(csrf())
+                        .with(authentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                                principal, "n/a", principal.getAuthorities())))
+                        .param("fullName", "OAuth Checkout")
+                        .param("phone", "0934567891"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/checkout/123"));
     }
 }

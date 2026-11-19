@@ -94,6 +94,24 @@ public class LoginAndSecurityTest {
     }
 
     @Test
+    @DisplayName("Login returns an unauthenticated learner to the protected checkout they requested")
+    void testLoginReturnsToSavedCheckout() throws Exception {
+        MvcResult checkoutRequest = mockMvc.perform(get("/checkout/{courseId}", 123L))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/auth/login"))
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) checkoutRequest.getRequest().getSession(false);
+        mockMvc.perform(post("/auth/login")
+                        .session(session)
+                        .with(csrf())
+                        .param("username", "learner@jeps.edu.vn")
+                        .param("password", "LearnerPass123!"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/checkout/123"));
+    }
+
+    @Test
     @DisplayName("LG-02: Valid Manager credentials - Login succeeds and redirects to Manager Dashboard")
     void testLG02_ValidManagerLogin() throws Exception {
         mockMvc.perform(post("/auth/login")

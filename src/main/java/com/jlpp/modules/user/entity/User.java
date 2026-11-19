@@ -12,7 +12,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "users")
-public class User extends BaseEntity {
+ public class User extends BaseEntity {
 
     @Column(name = "full_name", length = 100)
     private String fullName;
