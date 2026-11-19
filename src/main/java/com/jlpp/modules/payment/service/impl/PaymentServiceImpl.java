@@ -348,10 +348,15 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void upsertCourseRegistration(Payment payment) {
-        CourseRegistration registration = courseRegistrationRepository.findByUserIdAndCourseId(
+        CourseRegistration registration = courseRegistrationRepository.findForUpdateByUserIdAndCourseId(
                 payment.getUser().getId(), payment.getCourse().getId()).orElse(null);
 
-        if (registration == null) {
+        boolean isNew = (registration == null);
+        String method = (payment.getPaymentMethod() != null && !payment.getPaymentMethod().isBlank())
+                ? payment.getPaymentMethod()
+                : "SEPAY";
+
+        if (isNew) {
             registration = CourseRegistration.builder()
                     .user(payment.getUser())
                     .course(payment.getCourse())
@@ -359,13 +364,13 @@ public class PaymentServiceImpl implements PaymentService {
                     .status("ACTIVE")
                     .progressPercent(0)
                     .paidAmount(payment.getAmount().doubleValue())
-                    .paymentMethod("SEPAY")
+                    .paymentMethod(method)
                     .note("Đăng ký tự động từ payment " + payment.getOrderCode())
                     .build();
         } else {
             registration.setStatus("ACTIVE");
             registration.setPaidAmount(payment.getAmount().doubleValue());
-            registration.setPaymentMethod("SEPAY");
+            registration.setPaymentMethod(method);
             if (registration.getRegisteredAt() == null) {
                 registration.setRegisteredAt(LocalDateTime.now());
             }
@@ -373,8 +378,14 @@ public class PaymentServiceImpl implements PaymentService {
                 registration.setProgressPercent(0);
             }
         }
-
         courseRegistrationRepository.save(registration);
+
+        // Increment enrollmentCount only for brand new registrations
+        if (isNew) {
+            Course course = payment.getCourse();
+            course.setEnrollmentCount((course.getEnrollmentCount() != null ? course.getEnrollmentCount() : 0) + 1);
+            courseRepository.save(course);
+        }
     }
 
     private String generateOrderCode() {
