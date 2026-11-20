@@ -117,6 +117,43 @@ public class ManagerExamService {
         return examRepository.save(exam);
     }
 
+    @Transactional
+    public int bulkUpdateStatus(List<Long> ids, String newStatus) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một đề thi.");
+        }
+        if (Arrays.stream(ExamStatusEnum.values()).map(Enum::name).noneMatch(newStatus::equals)) {
+            throw new IllegalArgumentException("Trạng thái không hợp lệ.");
+        }
+        List<Exam> exams = examRepository.findAllById(ids);
+        if (exams.size() != ids.size()) {
+            throw new IllegalArgumentException("Một số đề thi không tồn tại.");
+        }
+        int updated = 0;
+        for (Exam exam : exams) {
+            if (exam.getStatus().equals(newStatus)) continue;
+            if ("PUBLISHED".equals(newStatus) || "ACTIVE".equals(newStatus)) {
+                for (String section : SECTIONS) {
+                    long linked = examQuestionRepository.countByExamIdAndSection(exam.getExamId(), section);
+                    int required = requiredQuestions(exam, section);
+                    if (linked != required) {
+                        throw new IllegalArgumentException("Đề thi #" + exam.getExamId()
+                                + ": số câu chưa khớp cấu trúc. Không thể chuyển sang " + newStatus + ".");
+                    }
+                }
+                List<Long> inactive = examQuestionRepository.findInactiveQuestionIds(exam.getExamId());
+                if (!inactive.isEmpty()) {
+                    throw new IllegalArgumentException("Đề thi #" + exam.getExamId()
+                            + " còn câu hỏi không ACTIVE. Không thể chuyển sang " + newStatus + ".");
+                }
+            }
+            exam.setStatus(newStatus);
+            updated++;
+        }
+        examRepository.saveAll(exams);
+        return updated;
+    }
+
     @Transactional(readOnly = true)
     public ManagerExamOptions options() {
         return new ManagerExamOptions(

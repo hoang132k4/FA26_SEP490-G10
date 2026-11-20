@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/manager/quizzes")
 public class ManagerQuizController {
@@ -94,6 +96,19 @@ public class ManagerQuizController {
         } catch (IllegalArgumentException | DataAccessException exception) {
             model.addAttribute("quizError", UserMessages.of(exception));
             return formPage(form, model, true);
+        }
+        return "redirect:/manager/quizzes";
+    }
+
+    @PostMapping("/bulk-status")
+    public String bulkUpdateStatus(@RequestParam List<Long> ids,
+                                   @RequestParam String status,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            int count = managerQuizService.bulkUpdateStatus(ids, status);
+            redirectAttributes.addFlashAttribute("quizSuccess", "Đã cập nhật trạng thái " + count + " quiz sang " + status + ".");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("quizError", exception.getMessage());
         }
         return "redirect:/manager/quizzes";
     }

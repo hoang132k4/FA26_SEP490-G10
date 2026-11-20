@@ -99,6 +99,19 @@ public class ManagerExamController {
         return "redirect:/manager/exams";
     }
 
+    @PostMapping("/bulk-status")
+    public String bulkUpdateStatus(@RequestParam List<Long> ids,
+                                   @RequestParam String status,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            int count = managerExamService.bulkUpdateStatus(ids, status);
+            redirectAttributes.addFlashAttribute("examSuccess", "Đã cập nhật trạng thái " + count + " đề thi sang " + status + ".");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("examError", exception.getMessage());
+        }
+        return "redirect:/manager/exams";
+    }
+
     // ── Exam-Question Management ──
 
     @GetMapping("/{examId}/questions")

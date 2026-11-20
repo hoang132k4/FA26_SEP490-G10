@@ -228,6 +228,33 @@ public class ManagerQuizService {
         repository.syncTotalQuestions(quizId);
     }
 
+    @Transactional
+    public int bulkUpdateStatus(List<Long> ids, String newStatus) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một quiz.");
+        }
+        if (Arrays.stream(ExerciseStatusEnum.values()).noneMatch(v -> v.name().equals(newStatus))) {
+            throw new IllegalArgumentException("Trạng thái không hợp lệ.");
+        }
+        int updated = 0;
+        for (Long id : ids) {
+            QuizOption quiz = findById(id);
+            if (quiz.status().equals(newStatus)) continue;
+            if ("PUBLISHED".equals(newStatus)) {
+                if (repository.countExerciseQuestions(id) == 0) {
+                    throw new IllegalArgumentException("Quiz #" + id + " chưa có câu hỏi. Không thể chuyển sang PUBLISHED.");
+                }
+                List<Long> inactive = repository.findInactiveQuestionIds(id);
+                if (!inactive.isEmpty()) {
+                    throw new IllegalArgumentException("Quiz #" + id + " còn câu hỏi không ACTIVE. Không thể chuyển sang PUBLISHED.");
+                }
+            }
+            repository.updateStatus(id, newStatus);
+            updated++;
+        }
+        return updated;
+    }
+
     public QuizQuestionOptions questionFilterOptions() {
         return new QuizQuestionOptions(
                 Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList(),

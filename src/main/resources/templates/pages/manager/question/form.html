@@ -211,20 +211,37 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
-                <thead><tr><th>ID</th><th>Nội dung</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                <thead><tr>
+                    <th style="width:40px;"><input type="checkbox" id="bulkCheckAll" onclick="bulkToggleAll(this)"></th>
+                    <th>ID</th><th>Nội dung</th><th>Trạng thái</th><th>Thao tác</th>
+                </tr></thead>
                 <tbody>
                 <tr th:each="child : ${children}">
+                    <td><input type="checkbox" class="bulk-check" th:value="${child.id}"></td>
                     <td th:text="${child.id}"></td>
                     <td><div class="text-truncate" style="max-width:350px;" th:text="${child.content}"></div></td>
                     <td><span class="badge" th:classappend="${child.status == 'ACTIVE' ? 'bg-success' : 'bg-warning text-dark'}" th:text="${child.status}"></span></td>
                     <td><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/questions/{id}/edit(id=${child.id})}"><i class="bi bi-pencil"></i></a></td>
                 </tr>
                 <tr th:if="${children == null || #lists.isEmpty(children)}">
-                    <td colspan="4" class="text-center text-muted py-3">Chưa có câu hỏi con.</td>
+                    <td colspan="5" class="text-center text-muted py-3">Chưa có câu hỏi con.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
+        <div th:insert="~{fragments/components/bulk-status :: bulkStatus(@{/manager/questions/bulk-status}, ${options.statuses})}"></div>
+        <script>
+            (function() {
+                var form = document.getElementById('bulkForm');
+                if (form) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'returnTo';
+                    input.value = '/manager/questions/' + /*[[${questionForm.id}]]*/ '' + '/edit';
+                    form.appendChild(input);
+                }
+            })();
+        </script>
     </div>
 
     <script th:inline="javascript">
