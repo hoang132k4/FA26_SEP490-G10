@@ -27,9 +27,11 @@ import com.jlpp.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -55,8 +57,13 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "BANK_ACCOUNT_NUMBER=123456789",
@@ -71,6 +78,9 @@ class PaymentServiceIdempotencyTest {
 
     @Autowired
     private PaymentService paymentService;
+
+    @Autowired
+    private MockMvc mockMvc;
 
     @SpyBean
     private PaymentRepository paymentRepository;
@@ -326,6 +336,27 @@ class PaymentServiceIdempotencyTest {
                 .build());
 
         assertThrows(IllegalStateException.class, this::createPayment);
+    }
+
+    @Test
+    void checkoutRequiresLoginAndReturnsToTheSelectedCourse() throws Exception {
+        mockMvc.perform(get("/checkout/{courseId}", course.getId()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login?continue=/checkout/" + course.getId()));
+    }
+
+    @Test
+    void checkoutStopsWhenTheLearnerIsAlreadyEnrolled() throws Exception {
+        courseRegistrationRepository.saveAndFlush(CourseRegistration.builder()
+                .user(user)
+                .course(course)
+                .status("ACTIVE")
+                .build());
+
+        mockMvc.perform(get("/checkout/{courseId}", course.getId())
+                        .with(user(user.getEmail()).roles("LEARNER")))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/courses/" + course.getId()));
     }
 
     @Test

@@ -94,6 +94,37 @@ public class LoginAndSecurityTest {
     }
 
     @Test
+    @DisplayName("A learner returns to the selected checkout after login")
+    void testLearnerLoginReturnsToSelectedCheckout() throws Exception {
+        MvcResult loginPage = mockMvc.perform(get("/auth/login").param("continue", "/checkout/123"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("continuePath", "/checkout/123"))
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) loginPage.getRequest().getSession(false);
+
+        mockMvc.perform(post("/auth/login")
+                        .session(session)
+                        .with(csrf())
+                        .param("continue", "/checkout/123")
+                        .param("username", "learner@jeps.edu.vn")
+                        .param("password", "LearnerPass123!"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/checkout/123"));
+    }
+
+    @Test
+    @DisplayName("An external continuation URL is ignored after login")
+    void testLoginRejectsExternalContinuationUrl() throws Exception {
+        mockMvc.perform(post("/auth/login")
+                        .with(csrf())
+                        .param("continue", "https://example.test/checkout/123")
+                        .param("username", "learner@jeps.edu.vn")
+                        .param("password", "LearnerPass123!"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
     @DisplayName("LG-02: Valid Manager credentials - Login succeeds and redirects to Manager Dashboard")
     void testLG02_ValidManagerLogin() throws Exception {
         mockMvc.perform(post("/auth/login")

@@ -9,6 +9,7 @@
         </div>
 
         <form th:action="@{/auth/register}" th:object="${registerRequest}" method="post" novalidate>
+            <input th:if="${continuePath != null}" type="hidden" name="continue" th:value="${continuePath}">
             <!-- Full Name -->
             <div class="mb-3">
                 <label class="form-label small fw-semibold" style="color: var(--text-primary)" for="fullNameInput">
@@ -122,7 +123,8 @@
             <!-- Login Navigation Link -->
             <div class="text-center mt-4 small text-muted">
                 Đã có tài khoản? 
-                <a th:href="@{/auth/login}" class="fw-semibold text-decoration-none" style="color: var(--sakura-accent)">
+                <a th:href="${continuePath != null} ? @{/auth/login(continue=${continuePath})} : @{/auth/login}"
+                   class="fw-semibold text-decoration-none" style="color: var(--sakura-accent)">
                     Đăng nhập ngay
                 </a>
             </div>

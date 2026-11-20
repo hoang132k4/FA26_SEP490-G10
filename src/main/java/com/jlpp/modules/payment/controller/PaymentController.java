@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.repository.CourseRepository;
+import com.jlpp.modules.course.service.CourseRegistrationService;
 import com.jlpp.modules.payment.dto.InvoiceResponseDTO;
 import com.jlpp.modules.payment.dto.PaymentRequestDTO;
 import com.jlpp.modules.payment.dto.PaymentResponseDTO;
@@ -47,6 +48,7 @@ public class PaymentController {
     private static final Duration FALLBACK_POLL_WINDOW = Duration.ofMinutes(30);
 
     private final PaymentService paymentService;
+    private final CourseRegistrationService courseRegistrationService;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final ObjectMapper objectMapper;
@@ -59,15 +61,19 @@ public class PaymentController {
                               Principal principal,
                               HttpSession session,
                               Model model) {
+        Long resolvedCourseId = courseId != null ? courseId : queryCourseId;
+        if (resolvedCourseId == null) {
+            return "redirect:/courses";
+        }
         Long userId = resolveUserId(principal, session);
         if (userId == null) {
-            return "redirect:/auth/login?continue=/checkout";
+            return "redirect:/auth/login?continue=/checkout/" + resolvedCourseId;
         }
 
-        Long resolvedCourseId = courseId != null ? courseId : queryCourseId;
-        Course course = null;
-        if (resolvedCourseId != null) {
-            course = courseRepository.findById(resolvedCourseId).orElse(null);
+        Course course = courseRepository.findById(resolvedCourseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)) {
+            return "redirect:/courses/" + resolvedCourseId;
         }
         User user = userRepository.findById(userId).orElse(null);
 
@@ -86,13 +92,16 @@ public class PaymentController {
                                  Principal principal,
                                  HttpSession session,
                                  RedirectAttributes redirectAttributes) {
-        Long userId = resolveUserId(principal, session);
-        if (userId == null) {
-            return "redirect:/auth/login?continue=/checkout";
-        }
         Long resolvedCourseId = pathCourseId != null ? pathCourseId : courseId;
         if (resolvedCourseId == null) {
             return "redirect:/courses";
+        }
+        Long userId = resolveUserId(principal, session);
+        if (userId == null) {
+            return "redirect:/auth/login?continue=/checkout/" + resolvedCourseId;
+        }
+        if (courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)) {
+            return "redirect:/courses/" + resolvedCourseId;
         }
 
         try {

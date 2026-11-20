@@ -7,11 +7,13 @@ import com.jlpp.modules.auth.dto.ResetPasswordRequest;
 import com.jlpp.modules.auth.dto.RegisterRequest;
 import com.jlpp.modules.auth.exception.DuplicateEmailException;
 import com.jlpp.modules.auth.exception.DuplicatePhoneException;
+import com.jlpp.modules.auth.security.AuthRedirectTarget;
 import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.auth.service.ChangePasswordService;
 import com.jlpp.modules.auth.service.PasswordResetService;
 import com.jlpp.modules.auth.service.RegisterService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -38,7 +40,14 @@ public class AuthController {
             @RequestParam(name = "error", required = false) String error,
             @RequestParam(name = "logout", required = false) String logout,
             @RequestParam(name = "disabled", required = false) String disabled,
+            @RequestParam(name = "continue", required = false) String continuePath,
+            HttpSession session,
             Model model) {
+
+        String validatedContinuePath = rememberContinuePath(continuePath, session);
+        if (validatedContinuePath != null) {
+            model.addAttribute("continuePath", validatedContinuePath);
+        }
 
         if (error != null) {
             if ("email_conflict".equalsIgnoreCase(error)) {
@@ -68,7 +77,14 @@ public class AuthController {
     }
 
     @GetMapping("/register")
-    public String registerPage(Model model) {
+    public String registerPage(
+            @RequestParam(name = "continue", required = false) String continuePath,
+            HttpSession session,
+            Model model) {
+        String validatedContinuePath = rememberContinuePath(continuePath, session);
+        if (validatedContinuePath != null) {
+            model.addAttribute("continuePath", validatedContinuePath);
+        }
         if (!model.containsAttribute("registerRequest")) {
             model.addAttribute("registerRequest", new RegisterRequest());
         }
@@ -79,8 +95,15 @@ public class AuthController {
     public String handleRegister(
             @Valid @ModelAttribute("registerRequest") RegisterRequest request,
             BindingResult bindingResult,
+            @RequestParam(name = "continue", required = false) String continuePath,
+            HttpSession session,
             Model model,
             RedirectAttributes redirectAttributes) {
+
+        String validatedContinuePath = rememberContinuePath(continuePath, session);
+        if (validatedContinuePath != null) {
+            model.addAttribute("continuePath", validatedContinuePath);
+        }
 
         // A2: Additional check for spaces or trimmed name length
         if (request.getFullName() != null) {
@@ -255,7 +278,7 @@ public class AuthController {
     }
 
     @GetMapping("/complete-profile")
-    public String completeProfilePage(Model model, Principal principal) {
+    public String completeProfilePage(Model model, Principal principal, HttpSession session) {
         if (principal == null) {
             return "redirect:/auth/login";
         }
@@ -266,7 +289,7 @@ public class AuthController {
 
         // If phone already completed, forward to homepage
         if (user.getPhone() != null && !user.getPhone().isBlank()) {
-            return "redirect:/";
+            return redirectAfterAuthentication(session);
         }
 
         if (!model.containsAttribute("completeProfileRequest")) {
@@ -285,6 +308,7 @@ public class AuthController {
             @Valid @ModelAttribute("completeProfileRequest") CompleteProfileRequest request,
             BindingResult bindingResult,
             Principal principal,
+            HttpSession session,
             Model model,
             RedirectAttributes redirectAttributes) {
 
@@ -318,6 +342,26 @@ public class AuthController {
 
         log.info("Profile completed for Google user: {} with phone: {}", user.getEmail(), user.getPhone());
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ thành công! Chào mừng bạn đến với JEPS.");
-        return "redirect:/";
+        return redirectAfterAuthentication(session);
+    }
+
+    private String rememberContinuePath(String requestedPath, HttpSession session) {
+        if (requestedPath != null) {
+            String validatedPath = AuthRedirectTarget.validate(requestedPath);
+            if (validatedPath == null) {
+                session.removeAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+            } else {
+                session.setAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE, validatedPath);
+            }
+        }
+        Object storedPath = session.getAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+        return storedPath instanceof String path ? AuthRedirectTarget.validate(path) : null;
+    }
+
+    private String redirectAfterAuthentication(HttpSession session) {
+        Object storedPath = session.getAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+        session.removeAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+        String target = storedPath instanceof String path ? AuthRedirectTarget.validate(path) : null;
+        return "redirect:" + (target != null ? target : "/");
     }
 }
