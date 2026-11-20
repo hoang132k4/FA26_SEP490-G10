@@ -302,7 +302,7 @@
                                                         th:text="${lesson.title}">Bài 1.1: Từ vựng &amp; Hán tự</span>
                                                 </h6>
                                                 <div class="d-flex align-items-center gap-2 mt-0.5">
-                                                    <span class="badge" th:classappend="${lesson.typeBadgeClass}" th:text="${lesson.typeLabel}">Lý thuyết</span>
+                                                    <span class="badge" th:classappend="${lesson.typeBadgeClass}" th:text="${lesson.typeDisplayName}">Lý thuyết</span>
                                                     <span class="small text-muted" th:text="${(lesson.durationMinutes != null ? lesson.durationMinutes : 30) + ' phút'}">30 phút</span>
                                                 </div>
                                             </div>

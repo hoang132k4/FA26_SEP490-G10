@@ -285,6 +285,16 @@ public class LearnerCourseFullIntegrationTest {
                 .andExpect(redirectedUrl("/courses/" + activeCourse.getId()));
     }
 
+    @Test
+    @DisplayName("Course Detail: Render lesson type using the Lesson entity display name")
+    @WithAnonymousUser
+    void testPublicCourseDetail_RendersLessonType() throws Exception {
+        mockMvc.perform(get("/courses/{id}", activeCourse.getId()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/learning/course-detail"))
+                .andExpect(content().string(containsString("Bài học lý thuyết")));
+    }
+
     // ==========================================
     // 5. REGISTER COURSE (/learning/courses/{id}/register)
     // ==========================================
