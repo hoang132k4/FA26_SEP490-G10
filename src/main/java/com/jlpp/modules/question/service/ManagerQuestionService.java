@@ -81,8 +81,46 @@ public class ManagerQuestionService {
         validateDomain(form);
         Question question = findById(id);
         validateStatusTransition(question, form.getStatus());
+        String oldStatus = question.getStatus();
         applyForm(question, form);
-        return questionRepository.save(question);
+        Question saved = questionRepository.save(question);
+        if ("PASSAGE".equals(question.getQuestionType()) && !oldStatus.equals(form.getStatus())) {
+            cascadeStatusToChildren(id, form.getStatus());
+        }
+        return saved;
+    }
+
+    @Transactional
+    public int bulkUpdateStatus(List<Long> ids, String newStatus) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một câu hỏi.");
+        }
+        if (Arrays.stream(QuestionStatusEnum.values()).noneMatch(v -> v.name().equals(newStatus))) {
+            throw new IllegalArgumentException("Trạng thái không hợp lệ.");
+        }
+        List<Question> questions = questionRepository.findAllById(ids);
+        if (questions.size() != ids.size()) {
+            throw new IllegalArgumentException("Một số câu hỏi không tồn tại.");
+        }
+        int updated = 0;
+        for (Question q : questions) {
+            if (q.getStatus().equals(newStatus)) continue;
+            if ("ARCHIVED".equals(newStatus)) {
+                long activeExams = questionRepository.countActiveExamUsages(q.getId());
+                long activeQuizzes = questionRepository.countActiveQuizUsages(q.getId());
+                if (activeExams > 0 || activeQuizzes > 0) {
+                    throw new IllegalArgumentException("Câu hỏi #" + q.getId()
+                            + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED.");
+                }
+            }
+            q.setStatus(newStatus);
+            updated++;
+            if ("PASSAGE".equals(q.getQuestionType())) {
+                cascadeStatusToChildren(q.getId(), newStatus);
+            }
+        }
+        questionRepository.saveAll(questions);
+        return updated;
     }
 
     @Transactional
@@ -166,6 +204,26 @@ public class ManagerQuestionService {
         } else {
             question.setOptions(buildOptionsJson(form));
             question.setAnswerKey(buildAnswerKeyJson(form));
+        }
+    }
+
+    private void cascadeStatusToChildren(long parentId, String newStatus) {
+        List<Question> children = questionRepository.findByParentIdOrderById(parentId);
+        for (Question child : children) {
+            if (!child.getStatus().equals(newStatus)) {
+                if ("ARCHIVED".equals(newStatus)) {
+                    long activeExams = questionRepository.countActiveExamUsages(child.getId());
+                    long activeQuizzes = questionRepository.countActiveQuizUsages(child.getId());
+                    if (activeExams > 0 || activeQuizzes > 0) {
+                        throw new IllegalArgumentException("Câu hỏi con #" + child.getId()
+                                + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED.");
+                    }
+                }
+                child.setStatus(newStatus);
+            }
+        }
+        if (!children.isEmpty()) {
+            questionRepository.saveAll(children);
         }
     }
 

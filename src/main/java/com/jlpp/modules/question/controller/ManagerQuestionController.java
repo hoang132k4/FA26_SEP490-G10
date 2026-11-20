@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/manager/questions")
 public class ManagerQuestionController {
@@ -135,6 +137,20 @@ public class ManagerQuestionController {
             String url = audioStorageService.store(audioFile);
             form.setAudioUrl(url);
         }
+    }
+
+    @PostMapping("/bulk-status")
+    public String bulkUpdateStatus(@RequestParam List<Long> ids,
+                                   @RequestParam String status,
+                                   @RequestParam(required = false) String returnTo,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            int count = managerQuestionService.bulkUpdateStatus(ids, status);
+            redirectAttributes.addFlashAttribute("questionSuccess", "Đã cập nhật trạng thái " + count + " câu hỏi sang " + status + ".");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("questionError", exception.getMessage());
+        }
+        return "redirect:" + (returnTo != null && returnTo.startsWith("/manager/") ? returnTo : "/manager/questions");
     }
 
     @PostMapping("/{id}/delete")

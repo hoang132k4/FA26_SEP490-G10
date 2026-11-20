@@ -108,6 +108,10 @@ public class ManagerQuizRepository {
 
     public long count() { return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM exercises", Long.class); }
 
+    public int updateStatus(long id, String status) {
+        return jdbcTemplate.update("UPDATE exercises SET status = ? WHERE exercise_id = ?", status, id);
+    }
+
     public void insert(long lessonId, String title, int passingScore, String status) {
         jdbcTemplate.update(
                 "INSERT INTO exercises (lesson_id, exercise_title, total_questions, passing_score, status) VALUES (?, ?, 0, ?, ?)",
