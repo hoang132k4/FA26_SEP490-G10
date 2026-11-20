@@ -81,18 +81,18 @@ public class RegisterTest {
 
     @Test
     @DisplayName("New account registration preserves the selected course through login")
-    void testRegisterAndLoginReturnsToSelectedCheckout() throws Exception {
+    void testRegisterAndLoginReturnsToSelectedCourse() throws Exception {
         var registerPage = mockMvc.perform(get("/auth/register")
-                        .param("continue", "/checkout/8101"))
+                        .param("continue", "/courses/8101"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("continuePath", "/checkout/8101"))
+                .andExpect(model().attribute("continuePath", "/courses/8101"))
                 .andReturn();
         MockHttpSession session = (MockHttpSession) registerPage.getRequest().getSession(false);
 
         mockMvc.perform(post("/auth/register")
                         .session(session)
                         .with(csrf())
-                        .param("continue", "/checkout/8101")
+                        .param("continue", "/courses/8101")
                         .param("fullName", "Nguyễn Văn B")
                         .param("email", "checkout-user@example.com")
                         .param("phone", "0987654322")
@@ -104,11 +104,11 @@ public class RegisterTest {
         mockMvc.perform(post("/auth/login")
                         .session(session)
                         .with(csrf())
-                        .param("continue", "/checkout/8101")
+                        .param("continue", "/courses/8101")
                         .param("username", "checkout-user@example.com")
                         .param("password", "SecurePass123!"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/checkout/8101"));
+                .andExpect(redirectedUrl("/courses/8101"));
     }
 
     @Test

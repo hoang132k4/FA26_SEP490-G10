@@ -94,22 +94,22 @@ public class LoginAndSecurityTest {
     }
 
     @Test
-    @DisplayName("A learner returns to the selected checkout after login")
-    void testLearnerLoginReturnsToSelectedCheckout() throws Exception {
-        MvcResult loginPage = mockMvc.perform(get("/auth/login").param("continue", "/checkout/123"))
+    @DisplayName("A learner returns to the selected course after login")
+    void testLearnerLoginReturnsToSelectedCourse() throws Exception {
+        MvcResult loginPage = mockMvc.perform(get("/auth/login").param("continue", "/courses/123"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("continuePath", "/checkout/123"))
+                .andExpect(model().attribute("continuePath", "/courses/123"))
                 .andReturn();
         MockHttpSession session = (MockHttpSession) loginPage.getRequest().getSession(false);
 
         mockMvc.perform(post("/auth/login")
                         .session(session)
                         .with(csrf())
-                        .param("continue", "/checkout/123")
+                        .param("continue", "/courses/123")
                         .param("username", "learner@jeps.edu.vn")
                         .param("password", "LearnerPass123!"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/checkout/123"));
+                .andExpect(redirectedUrl("/courses/123"));
     }
 
     @Test

@@ -342,7 +342,7 @@ class PaymentServiceIdempotencyTest {
     void checkoutRequiresLoginAndReturnsToTheSelectedCourse() throws Exception {
         mockMvc.perform(get("/checkout/{courseId}", course.getId()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/auth/login?continue=/checkout/" + course.getId()));
+                .andExpect(redirectedUrl("/auth/login?continue=/courses/" + course.getId()));
     }
 
     @Test

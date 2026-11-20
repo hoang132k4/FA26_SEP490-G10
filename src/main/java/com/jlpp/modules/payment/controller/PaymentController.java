@@ -67,7 +67,7 @@ public class PaymentController {
         }
         Long userId = resolveUserId(principal, session);
         if (userId == null) {
-            return "redirect:/auth/login?continue=/checkout/" + resolvedCourseId;
+            return "redirect:/auth/login?continue=/courses/" + resolvedCourseId;
         }
 
         Course course = courseRepository.findById(resolvedCourseId)
@@ -98,7 +98,7 @@ public class PaymentController {
         }
         Long userId = resolveUserId(principal, session);
         if (userId == null) {
-            return "redirect:/auth/login?continue=/checkout/" + resolvedCourseId;
+            return "redirect:/auth/login?continue=/courses/" + resolvedCourseId;
         }
         if (courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)) {
             return "redirect:/courses/" + resolvedCourseId;

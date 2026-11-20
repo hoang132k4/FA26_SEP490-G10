@@ -109,7 +109,7 @@
                                 <i class="bi bi-credit-card me-1"></i> Thanh toán ngay
                             </a>
                             <a th:if="${course.price != null && course.price > 0 && !isAuthenticated}"
-                                th:href="@{/auth/login(continue=${'/checkout/' + course.id})}"
+                                th:href="@{/auth/login(continue=${'/courses/' + course.id})}"
                                 class="btn btn-sakura w-100 py-2 fw-semibold mb-2">
                                 <i class="bi bi-credit-card me-1"></i> Đăng nhập để thanh toán
                             </a>
