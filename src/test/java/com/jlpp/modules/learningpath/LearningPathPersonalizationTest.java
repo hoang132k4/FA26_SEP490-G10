@@ -8,6 +8,7 @@ import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
 import com.jlpp.modules.course.repository.StudyMaterialRepository;
+import com.jlpp.modules.course.service.CourseRegistrationService;
 import com.jlpp.modules.exam.dto.ExamResultResponse;
 import com.jlpp.modules.exam.dto.QuestionDto;
 import com.jlpp.modules.exam.service.ExamService;
@@ -69,6 +70,9 @@ public class LearningPathPersonalizationTest {
     private CourseRepository courseRepository;
 
     @Mock
+    private CourseRegistrationService courseRegistrationService;
+
+    @Mock
     private UserRepository userRepository;
 
     private ObjectMapper objectMapper;
@@ -98,7 +102,8 @@ public class LearningPathPersonalizationTest {
                 exerciseRepository, flashcardRepository, studyMaterialRepository
         );
         lessonProgressService = new LessonProgressServiceImpl(
-                learningPathRepository, courseRegistrationRepository, lessonRepository, objectMapper
+                learningPathRepository, courseRegistrationRepository, lessonRepository,
+                courseRegistrationService, objectMapper
         );
     }
 
@@ -259,7 +264,9 @@ public class LearningPathPersonalizationTest {
                 .build();
 
         Lesson l501 = createLesson(501L, "Lesson 1", 30, "KANJI", 1);
-        when(courseRegistrationRepository.existsByUserIdAndCourseId(200L, 10L)).thenReturn(true);
+        when(courseRegistrationService.isUserEnrolled(200L, 10L)).thenReturn(true);
+        when(courseRegistrationRepository.findForUpdateByUserIdAndCourseId(200L, 10L))
+                .thenReturn(Optional.of(CourseRegistration.builder().status("ACTIVE").progressPercent(0).build()));
         when(lessonRepository.findById(501L)).thenReturn(Optional.of(l501));
 
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(200L, 10L))
@@ -300,7 +307,9 @@ public class LearningPathPersonalizationTest {
         Lesson l102 = createLesson(102L, "Lesson 2", 30, "GRAMMAR", 2);
         Lesson l103 = createLesson(103L, "Lesson 3", 30, "READING", 3);
 
-        when(courseRegistrationRepository.existsByUserIdAndCourseId(201L, 10L)).thenReturn(true);
+        when(courseRegistrationService.isUserEnrolled(201L, 10L)).thenReturn(true);
+        when(courseRegistrationRepository.findForUpdateByUserIdAndCourseId(201L, 10L))
+                .thenReturn(Optional.of(CourseRegistration.builder().status("ACTIVE").progressPercent(0).build()));
         when(lessonRepository.findById(103L)).thenReturn(Optional.of(l103));
 
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(201L, 10L))
@@ -320,6 +329,7 @@ public class LearningPathPersonalizationTest {
     @Test
     @DisplayName("Scenario 20: Legacy progress fallback correctly infers completed count")
     void testScenario20_LegacyProgressFallback() {
+        when(courseRegistrationService.isUserEnrolled(300L, 10L)).thenReturn(true);
         // No JSON entries in learning_path, but registration has progressPercent = 35% on 12 lessons
         boolean isLesson1Done = lessonProgressService.isLessonCompleted(
                 300L, 10L, 1L, 1, 12, 35
@@ -347,7 +357,9 @@ public class LearningPathPersonalizationTest {
                 .build();
         lessonOfOtherCourse.setId(999L);
 
-        when(courseRegistrationRepository.existsByUserIdAndCourseId(400L, 10L)).thenReturn(true);
+        when(courseRegistrationService.isUserEnrolled(400L, 10L)).thenReturn(true);
+        when(courseRegistrationRepository.findForUpdateByUserIdAndCourseId(400L, 10L))
+                .thenReturn(Optional.of(CourseRegistration.builder().status("ACTIVE").progressPercent(0).build()));
         when(lessonRepository.findById(999L)).thenReturn(Optional.of(lessonOfOtherCourse));
 
         lessonProgressService.markLessonCompleted(400L, 10L, 999L);
@@ -359,7 +371,8 @@ public class LearningPathPersonalizationTest {
     @Test
     @DisplayName("Verification 2: Security check - Un-enrolled user completion is rejected")
     void testVerification2_UnenrolledRejected() {
-        when(courseRegistrationRepository.existsByUserIdAndCourseId(401L, 10L)).thenReturn(false);
+        when(courseRegistrationService.ensureFreeRegistrationForAccess(401L, 10L))
+                .thenReturn(Optional.empty());
 
         lessonProgressService.markLessonCompleted(401L, 10L, 101L);
 

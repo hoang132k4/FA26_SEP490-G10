@@ -20,6 +20,27 @@ public interface CourseRegistrationRepository extends JpaRepository<CourseRegist
     @Query("SELECT r FROM CourseRegistration r WHERE r.user.id = :userId AND r.course.id = :courseId")
     Optional<CourseRegistration> findForUpdateByUserIdAndCourseId(@Param("userId") Long userId, @Param("courseId") Long courseId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM CourseRegistration r WHERE r.id = :registrationId AND r.user.id = :userId AND r.course.id = :courseId")
+    Optional<CourseRegistration> findForUpdateByIdAndUserIdAndCourseId(
+            @Param("registrationId") Long registrationId,
+            @Param("userId") Long userId,
+            @Param("courseId") Long courseId);
+
+    @Query("SELECT r FROM CourseRegistration r JOIN FETCH r.course c WHERE r.id = :registrationId AND r.user.id = :userId")
+    Optional<CourseRegistration> findByIdAndUserIdWithCourse(
+            @Param("registrationId") Long registrationId,
+            @Param("userId") Long userId);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+            FROM CourseRegistration r
+            WHERE r.user.id = :userId AND r.course.id = :courseId
+              AND UPPER(TRIM(r.status)) IN ('ACTIVE', 'COMPLETED')
+            """)
+    boolean existsEligibleByUserIdAndCourseId(
+            @Param("userId") Long userId, @Param("courseId") Long courseId);
+
     boolean existsByUserIdAndCourseId(Long userId, Long courseId);
 
     @Query("SELECT r FROM CourseRegistration r JOIN FETCH r.course c WHERE r.user.id = :userId ORDER BY r.registeredAt DESC")

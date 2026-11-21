@@ -74,8 +74,8 @@ class CourseRecommendationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(learner));
         when(courseRepository.findByLevelAndStatus("N4", "PUBLISHED")).thenReturn(List.of(n4Course));
         when(courseRepository.findByLevelAndStatus("N5", "PUBLISHED")).thenReturn(List.of(n5Course));
-        when(registrationRepository.existsByUserIdAndCourseId(1L, 101L)).thenReturn(false);
-        when(registrationRepository.existsByUserIdAndCourseId(1L, 100L)).thenReturn(true);
+        when(registrationRepository.existsEligibleByUserIdAndCourseId(1L, 101L)).thenReturn(false);
+        when(registrationRepository.existsEligibleByUserIdAndCourseId(1L, 100L)).thenReturn(true);
 
         List<RecommendedCourseItem> items = recommendationService.getRecommendationsForLearner(1L);
 
@@ -101,7 +101,7 @@ class CourseRecommendationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(learner));
         when(courseRepository.findByLevelAndStatus(anyString(), anyString())).thenReturn(List.of());
         when(courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED")).thenReturn(List.of(n4Course));
-        when(registrationRepository.existsByUserIdAndCourseId(1L, 101L)).thenReturn(false);
+        when(registrationRepository.existsEligibleByUserIdAndCourseId(1L, 101L)).thenReturn(false);
 
         List<RecommendedCourseItem> items = recommendationService.getRecommendationsForLearner(1L);
 
@@ -113,7 +113,7 @@ class CourseRecommendationServiceTest {
     @Test
     void testGetRecommendationsFromExamResult_HighScore_RecommendsTargetLevel() {
         when(courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED")).thenReturn(List.of(n4Course, n5Course));
-        when(registrationRepository.existsByUserIdAndCourseId(anyLong(), anyLong())).thenReturn(false);
+        when(registrationRepository.existsEligibleByUserIdAndCourseId(anyLong(), anyLong())).thenReturn(false);
 
         com.jlpp.modules.exam.dto.ExamResultResponse examResult = com.jlpp.modules.exam.dto.ExamResultResponse.builder()
                 .score(85)
@@ -139,7 +139,7 @@ class CourseRecommendationServiceTest {
     @Test
     void testGetRecommendationsFromExamResult_LowScore_RecommendsFoundationLevel() {
         when(courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED")).thenReturn(List.of(n4Course, n5Course));
-        when(registrationRepository.existsByUserIdAndCourseId(anyLong(), anyLong())).thenReturn(false);
+        when(registrationRepository.existsEligibleByUserIdAndCourseId(anyLong(), anyLong())).thenReturn(false);
 
         com.jlpp.modules.exam.dto.ExamResultResponse examResult = com.jlpp.modules.exam.dto.ExamResultResponse.builder()
                 .score(35)

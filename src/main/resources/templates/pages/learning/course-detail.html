@@ -89,34 +89,25 @@
                         <!-- If NOT Enrolled -->
                         <div th:if="${!isEnrolled}">
                             <span class="text-muted small text-uppercase fw-semibold">Học phí</span>
-                            <div class="mt-1 mb-3" th:if="${course.discountPrice != null && course.discountPrice > 0}">
-                                <h3 class="fw-bold text-danger mb-0"
-                                    th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                            <div class="mt-1 mb-3">
+                                <h3 class="fw-bold mb-0"
+                                    th:classappend="${!isFreeCourse and course.discountPrice != null and course.discountPrice > 0 ? ' text-danger' : ''}"
+                                    th:text="${isFreeCourse ? 'Miễn phí' : #numbers.formatDecimal(finalCoursePrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
                                     199,000 đ</h3>
                                 <small class="text-muted text-decoration-line-through"
-                                    th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000
-                                    đ</small>
-                            </div>
-                            <div class="mt-1 mb-3" th:if="${course.discountPrice == null || course.discountPrice == 0}">
-                                <h3 class="fw-bold mb-0" style="color: var(--navy-dark);"
-                                    th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">
-                                    299,000 đ</h3>
+                                    th:if="${!isFreeCourse and course.discountPrice != null and course.discountPrice > 0}"
+                                    th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</small>
                             </div>
 
-                            <a th:if="${course.price != null && course.price > 0 && isAuthenticated}"
-                                th:href="@{/checkout/{courseId}(courseId=${course.id})}"
-                                class="btn btn-sakura w-100 py-2 fw-semibold mb-2">
-                                <i class="bi bi-credit-card me-1"></i> Thanh toán ngay
-                            </a>
-                            <a th:if="${course.price != null && course.price > 0 && !isAuthenticated}"
-                                th:href="@{/auth/login(continue=${'/courses/' + course.id})}"
-                                class="btn btn-sakura w-100 py-2 fw-semibold mb-2">
-                                <i class="bi bi-credit-card me-1"></i> Đăng nhập để thanh toán
-                            </a>
-                            <a th:unless="${course.price != null && course.price > 0}"
+                            <a th:if="${isAuthenticated}"
                                 th:href="@{/learning/courses/{id}/register(id=${course.id})}"
                                 class="btn btn-sakura w-100 py-2 fw-semibold mb-2">
-                                <i class="bi bi-pencil-square me-1"></i> Đăng ký khóa học này
+                                <i class="bi bi-credit-card me-1"></i> Đăng ký khóa học này
+                            </a>
+                            <a th:unless="${isAuthenticated}"
+                                th:href="@{/auth/login(continue=${'/courses/' + course.id})}"
+                                class="btn btn-sakura w-100 py-2 fw-semibold mb-2">
+                                <i class="bi bi-pencil-square me-1"></i> Đăng nhập để đăng ký
                             </a>
                             <small class="text-muted d-block">
                                 <i class="bi bi-check2-circle text-success me-1"></i> Học viên JEPS được truy cập không

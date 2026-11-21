@@ -321,7 +321,7 @@ public class LearnerCourseFullIntegrationTest {
     }
 
     @Test
-    @DisplayName("Register Course POST: Đăng ký thành công khóa học mới")
+    @DisplayName("Register Course POST: Paid course creates a pending registration and opens checkout")
     @WithMockUser(username = "learner_full_test@jeps.edu.vn", roles = {"LEARNER"})
     void testHandleRegisterCourse_Success() throws Exception {
         mockMvc.perform(post("/learning/courses/{id}/register", paidCourse.getId())
@@ -333,11 +333,12 @@ public class LearnerCourseFullIntegrationTest {
                         .param("paymentMethod", "VNPAY")
                         .param("termsAccepted", "true"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/courses/" + paidCourse.getId()))
-                .andExpect(flash().attributeExists("successMessage"));
+                .andExpect(redirectedUrlPattern("/checkout/" + paidCourse.getId() + "?registrationId=*"));
 
-        // Verify registration saved in repository
-        assertTrue(registrationRepository.existsByUserIdAndCourseId(learner.getId(), paidCourse.getId()));
+        CourseRegistration registration = registrationRepository
+                .findByUserIdAndCourseId(learner.getId(), paidCourse.getId()).orElseThrow();
+        assertEquals(CourseRegistration.STATUS_PENDING_PAYMENT, registration.getStatus());
+        assertFalse(registrationRepository.existsEligibleByUserIdAndCourseId(learner.getId(), paidCourse.getId()));
     }
 
     @Test

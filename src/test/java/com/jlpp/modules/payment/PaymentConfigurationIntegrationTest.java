@@ -28,7 +28,11 @@ class PaymentConfigurationIntegrationTest {
     void refusesToCreatePaymentWhenRequiredBankAndWebhookSettingsAreMissing() {
         PaymentConfigurationException exception = assertThrows(PaymentConfigurationException.class,
                 () -> paymentService.createPayment(1L,
-                        PaymentRequestDTO.builder().courseId(1L).paymentMethod("SEPAY").build()));
+                        PaymentRequestDTO.builder()
+                                .courseId(1L)
+                                .registrationId(1L)
+                                .paymentMethod("SEPAY")
+                                .build()));
 
         assertTrue(exception.getMessage().contains("BANK_ACCOUNT_NUMBER"));
         assertTrue(exception.getMessage().contains("SEPAY_WEBHOOK_SECRET"));

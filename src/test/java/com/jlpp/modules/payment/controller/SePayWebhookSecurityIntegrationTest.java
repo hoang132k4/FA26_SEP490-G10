@@ -39,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -88,7 +89,8 @@ class SePayWebhookSecurityIntegrationTest {
                         .header("X-SePay-Signature", sign(timestamp, RAW_BODY))
                         .content(RAW_BODY))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"success\":true}", true));
 
         verify(paymentService).processSePayWebhook(anyMap());
     }
@@ -106,7 +108,8 @@ class SePayWebhookSecurityIntegrationTest {
                         .header("X-SePay-Signature", sign(timestamp, rawForm))
                         .content(rawForm))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"success\":true}", true));
 
         verify(paymentService).processSePayWebhook(anyMap());
     }
@@ -125,7 +128,8 @@ class SePayWebhookSecurityIntegrationTest {
                         .header("X-SePay-Signature", sign(timestamp, rawBody))
                         .content(rawBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"success\":true}", true));
 
         verify(paymentService).processSePayWebhook(anyMap());
     }
@@ -225,8 +229,24 @@ class SePayWebhookSecurityIntegrationTest {
                         .header("X-SePay-Signature", sign(timestamp, RAW_BODY))
                         .content(RAW_BODY))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.duplicate").value(true));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"success\":true}", true));
+    }
+
+    @Test
+    void reconciliationRequiredTransactionIsAcknowledgedWithExactSuccessResponse() throws Exception {
+        when(paymentService.processSePayWebhook(anyMap()))
+                .thenReturn(new SePayWebhookResult(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED));
+        String timestamp = Long.toString(Instant.now().getEpochSecond());
+
+        mockMvc.perform(post("/api/webhooks/sepay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-SePay-Timestamp", timestamp)
+                        .header("X-SePay-Signature", sign(timestamp, RAW_BODY))
+                        .content(RAW_BODY))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"success\":true}", true));
     }
 
     @Test

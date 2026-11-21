@@ -3,7 +3,8 @@ package com.jlpp.modules.payment.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.modules.course.entity.Course;
-import com.jlpp.modules.course.repository.CourseRepository;
+import com.jlpp.modules.course.entity.CourseRegistration;
+import com.jlpp.modules.course.service.CoursePriceCalculator;
 import com.jlpp.modules.course.service.CourseRegistrationService;
 import com.jlpp.modules.payment.dto.InvoiceResponseDTO;
 import com.jlpp.modules.payment.dto.PaymentRequestDTO;
@@ -11,7 +12,6 @@ import com.jlpp.modules.payment.dto.PaymentResponseDTO;
 import com.jlpp.modules.payment.dto.SePayWebhookResult;
 import com.jlpp.modules.payment.exception.PaymentConfigurationException;
 import com.jlpp.modules.payment.security.SepayWebhookSignatureVerifier;
-import com.jlpp.modules.payment.service.CoursePaymentPriceCalculator;
 import com.jlpp.modules.payment.service.PaymentService;
 import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.user.repository.UserRepository;
@@ -50,37 +50,52 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final CourseRegistrationService courseRegistrationService;
     private final UserRepository userRepository;
-    private final CourseRepository courseRepository;
     private final ObjectMapper objectMapper;
     private final SepayWebhookSignatureVerifier sepayWebhookSignatureVerifier;
-    private final CoursePaymentPriceCalculator priceCalculator;
+    private final CoursePriceCalculator priceCalculator;
 
     @GetMapping({"/checkout", "/checkout/{courseId}"})
     public String checkoutPage(@PathVariable(value = "courseId", required = false) Long courseId,
                               @RequestParam(value = "courseId", required = false) Long queryCourseId,
+                              @RequestParam(value = "registrationId", required = false) Long registrationId,
                               Principal principal,
                               HttpSession session,
                               Model model) {
         Long resolvedCourseId = courseId != null ? courseId : queryCourseId;
-        if (resolvedCourseId == null) {
-            return "redirect:/courses";
-        }
         Long userId = resolveUserId(principal, session);
         if (userId == null) {
-            return "redirect:/auth/login?continue=/courses/" + resolvedCourseId;
+            return "redirect:/auth/login?continue=/courses";
         }
 
-        Course course = courseRepository.findById(resolvedCourseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)) {
-            return "redirect:/courses/" + resolvedCourseId;
+        if (registrationId == null) {
+            if (resolvedCourseId == null) {
+                return "redirect:/courses";
+            }
+            return courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)
+                    ? "redirect:/courses/" + resolvedCourseId
+                    : "redirect:/learning/courses/" + resolvedCourseId + "/register";
         }
+        CourseRegistration registration = courseRegistrationService.getRegistrationById(userId, registrationId);
+        if (registration == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        Course course = registration.getCourse();
+        if (resolvedCourseId != null && !resolvedCourseId.equals(course.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        resolvedCourseId = course.getId();
+        if (!CourseRegistration.STATUS_PENDING_PAYMENT.equalsIgnoreCase(registration.getStatus())) {
+            return courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)
+                    ? "redirect:/courses/" + resolvedCourseId
+                    : "redirect:/learning/courses/" + resolvedCourseId + "/register";
+        }
+
         User user = userRepository.findById(userId).orElse(null);
 
         model.addAttribute("user", user);
         model.addAttribute("course", course);
-        model.addAttribute("checkoutAmount",
-                course == null ? null : priceCalculator.calculateFinalPrice(course));
+        model.addAttribute("registration", registration);
+        model.addAttribute("checkoutAmount", priceCalculator.calculateFinalPrice(course));
         model.addAttribute("activeMenu", "orders");
         model.addAttribute("pageTitle", "Checkout - JEPS");
         return "pages/payment/checkout";
@@ -89,31 +104,45 @@ public class PaymentController {
     @PostMapping({"/checkout", "/checkout/{courseId}"})
     public String createCheckout(@PathVariable(value = "courseId", required = false) Long pathCourseId,
                                  @RequestParam(value = "courseId", required = false) Long courseId,
+                                 @RequestParam(value = "registrationId", required = false) Long registrationId,
                                  Principal principal,
                                  HttpSession session,
                                  RedirectAttributes redirectAttributes) {
         Long resolvedCourseId = pathCourseId != null ? pathCourseId : courseId;
-        if (resolvedCourseId == null) {
-            return "redirect:/courses";
-        }
         Long userId = resolveUserId(principal, session);
         if (userId == null) {
-            return "redirect:/auth/login?continue=/courses/" + resolvedCourseId;
+            return "redirect:/auth/login?continue=/courses";
         }
-        if (courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)) {
-            return "redirect:/courses/" + resolvedCourseId;
+        if (registrationId == null) {
+            if (resolvedCourseId == null) {
+                return "redirect:/courses";
+            }
+            return courseRegistrationService.isUserEnrolled(userId, resolvedCourseId)
+                    ? "redirect:/courses/" + resolvedCourseId
+                    : "redirect:/learning/courses/" + resolvedCourseId + "/register";
         }
+
+        CourseRegistration registration = courseRegistrationService.getRegistrationById(userId, registrationId);
+        if (registration == null
+                || (resolvedCourseId != null && !resolvedCourseId.equals(registration.getCourse().getId()))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        resolvedCourseId = registration.getCourse().getId();
 
         try {
             PaymentResponseDTO payment = paymentService.createPayment(userId,
-                    PaymentRequestDTO.builder().courseId(resolvedCourseId).paymentMethod("SEPAY").build());
+                    PaymentRequestDTO.builder()
+                            .courseId(resolvedCourseId)
+                            .registrationId(registrationId)
+                            .paymentMethod("SEPAY")
+                            .build());
             return "redirect:/payment/" + payment.getId();
         } catch (PaymentConfigurationException exception) {
             redirectAttributes.addFlashAttribute("paymentError", exception.getMessage());
-            return "redirect:/checkout/" + resolvedCourseId;
+            return "redirect:/checkout/" + resolvedCourseId + "?registrationId=" + registrationId;
         } catch (IllegalArgumentException | IllegalStateException exception) {
             redirectAttributes.addFlashAttribute("paymentError", exception.getMessage());
-            return "redirect:/checkout/" + resolvedCourseId;
+            return "redirect:/checkout/" + resolvedCourseId + "?registrationId=" + registrationId;
         }
     }
 
@@ -323,12 +352,8 @@ public class PaymentController {
 
     private ResponseEntity<Map<String, Object>> webhookResponse(SePayWebhookResult result) {
         return switch (result.outcome()) {
-            case PROCESSED -> ResponseEntity.ok(
-                    Map.of("success", true, "message", "Webhook processed"));
-            case PROCESSED_LATE -> ResponseEntity.ok(
-                    Map.of("success", true, "message", "Late payment processed"));
-            case DUPLICATE -> ResponseEntity.ok(
-                    Map.of("success", true, "duplicate", true, "message", "Already processed"));
+            case PROCESSED, PROCESSED_LATE, DUPLICATE, RECONCILIATION_REQUIRED ->
+                    ResponseEntity.ok(Map.of("success", true));
             case PAYMENT_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("success", false, "code", "PAYMENT_NOT_FOUND"));
             case INVALID_TRANSACTION_ID, INVALID_PAYLOAD, INVALID_TRANSACTION_DATE ->

@@ -10,6 +10,7 @@ import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
+import com.jlpp.modules.course.service.CourseRegistrationService;
 import com.jlpp.modules.exam.dto.ExamHistoryDto;
 import com.jlpp.modules.exam.service.ExamService;
 import com.jlpp.modules.learningpath.entity.LearningPath;
@@ -47,6 +48,7 @@ public class LearningPathServiceImpl implements LearningPathService {
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final CourseRegistrationRepository courseRegistrationRepository;
+    private final CourseRegistrationService courseRegistrationService;
     private final SkillAnalysisService skillAnalysisService;
     private final SkillFocusRecommendationService skillFocusRecommendationService;
     private final LessonProgressService lessonProgressService;
@@ -67,7 +69,7 @@ public class LearningPathServiceImpl implements LearningPathService {
         log.info("Fetching personalized skill-aware learning path for learner={}, courseId={}", username, courseId);
         User user = findUserByUsername(username);
 
-        List<CourseRegistration> allRegistrations = courseRegistrationRepository.findByUserIdWithCourse(user.getId());
+        List<CourseRegistration> allRegistrations = courseRegistrationService.getUserRegistrations(user.getId());
         List<CourseRegistration> publishedRegistrations = allRegistrations.stream()
                 .filter(r -> r.getCourse() != null && "PUBLISHED".equalsIgnoreCase(r.getCourse().getStatus()))
                 .collect(Collectors.toList());
@@ -493,7 +495,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                 ? course.getLevel()
                 : lp.getTargetLevel();
 
-        List<CourseRegistration> allRegistrations = courseRegistrationRepository.findByUserIdWithCourse(user.getId());
+        List<CourseRegistration> allRegistrations = courseRegistrationService.getUserRegistrations(user.getId());
         List<CourseOptionDto> courseOptions = allRegistrations.stream()
                 .filter(r -> r.getCourse() != null && "PUBLISHED".equalsIgnoreCase(r.getCourse().getStatus()))
                 .map(r -> CourseOptionDto.builder()
@@ -1326,7 +1328,7 @@ public class LearningPathServiceImpl implements LearningPathService {
             return Optional.empty();
         }
 
-        List<CourseRegistration> registrations = courseRegistrationRepository.findByUserIdWithCourse(userId);
+        List<CourseRegistration> registrations = courseRegistrationService.getUserRegistrations(userId);
         List<CourseRegistration> publishedRegs = registrations.stream()
                 .filter(r -> r.getCourse() != null && "PUBLISHED".equalsIgnoreCase(r.getCourse().getStatus()))
                 .collect(Collectors.toList());

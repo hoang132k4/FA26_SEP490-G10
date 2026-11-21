@@ -2,6 +2,7 @@ package com.jlpp.modules.manager.courses.controller;
 
 import com.jlpp.modules.manager.courses.dto.CourseOption;
 import com.jlpp.modules.manager.courses.service.CourseService;
+import com.jlpp.modules.course.service.CoursePriceCalculator;
 import com.jlpp.modules.manager.courses.service.CourseImageStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,10 +32,15 @@ public class ManagerCourseController {
     private static final Logger log = LoggerFactory.getLogger(ManagerCourseController.class);
     private final CourseService courseService;
     private final CourseImageStorageService courseImageStorageService;
+    private final CoursePriceCalculator priceCalculator;
 
-    public ManagerCourseController(CourseService courseService, CourseImageStorageService courseImageStorageService) {
+    public ManagerCourseController(
+            CourseService courseService,
+            CourseImageStorageService courseImageStorageService,
+            CoursePriceCalculator priceCalculator) {
         this.courseService = courseService;
         this.courseImageStorageService = courseImageStorageService;
+        this.priceCalculator = priceCalculator;
     }
 
     @GetMapping
@@ -354,6 +360,12 @@ public class ManagerCourseController {
         course.put("id", row.id()); course.put("name", row.title()); course.put("code", row.code()); course.put("level", row.level());
         course.put("description", row.shortDescription()); course.put("thumbnailUrl", row.thumbnailUrl());
         course.put("price", row.price()); course.put("discountPrice", row.discountPrice());
+        try {
+            course.put("finalPrice", priceCalculator.calculateFinalPrice(row.price(), row.discountPrice()));
+            course.put("priceInvalid", false);
+        } catch (IllegalArgumentException exception) {
+            course.put("priceInvalid", true);
+        }
         course.put("durationLabel", row.durationMinutes() == null ? "Chưa xác định" : formatDuration(row.durationMinutes()));
         course.put("coveredSkills", row.coveredSkills());
         course.put("featured", row.featured()); course.put("status", row.status());

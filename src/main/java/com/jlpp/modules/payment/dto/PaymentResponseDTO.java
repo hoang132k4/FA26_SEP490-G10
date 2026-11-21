@@ -16,6 +16,7 @@ public class PaymentResponseDTO {
     private Long id;
     private String orderCode;
     private Long courseId;
+    private Long registrationId;
     private String courseTitle;
     private String courseThumbnail;
     private BigDecimal amount;

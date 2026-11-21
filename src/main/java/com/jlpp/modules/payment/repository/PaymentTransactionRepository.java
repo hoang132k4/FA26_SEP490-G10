@@ -13,6 +13,8 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     Optional<PaymentTransaction> findByGatewayTransactionId(String gatewayTransactionId);
 
+    Optional<PaymentTransaction> findFirstByPayment_IdOrderByCreatedAtAsc(Long paymentId);
+
     Optional<PaymentTransaction> findFirstByPayment_IdOrderByCreatedAtDesc(Long paymentId);
 
     long countByPayment_Id(Long paymentId);

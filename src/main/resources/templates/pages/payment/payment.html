@@ -31,7 +31,7 @@
                              th:data-initial-status="${payment.status}"
                              th:data-polling-deadline="${paymentPollingDeadlineEpochMillis}">
                             <strong id="payment-status-text"
-                                    th:text="${payment.status == 'PAID' ? 'Thanh toán thành công.' : (payment.status == 'PENDING' ? 'Đang chờ xác nhận thanh toán.' : payment.status)}">
+                                     th:text="${payment.status == 'PAID' ? 'Thanh toán thành công.' : (payment.status == 'PENDING' ? 'Đang chờ xác nhận thanh toán.' : (payment.status == 'SUPERSEDED' ? 'Đơn thanh toán này đã được thay thế.' : (payment.status == 'RECONCILIATION_REQUIRED' ? 'Đã nhận giao dịch; JEPS đang đối soát với khoản thanh toán đã xác nhận trước đó.' : payment.status)))}">
                                 Đang chờ xác nhận thanh toán.
                             </strong>
                             <span id="payment-status-detail" class="d-block small mt-1"></span>
@@ -106,7 +106,9 @@
                             const statusText = document.getElementById("payment-status-text");
                             const statusDetail = document.getElementById("payment-status-detail");
                             const invoiceLink = document.getElementById("payment-invoice-link");
-                            const terminalStatuses = new Set(["PAID", "FAILED", "CANCELLED"]);
+                            const terminalStatuses = new Set([
+                                "PAID", "FAILED", "CANCELLED", "SUPERSEDED", "RECONCILIATION_REQUIRED"
+                            ]);
                             const configuredPollingDeadline = Number(panel.dataset.pollingDeadline);
                             const pollingDeadline = Number.isFinite(configuredPollingDeadline)
                                 && configuredPollingDeadline > 0
@@ -117,7 +119,9 @@
                                 PENDING: "Đang chờ xác nhận thanh toán.",
                                 FAILED: "Thanh toán thất bại.",
                                 CANCELLED: "Thanh toán đã bị hủy.",
-                                EXPIRED: "Thanh toán đã hết hạn; hệ thống vẫn đang kiểm tra giao dịch đến muộn."
+                                EXPIRED: "Thanh toán đã hết hạn; hệ thống vẫn đang kiểm tra giao dịch đến muộn.",
+                                SUPERSEDED: "Đơn thanh toán này đã được thay thế.",
+                                RECONCILIATION_REQUIRED: "Đã nhận giao dịch; JEPS đang đối soát với khoản thanh toán đã xác nhận trước đó."
                             };
                             let failures = 0;
                             let timer = null;

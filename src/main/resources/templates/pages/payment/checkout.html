@@ -60,6 +60,7 @@
 
                     <div th:if="${course != null}">
                         <form th:action="@{/checkout/{courseId}(courseId=${course.id})}" method="post">
+                            <input type="hidden" name="registrationId" th:value="${registration.id}">
                             <button type="submit" class="btn btn-primary w-100 rounded-3 fw-semibold py-2">
                                 <i class="bi bi-credit-card me-2"></i> Tạo thanh toán
                             </button>

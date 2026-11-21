@@ -7,6 +7,7 @@ import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.course.repository.LessonRepository;
+import com.jlpp.modules.course.service.CoursePriceCalculator;
 import com.jlpp.modules.course.service.CourseService;
 import com.jlpp.modules.course.service.PublicCatalogService;
 import com.jlpp.modules.exam.entity.Exam;
@@ -42,6 +43,7 @@ public class PublicCourseController {
     private final UserRepository userRepository;
     private final CurrentUserSession currentUserSession;
     private final com.jlpp.modules.exam.repository.ExamRepository examRepository;
+    private final CoursePriceCalculator priceCalculator;
 
     @ModelAttribute("currentRole")
     public String currentRole(HttpSession session) {
@@ -91,8 +93,12 @@ public class PublicCourseController {
             List<CourseRegistration> registrations = courseRegistrationRepository
                     .findByUserIdWithCourse(currentUser.getId());
             Set<Long> enrolledCourseIds = registrations.stream()
+                    .filter(registration -> isAccessEligible(registration.getStatus()))
                     .map(r -> r.getCourse().getId())
                     .collect(Collectors.toSet());
+            registrations = registrations.stream()
+                    .filter(registration -> isAccessEligible(registration.getStatus()))
+                    .toList();
 
             CourseRegistration activeReg = registrations.stream()
                     .filter(r -> "ACTIVE".equalsIgnoreCase(r.getStatus()))
@@ -157,8 +163,12 @@ public class PublicCourseController {
             List<CourseRegistration> registrations = courseRegistrationRepository
                     .findByUserIdWithCourse(currentUser.getId());
             enrolledCourseIds = registrations.stream()
+                    .filter(registration -> isAccessEligible(registration.getStatus()))
                     .map(r -> r.getCourse().getId())
                     .collect(Collectors.toSet());
+            registrations = registrations.stream()
+                    .filter(registration -> isAccessEligible(registration.getStatus()))
+                    .toList();
             model.addAttribute("learner", currentUser);
             model.addAttribute("registeredCourseCount", registrations.size());
         }
@@ -182,6 +192,7 @@ public class PublicCourseController {
             Model model) {
         Course course = catalogService.findCourse(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Không tìm thấy khóa học"));
+        java.math.BigDecimal finalPrice = priceCalculator.calculateFinalPrice(course);
         List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(id);
         List<Course> relatedCourses = courseService.getOtherCourses(id, course.getLevel(), 3);
 
@@ -197,7 +208,7 @@ public class PublicCourseController {
         CourseRegistration registration = null;
 
         if (currentUser != null) {
-            isEnrolled = courseRegistrationRepository.existsByUserIdAndCourseId(currentUser.getId(), id);
+            isEnrolled = courseRegistrationRepository.existsEligibleByUserIdAndCourseId(currentUser.getId(), id);
             registration = courseRegistrationRepository.findByUserIdAndCourseId(currentUser.getId(), id).orElse(null);
             model.addAttribute("learner", currentUser);
         }
@@ -208,6 +219,8 @@ public class PublicCourseController {
                 .stream().findFirst().orElse(null);
 
         model.addAttribute("course", course);
+        model.addAttribute("finalCoursePrice", finalPrice);
+        model.addAttribute("isFreeCourse", finalPrice.signum() == 0);
         model.addAttribute("lessons", lessons);
         model.addAttribute("groupedLessons", groupedLessons);
         model.addAttribute("lessonCount", lessons.size());
@@ -218,6 +231,11 @@ public class PublicCourseController {
         model.addAttribute("relatedCourses", relatedCourses);
         model.addAttribute("activeMenu", "courses");
         return "pages/learning/course-detail";
+    }
+
+    private boolean isAccessEligible(String status) {
+        return com.jlpp.modules.course.entity.CourseRegistration.STATUS_ACTIVE.equalsIgnoreCase(status)
+                || com.jlpp.modules.course.entity.CourseRegistration.STATUS_COMPLETED.equalsIgnoreCase(status);
     }
 
     @GetMapping("/mock-exam")

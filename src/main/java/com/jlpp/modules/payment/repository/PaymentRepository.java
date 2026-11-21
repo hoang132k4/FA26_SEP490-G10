@@ -30,12 +30,24 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findFirstByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
             Long userId, Long courseId, String status);
 
+    List<Payment> findByUser_IdAndCourse_IdAndStatusInOrderByCreatedAtDesc(
+            Long userId, Long courseId, List<String> statuses);
+
+    boolean existsByUser_IdAndCourse_IdAndStatus(Long userId, Long courseId, String status);
+
     @Query("SELECT p.user.id FROM Payment p WHERE p.transferContent = :transferContent")
     Optional<Long> findUserIdByTransferContent(@Param("transferContent") String transferContent);
+
+    @Query("SELECT p.user.id FROM Payment p WHERE p.orderCode = :orderCode")
+    Optional<Long> findUserIdByOrderCode(@Param("orderCode") String orderCode);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Payment p WHERE p.transferContent = :transferContent")
     Optional<Payment> findByTransferContentForUpdate(@Param("transferContent") String transferContent);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payment p WHERE p.orderCode = :orderCode")
+    Optional<Payment> findByOrderCodeForUpdate(@Param("orderCode") String orderCode);
 
     @Query("SELECT p FROM Payment p JOIN FETCH p.user u JOIN FETCH p.course c WHERE p.id = :paymentId")
     Optional<Payment> findByIdWithUserAndCourse(@Param("paymentId") Long paymentId);

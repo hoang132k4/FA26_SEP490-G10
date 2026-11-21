@@ -6,6 +6,7 @@ public record SePayWebhookResult(Outcome outcome) {
         PROCESSED,
         PROCESSED_LATE,
         DUPLICATE,
+        RECONCILIATION_REQUIRED,
         PAYMENT_NOT_FOUND,
         INVALID_PAYLOAD,
         INVALID_TRANSACTION_ID,

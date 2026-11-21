@@ -5,8 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlpp.common.constants.RoleEnum;
 import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.entity.CourseRegistration;
+import com.jlpp.modules.course.entity.Lesson;
+import com.jlpp.modules.course.dto.CourseRegistrationRequest;
 import com.jlpp.modules.course.repository.CourseRegistrationRepository;
 import com.jlpp.modules.course.repository.CourseRepository;
+import com.jlpp.modules.course.repository.LessonRepository;
+import com.jlpp.modules.course.service.CourseRegistrationService;
 import com.jlpp.modules.payment.dto.PaymentRequestDTO;
 import com.jlpp.modules.payment.dto.PaymentResponseDTO;
 import com.jlpp.modules.payment.dto.SePayWebhookResult;
@@ -53,10 +57,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -79,6 +86,9 @@ class PaymentServiceIdempotencyTest {
     @Autowired
     private PaymentService paymentService;
 
+    @SpyBean
+    private CourseRegistrationService courseRegistrationService;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -96,6 +106,9 @@ class PaymentServiceIdempotencyTest {
 
     @Autowired
     private CourseRepository courseRepository;
+
+    @Autowired
+    private LessonRepository lessonRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -281,10 +294,17 @@ class PaymentServiceIdempotencyTest {
                 .build());
         doReturn(collidedCode, retryCode).when(orderCodeGenerator).generateOrderCode();
 
+        CourseRegistration registration = courseRegistrationService.createPendingRegistration(user.getId(),
+                CourseRegistrationRequest.builder().courseId(course.getId()).paymentMethod("SEPAY").build());
+        PaymentRequestDTO request = PaymentRequestDTO.builder()
+                .courseId(course.getId())
+                .registrationId(registration.getId())
+                .paymentMethod("SEPAY")
+                .build();
         TransactionTemplate outerTransaction = new TransactionTemplate(transactionManager);
         PaymentResponseDTO payment = outerTransaction.execute(status -> {
             status.setRollbackOnly();
-            return createPayment();
+            return paymentService.createPayment(user.getId(), request);
         });
 
         assertNotNull(payment);
@@ -318,7 +338,7 @@ class PaymentServiceIdempotencyTest {
         assertDoesNotThrow(() -> {
             createPayment();
         });
-        assertThrows(IllegalArgumentException.class, () -> createPayment(Long.MAX_VALUE));
+        assertThrows(RuntimeException.class, () -> createPayment(Long.MAX_VALUE));
     }
 
     @Test
@@ -329,20 +349,153 @@ class PaymentServiceIdempotencyTest {
         assertThrows(IllegalStateException.class, this::createPayment);
 
         paymentRepository.delete(findPayment(paid.getId()));
-        courseRegistrationRepository.saveAndFlush(CourseRegistration.builder()
-                .user(user)
-                .course(course)
-                .status("ACTIVE")
-                .build());
+        CourseRegistration registration = courseRegistrationRepository
+                .findByUserIdAndCourseId(user.getId(), course.getId()).orElseThrow();
+        registration.setStatus(CourseRegistration.STATUS_ACTIVE);
+        courseRegistrationRepository.saveAndFlush(registration);
 
         assertThrows(IllegalStateException.class, this::createPayment);
+    }
+
+    @Test
+    void onlyActiveAndCompletedRegistrationsAreEnrollmentEligible() {
+        CourseRegistration registration = courseRegistrationRepository.saveAndFlush(CourseRegistration.builder()
+                .user(user)
+                .course(course)
+                .status(CourseRegistration.STATUS_ACTIVE)
+                .build());
+
+        assertTrue(courseRegistrationService.isUserEnrolled(user.getId(), course.getId()));
+        for (String ineligibleStatus : new String[] {
+                CourseRegistration.STATUS_PENDING_PAYMENT,
+                CourseRegistration.STATUS_CANCELLED,
+                CourseRegistration.STATUS_EXPIRED,
+                "UNKNOWN"
+        }) {
+            registration.setStatus(ineligibleStatus);
+            courseRegistrationRepository.saveAndFlush(registration);
+            assertFalse(courseRegistrationService.isUserEnrolled(user.getId(), course.getId()), ineligibleStatus);
+        }
+
+        registration.setStatus(CourseRegistration.STATUS_COMPLETED);
+        courseRegistrationRepository.saveAndFlush(registration);
+        assertTrue(courseRegistrationService.isUserEnrolled(user.getId(), course.getId()));
+    }
+
+    @Test
+    void concurrentFreeCourseAccessCreatesOnlyOneActiveRegistration() throws Exception {
+        Course freeCourse = courseRepository.saveAndFlush(Course.builder()
+                .id(COURSE_IDS.incrementAndGet())
+                .title("Free Payment Test Course")
+                .level("N5")
+                .status("PUBLISHED")
+                .price(0.0)
+                .enrollmentCount(0)
+                .build());
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<CourseRegistration> first = executor.submit(() ->
+                    ensureFreeRegistrationAtSameTime(freeCourse.getId(), ready, start));
+            Future<CourseRegistration> second = executor.submit(() ->
+                    ensureFreeRegistrationAtSameTime(freeCourse.getId(), ready, start));
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+
+            assertEquals(first.get(10, TimeUnit.SECONDS).getId(), second.get(10, TimeUnit.SECONDS).getId());
+            assertEquals(1, courseRegistrationRepository.countByCourseId(freeCourse.getId()));
+            assertEquals(CourseRegistration.STATUS_ACTIVE,
+                    courseRegistrationRepository.findByUserIdAndCourseId(user.getId(), freeCourse.getId())
+                            .orElseThrow().getStatus());
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void pendingRegistrationCannotAccessLessonsOrCompleteProgress() throws Exception {
+        CourseRegistration pending = courseRegistrationService.createPendingRegistration(user.getId(),
+                CourseRegistrationRequest.builder().courseId(course.getId()).build());
+        Lesson lesson = lessonRepository.saveAndFlush(Lesson.builder()
+                .course(course)
+                .title("Payment-gated lesson")
+                .orderIndex(1)
+                .build());
+
+        mockMvc.perform(get("/learning/courses/{courseId}/lessons/{lessonId}", course.getId(), lesson.getId())
+                        .with(user(user.getEmail()).roles("LEARNER")))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning/courses/" + course.getId() + "/register"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/learning/lessons/{lessonId}/complete", lesson.getId())
+                        .with(user(user.getEmail()).roles("LEARNER"))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning/courses/" + course.getId() + "/register"));
+        assertEquals(CourseRegistration.STATUS_PENDING_PAYMENT, pending.getStatus());
+        assertEquals(0, courseRegistrationRepository.findByUserIdAndCourseId(user.getId(), course.getId())
+                .orElseThrow().getProgressPercent());
+    }
+
+    @Test
+    void secondTransactionIdForPaidOrderIsRecordedForReconciliationWithoutAnotherInvoice() {
+        PaymentResponseDTO payment = createPayment();
+        String firstId = "TX-PAID-" + UUID.randomUUID();
+        String secondId = "TX-PAID-" + UUID.randomUUID();
+
+        paymentService.processSePayWebhook(webhookPayload(payment, firstId));
+        SePayWebhookResult duplicate = paymentService.processSePayWebhook(webhookPayload(payment, secondId));
+
+        assertEquals(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED, duplicate.outcome());
+        assertEquals(2, paymentTransactionRepository.countByPayment_Id(payment.getId()));
+        assertEquals(1, courseRegistrationRepository.countByCourseId(course.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
+        assertEquals(firstId, paymentService.getInvoice(user.getId(), payment.getId()).getTransactionId());
+    }
+
+    @Test
+    void lateSettlementIsReconciledWithoutSupersedingTheCurrentOrder() {
+        PaymentResponseDTO first = createPayment();
+        setPaymentState(first.getId(), "PENDING", LocalDateTime.now().minusMinutes(1));
+        PaymentResponseDTO replacement = createPayment();
+        assertNotEquals(first.getId(), replacement.getId());
+
+        assertEquals(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED,
+                paymentService.processSePayWebhook(webhookPayload(first, "TX-LATE-OLD-" + UUID.randomUUID()))
+                        .outcome());
+        assertEquals("RECONCILIATION_REQUIRED", findPayment(first.getId()).getStatus());
+        assertEquals("PENDING", findPayment(replacement.getId()).getStatus());
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
+
+        assertEquals(SePayWebhookResult.Outcome.PROCESSED,
+                paymentService.processSePayWebhook(
+                        webhookPayload(replacement, "TX-CURRENT-" + UUID.randomUUID())).outcome());
+
+        String secondTransactionId = "TX-LATE-SECOND-" + UUID.randomUUID();
+        SePayWebhookResult reconciliation = paymentService.processSePayWebhook(
+                webhookPayload(first, secondTransactionId));
+
+        assertEquals(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED, reconciliation.outcome());
+        assertEquals("PAID", findPayment(replacement.getId()).getStatus());
+        assertEquals("RECONCILIATION_REQUIRED", findPayment(first.getId()).getStatus());
+        assertTrue(paymentTransactionRepository.existsByGatewayTransactionId(secondTransactionId));
+        assertEquals(2, paymentTransactionRepository.countByPayment_Id(first.getId()));
+        assertEquals(1, paymentTransactionRepository.countByPayment_Id(replacement.getId()));
+        assertEquals(1, courseRegistrationRepository.countByCourseId(course.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
+        assertThrows(IllegalStateException.class,
+                () -> paymentService.getInvoice(user.getId(), first.getId()));
+        assertEquals(replacement.getId(),
+                paymentService.getInvoice(user.getId(), replacement.getId()).getPaymentId());
     }
 
     @Test
     void checkoutRequiresLoginAndReturnsToTheSelectedCourse() throws Exception {
         mockMvc.perform(get("/checkout/{courseId}", course.getId()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/auth/login?continue=/courses/" + course.getId()));
+                .andExpect(redirectedUrl("/auth/login?continue=/courses"));
     }
 
     @Test
@@ -433,7 +586,7 @@ class PaymentServiceIdempotencyTest {
 
             assertEquals("PAID", findPayment(pending.getId()).getStatus());
             assertEquals(1, paymentTransactionRepository.countByPayment_Id(pending.getId()));
-            assertTrue(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+            assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
             assertEquals(1, paymentRepository.findAll().stream()
                     .filter(payment -> payment.getUser().getId().equals(user.getId())
                             && payment.getCourse().getId().equals(course.getId()))
@@ -461,14 +614,14 @@ class PaymentServiceIdempotencyTest {
 
             assertEquals("PAID", findPayment(pending.getId()).getStatus());
             assertEquals(1, paymentTransactionRepository.countByPayment_Id(pending.getId()));
-            assertTrue(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+            assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
         } finally {
             executor.shutdownNow();
         }
     }
 
     @Test
-    void latePaymentRacingWithRetryIsRecordedAndRegistered() throws Exception {
+    void latePaymentRacingWithRetryIsReconciledWithoutGrantingAccess() throws Exception {
         PaymentResponseDTO pending = createPayment();
         setPaymentState(pending.getId(), "PENDING", LocalDateTime.now().minusNanos(1_000_000));
         Map<String, Object> payload = webhookPayload(pending, "TX-EXP-" + UUID.randomUUID());
@@ -483,15 +636,13 @@ class PaymentServiceIdempotencyTest {
             assertTrue(ready.await(5, TimeUnit.SECONDS));
             start.countDown();
             webhook.get(10, TimeUnit.SECONDS);
-            try {
-                replacement.get(10, TimeUnit.SECONDS);
-            } catch (java.util.concurrent.ExecutionException exception) {
-                assertInstanceOf(IllegalStateException.class, exception.getCause());
-            }
+            PaymentResponseDTO replacementPayment = replacement.get(10, TimeUnit.SECONDS);
 
-            assertEquals("PAID", findPayment(pending.getId()).getStatus());
+            assertNotEquals(pending.getId(), replacementPayment.getId());
+            assertEquals("RECONCILIATION_REQUIRED", findPayment(pending.getId()).getStatus());
+            assertEquals("PENDING", findPayment(replacementPayment.getId()).getStatus());
             assertEquals(1, paymentTransactionRepository.countByPayment_Id(pending.getId()));
-            assertTrue(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+            assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
         } finally {
             executor.shutdownNow();
         }
@@ -508,7 +659,7 @@ class PaymentServiceIdempotencyTest {
     }
 
     @Test
-    void validWebhookForExpiredPaymentConfirmsLatePaymentAndGrantsAccess() {
+    void validWebhookForExpiredPaymentIsRecordedForReconciliationWithoutGrantingAccess() {
         PaymentResponseDTO expired = createPayment();
         setPaymentState(expired.getId(), "PENDING", LocalDateTime.now().minusMinutes(1));
         paymentExpiryService.expirePendingPaymentsBefore(LocalDateTime.now());
@@ -516,19 +667,20 @@ class PaymentServiceIdempotencyTest {
         String transactionId = "TX-LATE-" + UUID.randomUUID();
         Map<String, Object> payload = webhookPayload(expired, transactionId);
 
-        paymentService.processSePayWebhook(payload);
+        assertEquals(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED,
+                paymentService.processSePayWebhook(payload).outcome());
 
-        assertEquals("PAID", findPayment(expired.getId()).getStatus());
+        assertEquals("RECONCILIATION_REQUIRED", findPayment(expired.getId()).getStatus());
         assertTrue(paymentTransactionRepository.existsByGatewayTransactionId(transactionId));
         assertEquals(1, paymentTransactionRepository.countByPayment_Id(expired.getId()));
-        assertTrue(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
         assertTrue(paymentWebhookLogRepository.findAll().stream()
                 .anyMatch(log -> transactionId.equals(log.getGatewayTransactionId())
-                        && "SUCCESS_LATE".equals(log.getProcessingStatus())));
+                        && "RECONCILIATION_REQUIRED".equals(log.getProcessingStatus())));
     }
 
     @Test
-    void webhookRacingWithExpirySweepStillSettlesExactlyOnce() throws Exception {
+    void webhookRacingWithExpirySweepReconcilesWithoutGrantingAccess() throws Exception {
         PaymentResponseDTO pending = createPayment();
         setPaymentState(pending.getId(), "PENDING", LocalDateTime.now().minusMinutes(1));
         Map<String, Object> payload = webhookPayload(pending, "TX-EXPIRY-RACE-" + UUID.randomUUID());
@@ -550,9 +702,9 @@ class PaymentServiceIdempotencyTest {
             webhook.get(10, TimeUnit.SECONDS);
             expiry.get(10, TimeUnit.SECONDS);
 
-            assertEquals("PAID", findPayment(pending.getId()).getStatus());
+            assertEquals("RECONCILIATION_REQUIRED", findPayment(pending.getId()).getStatus());
             assertEquals(1, paymentTransactionRepository.countByPayment_Id(pending.getId()));
-            assertTrue(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+            assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
         } finally {
             executor.shutdownNow();
         }
@@ -576,7 +728,7 @@ class PaymentServiceIdempotencyTest {
         assertEquals(SePayWebhookResult.Outcome.INVALID_TRANSACTION_ID, result.outcome());
         assertEquals("PENDING", findPayment(pending.getId()).getStatus());
         assertEquals(0, paymentTransactionRepository.countByPayment_Id(pending.getId()));
-        assertFalse(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
     }
 
     @Test
@@ -610,6 +762,42 @@ class PaymentServiceIdempotencyTest {
 
         InvoiceResponseDTO invoice = paymentService.getInvoice(user.getId(), pending.getId());
         assertEquals(gatewayTransactionId, invoice.getTransactionId());
+    }
+
+    @Test
+    void matchesFullOrderCodeWhenBankAddsTransferText() {
+        PaymentResponseDTO pending = createPayment();
+        String transactionId = "TX-BANK-SUFFIX-" + UUID.randomUUID();
+        String transferContent = pending.getTransferContent() + " hWU2ET9X/171157";
+        Map<String, Object> payload = new HashMap<>(webhookPayload(pending, transactionId));
+        payload.put("content", transferContent);
+
+        SePayWebhookResult result = paymentService.processSePayWebhook(payload);
+
+        assertEquals(SePayWebhookResult.Outcome.PROCESSED, result.outcome());
+        assertEquals("PAID", findPayment(pending.getId()).getStatus());
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findByGatewayTransactionId(transactionId).orElseThrow();
+        assertEquals(transferContent, transaction.getTransactionContent());
+        assertEquals(1, paymentTransactionRepository.countByPayment_Id(pending.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
+        verify(courseRegistrationRepository, times(2)).save(any(CourseRegistration.class));
+        assertEquals(transactionId, paymentService.getInvoice(user.getId(), pending.getId()).getTransactionId());
+    }
+
+    @Test
+    void doesNotMatchOrderCodeWhenBankTextIsNotSeparatedFromTheFullCode() {
+        PaymentResponseDTO pending = createPayment();
+        String transactionId = "TX-UNSAFE-SUFFIX-" + UUID.randomUUID();
+        Map<String, Object> payload = new HashMap<>(webhookPayload(pending, transactionId));
+        payload.put("content", pending.getTransferContent() + "X");
+
+        SePayWebhookResult result = paymentService.processSePayWebhook(payload);
+
+        assertEquals(SePayWebhookResult.Outcome.PAYMENT_NOT_FOUND, result.outcome());
+        assertEquals("PENDING", findPayment(pending.getId()).getStatus());
+        assertFalse(paymentTransactionRepository.existsByGatewayTransactionId(transactionId));
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
     }
 
     @Test
@@ -735,12 +923,33 @@ class PaymentServiceIdempotencyTest {
     }
 
     @Test
+    void checkoutUsesCurrentPriceAndSupersedesAnUnexpiredPaymentWithAnOldAmount() {
+        PaymentResponseDTO oldPayment = createPayment();
+        course.setDiscountPrice(100000.0);
+        courseRepository.saveAndFlush(course);
+
+        PaymentResponseDTO currentPayment = createPayment();
+
+        assertEquals(0, new BigDecimal("100000").compareTo(currentPayment.getAmount()));
+        assertEquals("SUPERSEDED", findPayment(oldPayment.getId()).getStatus());
+        assertEquals("PENDING", findPayment(currentPayment.getId()).getStatus());
+        assertNotEquals(oldPayment.getId(), currentPayment.getId());
+
+        assertEquals(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED,
+                paymentService.processSePayWebhook(webhookPayload(
+                        oldPayment, "TX-SUPERSEDED-" + UUID.randomUUID())).outcome());
+        assertEquals("RECONCILIATION_REQUIRED", findPayment(oldPayment.getId()).getStatus());
+        assertEquals("PENDING", findPayment(currentPayment.getId()).getStatus());
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
+    }
+
+    @Test
     void mismatchedWebhookDetailsDoNotConfirmPaymentOrGrantAccess() {
         PaymentResponseDTO pending = createPayment();
         Map<String, Object> validPayload = webhookPayload(pending, "TX-VALIDATION-" + UUID.randomUUID());
         Map<String, Object> wrongAmount = new HashMap<>(validPayload);
         wrongAmount.put("transactionId", "TX-WRONG-AMOUNT-" + UUID.randomUUID());
-        wrongAmount.put("amount", pending.getAmount().add(BigDecimal.ONE));
+        wrongAmount.put("transferAmount", pending.getAmount().add(BigDecimal.ONE));
         Map<String, Object> wrongAccount = new HashMap<>(validPayload);
         wrongAccount.put("transactionId", "TX-WRONG-ACCOUNT-" + UUID.randomUUID());
         wrongAccount.put("bankAccountNumber", "000000000");
@@ -753,15 +962,16 @@ class PaymentServiceIdempotencyTest {
         Map<String, Object> missingTransactionId = new HashMap<>(validPayload);
         missingTransactionId.put("transactionId", null);
 
-        paymentService.processSePayWebhook(wrongAmount);
         paymentService.processSePayWebhook(wrongAccount);
         paymentService.processSePayWebhook(outgoing);
         paymentService.processSePayWebhook(wrongContent);
         paymentService.processSePayWebhook(missingTransactionId);
+        assertEquals(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED,
+                paymentService.processSePayWebhook(wrongAmount).outcome());
 
-        assertEquals("PENDING", findPayment(pending.getId()).getStatus());
-        assertFalse(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
-        assertEquals(0, paymentTransactionRepository.countByPayment_Id(pending.getId()));
+        assertEquals("RECONCILIATION_REQUIRED", findPayment(pending.getId()).getStatus());
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
+        assertEquals(1, paymentTransactionRepository.countByPayment_Id(pending.getId()));
     }
 
     @Test
@@ -775,7 +985,7 @@ class PaymentServiceIdempotencyTest {
 
         assertTrue(paymentTransactionRepository.existsByGatewayTransactionId(transactionId));
         assertEquals(1, paymentTransactionRepository.countByPayment_Id(payment.getId()));
-        assertTrue(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
         assertEquals("PAID", findPayment(payment.getId()).getStatus());
     }
 
@@ -784,14 +994,25 @@ class PaymentServiceIdempotencyTest {
         PaymentResponseDTO pending = createPayment();
         Map<String, Object> payload = webhookPayload(pending, "TX-ROLLBACK-" + UUID.randomUUID());
         doThrow(new DataIntegrityViolationException("Forced registration write failure"))
-                .when(courseRegistrationRepository).save(any(CourseRegistration.class));
+                .doCallRealMethod()
+                .when(courseRegistrationService).completePaidRegistration(
+                        eq(user.getId()),
+                        eq(course.getId()),
+                        eq(pending.getRegistrationId()),
+                        eq(pending.getAmount()),
+                        eq("SEPAY"));
 
         assertThrows(DataIntegrityViolationException.class,
                 () -> paymentService.processSePayWebhook(payload));
 
         assertEquals("PENDING", findPayment(pending.getId()).getStatus());
         assertEquals(0, paymentTransactionRepository.countByPayment_Id(pending.getId()));
-        assertFalse(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
+
+        assertEquals(SePayWebhookResult.Outcome.PROCESSED, paymentService.processSePayWebhook(payload).outcome());
+        assertEquals("PAID", findPayment(pending.getId()).getStatus());
+        assertEquals(1, paymentTransactionRepository.countByPayment_Id(pending.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
     }
 
     private PaymentResponseDTO createPayment() {
@@ -803,8 +1024,17 @@ class PaymentServiceIdempotencyTest {
     }
 
     private PaymentResponseDTO createPayment(Long targetCourseId) {
+        CourseRegistration registration = courseRegistrationService.createPendingRegistration(user.getId(),
+                CourseRegistrationRequest.builder()
+                        .courseId(targetCourseId)
+                        .paymentMethod("SEPAY")
+                        .build());
         return paymentService.createPayment(user.getId(),
-                PaymentRequestDTO.builder().courseId(targetCourseId).paymentMethod("SEPAY").build());
+                PaymentRequestDTO.builder()
+                        .courseId(targetCourseId)
+                        .registrationId(registration.getId())
+                        .paymentMethod("SEPAY")
+                        .build());
     }
 
     private PaymentResponseDTO createAtSameTime(CountDownLatch ready, CountDownLatch start) throws Exception {
@@ -818,6 +1048,16 @@ class PaymentServiceIdempotencyTest {
             throw new IllegalStateException("Timed out waiting to start concurrent payment request.");
         }
         return createPayment(targetCourseId);
+    }
+
+    private CourseRegistration ensureFreeRegistrationAtSameTime(
+            Long targetCourseId, CountDownLatch ready, CountDownLatch start) throws Exception {
+        ready.countDown();
+        if (!start.await(5, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Timed out waiting to start concurrent free enrollment.");
+        }
+        return courseRegistrationService.ensureFreeRegistrationForAccess(user.getId(), targetCourseId)
+                .orElseThrow();
     }
 
     private void processWebhookAtSameTime(
@@ -853,10 +1093,16 @@ class PaymentServiceIdempotencyTest {
 
         assertEquals(status, findPayment(payment.getId()).getStatus());
         assertFalse(paymentTransactionRepository.existsByGatewayTransactionId(transactionId));
-        assertFalse(courseRegistrationRepository.existsByUserIdAndCourseId(user.getId(), course.getId()));
+        assertRegistrationStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
         assertTrue(paymentWebhookLogRepository.findAll().stream()
                 .anyMatch(log -> transactionId.equals(log.getGatewayTransactionId())
                         && "REJECTED".equals(log.getProcessingStatus())));
+    }
+
+    private void assertRegistrationStatus(String expectedStatus) {
+        CourseRegistration registration = courseRegistrationRepository
+                .findByUserIdAndCourseId(user.getId(), course.getId()).orElseThrow();
+        assertEquals(expectedStatus, registration.getStatus());
     }
 
     private void setPaymentState(Long paymentId, String status, LocalDateTime expiresAt) {

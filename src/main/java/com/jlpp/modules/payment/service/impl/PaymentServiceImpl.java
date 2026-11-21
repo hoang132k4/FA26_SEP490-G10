@@ -1,9 +1,9 @@
 package com.jlpp.modules.payment.service.impl;
 
 import com.jlpp.modules.course.entity.Course;
-import com.jlpp.modules.course.dto.CourseRegistrationRequest;
-import com.jlpp.modules.course.repository.CourseRepository;
+import com.jlpp.modules.course.entity.CourseRegistration;
 import com.jlpp.modules.course.service.CourseRegistrationService;
+import com.jlpp.modules.course.service.CoursePriceCalculator;
 import com.jlpp.modules.payment.dto.InvoiceResponseDTO;
 import com.jlpp.modules.payment.dto.PaymentRequestDTO;
 import com.jlpp.modules.payment.dto.PaymentResponseDTO;
@@ -18,7 +18,6 @@ import com.jlpp.modules.payment.repository.PaymentTransactionRepository;
 import com.jlpp.modules.payment.repository.PaymentWebhookLogRepository;
 import com.jlpp.modules.payment.security.SepayAccountNumberCryptoService;
 import com.jlpp.modules.payment.security.SepayWebhookSignatureVerifier;
-import com.jlpp.modules.payment.service.CoursePaymentPriceCalculator;
 import com.jlpp.modules.payment.service.PaymentOrderCodeGenerator;
 import com.jlpp.modules.payment.service.PaymentService;
 import com.jlpp.modules.user.entity.User;
@@ -47,6 +46,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -56,17 +57,18 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentWebhookLogRepository paymentWebhookLogRepository;
-    private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final CourseRegistrationService courseRegistrationService;
     private final SepayAccountNumberCryptoService accountNumberCryptoService;
     private final SepayWebhookSignatureVerifier sepayWebhookSignatureVerifier;
-    private final CoursePaymentPriceCalculator priceCalculator;
+    private final CoursePriceCalculator priceCalculator;
     private final PaymentOrderCodeGenerator orderCodeGenerator;
     private final PlatformTransactionManager transactionManager;
 
     private static final List<String> ACCOUNT_NUMBER_FIELDS =
             List.of("accountNumber", "bankAccountNumber", "accountNo");
+    private static final Pattern ORDER_CODE_IN_CONTENT =
+            Pattern.compile("(?i)(JLPP[0-9A-F]{32})");
     private static final Set<String> SELLABLE_COURSE_STATUSES = Set.of("PUBLISHED", "ACTIVE", "PUBLIC");
     private static final int ORDER_CODE_ATTEMPTS = 5;
 
@@ -84,8 +86,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentResponseDTO createPayment(Long userId, PaymentRequestDTO request) {
-        if (request == null || request.getCourseId() == null) {
-            throw new IllegalArgumentException("Thiếu mã khóa học để tạo thanh toán.");
+        if (request == null || request.getRegistrationId() == null) {
+            throw new IllegalArgumentException("Thiếu mã đăng ký cần thanh toán.");
         }
 
         validatePaymentConfiguration();
@@ -142,8 +144,12 @@ public class PaymentServiceImpl implements PaymentService {
         User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng."));
 
-        Course course = courseRepository.findById(request.getCourseId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khóa học."));
+        CourseRegistration registration =
+                courseRegistrationService.getPendingRegistrationForUpdate(userId, request.getRegistrationId());
+        Course course = registration.getCourse();
+        if (request.getCourseId() != null && !request.getCourseId().equals(course.getId())) {
+            throw new IllegalArgumentException("Khóa học không khớp với đăng ký cần thanh toán.");
+        }
 
         String courseStatus = course.getStatus() == null
                 ? ""
@@ -152,31 +158,25 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalStateException("Khóa học hiện không mở bán.");
         }
 
-        if (course.getPrice() == null || course.getPrice() <= 0) {
-            throw new IllegalArgumentException("Khóa học này chưa có giá thanh toán hợp lệ.");
-        }
         BigDecimal amount = priceCalculator.calculateFinalPrice(course);
         if (amount.signum() <= 0) {
-            throw new IllegalArgumentException("Khóa học này chưa có giá thanh toán hợp lệ.");
+            throw new IllegalArgumentException("Khóa học miễn phí không cần tạo thanh toán.");
         }
 
-        if (courseRegistrationService.isUserEnrolled(userId, course.getId())) {
-            throw new IllegalStateException("Bạn đã đăng ký khóa học này rồi.");
-        }
-
-        if (paymentRepository.findFirstByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
-                userId, course.getId(), "PAID").isPresent()) {
+        if (paymentRepository.existsByUser_IdAndCourse_IdAndStatus(userId, course.getId(), "PAID")) {
             throw new IllegalStateException("Khóa học này đã được thanh toán.");
         }
 
         LocalDateTime now = LocalDateTime.now();
         Payment reusablePendingPayment = null;
-        for (Payment existingPayment : paymentRepository
-                .findByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
-                        userId, course.getId(), "PENDING")) {
+        for (Payment existingPayment : paymentRepository.findByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
+                userId, course.getId(), "PENDING")) {
             if (existingPayment.getExpiresAt() != null && existingPayment.getExpiresAt().isAfter(now)) {
-                if (reusablePendingPayment == null) {
+                if (existingPayment.getAmount().compareTo(amount) == 0 && reusablePendingPayment == null) {
                     reusablePendingPayment = existingPayment;
+                } else if (existingPayment.getAmount().compareTo(amount) != 0) {
+                    existingPayment.setStatus("SUPERSEDED");
+                    paymentRepository.save(existingPayment);
                 }
                 continue;
             }
@@ -264,7 +264,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         String transactionId = null;
         Optional<PaymentTransaction> tx =
-                paymentTransactionRepository.findFirstByPayment_IdOrderByCreatedAtDesc(payment.getId());
+                paymentTransactionRepository.findFirstByPayment_IdOrderByCreatedAtAsc(payment.getId());
+        if (tx.isEmpty()) {
+            tx = paymentTransactionRepository.findFirstByPayment_IdOrderByCreatedAtDesc(payment.getId());
+        }
         if (tx.isPresent()) {
             transactionId = tx.get().getGatewayTransactionId();
         }
@@ -322,10 +325,10 @@ public class PaymentServiceImpl implements PaymentService {
             return new SePayWebhookResult(SePayWebhookResult.Outcome.INVALID_TRANSACTION_ID);
         }
 
-        Long paymentUserId = paymentRepository.findUserIdByTransferContent(content).orElse(null);
+        Long paymentUserId = findPaymentUserId(content);
         if (paymentUserId == null) {
             log.setProcessingStatus("REJECTED");
-            log.setProcessingMessage("Không tìm thấy payment cho nội dung chuyển khoản");
+            log.setProcessingMessage("Không tìm thấy payment cho nội dung chuyển khoản hoặc mã đơn");
             log.setProcessedAt(LocalDateTime.now());
             paymentWebhookLogRepository.save(log);
             return new SePayWebhookResult(SePayWebhookResult.Outcome.PAYMENT_NOT_FOUND);
@@ -334,11 +337,10 @@ public class PaymentServiceImpl implements PaymentService {
         userRepository.findByIdForUpdate(paymentUserId)
                 .orElseThrow(() -> new IllegalStateException("Không tìm thấy người dùng của payment."));
 
-        Payment payment = paymentRepository.findByTransferContentForUpdate(content)
-                .orElse(null);
+        Payment payment = findPaymentForUpdate(content);
         if (payment == null) {
             log.setProcessingStatus("REJECTED");
-            log.setProcessingMessage("Không tìm thấy payment cho nội dung chuyển khoản");
+            log.setProcessingMessage("Không tìm thấy payment cho nội dung chuyển khoản hoặc mã đơn");
             log.setProcessedAt(LocalDateTime.now());
             paymentWebhookLogRepository.save(log);
             return new SePayWebhookResult(SePayWebhookResult.Outcome.PAYMENT_NOT_FOUND);
@@ -350,14 +352,6 @@ public class PaymentServiceImpl implements PaymentService {
             log.setProcessedAt(LocalDateTime.now());
             paymentWebhookLogRepository.save(log);
             return new SePayWebhookResult(SePayWebhookResult.Outcome.DUPLICATE);
-        }
-
-        if (amount == null || amount.compareTo(payment.getAmount()) != 0) {
-            log.setProcessingStatus("REJECTED");
-            log.setProcessingMessage("Số tiền không khớp với payment");
-            log.setProcessedAt(LocalDateTime.now());
-            paymentWebhookLogRepository.save(log);
-            return new SePayWebhookResult(SePayWebhookResult.Outcome.AMOUNT_MISMATCH);
         }
 
         if (bankAccountNumber == null || bankAccountNumber.isBlank()
@@ -387,16 +381,61 @@ public class PaymentServiceImpl implements PaymentService {
             return new SePayWebhookResult(SePayWebhookResult.Outcome.INVALID_TRANSACTION_DATE);
         }
 
-        String paymentStatus = payment.getStatus();
-        if ("PAID".equalsIgnoreCase(paymentStatus)) {
-            log.setProcessingStatus("DUPLICATE");
-            log.setProcessingMessage("Payment đã được thanh toán trước đó");
+        CourseRegistration registration = courseRegistrationService.getRegistration(
+                payment.getUser().getId(), payment.getCourse().getId());
+        if (registration == null
+                || !payment.getUser().getId().equals(registration.getUser().getId())
+                || !payment.getCourse().getId().equals(registration.getCourse().getId())) {
+            log.setProcessingStatus("REJECTED");
+            log.setProcessingMessage("Payment không tham chiếu đúng đăng ký khóa học");
             log.setProcessedAt(LocalDateTime.now());
             paymentWebhookLogRepository.save(log);
-            return new SePayWebhookResult(SePayWebhookResult.Outcome.DUPLICATE);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.PAYMENT_STATE_REJECTED);
         }
 
-        if (!"PENDING".equalsIgnoreCase(paymentStatus) && !"EXPIRED".equalsIgnoreCase(paymentStatus)) {
+        String paymentStatus = payment.getStatus();
+        if ("PAID".equalsIgnoreCase(paymentStatus)) {
+            if (amount != null && amount.signum() > 0) {
+                persistPaymentTransaction(payment, payload, gatewayTransactionId, bankAccount,
+                        transactionDate, amount, content);
+            }
+            log.setProcessingStatus("RECONCILIATION_REQUIRED");
+            log.setProcessingMessage("Giao dịch mới đã nhận cho payment đã thanh toán; cần đối soát để tránh ghi nhận trùng.");
+            log.setProcessedAt(LocalDateTime.now());
+            paymentWebhookLogRepository.save(log);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED);
+        }
+
+        if (paymentRepository.existsByUser_IdAndCourse_IdAndStatus(
+                payment.getUser().getId(), payment.getCourse().getId(), "PAID")) {
+            payment.setStatus("RECONCILIATION_REQUIRED");
+            paymentRepository.save(payment);
+            if (amount != null && amount.signum() > 0) {
+                persistPaymentTransaction(payment, payload, gatewayTransactionId, bankAccount,
+                        transactionDate, amount, content);
+            }
+            log.setProcessingStatus("RECONCILIATION_REQUIRED");
+            log.setProcessingMessage("Giao dịch đã nhận nhưng đăng ký đã được thanh toán qua một payment khác; cần đối soát.");
+            log.setProcessedAt(LocalDateTime.now());
+            paymentWebhookLogRepository.save(log);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED);
+        }
+
+        if ("RECONCILIATION_REQUIRED".equalsIgnoreCase(paymentStatus)) {
+            if (amount != null && amount.signum() > 0) {
+                persistPaymentTransaction(payment, payload, gatewayTransactionId, bankAccount,
+                        transactionDate, amount, content);
+            }
+            log.setProcessingStatus("RECONCILIATION_REQUIRED");
+            log.setProcessingMessage("Giao dịch bổ sung đã được ghi nhận để đối soát.");
+            log.setProcessedAt(LocalDateTime.now());
+            paymentWebhookLogRepository.save(log);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED);
+        }
+
+        if (!"PENDING".equalsIgnoreCase(paymentStatus)
+                && !"EXPIRED".equalsIgnoreCase(paymentStatus)
+                && !"SUPERSEDED".equalsIgnoreCase(paymentStatus)) {
             log.setProcessingStatus("REJECTED");
             log.setProcessingMessage("Trạng thái payment không cho phép xác nhận thanh toán");
             log.setProcessedAt(LocalDateTime.now());
@@ -404,16 +443,94 @@ public class PaymentServiceImpl implements PaymentService {
             return new SePayWebhookResult(SePayWebhookResult.Outcome.PAYMENT_STATE_REJECTED);
         }
 
-        boolean latePayment = "EXPIRED".equalsIgnoreCase(paymentStatus)
+        LocalDateTime now = LocalDateTime.now();
+        if (!"PENDING".equalsIgnoreCase(paymentStatus)
                 || payment.getExpiresAt() == null
-                || !payment.getExpiresAt().isAfter(LocalDateTime.now());
+                || !payment.getExpiresAt().isAfter(now)) {
+            payment.setStatus("RECONCILIATION_REQUIRED");
+            paymentRepository.save(payment);
+            if (amount != null && amount.signum() > 0) {
+                persistPaymentTransaction(payment, payload, gatewayTransactionId, bankAccount,
+                        transactionDate, amount, content);
+            }
+            log.setProcessingStatus("RECONCILIATION_REQUIRED");
+            log.setProcessingMessage("Giao dịch đến sau khi payment hết hạn; cần đối soát trước khi cấp quyền.");
+            log.setProcessedAt(now);
+            paymentWebhookLogRepository.save(log);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED);
+        }
+
+        if (!CourseRegistration.STATUS_PENDING_PAYMENT.equalsIgnoreCase(registration.getStatus())) {
+            log.setProcessingStatus("REJECTED");
+            log.setProcessingMessage("Đăng ký khóa học không còn chờ thanh toán");
+            log.setProcessedAt(now);
+            paymentWebhookLogRepository.save(log);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.PAYMENT_STATE_REJECTED);
+        }
+
+        if (amount == null || amount.signum() <= 0) {
+            log.setProcessingStatus("REJECTED");
+            log.setProcessingMessage("Số tiền giao dịch không hợp lệ");
+            log.setProcessedAt(now);
+            paymentWebhookLogRepository.save(log);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.AMOUNT_MISMATCH);
+        }
+
+        if (amount.compareTo(payment.getAmount()) != 0) {
+            payment.setStatus("RECONCILIATION_REQUIRED");
+            paymentRepository.save(payment);
+            persistPaymentTransaction(payment, payload, gatewayTransactionId, bankAccount,
+                    transactionDate, amount, content);
+            log.setProcessingStatus("RECONCILIATION_REQUIRED");
+            log.setProcessingMessage("Số tiền giao dịch không khớp; đã ghi nhận để đối soát.");
+            log.setProcessedAt(now);
+            paymentWebhookLogRepository.save(log);
+            return new SePayWebhookResult(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED);
+        }
+
+        courseRegistrationService.completePaidRegistration(
+                payment.getUser().getId(),
+                payment.getCourse().getId(),
+                registration.getId(),
+                amount,
+                payment.getPaymentMethod());
         payment.setStatus("PAID");
         payment.setPaidAt(LocalDateTime.now());
         paymentRepository.save(payment);
+        supersedeOtherPayments(payment.getUser().getId(), payment.getCourse().getId(), payment.getId());
 
+        persistPaymentTransaction(payment, payload, gatewayTransactionId, bankAccount,
+                transactionDate, amount, content);
+
+        log.setProcessingStatus("SUCCESS");
+        log.setProcessingMessage("Đã xác nhận thanh toán thành công");
+        log.setProcessedAt(LocalDateTime.now());
+        paymentWebhookLogRepository.save(log);
+        return new SePayWebhookResult(SePayWebhookResult.Outcome.PROCESSED);
+    }
+
+    private void supersedeOtherPayments(Long userId, Long courseId, Long settledPaymentId) {
+        List<Payment> otherPayments = paymentRepository.findByUser_IdAndCourse_IdAndStatusInOrderByCreatedAtDesc(
+                userId, courseId, List.of("PENDING", "EXPIRED"));
+        for (Payment otherPayment : otherPayments) {
+            if (!otherPayment.getId().equals(settledPaymentId)) {
+                otherPayment.setStatus("SUPERSEDED");
+                paymentRepository.save(otherPayment);
+            }
+        }
+    }
+
+    private void persistPaymentTransaction(
+            Payment payment,
+            Map<String, Object> payload,
+            String gatewayTransactionId,
+            String bankAccount,
+            LocalDateTime transactionDate,
+            BigDecimal amount,
+            String content) {
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
                 .payment(payment)
-                .gateway(gateway)
+                .gateway("SEPAY")
                 .gatewayTransactionId(gatewayTransactionId)
                 .bankBrandName(payloadString(payload, "gateway", "bankBrandName", "bankName"))
                 .bankAccountNumber(maskAccountNumber(bankAccount))
@@ -425,30 +542,39 @@ public class PaymentServiceImpl implements PaymentService {
                 .webhookPayload(encryptAccountNumberFields(payload))
                 .build();
         paymentTransactionRepository.save(paymentTransaction);
-
-        ensureCourseRegistration(payment);
-
-        log.setProcessingStatus(latePayment ? "SUCCESS_LATE" : "SUCCESS");
-        log.setProcessingMessage(latePayment
-                ? "Đã xác nhận thanh toán đến muộn thành công"
-                : "Đã xác nhận thanh toán thành công");
-        log.setProcessedAt(LocalDateTime.now());
-        paymentWebhookLogRepository.save(log);
-        return new SePayWebhookResult(latePayment
-                ? SePayWebhookResult.Outcome.PROCESSED_LATE
-                : SePayWebhookResult.Outcome.PROCESSED);
     }
 
-    private void ensureCourseRegistration(Payment payment) {
-        Long userId = payment.getUser().getId();
-        Long courseId = payment.getCourse().getId();
-        if (!courseRegistrationService.isUserEnrolled(userId, courseId)) {
-            courseRegistrationService.registerCourse(userId, CourseRegistrationRequest.builder()
-                    .courseId(courseId)
-                    .paymentMethod(payment.getPaymentMethod())
-                    .note("Đăng ký tự động từ payment " + payment.getOrderCode())
-                    .build());
+    private Long findPaymentUserId(String transferContent) {
+        Long userId = paymentRepository.findUserIdByTransferContent(transferContent).orElse(null);
+        if (userId != null) {
+            return userId;
         }
+        String orderCode = extractOrderCode(transferContent);
+        return orderCode == null
+                ? null
+                : paymentRepository.findUserIdByOrderCode(orderCode).orElse(null);
+    }
+
+    private Payment findPaymentForUpdate(String transferContent) {
+        Payment payment = paymentRepository.findByTransferContentForUpdate(transferContent).orElse(null);
+        if (payment != null) {
+            return payment;
+        }
+        String orderCode = extractOrderCode(transferContent);
+        return orderCode == null
+                ? null
+                : paymentRepository.findByOrderCodeForUpdate(orderCode).orElse(null);
+    }
+
+    private String extractOrderCode(String transferContent) {
+        if (transferContent == null || transferContent.isBlank()) {
+            return null;
+        }
+        Matcher matcher = ORDER_CODE_IN_CONTENT.matcher(transferContent);
+        if (!matcher.find()) {
+            return null;
+        }
+        return matcher.group(1).toLowerCase(Locale.ROOT);
     }
 
     private Map<String, Object> encryptAccountNumberFields(Map<String, Object> payload) {
@@ -481,10 +607,13 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private PaymentResponseDTO toResponse(Payment payment) {
+        CourseRegistration registration = courseRegistrationService.getRegistration(
+                payment.getUser().getId(), payment.getCourse().getId());
         return PaymentResponseDTO.builder()
                 .id(payment.getId())
                 .orderCode(payment.getOrderCode())
                 .courseId(payment.getCourse() != null ? payment.getCourse().getId() : null)
+                .registrationId(registration != null ? registration.getId() : null)
                 .courseTitle(payment.getCourse() != null ? payment.getCourse().getTitle() : null)
                 .courseThumbnail(payment.getCourse() != null ? payment.getCourse().getThumbnailUrl() : null)
                 .amount(payment.getAmount())
