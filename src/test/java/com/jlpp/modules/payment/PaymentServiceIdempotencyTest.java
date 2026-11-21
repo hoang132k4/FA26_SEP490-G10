@@ -66,6 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -445,7 +446,8 @@ class PaymentServiceIdempotencyTest {
         String firstId = "TX-PAID-" + UUID.randomUUID();
         String secondId = "TX-PAID-" + UUID.randomUUID();
 
-        paymentService.processSePayWebhook(webhookPayload(payment, firstId));
+        assertEquals(SePayWebhookResult.Outcome.PROCESSED,
+                paymentService.processSePayWebhook(webhookPayload(payment, firstId)).outcome());
         SePayWebhookResult duplicate = paymentService.processSePayWebhook(webhookPayload(payment, secondId));
 
         assertEquals(SePayWebhookResult.Outcome.RECONCILIATION_REQUIRED, duplicate.outcome());
@@ -453,6 +455,8 @@ class PaymentServiceIdempotencyTest {
         assertEquals(1, courseRegistrationRepository.countByCourseId(course.getId()));
         assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
         assertEquals(firstId, paymentService.getInvoice(user.getId(), payment.getId()).getTransactionId());
+        assertEquals(CourseRegistration.STATUS_ACTIVE,
+                paymentService.getInvoice(user.getId(), payment.getId()).getRegistrationStatus());
     }
 
     @Test
@@ -762,6 +766,21 @@ class PaymentServiceIdempotencyTest {
 
         InvoiceResponseDTO invoice = paymentService.getInvoice(user.getId(), pending.getId());
         assertEquals(gatewayTransactionId, invoice.getTransactionId());
+        assertEquals("FT24012345678", invoice.getReferenceCode());
+        assertEquals(CourseRegistration.STATUS_ACTIVE, invoice.getRegistrationStatus());
+    }
+
+    @Test
+    void extractsOrderCodeWithUppercasePrefixWithoutLowercasingStoredSuffix() {
+        PaymentResponseDTO pending = createPayment();
+        String transactionId = "TX-LOWERCASE-ORDER-" + UUID.randomUUID();
+        Map<String, Object> payload = new HashMap<>(webhookPayload(pending, transactionId));
+        payload.put("content", "jlpp" + pending.getOrderCode().substring(4));
+
+        assertEquals(SePayWebhookResult.Outcome.PROCESSED,
+                paymentService.processSePayWebhook(payload).outcome());
+        assertEquals("PAID", findPayment(pending.getId()).getStatus());
+        assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
     }
 
     @Test
@@ -818,6 +837,36 @@ class PaymentServiceIdempotencyTest {
                 () -> paymentService.getInvoice(otherUser.getId(), pending.getId()));
         assertThrows(SecurityException.class,
                 () -> paymentService.getInvoice(user.getId(), Long.MAX_VALUE));
+    }
+
+    @Test
+    void successfulPaymentAndInvoicePagesShowActivatedAccessAndTransactionDetails() throws Exception {
+        PaymentResponseDTO payment = createPayment();
+        String transactionId = "TX-INVOICE-" + UUID.randomUUID();
+        String referenceCode = "REF-" + UUID.randomUUID();
+        Map<String, Object> payload = new HashMap<>(webhookPayload(payment, transactionId));
+        payload.put("referenceCode", referenceCode);
+        assertEquals(SePayWebhookResult.Outcome.PROCESSED,
+                paymentService.processSePayWebhook(payload).outcome());
+
+        mockMvc.perform(get("/payment/{paymentId}", payment.getId())
+                        .with(user(user.getEmail()).roles("LEARNER")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "Thanh toán thành công. Đăng ký khóa học thành công, quyền học đã được kích hoạt.")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Vào học ngay")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Xem hóa đơn")));
+
+        mockMvc.perform(get("/invoice/{paymentId}", payment.getId())
+                        .with(user(user.getEmail()).roles("LEARNER")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(payment.getOrderCode())))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(transactionId)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(referenceCode)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(course.getTitle())))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(user.getEmail())))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Vào học ngay")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Xem đơn hàng")));
     }
 
     @Test
@@ -980,13 +1029,24 @@ class PaymentServiceIdempotencyTest {
         String transactionId = "TX-" + UUID.randomUUID();
         Map<String, Object> payload = webhookPayload(payment, transactionId);
 
-        paymentService.processSePayWebhook(payload);
-        paymentService.processSePayWebhook(payload);
+        assertEquals(SePayWebhookResult.Outcome.PROCESSED,
+                paymentService.processSePayWebhook(payload).outcome());
+        assertEquals(SePayWebhookResult.Outcome.DUPLICATE,
+                paymentService.processSePayWebhook(payload).outcome());
 
         assertTrue(paymentTransactionRepository.existsByGatewayTransactionId(transactionId));
         assertEquals(1, paymentTransactionRepository.countByPayment_Id(payment.getId()));
         assertRegistrationStatus(CourseRegistration.STATUS_ACTIVE);
         assertEquals("PAID", findPayment(payment.getId()).getStatus());
+        assertEquals(2, paymentWebhookLogRepository.findAll().stream()
+                .filter(log -> transactionId.equals(log.getGatewayTransactionId()))
+                .count());
+        assertTrue(paymentWebhookLogRepository.findAll().stream()
+                .anyMatch(log -> transactionId.equals(log.getGatewayTransactionId())
+                        && "SUCCESS".equals(log.getProcessingStatus())));
+        assertTrue(paymentWebhookLogRepository.findAll().stream()
+                .anyMatch(log -> transactionId.equals(log.getGatewayTransactionId())
+                        && "DUPLICATE".equals(log.getProcessingStatus())));
     }
 
     @Test

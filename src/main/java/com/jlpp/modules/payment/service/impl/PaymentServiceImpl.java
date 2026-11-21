@@ -68,7 +68,7 @@ public class PaymentServiceImpl implements PaymentService {
     private static final List<String> ACCOUNT_NUMBER_FIELDS =
             List.of("accountNumber", "bankAccountNumber", "accountNo");
     private static final Pattern ORDER_CODE_IN_CONTENT =
-            Pattern.compile("(?i)(JLPP[0-9A-F]{32})");
+            Pattern.compile("(?i)(?<![A-Z0-9])(JLPP[0-9A-F]{32})(?![A-Z0-9])");
     private static final Set<String> SELLABLE_COURSE_STATUSES = Set.of("PUBLISHED", "ACTIVE", "PUBLIC");
     private static final int ORDER_CODE_ATTEMPTS = 5;
 
@@ -264,13 +264,17 @@ public class PaymentServiceImpl implements PaymentService {
 
         String transactionId = null;
         Optional<PaymentTransaction> tx =
-                paymentTransactionRepository.findFirstByPayment_IdOrderByCreatedAtAsc(payment.getId());
+                paymentTransactionRepository.findByPaidAmount(payment.getId(), payment.getAmount())
+                        .stream()
+                        .findFirst();
         if (tx.isEmpty()) {
             tx = paymentTransactionRepository.findFirstByPayment_IdOrderByCreatedAtDesc(payment.getId());
         }
         if (tx.isPresent()) {
             transactionId = tx.get().getGatewayTransactionId();
         }
+        CourseRegistration registration = courseRegistrationService.getRegistration(
+                payment.getUser().getId(), payment.getCourse().getId());
 
         return InvoiceResponseDTO.builder()
                 .paymentId(payment.getId())
@@ -287,6 +291,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .paidAt(payment.getPaidAt())
                 .status(payment.getStatus())
                 .transactionId(transactionId)
+                .referenceCode(tx.map(PaymentTransaction::getReferenceCode).orElse(null))
+                .registrationStatus(registration != null ? registration.getStatus() : null)
                 .build();
     }
 
@@ -574,7 +580,8 @@ public class PaymentServiceImpl implements PaymentService {
         if (!matcher.find()) {
             return null;
         }
-        return matcher.group(1);
+        String extractedCode = matcher.group(1);
+        return "JLPP" + extractedCode.substring(4);
     }
 
     private Map<String, Object> encryptAccountNumberFields(Map<String, Object> payload) {

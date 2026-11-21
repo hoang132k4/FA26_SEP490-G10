@@ -27,4 +27,6 @@ public class InvoiceResponseDTO {
     private LocalDateTime paidAt;
     private String status;
     private String transactionId;
+    private String referenceCode;
+    private String registrationStatus;
 }

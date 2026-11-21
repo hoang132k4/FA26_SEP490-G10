@@ -23,7 +23,17 @@
                     <div class="text-muted small text-uppercase">Invoice</div>
                     <h4 class="fw-bold mb-0" style="color: var(--navy-dark)" th:text="${invoice.orderCode}">JLPP</h4>
                 </div>
-                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2" th:text="${invoice.status}">PAID</span>
+                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2"
+                      th:text="${invoice.status == 'PAID' ? 'Đã thanh toán' : invoice.status}">Đã thanh toán</span>
+            </div>
+
+            <div th:if="${invoice.status == 'PAID' and (invoice.registrationStatus == 'ACTIVE' or invoice.registrationStatus == 'COMPLETED')}"
+                 class="alert alert-success" role="status">
+                Thanh toán thành công. Đăng ký khóa học thành công và quyền học đã được kích hoạt.
+            </div>
+            <div th:if="${invoice.status == 'PAID' and invoice.registrationStatus != 'ACTIVE' and invoice.registrationStatus != 'COMPLETED'}"
+                 class="alert alert-warning" role="status">
+                Đã thanh toán thành công nhưng quyền học chưa được xác nhận kích hoạt. Vui lòng liên hệ hỗ trợ.
             </div>
 
             <div class="row g-4">
@@ -40,6 +50,7 @@
                         <div>Ngân hàng: <strong th:text="${invoice.bankName}">-</strong></div>
                         <div>Phương thức: <strong th:text="${invoice.paymentMethod}">SEPAY</strong></div>
                         <div>Thời gian: <strong th:text="${#temporals.format(invoice.paidAt, 'dd/MM/yyyy HH:mm')}">-</strong></div>
+                        <div>Mã tham chiếu: <strong th:text="${invoice.referenceCode != null ? invoice.referenceCode : 'Không có'}">-</strong></div>
                     </div>
                 </div>
             </div>
@@ -72,9 +83,13 @@
                 </div>
             </div>
 
-            <div class="d-flex justify-content-end mt-4">
-                <a th:href="@{/payment/{paymentId}(paymentId=${invoice.paymentId})}" class="btn btn-outline-secondary rounded-pill px-4 me-2">Quay lại</a>
-                <a th:href="@{/orders}" class="btn btn-primary rounded-pill px-4">Về danh sách đơn hàng</a>
+            <div class="d-flex justify-content-end mt-4 gap-2 flex-wrap">
+                <a th:if="${invoice.registrationStatus == 'ACTIVE' or invoice.registrationStatus == 'COMPLETED'}"
+                   th:href="@{/learning/courses/{courseId}/lessons(courseId=${invoice.courseId})}"
+                   class="btn btn-success rounded-pill px-4">Vào học ngay</a>
+                <a th:href="@{/learning/my-courses}" class="btn btn-outline-primary rounded-pill px-4">Khóa học của tôi</a>
+                <a th:href="@{/orders}" class="btn btn-primary rounded-pill px-4">Xem đơn hàng</a>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="window.print()">In hóa đơn</button>
             </div>
         </div>
     </div>

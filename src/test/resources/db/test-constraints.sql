@@ -1,6 +1,13 @@
 -- Mirrors constraints of the shared Supabase database that Hibernate does not generate from the entities,
 -- so tests fail the same way production does. Keep in sync when the real schema changes.
 
+-- payments
+ALTER TABLE IF EXISTS payments ADD CONSTRAINT IF NOT EXISTS chk_payments_status_valid
+    CHECK (status IN (
+        'PENDING', 'PAID', 'FAILED', 'EXPIRED', 'CANCELLED',
+        'RECONCILIATION_REQUIRED', 'SUPERSEDED'
+    ));
+
 -- questions
 ALTER TABLE IF EXISTS questions ADD CONSTRAINT IF NOT EXISTS chk_questions_question_type
     CHECK (question_type IN ('SINGLE_CHOICE', 'MULTI_CHOICE', 'PASSAGE'));
