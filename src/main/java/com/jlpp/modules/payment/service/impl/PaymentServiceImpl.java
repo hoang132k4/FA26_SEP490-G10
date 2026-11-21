@@ -574,7 +574,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (!matcher.find()) {
             return null;
         }
-        return matcher.group(1).toLowerCase(Locale.ROOT);
+        return matcher.group(1);
     }
 
     private Map<String, Object> encryptAccountNumberFields(Map<String, Object> payload) {
