@@ -1,0 +1,82 @@
+package com.jeps.common.config;
+
+import com.jeps.modules.notification.entity.Notification;
+import com.jeps.modules.notification.service.NotificationService;
+import com.jeps.modules.user.entity.User;
+import com.jeps.modules.user.repository.UserRepository;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import java.security.Principal;
+import java.util.List;
+
+@ControllerAdvice
+public class GlobalUserAdvice {
+
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+
+    public GlobalUserAdvice(UserRepository userRepository,
+                            @Autowired(required = false) NotificationService notificationService) {
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
+    }
+
+    @ModelAttribute
+    public void populateCurrentUser(Model model, Principal principal, HttpSession session) {
+        User currentUser = null;
+        if (principal != null && principal.getName() != null) {
+            String identifier = principal.getName().trim();
+            currentUser = userRepository.findByEmailIgnoreCase(identifier)
+                    .or(() -> userRepository.findByUsername(identifier))
+                    .orElse(null);
+        } else if (session != null && session.getAttribute("CURRENT_LEARNER_ID") != null) {
+            Long userId = (Long) session.getAttribute("CURRENT_LEARNER_ID");
+            currentUser = userRepository.findById(userId).orElse(null);
+        } else if (session != null && session.getAttribute("CURRENT_USER_EMAIL") != null) {
+            String email = (String) session.getAttribute("CURRENT_USER_EMAIL");
+            currentUser = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        }
+
+        if (currentUser != null) {
+            String roleName = currentUser.getRole() != null ? currentUser.getRole().name() : "LEARNER";
+            model.addAttribute("currentUser", currentUser);
+            model.addAttribute("currentUserFullName", currentUser.getFullName());
+            model.addAttribute("currentUserAvatar", currentUser.getAvatarUrl());
+            model.addAttribute("userName", currentUser.getFullName());
+            model.addAttribute("role", roleName);
+            model.addAttribute("currentRole", roleName);
+            model.addAttribute("isAuthenticated", true);
+            if (session != null) {
+                session.setAttribute("role", roleName);
+                session.setAttribute("CURRENT_LEARNER_ID", currentUser.getId());
+                session.setAttribute("CURRENT_USER_EMAIL", currentUser.getEmail());
+            }
+
+            // Populate real-time notification data from database
+            try {
+                if (notificationService != null) {
+                    List<Notification> notifications = notificationService.getRecentNotifications(currentUser.getId());
+                    long unreadCount = notificationService.getUnreadCount(currentUser.getId());
+                    model.addAttribute("recentNotifications", notifications);
+                    model.addAttribute("unreadNotificationCount", unreadCount);
+                } else {
+                    model.addAttribute("recentNotifications", List.of());
+                    model.addAttribute("unreadNotificationCount", 0L);
+                }
+            } catch (Exception ignored) {
+                model.addAttribute("recentNotifications", List.of());
+                model.addAttribute("unreadNotificationCount", 0L);
+            }
+        } else {
+            model.addAttribute("role", "GUEST");
+            model.addAttribute("currentRole", "GUEST");
+            model.addAttribute("isAuthenticated", false);
+            model.addAttribute("recentNotifications", List.of());
+            model.addAttribute("unreadNotificationCount", 0L);
+        }
+    }
+}
