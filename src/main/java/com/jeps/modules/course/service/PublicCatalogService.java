@@ -1,0 +1,99 @@
+package com.jeps.modules.course.service;
+
+import com.jeps.modules.course.entity.Course;
+import com.jeps.modules.course.repository.CourseRepository;
+import com.jeps.modules.exam.entity.Exam;
+import com.jeps.modules.exam.repository.ExamRepository;
+import com.jeps.modules.lesson.dto.LessonPreview;
+import com.jeps.modules.lesson.repository.LessonRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+
+@Service
+public class PublicCatalogService {
+
+    private final CourseRepository courseRepository;
+    private final ExamRepository examRepository;
+    private final LessonRepository lessonRepository;
+
+    public PublicCatalogService(CourseRepository courseRepository,
+                                ExamRepository examRepository,
+                                @Qualifier("publicLessonRepository") LessonRepository lessonRepository) {
+        this.courseRepository = courseRepository;
+        this.examRepository = examRepository;
+        this.lessonRepository = lessonRepository;
+    }
+
+    public List<Course> findCourses(String level, String keyword) {
+        String normalizedLevel = normalize(level);
+        String normalizedKeyword = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+
+        return courseRepository.findAll().stream()
+                .filter(this::isPublic)
+                .filter(course -> normalizedLevel.isEmpty()
+                        || normalizedLevel.equals(normalize(course.getJlptLevel())))
+                .filter(course -> normalizedKeyword.isEmpty()
+                        || contains(course.getCourseTitle(), normalizedKeyword)
+                        || contains(course.getDescription(), normalizedKeyword)
+                        || contains(course.getJlptLevel(), normalizedKeyword))
+                .toList();
+    }
+
+    public List<Course> getFeaturedCourses() {
+        return courseRepository.findAll().stream()
+                .filter(this::isPublic)
+                .filter(c -> Boolean.TRUE.equals(c.getFeatured()))
+                .sorted((a, b) -> Long.compare(a.getId(), b.getId()))
+                .limit(6)
+                .toList();
+    }
+
+    public List<Course> getLatestCourses(int limit) {
+        List<Long> featuredIds = getFeaturedCourses().stream()
+                .map(Course::getId)
+                .toList();
+        return courseRepository.findAll().stream()
+                .filter(this::isPublic)
+                .filter(c -> !featuredIds.contains(c.getId()))
+                .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
+                .limit(limit)
+                .toList();
+    }
+
+    public Optional<Course> findCourse(Long id) {
+        return courseRepository.findById(id).filter(this::isPublic);
+    }
+
+    public boolean isPublic(Course course) {
+        if (course == null || course.getStatus() == null) {
+            return false;
+        }
+        String s = course.getStatus().trim().toUpperCase(Locale.ROOT);
+        return "PUBLISHED".equals(s) || "ACTIVE".equals(s) || "PUBLIC".equals(s);
+    }
+
+    public List<LessonPreview> findLessonPreviews(Long courseId) {
+        return lessonRepository.findPreviewsByCourseId(courseId);
+    }
+
+    public List<Exam> getJlptMockExams() {
+        return examRepository.findByExamTypeIgnoreCase("JLPT_MOCK");
+    }
+
+    public Optional<Exam> findJlptMockExam(Long id) {
+        return examRepository.findById(id)
+                .filter(exam -> "JLPT_MOCK".equalsIgnoreCase(exam.getExamType()));
+    }
+
+    private boolean contains(String value, String keyword) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
+    }
+}

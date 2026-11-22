@@ -1,28 +1,179 @@
 <div th:replace="~{layouts/learner-layout :: html(
-    pageTitle='Điều chỉnh lịch học - JEPS',
+    pageTitle='Điều chỉnh lịch học cá nhân - JEPS',
     activeMenu='learning-path',
     content=~{::#mainContent}
 )}">
     <div id="mainContent">
-        <!-- Breadcrumb & Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-            <div>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-1 small">
-                        <li class="breadcrumb-item"><a th:href="@{/learning-path}" class="text-decoration-none fw-semibold" style="color: #2563EB;">Lộ trình học tập</a></li>
-                        <li class="breadcrumb-item active fw-medium" aria-current="page" style="color: #475569;">Điều chỉnh lịch học</li>
-                    </ol>
-                </nav>
-                <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Điều chỉnh lịch trình lộ trình học tập (Recalibrate Schedule)</h3>
+        <!-- Breadcrumb -->
+        <!-- Top Header Area with Japanese Theme Artwork (Seamless layout matching Image 2) -->
+        <div class="position-relative mb-4 pt-1" style="min-height: 140px;">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/learning-path(courseId=${path.courseId})}" class="text-decoration-none fw-semibold" style="color: #64748B;">
+                            <i class="bi bi-house-door me-1"></i> Lộ trình học tập
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active fw-medium text-muted" aria-current="page">Thiết lập lịch học cá nhân</li>
+                </ol>
+            </nav>
+
+            <!-- Japanese Artwork Background (Calendar & Clock + Sakura motif) floating seamlessly in top-right -->
+            <div class="position-absolute end-0 top-0 d-none d-md-block" style="width: 280px; height: 140px; pointer-events: none; opacity: 0.95; z-index: 1;">
+                <svg viewBox="0 0 280 140" width="100%" height="100%" preserveAspectRatio="xMaxYMid meet" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="clockRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#F97316"/>
+                            <stop offset="100%" stop-color="#E06D53"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Spiral Desk Calendar -->
+                    <g transform="translate(65, 20)">
+                        <!-- Calendar shadow -->
+                        <rect x="5" y="8" width="90" height="100" rx="12" fill="#000000" opacity="0.05"/>
+                        <!-- Calendar Backing -->
+                        <rect x="0" y="4" width="90" height="100" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/>
+                        <!-- Spiral binding loops -->
+                        <rect x="14" y="0" width="5" height="12" rx="2.5" fill="#E06D53"/>
+                        <rect x="32" y="0" width="5" height="12" rx="2.5" fill="#E06D53"/>
+                        <rect x="50" y="0" width="5" height="12" rx="2.5" fill="#E06D53"/>
+                        <rect x="68" y="0" width="5" height="12" rx="2.5" fill="#E06D53"/>
+                        <!-- Calendar Grid Lines -->
+                        <rect x="10" y="20" width="70" height="14" rx="3" fill="#FFF7ED"/>
+                        <rect x="14" y="44" width="12" height="10" rx="2.5" fill="#F8FAFC" stroke="#E2E8F0"/>
+                        <rect x="32" y="44" width="12" height="10" rx="2.5" fill="#F8FAFC" stroke="#E2E8F0"/>
+                        <rect x="50" y="44" width="12" height="10" rx="2.5" fill="#FFF7ED" stroke="#FDBA74"/>
+                        <path d="M 52 49 L 55 52 L 59 46" fill="none" stroke="#EA580C" stroke-width="1.8" stroke-linecap="round"/>
+                        <rect x="68" y="44" width="12" height="10" rx="2.5" fill="#F8FAFC" stroke="#E2E8F0"/>
+                        <rect x="14" y="62" width="12" height="10" rx="2.5" fill="#F8FAFC" stroke="#E2E8F0"/>
+                        <rect x="32" y="62" width="12" height="10" rx="2.5" fill="#FFF7ED" stroke="#FDBA74"/>
+                        <path d="M 34 67 L 37 70 L 41 64" fill="none" stroke="#EA580C" stroke-width="1.8" stroke-linecap="round"/>
+                        <rect x="50" y="62" width="12" height="10" rx="2.5" fill="#F8FAFC" stroke="#E2E8F0"/>
+                        <rect x="68" y="62" width="12" height="10" rx="2.5" fill="#F8FAFC" stroke="#E2E8F0"/>
+                    </g>
+                    <!-- Overlapping Clock -->
+                    <g transform="translate(170, 45)">
+                        <circle cx="42" cy="42" r="38" fill="#FFFFFF" stroke="url(#clockRingGrad)" stroke-width="4.5" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.08))"/>
+                        <circle cx="42" cy="42" r="3.5" fill="#1E293B"/>
+                        <!-- Clock hands pointing at 10:10 -->
+                        <line x1="42" y1="42" x2="28" y2="26" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="42" y1="42" x2="58" y2="33" stroke="#E06D53" stroke-width="2.5" stroke-linecap="round"/>
+                    </g>
+                    <!-- Sakura Petals -->
+                    <g fill="#FDA4AF" opacity="0.85">
+                        <circle cx="35" cy="45" r="4.5"/>
+                        <circle cx="48" cy="30" r="3.5"/>
+                        <circle cx="255" cy="25" r="5.5"/>
+                        <circle cx="265" cy="40" r="4"/>
+                        <circle cx="235" cy="18" r="4.5"/>
+                        <circle cx="160" cy="20" r="3.5"/>
+                        <circle cx="28" cy="80" r="3.5"/>
+                    </g>
+                </svg>
             </div>
-            <div>
-                <a th:href="@{/learning-path}" class="btn btn-outline-secondary btn-sm px-3 py-2 rounded-3">
-                    <i class="bi bi-arrow-left me-1"></i> Quay lại lộ trình
+
+            <div class="position-relative" style="z-index: 2;">
+                <!-- Title & Icon -->
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                         style="width: 48px; height: 48px; background-color: #EBF3F8; border: 1.5px solid #CBDCE7;">
+                        <i class="bi bi-calendar3 fs-4" style="color: #173B57;"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.5px; font-size: 26px;">
+                            Thiết lập lịch học cá nhân
+                        </h2>
+                        <p class="small mb-0 text-secondary mt-1">
+                            Thiết lập thời gian học phù hợp với mục tiêu JLPT của bạn.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Khóa học gắn liền với lộ trình học tập hiện tại (Hiển thị cố định, không dùng dropdown chọn) -->
+                <div class="d-flex flex-wrap align-items-center gap-3 mt-3 pt-2">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3 border bg-white shadow-sm fw-semibold"
+                         style="border-color: #CBD5E1 !important; font-size: 14px;">
+                        <i class="bi bi-journal-bookmark-fill" style="color: #173B57;"></i>
+                        <span class="text-secondary small">Khóa học:</span>
+                        <span class="fw-bold text-dark text-truncate" style="max-width: 320px;" th:text="${path.courseTitle}">Khóa học JLPT</span>
+                        <span class="badge rounded-pill ms-1" style="background-color: #EBF3F8; color: #173B57; border: 1px solid #CBDCE7;"
+                              th:text="${path.courseLevel != null ? path.courseLevel : '--'}">N3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- B. Stepper (Chỉ hiển thị khi khóa học chưa hoàn thành 100%) -->
+        <div th:if="${hasPath and !(courseCompleted == true or (path != null and path.allLessonsCompleted))}"
+             class="d-flex justify-content-center align-items-center mb-4 pb-2">
+            <div class="d-flex align-items-center" style="max-width: 820px; width: 100%;">
+                <!-- Step 1: Thiết lập thông số -->
+                <div class="d-flex flex-column align-items-center text-center position-relative stepper-step" id="stepIndicator1" onclick="goToStep(1)" style="z-index: 2; min-width: 140px; cursor: pointer;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm mb-1 step-circle" id="stepCircle1"
+                         style="width: 38px; height: 38px; background-color: #173B57; font-size: 15px;">
+                        1
+                    </div>
+                    <span class="small fw-bold step-text" id="stepText1" style="color: #173B57; font-size: 13px;">Thiết lập thông số</span>
+                </div>
+
+                <!-- Connector Line 1-2 -->
+                <div class="flex-grow-1 mx-2" id="stepConnector12" style="height: 2px; background-color: #E2E8F0; margin-top: -18px;"></div>
+
+                <!-- Step 2: Lịch học đề xuất chi tiết -->
+                <div class="d-flex flex-column align-items-center text-center position-relative stepper-step" id="stepIndicator2" onclick="goToStep(2)" style="z-index: 2; min-width: 170px; cursor: pointer;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm mb-1 step-circle" id="stepCircle2"
+                         style="width: 38px; height: 38px; background-color: #FFFFFF; border: 2px solid #CBD5E1; color: #64748B; font-size: 15px;">
+                        2
+                    </div>
+                    <span class="small step-text" id="stepText2" style="color: #64748B; font-size: 13px;">
+                        Lịch học đề xuất chi tiết
+                    </span>
+                </div>
+
+                <!-- Connector Line 2-3 -->
+                <div class="flex-grow-1 mx-2" id="stepConnector23" style="height: 2px; background-color: #E2E8F0; margin-top: -18px;"></div>
+
+                <!-- Step 3: Xác nhận áp dụng lịch học cá nhân mới -->
+                <div class="d-flex flex-column align-items-center text-center position-relative stepper-step" id="stepIndicator3" onclick="goToStep(3)" style="z-index: 2; min-width: 190px; cursor: pointer;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm mb-1 step-circle" id="stepCircle3"
+                         style="width: 38px; height: 38px; background-color: #FFFFFF; border: 2px solid #CBD5E1; color: #64748B; font-size: 15px;">
+                        3
+                    </div>
+                    <span class="small step-text" id="stepText3" style="color: #64748B; font-size: 13px;">
+                        Xác nhận áp dụng lịch học cá nhân mới
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 0: KHÓA HỌC ĐÃ HOÀN THÀNH 100% -->
+        <div th:if="${hasPath and (courseCompleted == true or (path != null and path.allLessonsCompleted))}"
+             class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4"
+             style="border: 1px solid #E2E8F0 !important;">
+            <div class="mb-4">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                     style="width: 88px; height: 88px; background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); color: #10B981;">
+                    <i class="bi bi-trophy-fill fs-1"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-2 text-dark">Khóa học đã hoàn thành 100%!</h4>
+            <p class="text-secondary mx-auto mb-4" style="max-width: 620px; line-height: 1.6;">
+                Chúc mừng bạn đã hoàn thành xuất sắc tất cả <strong class="text-dark"><span th:text="${path.totalLessons != null ? path.totalLessons : 0}">32</span> bài học</strong> của khóa học 
+                <strong class="text-dark" th:text="${path.courseTitle}">Khóa học JLPT</strong>! 
+                Lộ trình học tập của bạn đã hoàn tất trọn vẹn mục tiêu. Do toàn bộ bài học đều đã học xong, hệ thống không áp dụng việc phân bổ hoặc điều chỉnh lịch học nữa.
+            </p>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a th:href="@{/learning-path(courseId=${path.courseId})}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Về trang lộ trình học tập
+                </a>
+                <a th:href="@{/exams/placement}" class="btn btn-warning px-4 py-2 rounded-3 shadow-sm fw-semibold text-dark">
+                    <i class="bi bi-award-fill me-1"></i> Làm bài thi thử JLPT
                 </a>
             </div>
         </div>
 
-        <!-- STATE 1: EMPTY STATE (Khi Database chưa có Learning Path) -->
+        <!-- STATE 1: EMPTY STATE -->
         <div th:if="${!hasPath}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
             <div class="mb-4">
                 <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
@@ -30,9 +181,9 @@
                     <i class="bi bi-calendar-x fs-1"></i>
                 </div>
             </div>
-            <h4 class="fw-bold mb-2" style="color: var(--navy-dark)">Chưa đủ dữ liệu để điều chỉnh lịch học</h4>
+            <h4 class="fw-bold mb-2" style="color: #0F172A">Chưa đủ dữ liệu để điều chỉnh lịch học</h4>
             <p class="text-secondary mx-auto mb-4" style="max-width: 580px; line-height: 1.6;">
-                Hệ thống không tìm thấy lộ trình học tập đang hoạt động của bạn. Chức năng điều chỉnh lịch học chỉ khả dụng khi bạn đã có một lộ trình học tập hợp lệ trong cơ sở dữ liệu.
+                Hệ thống không tìm thấy lộ trình học tập đang hoạt động của bạn. Chức năng điều chỉnh lịch học chỉ khả dụng khi bạn đã tham gia một khóa học.
             </p>
             <div class="d-flex justify-content-center gap-3">
                 <a th:href="@{/learning-path}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
@@ -41,245 +192,1591 @@
             </div>
         </div>
 
-        <!-- STATE 2: RECALIBRATE SIMULATION (Khi đã có Learning Path) -->
-        <div th:if="${hasPath}">
-            <!-- Recalibration Parameter Form -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
-                <h5 class="fw-bold mb-3" style="color: var(--navy-dark)">
-                    <i class="bi bi-sliders2 me-2 text-primary"></i> Thiết lập tham số điều chỉnh
-                </h5>
-                <form th:action="@{/learning-path/recalibrate}" method="post" class="row g-3 align-items-end">
-                    <div class="col-auto" style="min-width: 240px; max-width: 280px;">
-                        <label for="weeklyHours" class="form-label fw-semibold small text-secondary">
-                            Số giờ có thể học mỗi tuần (Giờ/Tuần) <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-clock-history"></i></span>
-                            <input type="number" id="weeklyHours" name="weeklyHours" class="form-control"
-                                   min="1" max="105" required
-                                   th:value="${preview != null ? preview.newWeeklyHours : (request != null ? request.weeklyHours : path.weeklyHours)}"
-                                   placeholder="Ví dụ: 14">
-                            <span class="input-group-text bg-light">giờ/tuần</span>
+        <!-- STATE 2: RECALIBRATE FORM & SIMULATION (Chỉ hiển thị khi khóa học chưa hoàn tất 100%) -->
+        <div th:if="${hasPath and !(courseCompleted == true or (path != null and path.allLessonsCompleted))}">
+
+            <!-- Notification Messages -->
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- BƯỚC 1: THIẾT LẬP THÔNG SỐ & SO SÁNH KẾ HOẠCH                -->
+            <!-- ============================================================ -->
+            <div id="stepSection1" class="step-section">
+
+                <!-- 1. KHỐI HIỆN TRẠNG KẾ HOẠCH HỌC TẬP (Kế hoạch ban đầu & Kế hoạch hiện tại) -->
+                <div class="row g-3 mb-4">
+                    <!-- Thẻ Kế hoạch ban đầu (Cố định) -->
+                    <div class="col-xl-4 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-secondary">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-secondary small fw-bold text-uppercase"><i class="bi bi-pin-angle-fill me-1"></i> Kế hoạch ban đầu</span>
+                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill small">Cố định</span>
+                            </div>
+                            <div class="fs-5 fw-bold text-dark mb-1" th:text="${preview != null and preview.baselineEndDateFormatted != null ? preview.baselineEndDateFormatted : (path.baselineEndDateFormatted != null ? path.baselineEndDateFormatted : (path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : '--'))}">03/12/2026</div>
+                            <div class="small text-muted mb-1">
+                                <i class="bi bi-calendar3 me-1"></i> Bắt đầu: <span class="fw-semibold text-dark" th:text="${path.baselineStartDateFormatted != null ? path.baselineStartDateFormatted : (path.startDateFormatted != null ? path.startDateFormatted : '--')}">18/11/2026</span>
+                            </div>
+                            <div class="small text-secondary fst-italic">
+                                <i class="bi bi-lock-fill me-1 text-muted"></i> Mốc mục tiêu lúc mới đăng ký, không bị ghi đè.
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm fw-semibold">
-                            <i class="bi bi-calculator me-1"></i> Tính toán mô phỏng
+                    <!-- Thẻ Kế hoạch hiện tại (Đang áp dụng) -->
+                    <div class="col-xl-4 col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4 border-info">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-info-emphasis small fw-bold text-uppercase"><i class="bi bi-clock-history me-1"></i> Kế hoạch hiện tại</span>
+                                <span class="badge bg-info-subtle text-info px-2 py-1 rounded-pill small">Đang áp dụng</span>
+                            </div>
+                            <div class="fs-5 fw-bold text-dark mb-1" th:text="${preview != null and preview.originalCompletionDate != null ? preview.originalCompletionDate : path.projectedEndDateFormatted}">08/01/2027</div>
+                            <div class="small text-muted mb-1">
+                                <i class="bi bi-clock me-1"></i> Thời lượng: <span class="fw-semibold text-dark" th:text="${preview != null and preview.originalWeeklyHours != null ? preview.originalWeeklyHours : path.weeklyHours} + ' giờ/tuần'">3 giờ/tuần</span>
+                            </div>
+                            <div class="small text-secondary">
+                                <i class="bi bi-arrow-repeat me-1 text-info"></i> Lịch học bạn đang theo trước khi điều chỉnh.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thẻ Mục tiêu JLPT -->
+                    <div class="col-xl-4 col-md-12">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-start border-4"
+                             th:classappend="${preview != null and preview.examReadinessStatus == 'ON_TRACK' ? 'border-success' : (preview != null and preview.examReadinessStatus == 'TIGHT' ? 'border-warning' : (preview != null and preview.examReadinessStatus == 'BEHIND' ? 'border-danger' : 'border-secondary'))}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small fw-bold text-uppercase"
+                                     th:classappend="${preview != null and preview.examReadinessStatus == 'ON_TRACK' ? 'text-success' : (preview != null and preview.examReadinessStatus == 'TIGHT' ? 'text-warning-emphasis' : (preview != null and preview.examReadinessStatus == 'BEHIND' ? 'text-danger' : 'text-secondary'))}">
+                                    <i class="bi bi-award me-1"></i> Mục tiêu JLPT
+                                </span>
+                                <span th:if="${preview != null and preview.targetExamDate != null}" class="badge px-2 py-1 rounded-pill" th:classappend="${preview.examReadinessBadgeClass}"
+                                      th:text="${preview.examReadinessStatus == 'ON_TRACK' ? 'Kịp kỳ thi' : (preview.examReadinessStatus == 'TIGHT' ? 'Sát ngày thi' : 'Cần tăng tốc')}">Kịp kỳ thi</span>
+                                <span th:unless="${preview != null and preview.targetExamDate != null}" class="badge bg-light text-muted px-2 py-1 rounded-pill small">Chưa chọn</span>
+                            </div>
+                            <th:block th:if="${preview != null and preview.targetExamDate != null}">
+                                <div class="fs-5 fw-bold text-dark mb-1" th:text="${preview.targetExamDateFormatted}">06/12/2026</div>
+                                <div class="small text-secondary" th:text="${preview.examBufferDaysText}">Hoàn thành trước kỳ thi 14 ngày</div>
+                            </th:block>
+                            <th:block th:unless="${preview != null and preview.targetExamDate != null}">
+                                <div class="fs-6 fw-semibold text-secondary mb-1">Chưa thiết lập ngày thi</div>
+                                <div class="small text-muted">Bạn có thể chọn mục tiêu JLPT ở phần bên dưới.</div>
+                            </th:block>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 1: (1) Thiết lập thông số học tập (Khớp hoàn toàn với Hình 2) -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1px solid #E2E8F0 !important;">
+                    <div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                             style="width: 32px; height: 32px; background-color: #173B57; font-size: 14px;">
+                            1
+                        </div>
+                        <h5 class="fw-bold mb-0 text-dark">Thiết lập thông số học tập mới</h5>
+                    </div>
+
+                <form th:action="@{/learning-path/recalibrate}" method="post" id="recalibrateForm">
+                    <input type="hidden" name="courseId" th:value="${path.courseId}">
+
+                    <!-- 1. Phương thức lập lịch -->
+                    <div class="row align-items-center mb-4">
+                        <label class="col-md-3 col-form-label fw-bold small text-dark">
+                            Phương thức lập lịch <i class="bi bi-info-circle text-muted ms-1" title="Chọn phương thức tính toán phù hợp"></i>
+                        </label>
+                        <div class="col-md-9">
+                            <div class="d-flex flex-wrap gap-4 align-items-center">
+                                <!-- Radio 1: Theo lịch rảnh cá nhân -->
+                                <div class="form-check d-flex align-items-start gap-2">
+                                    <input class="form-check-input mt-1" type="radio" name="scheduleModeRadio" id="radioModeCustom"
+                                           value="CUSTOM" checked onchange="switchScheduleMode('CUSTOM')"
+                                           style="width: 20px; height: 20px; accent-color: #173B57; cursor: pointer;">
+                                    <label class="form-check-label" for="radioModeCustom" style="cursor: pointer;">
+                                        <span class="fw-bold text-dark d-block" style="font-size: 14px;">Theo lịch rảnh cá nhân</span>
+                                        <span class="text-secondary small">(Linh hoạt theo thời gian của bạn)</span>
+                                    </label>
+                                </div>
+
+                                <!-- Radio 2: Theo mục tiêu JLPT -->
+                                <div class="form-check d-flex align-items-start gap-2">
+                                    <input class="form-check-input mt-1" type="radio" name="scheduleModeRadio" id="radioModeJlpt"
+                                           value="JLPT_TARGET" onchange="switchScheduleMode('JLPT_TARGET')"
+                                           style="width: 20px; height: 20px; accent-color: #173B57; cursor: pointer;">
+                                    <label class="form-check-label" for="radioModeJlpt" style="cursor: pointer;">
+                                        <span class="fw-bold text-dark d-block" style="font-size: 14px;">Theo mục tiêu JLPT</span>
+                                        <span class="text-secondary small">(Hệ thống gợi ý lịch phù hợp)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="hidden" name="scheduleMode" id="scheduleMode"
+                                   th:value="${request != null and request.scheduleMode != null ? request.scheduleMode : 'CUSTOM'}">
+                        </div>
+                    </div>
+
+                    <!-- 2. Số giờ học mỗi ngày -->
+                    <div class="row align-items-center mb-4">
+                        <label class="col-md-3 col-form-label fw-bold small text-dark">
+                            Số giờ học mỗi ngày <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-9">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <!-- Stepper Input: [-] 1.0 [+] giờ/ngày -->
+                                <div class="d-inline-flex align-items-center border rounded-3 p-1 bg-white shadow-sm" style="border-color: #CBD5E1 !important;">
+                                    <button type="button" class="btn btn-sm btn-light border-0 rounded-2 fw-bold px-3 py-1.5 text-secondary"
+                                            onclick="adjustDailyHours(-0.5)" style="background-color: #F8FAFC; font-size: 16px;">
+                                        &minus;
+                                    </button>
+                                    <input type="number" step="0.5" min="0.5" max="12.0" id="dailyHours" name="dailyHours"
+                                           class="form-control border-0 text-center fw-bold text-dark p-0 mx-1"
+                                           style="width: 55px; font-size: 16px; box-shadow: none;"
+                                           th:value="${preview != null and preview.dailyHours != null ? preview.dailyHours : (request != null and request.dailyHours != null ? request.dailyHours : (path.dailyHours != null ? path.dailyHours : 1.0))}"
+                                           onchange="recalculateWeeklyHours(); updatePlanSummary();" oninput="recalculateWeeklyHours(); updatePlanSummary();" required>
+                                    <button type="button" class="btn btn-sm btn-light border-0 rounded-2 fw-bold px-3 py-1.5 text-secondary"
+                                            onclick="adjustDailyHours(0.5)" style="background-color: #F8FAFC; font-size: 16px;">
+                                        &#43;
+                                    </button>
+                                </div>
+                                <span class="fw-semibold text-secondary small">giờ/ngày</span>
+
+                                <!-- Callout Gợi ý -->
+                                <div class="d-flex align-items-center gap-2 p-2 px-3 rounded-3 small"
+                                     style="background-color: #FFFBEB; border: 1px solid #FEF3C7; color: #92400E;">
+                                    <i class="bi bi-info-circle-fill text-warning"></i>
+                                    <span>Gợi ý: <strong>1.0 &ndash; 2.0 giờ/ngày</strong> là phù hợp để duy trì hiệu quả.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Các ngày học trong tuần -->
+                    <div class="row align-items-center mb-4">
+                        <label class="col-md-3 col-form-label fw-bold small text-dark">
+                            Các ngày học trong tuần <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-9">
+                            <!-- Day buttons row: T2, T3, T4, T5, T6, T7, CN (Tô đậm khi chọn, không để tích) -->
+                            <div class="d-flex flex-wrap gap-2" id="daysToggleContainer">
+                                <button type="button" class="btn rounded-3 fw-bold day-btn text-center"
+                                        data-day="MONDAY" onclick="toggleDay('MONDAY')">
+                                    T2
+                                </button>
+                                <button type="button" class="btn rounded-3 fw-bold day-btn text-center"
+                                        data-day="TUESDAY" onclick="toggleDay('TUESDAY')">
+                                    T3
+                                </button>
+                                <button type="button" class="btn rounded-3 fw-bold day-btn text-center"
+                                        data-day="WEDNESDAY" onclick="toggleDay('WEDNESDAY')">
+                                    T4
+                                </button>
+                                <button type="button" class="btn rounded-3 fw-bold day-btn text-center"
+                                        data-day="THURSDAY" onclick="toggleDay('THURSDAY')">
+                                    T5
+                                </button>
+                                <button type="button" class="btn rounded-3 fw-bold day-btn text-center"
+                                        data-day="FRIDAY" onclick="toggleDay('FRIDAY')">
+                                    T6
+                                </button>
+                                <button type="button" class="btn rounded-3 fw-bold day-btn text-center"
+                                        data-day="SATURDAY" onclick="toggleDay('SATURDAY')">
+                                    T7
+                                </button>
+                                <button type="button" class="btn rounded-3 fw-bold day-btn text-center"
+                                        data-day="SUNDAY" onclick="toggleDay('SUNDAY')">
+                                    CN
+                                </button>
+                            </div>
+
+                            <!-- Hidden checkboxes for form binding -->
+                            <div id="hiddenDaysInputs">
+                                <input type="checkbox" name="studyDays" value="MONDAY" id="chk_MONDAY" class="d-none">
+                                <input type="checkbox" name="studyDays" value="TUESDAY" id="chk_TUESDAY" class="d-none">
+                                <input type="checkbox" name="studyDays" value="WEDNESDAY" id="chk_WEDNESDAY" class="d-none">
+                                <input type="checkbox" name="studyDays" value="THURSDAY" id="chk_THURSDAY" class="d-none">
+                                <input type="checkbox" name="studyDays" value="FRIDAY" id="chk_FRIDAY" class="d-none">
+                                <input type="checkbox" name="studyDays" value="SATURDAY" id="chk_SATURDAY" class="d-none">
+                                <input type="checkbox" name="studyDays" value="SUNDAY" id="chk_SUNDAY" class="d-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Ngày bắt đầu -->
+                    <div class="row align-items-center mb-4">
+                        <label for="startDate" class="col-md-3 col-form-label fw-bold small text-dark">
+                            Ngày bắt đầu <span class="text-danger">*</span>
+                        </label>
+                        <div class="col-md-9">
+                            <div class="input-group" style="max-width: 260px;">
+                                <span class="input-group-text bg-white border-end-0 text-secondary" style="border-color: #CBD5E1;"><i class="bi bi-calendar-event"></i></span>
+                                <input type="date" id="startDate" name="startDate" class="form-control border-start-0 ps-1"
+                                       th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                                       th:value="${preview != null and preview.startDate != null ? preview.startDate : (request != null and request.startDate != null ? request.startDate : #temporals.format(#temporals.createNow(), 'yyyy-MM-dd'))}"
+                                       onchange="onStartDateChange(this.value); updatePlanSummary();" style="border-color: #CBD5E1;" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Target JLPT Exam Section (Ẩn/hiện theo phương thức lập lịch) -->
+                    <div id="jlptTargetSection" class="p-3 rounded-4 mb-4 border" style="background-color: #F8FAFC; border-color: #E2E8F0 !important; display: none;">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold text-dark small mb-1">
+                                    <i class="bi bi-award-fill text-warning me-1"></i> Chọn kỳ thi JLPT mục tiêu
+                                </label>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1 exam-chip" onclick="setJlptPeriod('DEC_2026', '2026-12-06')">
+                                        JLPT Tháng 12/2026 (06/12/2026)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1 exam-chip" onclick="setJlptPeriod('JUL_2027', '2027-07-04')">
+                                        JLPT Tháng 07/2027 (04/07/2027)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1 exam-chip" onclick="setJlptPeriod('DEC_2027', '2027-12-05')">
+                                        JLPT Tháng 12/2027 (05/12/2027)
+                                    </button>
+                                </div>
+                                <input type="hidden" name="jlptPeriod" id="jlptPeriod" th:value="${request != null ? request.jlptPeriod : ''}">
+                            </div>
+                            <div class="col-md-5">
+                                <label for="targetExamDate" class="form-label fw-semibold text-secondary small mb-1">Hoặc nhập ngày thi cụ thể:</label>
+                                <input type="date" id="targetExamDate" name="targetExamDate" class="form-control"
+                                       th:value="${preview != null and preview.targetExamDate != null ? preview.targetExamDate : (request != null and request.targetExamDate != null ? request.targetExamDate : (path.targetExamDate != null ? path.targetExamDate : ''))}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculated Weekly Hours (Hidden sync) -->
+                    <input type="hidden" id="weeklyHours" name="weeklyHours"
+                           th:value="${preview != null ? preview.newWeeklyHours : (request != null and request.weeklyHours != null ? request.weeklyHours : path.weeklyHours)}">
+
+                    <!-- Card 2: Kế hoạch đề xuất mới (Mô phỏng tức thì) & Đối chiếu trực quan -->
+                    <div class="card border rounded-4 p-4 mb-4" style="background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); border: 1.5px solid #CBD5E1 !important;">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-3 d-flex align-items-center justify-content-center text-primary"
+                                     style="width: 34px; height: 34px; background-color: #EFF6FF;">
+                                    <i class="bi bi-stars fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;">Kế hoạch đề xuất mới</h6>
+                                    <span class="text-secondary small">Mô phỏng tức thì theo các thông số bạn vừa điều chỉnh</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1.5 rounded-pill fw-bold" style="font-size: 12px;">Mô phỏng</span>
+                        </div>
+
+                        <!-- 4 Chỉ số tổng quan -->
+                        <div class="row g-3 mb-3">
+                            <!-- Box 1: Bắt đầu -->
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="p-3 rounded-4 d-flex align-items-center gap-3 h-100"
+                                     style="background-color: #EFF6FF; border: 1px solid #DBEAFE;">
+                                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                         style="width: 44px; height: 44px; background-color: #FFFFFF; color: #2563EB;">
+                                        <i class="bi bi-calendar3 fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-secondary" style="font-size: 12px;">Bắt đầu</div>
+                                        <strong class="text-dark fs-6" id="summaryStartDate"
+                                                th:text="${preview != null and preview.startDateFormatted != null ? preview.startDateFormatted : path.startDateFormatted}">19/11/2026</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Box 2: Thời lượng mới -->
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="p-3 rounded-4 d-flex align-items-center gap-3 h-100"
+                                     style="background-color: #F0FDF4; border: 1px solid #DCFCE7;">
+                                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                         style="width: 44px; height: 44px; background-color: #FFFFFF; color: #16A34A;">
+                                        <i class="bi bi-hourglass-split fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-secondary" style="font-size: 12px;">Thời lượng mới</div>
+                                        <strong class="text-dark fs-6" id="summaryWeeklyHours"
+                                                th:text="${preview != null ? preview.newWeeklyHours + ' giờ/tuần' : path.weeklyHours + ' giờ/tuần'}">6 giờ/tuần</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Box 3: Tổng thời gian -->
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="p-3 rounded-4 d-flex align-items-center gap-3 h-100"
+                                     style="background-color: #FAF5FF; border: 1px solid #F3E8FF;">
+                                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                         style="width: 44px; height: 44px; background-color: #FFFFFF; color: #9333EA;">
+                                        <i class="bi bi-book fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-secondary" style="font-size: 12px;">Tổng thời gian</div>
+                                        <strong class="text-dark fs-6" id="summaryTotalWeeks"
+                                                th:text="${preview != null and preview.weeksNeeded != null ? '≈ ' + preview.weeksNeeded + ' tuần' : '--'}">≈ 5 tuần</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Box 4: Dự kiến hoàn thành -->
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="p-3 rounded-4 d-flex align-items-center gap-3 h-100"
+                                     style="background-color: #FFF1F2; border: 1px solid #FFE4E6;">
+                                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                         style="width: 44px; height: 44px; background-color: #FFFFFF; color: #E11D48;">
+                                        <i class="bi bi-flag-fill fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-secondary" style="font-size: 12px;">Dự kiến hoàn thành</div>
+                                        <strong class="text-danger fs-5 fw-bold" id="summaryEndDate"
+                                                th:text="${preview != null and preview.newCompletionDate != null ? preview.newCompletionDate : path.projectedEndDateFormatted}">22/12/2026</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thẻ đối chiếu so sánh rõ ràng -->
+                        <div class="p-3 rounded-3 border bg-white" style="border-color: #E2E8F0 !important;">
+                            <div class="fw-bold small text-dark mb-2 d-flex align-items-center gap-2">
+                                <i class="bi bi-arrow-left-right text-primary"></i>
+                                <span>Đối chiếu kết quả đề xuất với các mốc kế hoạch:</span>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-start gap-2 p-2.5 rounded-3 h-100" style="background-color: #F0FDF4; border: 1px solid #DCFCE7;">
+                                        <i class="bi bi-rocket-takeoff text-success fs-5 flex-shrink-0 mt-0.5"></i>
+                                        <div>
+                                            <div class="small fw-bold text-success" id="badgeVsCurrent"
+                                                 th:text="${preview != null and preview.daysDifferenceText != null ? preview.daysDifferenceText : '--'}">Hoàn thành sớm hơn 17 ngày</div>
+                                            <div class="text-secondary" style="font-size: 11.5px;">so với Kế hoạch hiện tại (đang áp dụng)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-start gap-2 p-2.5 rounded-3 h-100" style="background-color: #FFFBEB; border: 1px solid #FEF3C7;">
+                                        <i class="bi bi-hourglass-split text-warning fs-5 flex-shrink-0 mt-0.5"></i>
+                                        <div>
+                                            <div class="small fw-bold text-warning-emphasis" id="badgeVsBaseline"
+                                                 th:text="${preview != null and preview.daysDiffFromBaselineText != null ? preview.daysDiffFromBaselineText : '--'}">Kéo dài thêm 19 ngày</div>
+                                            <div class="text-secondary" style="font-size: 11.5px;">so với Kế hoạch ban đầu lúc mới bắt đầu khóa học</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="small text-secondary mt-2 pt-1 border-top" style="font-size: 11.5px; line-height: 1.5;">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                                <strong>Giải thích:</strong> Kế hoạch ban đầu là mốc cố định ngày đầu tiên đăng ký dùng để đối chiếu. Tăng thời lượng học giúp bạn <strong>về đích sớm hơn nhiều so với lịch hiện tại</strong>!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notice Alert: Lưu ý khi thay đổi lịch học -->
+                    <div class="alert border-0 rounded-4 p-3 mb-4 d-flex align-items-center gap-3"
+                         style="background-color: #EFF6FF; border: 1px solid #DBEAFE !important; color: #1E40AF;">
+                        <i class="bi bi-info-circle-fill fs-4 flex-shrink-0"></i>
+                        <span class="small">
+                            <strong>Lưu ý:</strong> Khi thay đổi lịch học, hệ thống sẽ tự động phân bổ lại các bài học chưa hoàn thành và cập nhật thời gian hoàn thành dự kiến.
+                        </span>
+                    </div>
+
+                    <!-- Action Buttons: Quay lại & Tiếp tục xem Lịch học đề xuất chi tiết -->
+                    <div class="d-flex justify-content-between align-items-center gap-3 pt-2">
+                        <a th:href="@{/learning-path(courseId=${path.courseId})}"
+                           class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold d-flex align-items-center gap-2">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>Quay lại</span>
+                        </a>
+
+                        <button type="button" onclick="submitStep1()" class="btn text-white rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2"
+                                style="background-color: #173B57; border: none; font-size: 14.5px;">
+                            <span>Tiếp tục: Lịch học đề xuất chi tiết</span>
+                            <i class="bi bi-arrow-right"></i>
                         </button>
                     </div>
 
-                    <div class="col-12 mt-2">
-                        <div class="form-text small text-muted">Khuyến nghị một tuần học từ 7 đến 14 giờ để đảm bảo tiếp thu tốt nhất (tối đa 105 giờ/tuần).</div>
-                    </div>
                 </form>
             </div>
+            </div>
 
-            <!-- Simulation Results Area -->
+            <!-- SIMULATION PREVIEW RESULTS -->
             <div th:if="${preview != null}">
-                <!-- Comparison Metric Cards -->
-                <div class="row g-4 mb-4">
-                    <!-- Original Schedule Card -->
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-2">Lịch học kế hoạch ban đầu</div>
-                            <div class="d-flex justify-content-between align-items-baseline mb-3">
-                                <span class="fs-4 fw-bold" style="color: var(--navy-dark)" th:text="${preview.originalWeeklyHours} + ' giờ/tuần'">10 giờ/tuần</span>
-                                <span class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill">Kế hoạch cũ</span>
+
+                <!-- ============================================================ -->
+                <!-- BƯỚC 2: LỊCH HỌC ĐỀ XUẤT CHI TIẾT                            -->
+                <!-- ============================================================ -->
+                <div id="stepSection2" class="step-section" style="display: none;">
+
+                <!-- Thanh tóm tắt nhanh kế hoạch đề xuất mới ở đầu Bước 2 -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4 border-start border-4 border-primary">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                                 style="width: 44px; height: 44px; background: linear-gradient(135deg, #2563EB, #1D4ED8);">
+                                <i class="bi bi-calendar-check fs-4"></i>
                             </div>
-                            <div class="d-flex align-items-center gap-2 text-muted small">
-                                <i class="bi bi-calendar3"></i>
-                                <span>Ngày hoàn thành dự kiến: </span>
-                                <strong class="text-dark" th:text="${preview.originalCompletionDate}">15/12/2026</strong>
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;">Thời khóa biểu đề xuất theo nhịp độ mới</h6>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5 rounded-pill small">Mô phỏng</span>
+                                </div>
+                                <div class="small text-secondary">
+                                    Dự kiến hoàn thành: <strong class="text-primary fw-bold" th:text="${preview.newCompletionDate}">22/12/2026</strong>
+                                    &bull; Nhịp độ: <span class="fw-semibold text-dark" th:text="${preview.dailyHours != null ? preview.dailyHours + 'h/buổi' : preview.newWeeklyHours + 'h/tuần'}">1.0h/buổi</span>
+                                    &bull; <span th:text="${preview.studyDaysText}">Thứ 2, 3, 4, 5, 6, 7</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Proposed Adjusted Schedule Card -->
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 border-start border-4 border-primary">
-                            <div class="text-primary small fw-semibold text-uppercase mb-2">Lịch học đề xuất mô phỏng</div>
-                            <div class="d-flex justify-content-between align-items-baseline mb-3">
-                                <span class="fs-4 fw-bold text-primary" th:text="${preview.newWeeklyHours} + ' giờ/tuần'">14 giờ/tuần</span>
-                                <span class="badge px-3 py-1 rounded-pill"
-                                      th:classappend="${#strings.contains(preview.daysDifferenceText, 'sớm') ? 'bg-success-subtle text-success border border-success-subtle' : (#strings.contains(preview.daysDifferenceText, 'Kéo dài') ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle')}"
-                                      th:text="${preview.daysDifferenceText}">Hoàn thành sớm hơn 14 ngày</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 text-muted small">
-                                <i class="bi bi-calendar-event text-primary"></i>
-                                <span>Ngày hoàn thành mới: </span>
-                                <strong class="text-primary fs-6" th:text="${preview.newCompletionDate}">01/12/2026</strong>
-                            </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small"
+                                  th:if="${preview.daysDifferenceText != null}" th:text="${preview.daysDifferenceText}">Hoàn thành sớm hơn 17 ngày</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5 rounded-3 text-wrap text-start small"
+                                  style="max-width: 320px; line-height: 1.3;"
+                                  th:if="${preview.daysDiffFromBaselineText != null}" th:text="${preview.daysDiffFromBaselineText}">Kéo dài thêm so với ban đầu</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Apply Recalibrated Schedule Action Card -->
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-4 border-success">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <!-- Pace Analysis Alert -->
+                <div class="alert alert-info border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-start gap-3">
+                    <i class="bi bi-info-circle-fill fs-4 text-primary mt-1"></i>
+                    <div>
+                        <strong class="d-block text-dark mb-1">Phân tích nhịp độ học tập:</strong>
+                        <span class="text-secondary small" th:text="${preview.paceAnalysisText}">Nhịp độ học tập phù hợp...</span>
+                    </div>
+                </div>
+
+                <!-- Proposed Timeline Section (Step 2: Lịch học đề xuất chi tiết) -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4" style="border: 1px solid #E2E8F0 !important;">
+                    <div class="p-4 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3">
                         <div>
-                            <h5 class="fw-bold mb-1 text-success">
-                                <i class="bi bi-check-circle-fill me-2"></i> Xác nhận áp dụng lộ trình mới
-                            </h5>
-                            <p class="text-secondary small mb-0">
-                                Bạn có muốn cập nhật lộ trình học tập theo nhịp độ <strong class="text-primary" th:text="${preview.newWeeklyHours} + ' giờ/tuần'">14 giờ/tuần</strong> (dự kiến hoàn thành ngày <strong class="text-dark" th:text="${preview.newCompletionDate}">15/12/2026</strong>) không?
-                            </p>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                                     style="width: 28px; height: 28px; background-color: #173B57; font-size: 13px;">
+                                    2
+                                </div>
+                                <h5 class="fw-bold mb-0 text-dark">
+                                    Lịch học đề xuất chi tiết
+                                </h5>
+                            </div>
+                            <div class="small text-secondary mt-1 ms-4 ps-2">Hiển thị lịch học cho các bài học chưa hoàn thành được phân bổ từ ngày bắt đầu mới. Các bài đã học trước đó được ẩn đi để bạn dễ tập trung vào lộ trình sắp tới.</div>
                         </div>
-                        <div>
-                            <form th:action="@{/learning-path/recalibrate/apply}" method="post" class="d-inline">
-                                <input type="hidden" name="weeklyHours" th:value="${preview.newWeeklyHours}">
-                                <button type="submit" class="btn btn-success px-4 py-2 rounded-3 shadow-sm fw-semibold text-nowrap">
-                                    <i class="bi bi-calendar-check me-1"></i> Xác nhận áp dụng lộ trình mới
+
+                        <!-- Bộ điều khiển: Chọn tuần, Mở/Thu gọn, Chuyển Thẻ/Bảng -->
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <!-- Chọn tuần nhanh -->
+                            <div class="d-inline-block" style="min-width: 170px;">
+                                <select id="previewWeekDropdown" class="form-select form-select-sm rounded-pill fw-semibold border-secondary-subtle"
+                                    onchange="onPreviewWeekDropdownChange(this.value)">
+                                    <option value="ALL" th:text="'Tất cả các tuần (' + ${preview.weeks.size()} + ' tuần)'">Tất cả các tuần</option>
+                                    <option th:each="week : ${preview.weeks}"
+                                        th:value="${week.weekNumber}"
+                                        th:text="${week.weekTitle} + ' (' + ${week.dateRangeFormatted} + ')'">
+                                        Tuần 1 (17/11/2026 - 22/11/2026)
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Nút Mở tất cả / Thu gọn -->
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-semibold"
+                                id="btnToggleAllPreviewWeeks" onclick="toggleAllPreviewWeeksAccordion()">
+                                <i class="bi bi-arrows-expand me-1"></i> <span id="toggleAllPreviewWeeksText">Mở tất cả</span>
+                            </button>
+
+                            <!-- Chuyển đổi chế độ xem: Thẻ / Bảng -->
+                            <div class="btn-group btn-group-sm p-1 rounded-pill bg-light border" role="group">
+                                <button type="button" class="btn btn-sm rounded-pill fw-semibold preview-view-switch-btn active"
+                                    id="btnPreviewViewRoadmap" onclick="switchPreviewTimelineView('ROADMAP')">
+                                    <i class="bi bi-diagram-3-fill me-1"></i> Thẻ đề xuất
                                 </button>
-                            </form>
+                                <button type="button"
+                                    class="btn btn-sm rounded-pill fw-semibold preview-view-switch-btn text-secondary"
+                                    id="btnPreviewViewTable" onclick="switchPreviewTimelineView('TABLE')">
+                                    <i class="bi bi-table me-1"></i> Bảng chi tiết
+                                </button>
+                            </div>
+
+                            <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small fw-semibold"
+                                th:text="'Dự kiến: ' + ${preview.weeksNeeded} + ' tuần (' + ${preview.rescheduledItems.size()} + ' bài cần học)'">
+                                Dự kiến: 6 tuần
+                            </span>
                         </div>
+                    </div>
+
+                    <!-- DANH SÁCH BÀI HỌC ĐƯỢC CHIA THEO TUẦN VỚI THANH DROPDOWN TUẦN -->
+                    <div class="p-3 p-md-4" style="background-color: #F8FAFC;" id="previewWeeklyTimelineContainer">
+
+                        <!-- Empty state if no weeks -->
+                        <div th:if="${preview.weeks == null or preview.weeks.isEmpty()}" class="p-4 text-center text-muted">
+                            Chưa có bài học nào trong kế hoạch mô phỏng.
+                        </div>
+
+                        <!-- Lặp qua từng Tuần -->
+                        <div th:each="week : ${preview.weeks}"
+                             class="preview-week-container mb-3"
+                             th:id="'preview-week-container-' + ${week.weekNumber}"
+                             th:attr="data-week-num=${week.weekNumber}">
+
+                            <!-- Thanh Dropdown Tuần (Accordion Header Bar) -->
+                            <div class="card border rounded-4 shadow-sm overflow-hidden week-card"
+                                 th:classappend="${week.isCurrentWeek or week.weekNumber == 1 ? 'border-primary' : 'border-light-subtle'}"
+                                 style="background-color: #FFFFFF;">
+
+                                <div class="p-3 p-md-3 d-flex flex-wrap justify-content-between align-items-center gap-3 week-header-clickable"
+                                     style="cursor: pointer; user-select: none;"
+                                     th:onclick="'togglePreviewWeekAccordion(' + ${week.weekNumber} + ')'">
+
+                                    <!-- Khối Trái: Tên tuần & Khoảng ngày (từ ngày nào đến ngày nào) -->
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-3 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0"
+                                             style="width: 44px; height: 44px;"
+                                             th:styleappend="${week.status == 'COMPLETED' ? 'background: linear-gradient(135deg, #10B981, #059669);' : (week.status == 'IN_PROGRESS' or week.weekNumber == 1 ? 'background: linear-gradient(135deg, #2563EB, #1D4ED8);' : 'background: linear-gradient(135deg, #64748B, #475569);')}">
+                                            <i th:if="${week.status == 'COMPLETED'}" class="bi bi-check2-circle fs-4"></i>
+                                            <i th:if="${week.status == 'IN_PROGRESS' or week.weekNumber == 1}" class="bi bi-play-circle-fill fs-4"></i>
+                                            <i th:if="${week.status != 'COMPLETED' and week.status != 'IN_PROGRESS' and week.weekNumber != 1}" class="bi bi-calendar2-week fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;" th:text="${week.weekTitle}">Tuần 1</h6>
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small fw-semibold">
+                                                    <i class="bi bi-calendar-range me-1"></i>
+                                                    <span th:text="${week.dateRangeFormatted}">17/11/2026 - 22/11/2026</span>
+                                                </span>
+                                                <span th:if="${week.weekNumber == 1}" class="badge bg-primary text-white rounded-pill px-2 py-1 small shadow-sm">
+                                                    <i class="bi bi-star-fill me-1"></i> Tuần bắt đầu
+                                                </span>
+                                            </div>
+                                            <div class="small text-secondary mt-1">
+                                                <span class="fw-semibold text-dark" th:text="${week.totalLessons}">5</span> bài học dự kiến
+                                                <span class="mx-1 text-muted">•</span>
+                                                <span>Thời lượng: <strong class="text-dark" th:text="${week.totalDurationFormatted}">5 giờ</strong></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Khối Phải: Tiến độ tuần, Huy hiệu trạng thái & Mũi tên dropdown -->
+                                    <div class="d-flex align-items-center gap-3 ms-auto">
+                                        <!-- Thanh tiến trình tuần -->
+                                        <div class="d-flex flex-column" style="min-width: 140px; max-width: 180px;">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="text-secondary fw-semibold" style="font-size: 11px;">Tiến độ tuần</span>
+                                                <span class="fw-bold" style="font-size: 11px;"
+                                                      th:classappend="${week.status == 'COMPLETED' ? 'text-success' : 'text-primary'}"
+                                                      th:text="${week.progressPercent != null ? week.progressPercent : (week.totalLessons > 0 ? (week.completedLessons * 100 / week.totalLessons) : 0)} + '%'">0%</span>
+                                            </div>
+                                            <div class="progress rounded-pill shadow-none" style="height: 6px; background-color: #E2E8F0;">
+                                                <div class="progress-bar rounded-pill"
+                                                     role="progressbar"
+                                                     th:style="'width: ' + ${week.progressPercent != null ? week.progressPercent : (week.totalLessons > 0 ? (week.completedLessons * 100 / week.totalLessons) : 0)} + '%;'"
+                                                     th:classappend="${week.status == 'COMPLETED' ? 'bg-success' : 'bg-primary'}"
+                                                     th:aria-valuenow="${week.progressPercent != null ? week.progressPercent : (week.totalLessons > 0 ? (week.completedLessons * 100 / week.totalLessons) : 0)}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+
+                                        <span class="badge px-3 py-2 rounded-pill fw-semibold"
+                                              th:classappend="${week.statusBadgeClass}"
+                                              th:text="${week.statusDisplay}">Chưa học</span>
+                                        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                                             style="width: 32px; height: 32px;">
+                                            <i class="bi bi-chevron-down text-secondary week-chevron-icon transition-all"
+                                               th:id="'chevron-preview-' + ${week.weekNumber}"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- BÊN TRONG THANH DROPDOWN TUẦN: CÁC DROPDOWN NGÀY HỌC -->
+                                <div th:id="'preview-week-body-' + ${week.weekNumber}"
+                                     class="preview-week-collapse-content border-top p-3 p-md-4"
+                                     style="background-color: #FAFCFF;"
+                                     th:styleappend="${week.weekNumber == 1 or week.isCurrentWeek ? 'display: block;' : 'display: none;'}">
+
+                                    <!-- Sub-header: Tóm tắt ngày học và nút Mở/Thu gọn tất cả ngày trong tuần -->
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                        <div class="small text-secondary fw-semibold">
+                                            <i class="bi bi-calendar-check me-1 text-primary"></i>
+                                            Lịch học: <span class="text-dark fw-bold" th:text="${week.days.size()} + ' ngày trong tuần'">3 ngày</span>
+                                            <span class="text-muted ms-1">(Mỗi ngày học được phân bổ đúng hạn mức <strong th:text="${preview.dailyHours != null ? preview.dailyHours + ' giờ' : ''}">1.5 giờ</strong>)</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 small fw-semibold text-primary"
+                                                th:onclick="'toggleAllDaysInPreviewWeek(' + ${week.weekNumber} + ')'">
+                                            <i class="bi bi-arrows-expand me-1"></i>
+                                            <span th:id="'toggle-preview-days-text-' + ${week.weekNumber}">Mở tất cả các ngày</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Empty state if no days -->
+                                    <div th:if="${week.days == null or week.days.isEmpty()}" class="p-3 text-center text-muted small">
+                                        Chưa có bài học được xếp vào tuần này.
+                                    </div>
+
+                                    <!-- LẶP QUA TỪNG NGÀY TRONG TUẦN (MỖI NGÀY LÀ MỘT DROPDOWN) -->
+                                    <div th:each="day : ${week.days}"
+                                         class="preview-day-container mb-3"
+                                         th:id="'preview-day-container-' + ${week.weekNumber} + '-' + ${day.dayIndex}">
+
+                                        <div class="card border rounded-3 shadow-none day-card overflow-hidden"
+                                             th:classappend="${day.dayIndex == 1 and (week.weekNumber == 1 or week.isCurrentWeek) ? 'border-primary' : 'border-light-subtle'}"
+                                             style="background-color: #FFFFFF;">
+
+                                            <!-- THANH DROPDOWN NGÀY (HEADER BAR) -->
+                                            <div class="p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 day-header-clickable"
+                                                 style="cursor: pointer; user-select: none; background-color: #F8FAFC;"
+                                                 th:onclick="'togglePreviewDayAccordion(' + ${week.weekNumber} + ', ' + ${day.dayIndex} + ')'">
+
+                                                <!-- Trái: Thứ, Ngày tháng & Huy hiệu ngày -->
+                                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                                    <span class="badge rounded-pill px-2 py-1 small fw-bold text-white shadow-sm"
+                                                          th:styleappend="${day.status == 'COMPLETED' ? 'background-color: #10B981;' : (day.status == 'IN_PROGRESS' ? 'background-color: #2563EB;' : 'background-color: #64748B;')}">
+                                                        <span th:text="${day.dayOfWeekFormatted}">Thứ 3</span>
+                                                    </span>
+                                                    <span class="fw-bold text-dark" style="font-size: 14px;" th:text="${day.fullDateDisplay}">Thứ 3, 17/11/2026</span>
+                                                    <span th:if="${day.isToday}" class="badge bg-danger text-white rounded-pill px-2 py-0 small">Hôm nay</span>
+                                                    <span th:if="${day.isCurrentDay and !day.isToday}" class="badge bg-primary text-white rounded-pill px-2 py-0 small">Đang học</span>
+                                                </div>
+
+                                                <!-- Phải: Số bài, thời lượng học của ngày, trạng thái & mũi tên -->
+                                                <div class="d-flex align-items-center gap-3 ms-auto">
+                                                    <span class="small text-secondary">
+                                                        <span class="fw-bold text-dark" th:text="${day.totalLessons}">2</span> bài học
+                                                        <span class="mx-1">•</span>
+                                                        <span>Thời lượng: <strong class="text-dark" th:text="${day.totalDurationFormatted}">1 giờ 5 phút</strong></span>
+                                                    </span>
+                                                    <span class="badge px-2 py-1 rounded-pill fw-semibold small"
+                                                          th:classappend="${day.statusBadgeClass}"
+                                                          th:text="${day.statusDisplay}">Chưa học</span>
+                                                    <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center"
+                                                         style="width: 26px; height: 26px;">
+                                                        <i class="bi bi-chevron-down text-secondary day-chevron-icon transition-all"
+                                                           th:id="'chevron-preview-day-' + ${week.weekNumber} + '-' + ${day.dayIndex}"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- BÊN TRONG DROPDOWN NGÀY: DANH SÁCH BÀI HỌC CỦA NGÀY ĐÓ -->
+                                            <div th:id="'preview-day-body-' + ${week.weekNumber} + '-' + ${day.dayIndex}"
+                                                 class="preview-day-collapse-content border-top"
+                                                 th:styleappend="${(week.weekNumber == 1 or week.isCurrentWeek) and day.dayIndex == 1 ? 'display: block;' : 'display: none;'}">
+
+                                                <!-- CHẾ ĐỘ 1: THẺ BÀI HỌC CỦA NGÀY -->
+                                                <div class="preview-day-roadmap-view p-3">
+                                                    <div class="row g-2">
+                                                        <div th:each="item : ${day.items}" class="col-12">
+                                                            <div class="card border rounded-3 p-3 shadow-none bg-white"
+                                                                 th:classappend="${item.status == 'IN_PROGRESS' ? 'border-primary border-2 shadow-sm' : (item.contentType == 'EXAM' or item.contentType == 'MILESTONE' ? 'border-warning-subtle' : 'border-light-subtle')}">
+                                                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                                                    <!-- Thông tin bài học -->
+                                                                    <div class="flex-grow-1">
+                                                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                                                            <span class="badge bg-light text-secondary border rounded-pill small"
+                                                                                  th:text="${item.sectionName}">Chương 1</span>
+                                                                            <span class="badge bg-light text-dark border rounded-pill">
+                                                                                <i class="bi bi-clock me-1 text-primary"></i>
+                                                                                <span th:text="${item.durationFormatted}">30 phút</span>
+                                                                            </span>
+                                                                            <span th:if="${item.recommendedDurationMinutes != item.durationMinutes}"
+                                                                                  class="badge rounded-pill small"
+                                                                                  th:classappend="${item.recommendedDurationMinutes > item.durationMinutes} ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'"
+                                                                                  th:text="'Gợi ý: ' + ${item.recommendedDurationFormatted}">
+                                                                                Gợi ý: 45p
+                                                                            </span>
+                                                                            <span class="badge rounded-pill border"
+                                                                                  style="font-size: 11px; background-color: #F8FAFC; color: #475569;"
+                                                                                  th:text="${item.skillDisplayName}">Kỹ năng</span>
+                                                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'WEAK'}"
+                                                                                  class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill small">
+                                                                                Trọng tâm [x1.5]
+                                                                            </span>
+                                                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'STRONG'}"
+                                                                                  class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                                                                                Nền tảng vững [x0.75]
+                                                                            </span>
+                                                                            <span th:if="${item.contentType == 'EXAM' or item.contentType == 'MILESTONE'}"
+                                                                                  class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill small">
+                                                                                <i class="bi bi-award-fill me-1"></i> Cột mốc đánh giá
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <div class="d-flex align-items-baseline gap-2">
+                                                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0 small fw-bold" th:text="'#' + ${item.orderIndex}">#1</span>
+                                                                            <h6 class="fw-bold text-dark mb-1" th:text="${item.title}">Bài 1: Giới thiệu ngữ pháp</h6>
+                                                                        </div>
+
+                                                                        <div th:if="${item.recommendationReason != null}" class="text-secondary small mt-1">
+                                                                            <i class="bi bi-lightbulb text-warning me-1"></i>
+                                                                            <span th:text="${item.recommendationReason}"></span>
+                                                                        </div>
+
+                                                                        <div th:if="${item.hasReviewResources}" class="small text-primary mt-1 fw-medium">
+                                                                            <i class="bi bi-collection me-1"></i> Tài nguyên bổ trợ: <span th:text="${item.reviewResourcesSummary}"></span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Trạng thái -->
+                                                                    <div class="text-md-end d-flex align-items-center gap-2">
+                                                                        <span class="badge px-3 py-1 rounded-pill fw-semibold"
+                                                                              th:classappend="${item.status == 'COMPLETED'} ? 'bg-success-subtle text-success border border-success-subtle' : (${item.status == 'IN_PROGRESS'} ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-secondary border')"
+                                                                              th:text="${item.statusDisplay}">Chưa học</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- CHẾ ĐỘ 2: BẢNG BÀI HỌC CỦA NGÀY -->
+                                                <div class="preview-day-table-view p-0" style="display: none;">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                                                            <thead style="background-color: #F1F5F9; color: #1E293B; font-weight: 700; border-bottom: 1px solid #E2E8F0;">
+                                                                <tr>
+                                                                    <th class="text-center py-2 ps-3" style="width: 50px;">STT</th>
+                                                                    <th class="py-2">Nội dung bài học</th>
+                                                                    <th class="py-2" style="width: 140px;">Thời lượng</th>
+                                                                    <th class="text-center py-2 pe-3" style="width: 120px;">Trạng thái</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr th:each="item : ${day.items}">
+                                                                    <td class="text-center fw-bold text-secondary ps-3" th:text="${item.orderIndex}">1</td>
+                                                                    <td>
+                                                                        <div class="fw-bold text-dark mb-1" th:text="${item.title}">Bài 1: Giới thiệu</div>
+                                                                        <div class="d-flex flex-wrap align-items-center gap-1">
+                                                                            <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 10px;" th:text="${item.sectionName}">Chương 1</span>
+                                                                            <span class="badge rounded-pill border" style="font-size: 10px; background-color: #F8FAFC; color: #475569;" th:text="${item.skillDisplayName}">Kỹ năng</span>
+                                                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'WEAK'}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size: 10px;">Trọng tâm [x1.5]</span>
+                                                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'STRONG'}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10px;">Nền tảng [x0.75]</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="text-dark fw-medium"><i class="bi bi-clock me-1 text-primary"></i><span th:text="${item.durationFormatted}">30 phút</span></span>
+                                                                        <div th:if="${item.recommendedDurationMinutes != item.durationMinutes}" class="mt-1" style="font-size: 11px;">
+                                                                            <span class="badge rounded-pill" th:classappend="${item.recommendedDurationMinutes > item.durationMinutes} ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'" th:text="'Gợi ý: ' + ${item.recommendedDurationFormatted}">Gợi ý: 45p</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="text-center pe-3">
+                                                                        <span class="badge px-2 py-1 rounded-pill fw-bold" th:classappend="${item.status == 'COMPLETED'} ? 'bg-success-subtle text-success border border-success-subtle' : (${item.status == 'IN_PROGRESS'} ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-secondary border')" th:text="${item.statusDisplay}">Chưa học</span>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
-                <!-- Proposed Timeline Table -->
-                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
-                    <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
-                        <h5 class="fw-bold mb-0" style="color: var(--navy-dark)">
-                            <i class="bi bi-calendar-range me-2 text-primary"></i> Lịch học đề xuất chi tiết (Preview Schedule)
-                        </h5>
-                        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill">Dự kiến xong: <span th:text="${preview.weeksNeeded} + ' tuần'">6 tuần</span></span>
+                <!-- Action Buttons ở cuối Bước 2: Quay lại Bước 1 & Tiếp tục sang Bước 3 -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4" style="border: 1px solid #E2E8F0 !important;">
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold d-flex align-items-center gap-2"
+                                onclick="goToStep(1)">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>Quay lại: Bước 1 (Thiết lập thông số)</span>
+                        </button>
+
+                        <button type="button" class="btn text-white rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2"
+                                style="background-color: #173B57; border: none; font-size: 14.5px;"
+                                onclick="goToStep(3)">
+                            <span>Tiếp tục: Bước 3 (Xác nhận áp dụng)</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div> <!-- End #stepSection2 -->
+
+            <!-- ============================================================ -->
+            <!-- BƯỚC 3: XÁC NHẬN ÁP DỤNG LỊCH HỌC CÁ NHÂN MỚI                -->
+            <!-- ============================================================ -->
+            <div id="stepSection3" class="step-section" style="display: none;">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1px solid #10B981 !important; border-left: 6px solid #10B981 !important;">
+                    <!-- Header -->
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                             style="width: 32px; height: 32px; background-color: #10B981; font-size: 14px;">
+                            3
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-success">
+                                Xác nhận áp dụng lịch học cá nhân mới
+                            </h5>
+                            <p class="text-secondary small mb-0">Vui lòng kiểm tra lại so sánh kế hoạch trước khi lưu thay đổi.</p>
+                        </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead class="table-light text-secondary small text-uppercase fw-semibold" style="border-bottom: 2px solid var(--border-subtle);">
+                    <!-- Comparison Table Before vs After -->
+                    <div class="table-responsive rounded-3 border mb-4">
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light">
                                 <tr>
-                                    <th scope="col" class="ps-4 py-3" style="width: 80px;">STT</th>
-                                    <th scope="col" class="py-3">Bài học / Cột mốc</th>
-                                    <th scope="col" class="py-3" style="width: 140px;">Thời lượng</th>
-                                    <th scope="col" class="py-3" style="width: 160px;">Ngày học dự kiến mới</th>
-                                    <th scope="col" class="text-end pe-4 py-3" style="width: 150px;">Trạng thái</th>
+                                    <th class="ps-3 py-2.5 text-secondary" style="width: 25%;">Thông số lịch học</th>
+                                    <th class="py-2.5 text-secondary" style="width: 37%;">Kế hoạch hiện tại</th>
+                                    <th class="py-2.5 text-primary fw-bold" style="width: 38%;">Lịch học đề xuất mới</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:each="item : ${preview.rescheduledItems}" class="border-bottom recalibrate-row">
-                                    <td class="ps-4 py-3 text-muted" th:text="${item.orderIndex}">1</td>
-                                    <td class="py-3">
-                                        <strong class="d-block text-dark" th:text="${item.title}">Bài 1: Từ vựng</strong>
-                                        <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
-                                            <span class="text-muted small" th:text="${item.sectionName}">Chương 1</span>
-                                            <span class="badge rounded-pill border" style="font-size: 11px; background-color: #F8FAFC; color: #475569;" th:text="${item.skillDisplayName}">Kỹ năng</span>
-                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'WEAK'}"
-                                                  class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size: 10px;">
-                                                Trọng tâm [x1.5]
-                                            </span>
-                                            <span th:if="${item.skillProficiency != null and item.skillProficiency.name() == 'STRONG'}"
-                                                  class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10px;">
-                                                Nền tảng vững [x0.75]
-                                            </span>
-                                        </div>
+                                <tr>
+                                    <td class="ps-3 fw-semibold text-dark"><i class="bi bi-clock me-1.5 text-primary"></i> Số giờ học mỗi ngày</td>
+                                    <td class="text-secondary" th:text="${path.dailyHoursFormatted != null ? path.dailyHoursFormatted : (path.dailyHours != null ? path.dailyHours + ' giờ/ngày' : '--')}">1.00 giờ/ngày</td>
+                                    <td class="fw-bold text-primary">
+                                        <span th:text="${preview.dailyHours != null ? preview.dailyHours + ' giờ/ngày' : (preview.newWeeklyHours != null ? preview.newWeeklyHours + ' giờ/tuần' : '--')}">1.50 giờ/ngày</span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 11px;">Mới</span>
                                     </td>
-                                    <td class="py-3">
-                                        <span class="badge bg-light text-dark border px-2 py-1" th:text="${item.durationFormatted}">1 giờ</span>
-                                        <div th:if="${item.recommendedDurationMinutes != item.durationMinutes}" class="small mt-1" style="font-size: 11px;">
-                                            <span th:classappend="${item.recommendedDurationMinutes > item.durationMinutes} ? 'text-danger fw-semibold' : 'text-success fw-semibold'"
-                                                  th:text="'Gợi ý: ' + ${item.recommendedDurationFormatted}">Gợi ý: 45p</span>
-                                        </div>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3 fw-semibold text-dark"><i class="bi bi-calendar3 me-1.5 text-primary"></i> Các ngày học trong tuần</td>
+                                    <td class="text-secondary" th:text="${path.studyDaysText != null ? path.studyDaysText : 'Thứ 2, 3, 4, 5, 6'}">Thứ 2, 3, 4, 5, 6</td>
+                                    <td class="fw-bold text-dark" th:text="${preview.studyDaysText}">Thứ 2, 4, 6</td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3 fw-semibold text-dark"><i class="bi bi-calendar-event me-1.5 text-primary"></i> Ngày bắt đầu học</td>
+                                    <td class="text-secondary" th:text="${path.startDateFormatted}">18/11/2026</td>
+                                    <td class="fw-bold text-dark" th:text="${preview.startDateFormatted != null ? preview.startDateFormatted : preview.startDate}">19/11/2026</td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3 fw-semibold text-dark"><i class="bi bi-flag-fill me-1.5 text-success"></i> Dự kiến hoàn thành</td>
+                                    <td class="text-secondary" th:text="${path.projectedEndDateFormatted}">06/01/2027</td>
+                                    <td class="fw-bold text-success">
+                                        <span th:text="${preview.newCompletionDate}">30/12/2026</span>
+                                        <span th:if="${preview.daysDifferenceText != null}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 11px;" th:text="${preview.daysDifferenceText}">Sớm hơn</span>
                                     </td>
-                                    <td class="py-3 text-primary fw-semibold" th:text="${item.plannedDateFormatted}">
-                                        01/10/2026
-                                    </td>
-                                    <td class="text-end pe-4 py-3">
-                                        <span class="badge px-3 py-2 rounded-pill fw-semibold"
-                                              th:classappend="${item.status == 'COMPLETED'} ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'"
-                                              th:text="${item.statusDisplay}">Đã hoàn thành</span>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3 fw-semibold text-dark"><i class="bi bi-award me-1.5 text-warning"></i> Kỳ thi JLPT mục tiêu</td>
+                                    <td class="text-secondary" th:text="${path.targetExamDateFormatted != null ? path.targetExamDateFormatted : 'Chưa chọn'}">Chưa chọn</td>
+                                    <td class="fw-bold text-dark">
+                                        <span th:text="${preview.targetExamDateFormatted != null ? preview.targetExamDateFormatted : 'Chưa chọn'}">06/12/2026</span>
+                                        <span th:if="${preview.targetExamDate != null}" class="badge rounded-pill ms-1" th:classappend="${preview.examReadinessBadgeClass}" th:text="${preview.examReadinessStatus == 'ON_TRACK' ? 'Kịp kỳ thi' : 'Cần tăng tốc'}">Kịp kỳ thi</span>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Pagination Footer -->
-                    <div id="recalibratePagination" class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-light-subtle">
-                        <div class="text-muted small" id="recalibratePageInfo">
-                            Hiển thị <strong>1 - 5</strong> trong tổng số <strong>12</strong> bài học
-                        </div>
-                        <nav aria-label="Phân trang lịch học đề xuất">
-                            <ul class="pagination pagination-sm mb-0" id="recalibratePageNav">
-                            </ul>
-                        </nav>
+                    <!-- Notice Alert -->
+                    <div class="alert alert-warning border-0 rounded-3 p-3 mb-4 d-flex align-items-center gap-3">
+                        <i class="bi bi-exclamation-circle-fill fs-4 text-warning flex-shrink-0"></i>
+                        <span class="small text-dark">
+                            <strong>Lưu ý quan trọng:</strong> Khi áp dụng, hệ thống sẽ tự động cập nhật lại thời khóa biểu cho tất cả các bài học chưa hoàn thành. Các bài đã học trước đó và chuỗi ngày học liên tục 🔥 của bạn hoàn toàn được bảo lưu an toàn.
+                        </span>
                     </div>
 
+                    <!-- Action Buttons: Quay lại Bước 2 & Xác nhận áp dụng lịch học cá nhân mới -->
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold d-flex align-items-center gap-2"
+                                onclick="goToStep(2)">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>Quay lại: Bước 2 (Lịch học đề xuất chi tiết)</span>
+                        </button>
+
+                        <form th:action="@{/learning-path/recalibrate/apply}" method="post" class="d-inline">
+                            <input type="hidden" name="courseId" th:value="${preview.courseId != null ? preview.courseId : path.courseId}">
+                            <input type="hidden" name="weeklyHours" th:value="${preview.newWeeklyHours}">
+                            <input type="hidden" name="dailyHours" th:value="${preview.dailyHours}">
+                            <input type="hidden" name="startDate" th:value="${preview.startDate}">
+                            <input type="hidden" name="targetExamDate" th:value="${preview.targetExamDate}">
+                            <input type="hidden" name="scheduleMode" th:value="${preview.scheduleMode}">
+                            <th:block th:each="d : ${preview.studyDays}">
+                                <input type="hidden" name="studyDays" th:value="${d}">
+                            </th:block>
+                            <button type="submit" class="btn btn-success px-4 py-2.5 rounded-pill shadow-sm fw-bold text-nowrap d-flex align-items-center gap-2"
+                                    style="font-size: 15px;">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span>Xác nhận áp dụng lịch học cá nhân mới</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
+            </div> <!-- End #stepSection3 -->
             </div>
         </div>
+        <!-- Custom CSS for Dropdown Accordion Transitions -->
+        <style>
+            .day-btn {
+                background-color: #FFFFFF;
+                border: 1.5px solid #CBD5E1;
+                color: #64748B;
+                min-width: 50px;
+                height: 42px;
+                padding: 0 14px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                user-select: none;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .day-btn:hover {
+                border-color: #173B57;
+                color: #173B57;
+                background-color: #EBF3F8;
+            }
+            .day-btn.active {
+                background-color: #173B57 !important;
+                border-color: #173B57 !important;
+                color: #FFFFFF !important;
+                font-weight: 700 !important;
+                box-shadow: 0 3px 8px rgba(23, 59, 87, 0.3) !important;
+            }
+            .day-btn.active:hover {
+                background-color: #244F70 !important;
+                border-color: #244F70 !important;
+                color: #FFFFFF !important;
+            }
+            .week-header-clickable:hover {
+                background-color: #F8FAFC;
+            }
+            .day-header-clickable:hover {
+                background-color: #F1F5F9 !important;
+            }
+            .week-chevron-icon, .day-chevron-icon {
+                transition: transform 0.25s ease-in-out;
+            }
+            .week-chevron-icon.rotate-180, .day-chevron-icon.rotate-180 {
+                transform: rotate(180deg);
+            }
+            .transition-all {
+                transition: all 0.25s ease-in-out;
+            }
+        </style>
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+var initialStudyDays = /*[[${preview != null ? preview.studyDays : (request != null and request.studyDays != null ? request.studyDays : path.studyDays)}]]*/ [];
+var initialMode = /*[[${request != null and request.scheduleMode != null ? request.scheduleMode : (path != null and path.scheduleMode != null ? path.scheduleMode : 'CUSTOM')}]]*/ 'CUSTOM';
+var currentWizardStep = /*[[${currentStep != null ? currentStep : 1}]]*/ 1;
+var hasValidPreview = /*[[${preview != null}]]*/ false;
+
+var baselineEndDateStr = /*[[${preview != null and preview.baselineEndDateFormatted != null ? preview.baselineEndDateFormatted : (path != null and path.baselineEndDateFormatted != null ? path.baselineEndDateFormatted : null)}]]*/ null;
+var currentEndDateStr = /*[[${preview != null and preview.originalCompletionDate != null ? preview.originalCompletionDate : (path != null and path.projectedEndDateFormatted != null ? path.projectedEndDateFormatted : null)}]]*/ null;
+var previewNewCompletionDateStr = /*[[${preview != null and preview.newCompletionDate != null ? preview.newCompletionDate : null}]]*/ null;
+var previewWeeksNeeded = /*[[${preview != null and preview.weeksNeeded != null ? preview.weeksNeeded : null}]]*/ null;
+
+var rawLessons = /*[[${preview != null and preview.rescheduledItems != null ? preview.rescheduledItems : (path != null and path.items != null ? path.items : null)}]]*/ [];
+var remainingLessonMinutes = [];
+if (rawLessons && Array.isArray(rawLessons)) {
+    for (var i = 0; i < rawLessons.length; i++) {
+        var it = rawLessons[i];
+        if (it && it.status !== 'COMPLETED') {
+            var dur = (it.recommendedDurationMinutes && it.recommendedDurationMinutes > 0)
+                ? it.recommendedDurationMinutes
+                : ((it.durationMinutes && it.durationMinutes > 0) ? it.durationMinutes : 60);
+            remainingLessonMinutes.push(dur);
+        }
+    }
+}
+
+var allPreviewWeeksExpanded = false;
+var previewWeekDaysExpandedState = {};
+var currentPreviewTimelineViewMode = 'ROADMAP';
+
+function goToStep(step) {
+    if (step < 1 || step > 3) return;
+
+    // Khi đang ở Bước 1 và muốn sang Bước 2 hoặc Bước 3: yêu cầu submit form để hệ thống tính toán mô phỏng kế hoạch mới
+    if ((step === 2 || step === 3) && currentWizardStep === 1) {
+        submitStep1();
+        return;
+    }
+
+    currentWizardStep = step;
+
+    var sec1 = document.getElementById('stepSection1');
+    var sec2 = document.getElementById('stepSection2');
+    var sec3 = document.getElementById('stepSection3');
+
+    if (sec1) sec1.style.display = (step === 1) ? 'block' : 'none';
+    if (sec2) sec2.style.display = (step === 2) ? 'block' : 'none';
+    if (sec3) sec3.style.display = (step === 3) ? 'block' : 'none';
+
+    updateStepperUI(step);
+
+    // Cuộn mượt mà lên vị trí stepper để người dùng dễ theo dõi
+    var stepper = document.getElementById('stepIndicator1');
+    if (stepper) {
+        stepper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function updateStepperUI(step) {
+    var c1 = document.getElementById('stepCircle1');
+    var c2 = document.getElementById('stepCircle2');
+    var c3 = document.getElementById('stepCircle3');
+    var t1 = document.getElementById('stepText1');
+    var t2 = document.getElementById('stepText2');
+    var t3 = document.getElementById('stepText3');
+    var line12 = document.getElementById('stepConnector12');
+    var line23 = document.getElementById('stepConnector23');
+
+    if (step === 1) {
+        if (c1) {
+            c1.innerHTML = '1';
+            c1.style.backgroundColor = '#173B57';
+            c1.style.borderColor = '#173B57';
+            c1.style.color = '#FFFFFF';
+        }
+        if (t1) { t1.style.color = '#173B57'; t1.className = 'small fw-bold step-text'; }
+
+        if (c2) {
+            c2.innerHTML = '2';
+            c2.style.backgroundColor = '#FFFFFF';
+            c2.style.borderColor = '#CBD5E1';
+            c2.style.color = '#64748B';
+        }
+        if (t2) { t2.style.color = '#64748B'; t2.className = 'small step-text'; }
+
+        if (c3) {
+            c3.innerHTML = '3';
+            c3.style.backgroundColor = '#FFFFFF';
+            c3.style.borderColor = '#CBD5E1';
+            c3.style.color = '#64748B';
+        }
+        if (t3) { t3.style.color = '#64748B'; t3.className = 'small step-text'; }
+
+        if (line12) line12.style.backgroundColor = '#E2E8F0';
+        if (line23) line23.style.backgroundColor = '#E2E8F0';
+    } else if (step === 2) {
+        if (c1) {
+            c1.innerHTML = '<i class="bi bi-check-lg"></i>';
+            c1.style.backgroundColor = '#10B981';
+            c1.style.borderColor = '#10B981';
+            c1.style.color = '#FFFFFF';
+        }
+        if (t1) { t1.style.color = '#10B981'; t1.className = 'small fw-bold step-text'; }
+
+        if (c2) {
+            c2.innerHTML = '2';
+            c2.style.backgroundColor = '#173B57';
+            c2.style.borderColor = '#173B57';
+            c2.style.color = '#FFFFFF';
+        }
+        if (t2) { t2.style.color = '#173B57'; t2.className = 'small fw-bold step-text'; }
+
+        if (c3) {
+            c3.innerHTML = '3';
+            c3.style.backgroundColor = '#FFFFFF';
+            c3.style.borderColor = '#CBD5E1';
+            c3.style.color = '#64748B';
+        }
+        if (t3) { t3.style.color = '#64748B'; t3.className = 'small step-text'; }
+
+        if (line12) line12.style.backgroundColor = '#10B981';
+        if (line23) line23.style.backgroundColor = '#E2E8F0';
+    } else if (step === 3) {
+        if (c1) {
+            c1.innerHTML = '<i class="bi bi-check-lg"></i>';
+            c1.style.backgroundColor = '#10B981';
+            c1.style.borderColor = '#10B981';
+            c1.style.color = '#FFFFFF';
+        }
+        if (t1) { t1.style.color = '#10B981'; t1.className = 'small fw-bold step-text'; }
+
+        if (c2) {
+            c2.innerHTML = '<i class="bi bi-check-lg"></i>';
+            c2.style.backgroundColor = '#10B981';
+            c2.style.borderColor = '#10B981';
+            c2.style.color = '#FFFFFF';
+        }
+        if (t2) { t2.style.color = '#10B981'; t2.className = 'small fw-bold step-text'; }
+
+        if (c3) {
+            c3.innerHTML = '3';
+            c3.style.backgroundColor = '#10B981';
+            c3.style.borderColor = '#10B981';
+            c3.style.color = '#FFFFFF';
+        }
+        if (t3) { t3.style.color = '#10B981'; t3.className = 'small fw-bold step-text'; }
+
+        if (line12) line12.style.backgroundColor = '#10B981';
+        if (line23) line23.style.backgroundColor = '#10B981';
+    }
+}
+
+function submitStep1() {
+    var checkedDays = document.querySelectorAll('#hiddenDaysInputs input[type="checkbox"]:checked');
+    if (!checkedDays || checkedDays.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 ngày học trong tuần ở Bước 1!');
+        return;
+    }
+
+    var dailyHoursInput = document.getElementById('dailyHours');
+    var hours = parseFloat(dailyHoursInput ? dailyHoursInput.value : 0);
+    if (!hours || hours <= 0) {
+        alert('Vui lòng nhập số giờ học mỗi ngày hợp lệ (> 0)!');
+        return;
+    }
+
+    var startDateInput = document.getElementById('startDate');
+    if (!startDateInput || !startDateInput.value) {
+        alert('Vui lòng chọn ngày bắt đầu học!');
+        return;
+    }
+
+    // Submit form to compute simulation preview and transition to Step 2
+    var form = document.getElementById('recalibrateForm');
+    if (form) {
+        form.submit();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-    const rowsPerPage = 5;
-    const rows = document.querySelectorAll('.recalibrate-row');
-    const totalRows = rows.length;
-    if (totalRows === 0) return;
+    initStudyDaysUI();
+    switchScheduleMode(initialMode || 'CUSTOM');
+    syncPreviewChevrons();
+    goToStep(currentWizardStep || 1);
 
-    const totalPages = Math.ceil(totalRows / rowsPerPage);
-    let currentPage = 1;
-
-    const pageInfo = document.getElementById('recalibratePageInfo');
-    const pageNav = document.getElementById('recalibratePageNav');
-
-    function renderPage(page) {
-        currentPage = page;
-        const start = (page - 1) * rowsPerPage;
-        const end = Math.min(start + rowsPerPage, totalRows);
-
-        rows.forEach((row, idx) => {
-            row.style.display = (idx >= start && idx < end) ? '' : 'none';
+    // Attach validation to recalibrateForm submit
+    var recForm = document.getElementById('recalibrateForm');
+    if (recForm) {
+        recForm.addEventListener('submit', function (e) {
+            var input = document.getElementById('startDate');
+            if (input && input.value) {
+                var now = new Date();
+                var y = now.getFullYear();
+                var m = String(now.getMonth() + 1).padStart(2, '0');
+                var d = String(now.getDate()).padStart(2, '0');
+                var todayStr = y + '-' + m + '-' + d;
+                if (input.value < todayStr) {
+                    e.preventDefault();
+                    alert('Ngày bắt đầu học dự kiến không được trước ngày hôm nay (' + d + '/' + m + '/' + y + ').');
+                    input.value = todayStr;
+                    input.focus();
+                    return false;
+                }
+            }
         });
-
-        if (pageInfo) {
-            pageInfo.innerHTML = `Hiển thị <strong>${start + 1} - ${end}</strong> trong tổng số <strong>${totalRows}</strong> bài học`;
-        }
-
-        renderNav();
     }
-
-    function renderNav() {
-        if (!pageNav) return;
-        pageNav.innerHTML = '';
-
-        if (totalPages <= 1) {
-            pageNav.parentElement.style.display = 'none';
-            return;
-        } else {
-            pageNav.parentElement.style.display = '';
-        }
-
-        // Prev button
-        const prevLi = document.createElement('li');
-        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-        prevLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Previous">&laquo;</a>`;
-        prevLi.addEventListener('click', () => {
-            if (currentPage > 1) renderPage(currentPage - 1);
-        });
-        pageNav.appendChild(prevLi);
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            const li = document.createElement('li');
-            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="javascript:void(0)">${i}</a>`;
-            const pageNum = i;
-            li.addEventListener('click', () => renderPage(pageNum));
-            pageNav.appendChild(li);
-        }
-
-        // Next button
-        const nextLi = document.createElement('li');
-        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-        nextLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Next">&raquo;</a>`;
-        nextLi.addEventListener('click', () => {
-            if (currentPage < totalPages) renderPage(currentPage + 1);
-        });
-        pageNav.appendChild(nextLi);
-    }
-
-    renderPage(1);
 });
+
+function onStartDateChange(val) {
+    if (!val) return;
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    var todayStr = y + '-' + m + '-' + d;
+
+    if (val < todayStr) {
+        alert('Ngày bắt đầu học dự kiến không được trước ngày hôm nay (' + d + '/' + m + '/' + y + ').');
+        var input = document.getElementById('startDate');
+        if (input) input.value = todayStr;
+        val = todayStr;
+    }
+
+    // Auto-select the day of the week of startDate into study days
+    var parts = val.split('-');
+    if (parts.length === 3) {
+        var chosenDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        var dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+        var chosenDayName = dayNames[chosenDate.getDay()];
+
+        var chk = document.getElementById('chk_' + chosenDayName);
+        if (chk && !chk.checked) {
+            chk.checked = true;
+            updateDayButtonVisual(chosenDayName, true);
+            recalculateWeeklyHours();
+            updatePlanSummary();
+        }
+    }
+}
+
+function updateDayButtonVisual(day, isChecked) {
+    var btn = document.querySelector('.day-btn[data-day="' + day + '"]');
+    if (!btn) return;
+    if (isChecked) {
+        btn.classList.add('active');
+        btn.style.setProperty('background-color', '#173B57', 'important');
+        btn.style.setProperty('border-color', '#173B57', 'important');
+        btn.style.setProperty('color', '#FFFFFF', 'important');
+    } else {
+        btn.classList.remove('active');
+        btn.style.setProperty('background-color', '#FFFFFF', 'important');
+        btn.style.setProperty('border-color', '#CBD5E1', 'important');
+        btn.style.setProperty('color', '#64748B', 'important');
+    }
+}
+
+function initStudyDaysUI() {
+    var defaultDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+    if (initialStudyDays && Array.isArray(initialStudyDays) && initialStudyDays.length > 0) {
+        defaultDays = initialStudyDays;
+    }
+
+    var allDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+    allDays.forEach(function (day) {
+        var chk = document.getElementById('chk_' + day);
+        var isSelected = defaultDays.indexOf(day) !== -1;
+        if (chk) chk.checked = isSelected;
+        updateDayButtonVisual(day, isSelected);
+    });
+    recalculateWeeklyHours();
+    updatePlanSummary();
+}
+
+function toggleDay(day) {
+    var chk = document.getElementById('chk_' + day);
+    if (!chk) return;
+    chk.checked = !chk.checked;
+    updateDayButtonVisual(day, chk.checked);
+    recalculateWeeklyHours();
+    updatePlanSummary();
+}
+
+function adjustDailyHours(delta) {
+    var input = document.getElementById('dailyHours');
+    if (!input) return;
+    var current = parseFloat(input.value) || 1.0;
+    var next = Math.max(0.5, Math.min(12.0, parseFloat((current + delta).toFixed(1))));
+    input.value = next.toFixed(1);
+    recalculateWeeklyHours();
+    updatePlanSummary();
+}
+
+function updatePlanSummary() {
+    var dailyHoursInput = document.getElementById('dailyHours');
+    var startDateInput = document.getElementById('startDate');
+    var checkedDays = document.querySelectorAll('#hiddenDaysInputs input[type="checkbox"]:checked');
+
+    var daily = parseFloat(dailyHoursInput ? dailyHoursInput.value : 1.0) || 1.0;
+    var count = Math.max(1, checkedDays.length);
+    var weekly = Math.round(daily * count);
+
+    var weeklyEl = document.getElementById('summaryWeeklyHours');
+    if (weeklyEl) weeklyEl.textContent = weekly + ' giờ/tuần';
+
+    var selectedDayNumbers = [];
+    checkedDays.forEach(function (cb) {
+        var dayName = cb.value;
+        var map = { 'MONDAY': 1, 'TUESDAY': 2, 'WEDNESDAY': 3, 'THURSDAY': 4, 'FRIDAY': 5, 'SATURDAY': 6, 'SUNDAY': 0 };
+        if (map[dayName] !== undefined) selectedDayNumbers.push(map[dayName]);
+    });
+    if (selectedDayNumbers.length === 0) selectedDayNumbers = [1, 2, 3, 4, 5];
+
+    var startVal = startDateInput ? startDateInput.value : '';
+    if (startVal) {
+        var parts = startVal.split('-');
+        if (parts.length === 3) {
+            var startD = String(parts[2]).padStart(2, '0');
+            var startM = String(parts[1]).padStart(2, '0');
+            var startY = parts[0];
+            var startEl = document.getElementById('summaryStartDate');
+            if (startEl) startEl.textContent = startD + '/' + startM + '/' + startY;
+
+            if (remainingLessonMinutes && remainingLessonMinutes.length > 0) {
+                var currDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                var dailyMinutesBudget = Math.round(daily * 60);
+                if (dailyMinutesBudget <= 0) dailyMinutesBudget = 60;
+                var accumulatedToday = 0;
+
+                var guard1 = 0;
+                while (!selectedDayNumbers.includes(currDate.getDay()) && guard1++ < 365) {
+                    currDate.setDate(currDate.getDate() + 1);
+                }
+
+                for (var i = 0; i < remainingLessonMinutes.length; i++) {
+                    var dur = remainingLessonMinutes[i];
+                    accumulatedToday += dur;
+                    if (accumulatedToday > dailyMinutesBudget && accumulatedToday > dur) {
+                        var guard2 = 0;
+                        do {
+                            currDate.setDate(currDate.getDate() + 1);
+                        } while (!selectedDayNumbers.includes(currDate.getDay()) && guard2++ < 365);
+                        accumulatedToday = dur;
+                    }
+                }
+
+                var endD = String(currDate.getDate()).padStart(2, '0');
+                var endM = String(currDate.getMonth() + 1).padStart(2, '0');
+                var endY = currDate.getFullYear();
+                var finalDateStr = endD + '/' + endM + '/' + endY;
+
+                var endEl = document.getElementById('summaryEndDate');
+                if (endEl) endEl.textContent = finalDateStr;
+
+                var startObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                var diffDays = Math.max(1, Math.round((currDate - startObj) / (1000 * 60 * 60 * 24)));
+                var weeksNeeded = Math.max(1, Math.ceil(diffDays / 7));
+                var weeksEl = document.getElementById('summaryTotalWeeks');
+                if (weeksEl) weeksEl.textContent = '≈ ' + weeksNeeded + ' tuần';
+
+                updateComparisonText(currDate);
+            } else if (previewNewCompletionDateStr) {
+                var endEl = document.getElementById('summaryEndDate');
+                if (endEl) endEl.textContent = previewNewCompletionDateStr;
+                if (previewWeeksNeeded) {
+                    var weeksEl = document.getElementById('summaryTotalWeeks');
+                    if (weeksEl) weeksEl.textContent = '≈ ' + previewWeeksNeeded + ' tuần';
+                }
+            }
+        }
+    }
+}
+
+function updateComparisonText(newEndDateObj) {
+    var vsCurrentEl = document.getElementById('badgeVsCurrent');
+    var vsBaselineEl = document.getElementById('badgeVsBaseline');
+
+    if (currentEndDateStr && vsCurrentEl) {
+        var cParts = currentEndDateStr.split('/');
+        if (cParts.length === 3) {
+            var cDate = new Date(parseInt(cParts[2]), parseInt(cParts[1]) - 1, parseInt(cParts[0]));
+            var diffMs = cDate.getTime() - newEndDateObj.getTime();
+            var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) {
+                vsCurrentEl.textContent = 'Hoàn thành sớm hơn ' + diffDays + ' ngày';
+            } else if (diffDays < 0) {
+                vsCurrentEl.textContent = 'Kéo dài thêm ' + Math.abs(diffDays) + ' ngày';
+            } else {
+                vsCurrentEl.textContent = 'Tiến độ tương đương kế hoạch hiện tại';
+            }
+        }
+    }
+
+    if (baselineEndDateStr && vsBaselineEl) {
+        var bParts = baselineEndDateStr.split('/');
+        if (bParts.length === 3) {
+            var bDate = new Date(parseInt(bParts[2]), parseInt(bParts[1]) - 1, parseInt(bParts[0]));
+            var diffMs = newEndDateObj.getTime() - bDate.getTime();
+            var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) {
+                vsBaselineEl.textContent = 'Kéo dài thêm ' + diffDays + ' ngày';
+            } else if (diffDays < 0) {
+                vsBaselineEl.textContent = 'Hoàn thành sớm hơn ' + Math.abs(diffDays) + ' ngày';
+            } else {
+                vsBaselineEl.textContent = 'Khớp ngày hoàn thành kế hoạch ban đầu';
+            }
+        }
+    }
+}
+
+function setDailyHours(hours) {
+    var input = document.getElementById('dailyHours');
+    if (input) {
+        input.value = hours;
+        recalculateWeeklyHours();
+        updatePlanSummary();
+    }
+}
+
+function recalculateWeeklyHours() {
+    var dailyHoursInput = document.getElementById('dailyHours');
+    var weeklyHoursInput = document.getElementById('weeklyHours');
+    var checkedDays = document.querySelectorAll('#hiddenDaysInputs input[type="checkbox"]:checked');
+
+    var daily = parseFloat(dailyHoursInput ? dailyHoursInput.value : 1.0) || 1.0;
+    var count = Math.max(1, checkedDays.length);
+    var weekly = Math.round(daily * count);
+
+    if (weeklyHoursInput) weeklyHoursInput.value = weekly;
+}
+
+function switchScheduleMode(mode) {
+    var modeInput = document.getElementById('scheduleMode');
+    var radioCustom = document.getElementById('radioModeCustom');
+    var radioJlpt = document.getElementById('radioModeJlpt');
+    var jlptSection = document.getElementById('jlptTargetSection');
+
+    if (modeInput) modeInput.value = mode;
+
+    if (mode === 'JLPT_TARGET') {
+        if (radioJlpt) radioJlpt.checked = true;
+        if (radioCustom) radioCustom.checked = false;
+        if (jlptSection) jlptSection.style.display = 'block';
+    } else {
+        if (radioCustom) radioCustom.checked = true;
+        if (radioJlpt) radioJlpt.checked = false;
+        if (jlptSection) jlptSection.style.display = 'none';
+    }
+}
+
+function setJlptPeriod(period, dateStr) {
+    var periodInput = document.getElementById('jlptPeriod');
+    var dateInput = document.getElementById('targetExamDate');
+    if (periodInput) periodInput.value = period;
+    if (dateInput) dateInput.value = dateStr;
+
+    document.querySelectorAll('.exam-chip').forEach(function (chip) {
+        chip.classList.remove('btn-dark', 'text-white');
+        chip.classList.add('btn-outline-dark');
+    });
+
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.remove('btn-outline-dark');
+        event.currentTarget.classList.add('btn-dark', 'text-white');
+    }
+}
+
+function togglePreviewWeekAccordion(weekNum) {
+    var body = document.getElementById("preview-week-body-" + weekNum);
+    var chevron = document.getElementById("chevron-preview-" + weekNum);
+    if (!body) return;
+
+    var isHidden = body.style.display === "none";
+    body.style.display = isHidden ? "block" : "none";
+
+    if (chevron) {
+        if (isHidden) {
+            chevron.classList.add("rotate-180");
+        } else {
+            chevron.classList.remove("rotate-180");
+        }
+    }
+}
+
+function togglePreviewDayAccordion(weekNum, dayIdx) {
+    var body = document.getElementById("preview-day-body-" + weekNum + "-" + dayIdx);
+    var chevron = document.getElementById("chevron-preview-day-" + weekNum + "-" + dayIdx);
+    if (!body) return;
+
+    var isHidden = body.style.display === "none";
+    body.style.display = isHidden ? "block" : "none";
+
+    if (chevron) {
+        if (isHidden) {
+            chevron.classList.add("rotate-180");
+        } else {
+            chevron.classList.remove("rotate-180");
+        }
+    }
+}
+
+function toggleAllDaysInPreviewWeek(weekNum) {
+    var weekBody = document.getElementById("preview-week-body-" + weekNum);
+    if (!weekBody) return;
+
+    var dayBodies = weekBody.querySelectorAll(".preview-day-collapse-content");
+    var dayChevrons = weekBody.querySelectorAll(".day-chevron-icon");
+    var btnText = document.getElementById("toggle-preview-days-text-" + weekNum);
+
+    var isAllExpanded = previewWeekDaysExpandedState[weekNum] || false;
+    var targetState = !isAllExpanded;
+    previewWeekDaysExpandedState[weekNum] = targetState;
+
+    dayBodies.forEach(function (body) {
+        body.style.display = targetState ? "block" : "none";
+    });
+
+    dayChevrons.forEach(function (ch) {
+        if (targetState) {
+            ch.classList.add("rotate-180");
+        } else {
+            ch.classList.remove("rotate-180");
+        }
+    });
+
+    if (btnText) {
+        btnText.textContent = targetState ? "Thu gọn các ngày" : "Mở tất cả các ngày";
+    }
+}
+
+function toggleAllPreviewWeeksAccordion() {
+    var bodies = document.querySelectorAll(".preview-week-collapse-content");
+    var chevrons = document.querySelectorAll(".week-chevron-icon");
+    var btnText = document.getElementById("toggleAllPreviewWeeksText");
+
+    allPreviewWeeksExpanded = !allPreviewWeeksExpanded;
+
+    bodies.forEach(function (body) {
+        body.style.display = allPreviewWeeksExpanded ? "block" : "none";
+    });
+
+    chevrons.forEach(function (ch) {
+        if (allPreviewWeeksExpanded) {
+            ch.classList.add("rotate-180");
+        } else {
+            ch.classList.remove("rotate-180");
+        }
+    });
+
+    if (btnText) {
+        btnText.textContent = allPreviewWeeksExpanded ? "Thu gọn tất cả" : "Mở tất cả";
+    }
+}
+
+function onPreviewWeekDropdownChange(weekVal) {
+    var containers = document.querySelectorAll(".preview-week-container");
+    if (weekVal === "ALL") {
+        containers.forEach(function (c) {
+            c.style.display = "block";
+        });
+    } else {
+        containers.forEach(function (c) {
+            var wNum = c.getAttribute("data-week-num");
+            if (wNum === weekVal) {
+                c.style.display = "block";
+                var body = document.getElementById("preview-week-body-" + wNum);
+                var chevron = document.getElementById("chevron-preview-" + wNum);
+                if (body) body.style.display = "block";
+                if (chevron) chevron.classList.add("rotate-180");
+                c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                c.style.display = "none";
+            }
+        });
+    }
+}
+
+function switchPreviewTimelineView(mode) {
+    currentPreviewTimelineViewMode = mode;
+    var roadmapViews = document.querySelectorAll(".preview-day-roadmap-view");
+    var tableViews = document.querySelectorAll(".preview-day-table-view");
+    var btnRoadmap = document.getElementById("btnPreviewViewRoadmap");
+    var btnTable = document.getElementById("btnPreviewViewTable");
+
+    if (mode === 'TABLE') {
+        roadmapViews.forEach(function (v) { v.style.display = 'none'; });
+        tableViews.forEach(function (v) { v.style.display = 'block'; });
+
+        if (btnTable) {
+            btnTable.classList.add('active', 'btn-primary', 'text-white');
+            btnTable.classList.remove('text-secondary');
+        }
+        if (btnRoadmap) {
+            btnRoadmap.classList.remove('active', 'btn-primary', 'text-white');
+            btnRoadmap.classList.add('text-secondary');
+        }
+    } else {
+        roadmapViews.forEach(function (v) { v.style.display = 'block'; });
+        tableViews.forEach(function (v) { v.style.display = 'none'; });
+
+        if (btnRoadmap) {
+            btnRoadmap.classList.add('active', 'btn-primary', 'text-white');
+            btnRoadmap.classList.remove('text-secondary');
+        }
+        if (btnTable) {
+            btnTable.classList.remove('active', 'btn-primary', 'text-white');
+            btnTable.classList.add('text-secondary');
+        }
+    }
+}
+
+function syncPreviewChevrons() {
+    var weekBodies = document.querySelectorAll(".preview-week-collapse-content");
+    weekBodies.forEach(function (b) {
+        var id = b.id;
+        var num = id.replace("preview-week-body-", "");
+        var ch = document.getElementById("chevron-preview-" + num);
+        if (ch && b.style.display !== "none") {
+            ch.classList.add("rotate-180");
+        }
+    });
+
+    var dayBodies = document.querySelectorAll(".preview-day-collapse-content");
+    dayBodies.forEach(function (b) {
+        var id = b.id;
+        var parts = id.replace("preview-day-body-", "");
+        var ch = document.getElementById("chevron-preview-day-" + parts);
+        if (ch && b.style.display !== "none") {
+            ch.classList.add("rotate-180");
+        }
+    });
+}
+/*]]>*/
 </script>

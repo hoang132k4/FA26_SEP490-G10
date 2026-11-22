@@ -58,7 +58,7 @@
                 <div class="kotoba-card p-3 text-center type-card" data-type="listening" style="cursor:pointer; border: 2px solid transparent; transition: all 0.2s;">
                     <i class="bi bi-headphones fs-2 d-block mb-2" style="color:var(--navy-dark);"></i>
                     <h6 class="fw-bold mb-1">Bài nghe</h6>
-                    <small class="text-muted">Audio + câu hỏi trắc nghiệm</small>
+                    <small class="text-muted">Audio + nhiều câu hỏi con</small>
                 </div>
             </div>
         </div>
@@ -119,12 +119,15 @@
                                accept=".mp3,.wav,.ogg,.m4a,.aac,.webm,audio/*">
                     </div>
                     <small class="text-muted">Chấp nhận MP3, WAV, OGG, M4A, AAC, WEBM (tối đa 50MB)</small>
+                    <small class="text-muted d-block mt-1" id="listeningHint" style="display:none;">
+                        Upload file nghe cho bài. Sau khi lưu, bạn có thể thêm các câu hỏi con cho bài nghe này.
+                    </small>
                 </div>
             </div>
         </div>
 
         <!-- ═══ Section: Nội dung ═══ -->
-        <div class="row g-3 mb-4">
+        <div id="contentSection" class="row g-3 mb-4">
             <div class="col-12">
                 <label class="form-label" id="contentLabel">Nội dung câu hỏi <span class="text-danger">*</span></label>
                 <textarea class="form-control" id="contentTextarea" th:field="*{content}" required></textarea>
@@ -186,14 +189,6 @@
             </div>
         </div>
 
-        <!-- ═══ Section: Giải thích ═══ -->
-        <div class="row g-3 mb-4">
-            <div class="col-12">
-                <label class="form-label">Giải thích đáp án</label>
-                <textarea class="form-control" rows="3" th:field="*{explanation}"></textarea>
-            </div>
-        </div>
-
         <!-- Nút bấm -->
         <div class="d-flex justify-content-end gap-2">
             <a class="btn btn-outline-secondary" th:href="@{/manager/questions}">Huỷ</a>
@@ -211,20 +206,37 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
-                <thead><tr><th>ID</th><th>Nội dung</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                <thead><tr>
+                    <th style="width:40px;"><input type="checkbox" id="bulkCheckAll" onclick="bulkToggleAll(this)"></th>
+                    <th>ID</th><th>Nội dung</th><th>Trạng thái</th><th>Thao tác</th>
+                </tr></thead>
                 <tbody>
                 <tr th:each="child : ${children}">
+                    <td><input type="checkbox" class="bulk-check" th:value="${child.id}"></td>
                     <td th:text="${child.id}"></td>
                     <td><div class="text-truncate" style="max-width:350px;" th:text="${child.content}"></div></td>
                     <td><span class="badge" th:classappend="${child.status == 'ACTIVE' ? 'bg-success' : 'bg-warning text-dark'}" th:text="${child.status}"></span></td>
                     <td><a class="btn btn-sm btn-outline-primary" th:href="@{/manager/questions/{id}/edit(id=${child.id})}"><i class="bi bi-pencil"></i></a></td>
                 </tr>
                 <tr th:if="${children == null || #lists.isEmpty(children)}">
-                    <td colspan="4" class="text-center text-muted py-3">Chưa có câu hỏi con.</td>
+                    <td colspan="5" class="text-center text-muted py-3">Chưa có câu hỏi con.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
+        <div th:insert="~{fragments/components/bulk-status :: bulkStatus(@{/manager/questions/bulk-status}, ${options.statuses})}"></div>
+        <script>
+            (function() {
+                var form = document.getElementById('bulkForm');
+                if (form) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'returnTo';
+                    input.value = '/manager/questions/' + /*[[${questionForm.id}]]*/ '' + '/edit';
+                    form.appendChild(input);
+                }
+            })();
+        </script>
     </div>
 
     <script th:inline="javascript">
@@ -272,10 +284,8 @@
                 var type = this.getAttribute('data-type');
                 var typeInput = document.getElementById('questionTypeInput');
 
-                if (type === 'passage') {
+                if (type === 'passage' || type === 'listening') {
                     typeInput.value = 'PASSAGE';
-                } else if (type === 'listening') {
-                    typeInput.value = 'MULTI_CHOICE';
                 } else {
                     typeInput.value = 'MULTI_CHOICE';
                 }
@@ -289,7 +299,9 @@
         // Determine initial tab
         (function() {
             if (isEdit || hasParent) {
-                if (currentType === 'PASSAGE') {
+                if (currentType === 'PASSAGE' && initialSkill === 'LISTENING') {
+                    currentSelectedTab = 'listening';
+                } else if (currentType === 'PASSAGE') {
                     currentSelectedTab = 'passage';
                 } else if (hasParent) {
                     currentSelectedTab = 'child';
@@ -315,12 +327,34 @@
         function toggleFormSections() {
             var optionsSection = document.getElementById('optionsSection');
             var audioSection = document.getElementById('audioSection');
+            var contentSection = document.getElementById('contentSection');
             var contentLabel = document.getElementById('contentLabel');
             var contentTextarea = document.getElementById('contentTextarea');
             var passageHint = document.getElementById('passageHint');
             var questionTypeInput = document.getElementById('questionTypeInput');
             var optA = document.getElementById('optionA');
             var optB = document.getElementById('optionB');
+
+            var listeningHint = document.getElementById('listeningHint');
+
+            // Bài nghe (PASSAGE + LISTENING): chỉ audio, ẩn nội dung text
+            if (currentSelectedTab === 'listening') {
+                questionTypeInput.value = 'PASSAGE';
+                optionsSection.style.display = 'none';
+                audioSection.style.display = 'block';
+                contentSection.style.display = 'none';
+                contentTextarea.required = false;
+                passageHint.style.display = 'none';
+                if (listeningHint) listeningHint.style.display = 'block';
+                if (optA) optA.required = false;
+                if (optB) optB.required = false;
+                lockSkill('LISTENING');
+                return;
+            }
+            if (listeningHint) listeningHint.style.display = 'none';
+
+            contentSection.style.display = '';
+            contentTextarea.required = true;
 
             // Bài đọc hiểu (đoạn văn)
             if (currentSelectedTab === 'passage') {
@@ -345,20 +379,15 @@
             contentTextarea.rows = 4;
             contentTextarea.placeholder = '';
             passageHint.style.display = 'none';
+            audioSection.style.display = 'none';
 
-            if (currentSelectedTab === 'listening') {
-                audioSection.style.display = 'block';
-                lockSkill('LISTENING');
-            } else if (currentSelectedTab === 'child') {
-                // Câu con: kỹ năng theo bài cha
-                audioSection.style.display = 'none';
+            if (currentSelectedTab === 'child') {
                 if (initialSkill === 'READING' || initialSkill === 'LISTENING') {
                     lockSkill(initialSkill);
                 } else {
                     singleSkillMode();
                 }
             } else {
-                audioSection.style.display = 'none';
                 singleSkillMode();
             }
         }
