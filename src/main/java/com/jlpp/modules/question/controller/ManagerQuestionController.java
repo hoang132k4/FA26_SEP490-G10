@@ -139,14 +139,28 @@ public class ManagerQuestionController {
         }
     }
 
+    @GetMapping("/all-ids")
+    @ResponseBody
+    public List<Long> allIds(@RequestParam(defaultValue = "") String search,
+                             @RequestParam(defaultValue = "") String questionType,
+                             @RequestParam(defaultValue = "") String jlptLevel,
+                             @RequestParam(defaultValue = "") String skillType,
+                             @RequestParam(defaultValue = "") String status) {
+        return managerQuestionService.searchAllIds(search, questionType, jlptLevel, skillType, status);
+    }
+
     @PostMapping("/bulk-status")
     public String bulkUpdateStatus(@RequestParam List<Long> ids,
                                    @RequestParam String status,
                                    @RequestParam(required = false) String returnTo,
                                    RedirectAttributes redirectAttributes) {
         try {
-            int count = managerQuestionService.bulkUpdateStatus(ids, status);
-            redirectAttributes.addFlashAttribute("questionSuccess", "Đã cập nhật trạng thái " + count + " câu hỏi sang " + status + ".");
+            var result = managerQuestionService.bulkUpdateStatus(ids, status);
+            String msg = "Đã cập nhật trạng thái " + result.updated() + " câu hỏi sang " + status + ".";
+            if (result.skipped() > 0) {
+                msg += " Bỏ qua " + result.skipped() + " câu chưa đủ điều kiện.";
+            }
+            redirectAttributes.addFlashAttribute("questionSuccess", msg);
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("questionError", exception.getMessage());
         }

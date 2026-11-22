@@ -16,7 +16,6 @@ public class ManagerQuestionForm {
     @NotBlank(message = "Loại câu hỏi không được để trống.")
     private String questionType = "MULTI_CHOICE";
 
-    @NotBlank(message = "Nội dung câu hỏi không được để trống.")
     @Size(max = 10000, message = "Nội dung câu hỏi không được vượt quá 10000 ký tự.")
     private String content;
 

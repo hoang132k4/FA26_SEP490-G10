@@ -291,6 +291,8 @@ class ManagerQuestionServiceTest {
         when(questionRepository.save(existing)).thenReturn(existing);
         ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
         form.setStatus("ACTIVE");
+        form.setJlptLevel("N5");
+        form.setSkillType("VOCABULARY");
         form.setContent("Nội dung mới");
 
         Question saved = service.update(1L, form);
@@ -502,12 +504,9 @@ class ManagerQuestionServiceTest {
     }
 
     @Test
-    void createWithNullContent_storesEmptyContent() {
-        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        Question saved = service.create(choice(f -> f.setContent(null)));
-
-        assertEquals("", saved.getContent());
+    void createWithNullContent_throwsForNonListeningPassage() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.create(choice(f -> f.setContent(null))));
     }
 
     @Test
@@ -665,6 +664,8 @@ class ManagerQuestionServiceTest {
         when(questionRepository.save(existing)).thenReturn(existing);
         ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
         form.setStatus("ACTIVE");
+        form.setJlptLevel("N5");
+        form.setSkillType("GRAMMAR");
 
         Question saved = service.update(1L, form);
 
