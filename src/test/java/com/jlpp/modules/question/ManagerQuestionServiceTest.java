@@ -8,6 +8,8 @@ import com.jlpp.modules.question.dto.QuestionUsageStats;
 import com.jlpp.modules.question.entity.Question;
 import com.jlpp.modules.question.repository.QuestionRepository;
 import com.jlpp.modules.question.service.ManagerQuestionService;
+import com.jlpp.modules.quiz.entity.QuestionOption;
+import com.jlpp.modules.quiz.repository.QuestionOptionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,11 +52,14 @@ class ManagerQuestionServiceTest {
     @Mock
     private QuestionRepository questionRepository;
 
+    @Mock
+    private QuestionOptionRepository questionOptionRepository;
+
     private ManagerQuestionService service;
 
     @BeforeEach
     void setUp() {
-        service = new ManagerQuestionService(questionRepository, objectMapper);
+        service = new ManagerQuestionService(questionRepository, questionOptionRepository, objectMapper);
     }
 
     // ── search ──
@@ -737,6 +742,226 @@ class ManagerQuestionServiceTest {
 
         assertEquals("/uploads/audio.mp3", form.getAudioUrl());
         assertEquals("Giải thích đáp án.", form.getExplanation());
+    }
+
+    // ── Fix 1: inherit audio from parent ──
+
+    @Test
+    void create_childInheritsAudioFromParent() {
+        Question parent = question(10L, "PASSAGE", "ACTIVE");
+        parent.setAudioUrl("https://example.com/audio.mp3");
+        when(questionRepository.findById(10L)).thenReturn(Optional.of(parent));
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> {
+            Question q = inv.getArgument(0);
+            q.setId(20L);
+            return q;
+        });
+        when(questionOptionRepository.findByQuestionIdOrderByLabelAsc(20L)).thenReturn(List.of());
+
+        ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
+        form.setParentId(10L);
+
+        Question saved = service.create(form);
+
+        assertEquals("https://example.com/audio.mp3", saved.getAudioUrl());
+    }
+
+    @Test
+    void create_childKeepsOwnAudioIfAlreadySet() {
+        Question parent = question(10L, "PASSAGE", "ACTIVE");
+        parent.setAudioUrl("https://example.com/parent.mp3");
+        when(questionRepository.findById(10L)).thenReturn(Optional.of(parent));
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> {
+            Question q = inv.getArgument(0);
+            q.setId(20L);
+            return q;
+        });
+        when(questionOptionRepository.findByQuestionIdOrderByLabelAsc(20L)).thenReturn(List.of());
+
+        ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
+        form.setParentId(10L);
+        form.setAudioUrl("https://example.com/child.mp3");
+
+        Question saved = service.create(form);
+
+        assertEquals("https://example.com/child.mp3", saved.getAudioUrl());
+    }
+
+    @Test
+    void create_childDoesNotInheritWhenParentHasNoAudio() {
+        Question parent = question(10L, "PASSAGE", "ACTIVE");
+        when(questionRepository.findById(10L)).thenReturn(Optional.of(parent));
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> {
+            Question q = inv.getArgument(0);
+            q.setId(20L);
+            return q;
+        });
+        when(questionOptionRepository.findByQuestionIdOrderByLabelAsc(20L)).thenReturn(List.of());
+
+        ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
+        form.setParentId(10L);
+
+        Question saved = service.create(form);
+
+        assertNull(saved.getAudioUrl());
+    }
+
+    @Test
+    void create_childDoesNotInheritWhenParentAudioIsBlank() {
+        Question parent = question(10L, "PASSAGE", "ACTIVE");
+        parent.setAudioUrl("   ");
+        when(questionRepository.findById(10L)).thenReturn(Optional.of(parent));
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> {
+            Question q = inv.getArgument(0);
+            q.setId(20L);
+            return q;
+        });
+        when(questionOptionRepository.findByQuestionIdOrderByLabelAsc(20L)).thenReturn(List.of());
+
+        ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
+        form.setParentId(10L);
+
+        Question saved = service.create(form);
+
+        assertNull(saved.getAudioUrl());
+    }
+
+    // ── Fix 2: sync question_options ──
+
+    @Test
+    void create_syncsToQuestionOptionsTable() {
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> {
+            Question q = inv.getArgument(0);
+            q.setId(1L);
+            return q;
+        });
+        when(questionOptionRepository.findByQuestionIdOrderByLabelAsc(1L)).thenReturn(List.of());
+
+        ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
+        form.setOptionC("C");
+        service.create(form);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<QuestionOption>> captor = ArgumentCaptor.forClass(List.class);
+        verify(questionOptionRepository).saveAll(captor.capture());
+        List<QuestionOption> saved = captor.getValue();
+        assertEquals(3, saved.size());
+        assertEquals("A", saved.get(0).getLabel());
+        assertTrue(saved.get(0).getIsCorrect());
+        assertEquals("B", saved.get(1).getLabel());
+        assertEquals(false, saved.get(1).getIsCorrect());
+        assertEquals("C", saved.get(2).getLabel());
+    }
+
+    @Test
+    void create_passage_doesNotSyncQuestionOptions() {
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> {
+            Question q = inv.getArgument(0);
+            q.setId(1L);
+            return q;
+        });
+
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setContent("Đoạn văn");
+        form.setStatus("DRAFT");
+        service.create(form);
+
+        verify(questionOptionRepository, never()).saveAll(anyList());
+    }
+
+    // ── sync on update ──
+
+    @Test
+    void update_syncsQuestionOptionsTable() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.save(existing)).thenReturn(existing);
+
+        QuestionOption oldA = new QuestionOption();
+        oldA.setQuestionId(1L);
+        oldA.setLabel("A");
+        oldA.setOptionText("Old A");
+        oldA.setIsCorrect(true);
+        QuestionOption oldB = new QuestionOption();
+        oldB.setQuestionId(1L);
+        oldB.setLabel("B");
+        oldB.setOptionText("Old B");
+        oldB.setIsCorrect(false);
+        when(questionOptionRepository.findByQuestionIdOrderByLabelAsc(1L)).thenReturn(List.of(oldA, oldB));
+
+        ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("B"));
+        form.setOptionA("New A");
+        form.setOptionB("New B");
+
+        service.update(1L, form);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<QuestionOption>> captor = ArgumentCaptor.forClass(List.class);
+        verify(questionOptionRepository).saveAll(captor.capture());
+        List<QuestionOption> saved = captor.getValue();
+        assertEquals(2, saved.size());
+        assertEquals("New A", saved.get(0).getOptionText());
+        assertEquals(false, saved.get(0).getIsCorrect());
+        assertEquals("New B", saved.get(1).getOptionText());
+        assertTrue(saved.get(1).getIsCorrect());
+    }
+
+    @Test
+    void update_removesStaleOptionsFromQuestionOptionsTable() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.save(existing)).thenReturn(existing);
+
+        QuestionOption oldA = new QuestionOption();
+        oldA.setLabel("A");
+        QuestionOption oldB = new QuestionOption();
+        oldB.setLabel("B");
+        QuestionOption oldC = new QuestionOption();
+        oldC.setLabel("C");
+        when(questionOptionRepository.findByQuestionIdOrderByLabelAsc(1L)).thenReturn(List.of(oldA, oldB, oldC));
+
+        ManagerQuestionForm form = choiceForm("MULTI_CHOICE", List.of("A"));
+
+        service.update(1L, form);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<QuestionOption>> deleteCaptor = ArgumentCaptor.forClass(List.class);
+        verify(questionOptionRepository).deleteAll(deleteCaptor.capture());
+        assertEquals(1, deleteCaptor.getValue().size());
+        assertEquals("C", deleteCaptor.getValue().get(0).getLabel());
+    }
+
+    // ── delete cleans up question_options ──
+
+    @Test
+    void delete_cleansUpQuestionOptionsForSingleQuestion() {
+        Question q = question(1L, "MULTI_CHOICE", "DRAFT");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(q));
+        when(questionRepository.isUsedAnywhere(1L)).thenReturn(false);
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of());
+
+        service.delete(1L);
+
+        verify(questionOptionRepository).deleteByQuestionId(1L);
+        verify(questionRepository).delete(q);
+    }
+
+    @Test
+    void delete_passageCleansUpQuestionOptionsForChildrenAndParent() {
+        Question passage = question(1L, "PASSAGE", "DRAFT");
+        Question child1 = question(2L, "MULTI_CHOICE", "DRAFT");
+        Question child2 = question(3L, "MULTI_CHOICE", "DRAFT");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.isUsedAnywhere(1L)).thenReturn(false);
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of(child1, child2));
+        when(questionRepository.isUsedAnywhere(2L)).thenReturn(false);
+        when(questionRepository.isUsedAnywhere(3L)).thenReturn(false);
+
+        service.delete(1L);
+
+        verify(questionOptionRepository).deleteByQuestionIdIn(List.of(2L, 3L));
+        verify(questionOptionRepository).deleteByQuestionId(1L);
     }
 
     // ── helpers ──

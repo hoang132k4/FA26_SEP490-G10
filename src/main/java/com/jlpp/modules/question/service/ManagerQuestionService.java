@@ -6,6 +6,8 @@ import com.jlpp.modules.question.dto.QuestionListRow;
 import com.jlpp.modules.question.dto.QuestionUsageStats;
 import com.jlpp.modules.question.entity.Question;
 import com.jlpp.modules.question.repository.QuestionRepository;
+import com.jlpp.modules.quiz.entity.QuestionOption;
+import com.jlpp.modules.quiz.repository.QuestionOptionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,10 +23,14 @@ import java.util.*;
 public class ManagerQuestionService {
 
     private final QuestionRepository questionRepository;
+    private final QuestionOptionRepository questionOptionRepository;
     private final ObjectMapper objectMapper;
 
-    public ManagerQuestionService(QuestionRepository questionRepository, ObjectMapper objectMapper) {
+    public ManagerQuestionService(QuestionRepository questionRepository,
+                                  QuestionOptionRepository questionOptionRepository,
+                                  ObjectMapper objectMapper) {
         this.questionRepository = questionRepository;
+        this.questionOptionRepository = questionOptionRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -71,9 +77,12 @@ public class ManagerQuestionService {
     @Transactional
     public Question create(ManagerQuestionForm form) {
         validateDomain(form);
+        inheritParentAudio(form);
         Question question = new Question();
         applyForm(question, form);
-        return questionRepository.save(question);
+        Question saved = questionRepository.save(question);
+        syncQuestionOptions(saved, form);
+        return saved;
     }
 
     @Transactional
@@ -84,6 +93,7 @@ public class ManagerQuestionService {
         String oldStatus = question.getStatus();
         applyForm(question, form);
         Question saved = questionRepository.save(question);
+        syncQuestionOptions(saved, form);
         if ("PASSAGE".equals(question.getQuestionType()) && !oldStatus.equals(form.getStatus())) {
             cascadeStatusToChildren(id, form.getStatus());
         }
@@ -136,8 +146,11 @@ public class ManagerQuestionService {
                     throw new IllegalArgumentException("Không thể xóa: câu hỏi con #" + child.getId() + " đang được sử dụng trong đề thi hoặc quiz.");
                 }
             }
+            List<Long> childIds = children.stream().map(Question::getId).toList();
+            questionOptionRepository.deleteByQuestionIdIn(childIds);
             questionRepository.deleteAll(children);
         }
+        questionOptionRepository.deleteByQuestionId(id);
         questionRepository.delete(question);
     }
 
@@ -327,6 +340,46 @@ public class ManagerQuestionService {
             map.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
         }
         return map;
+    }
+
+    private void inheritParentAudio(ManagerQuestionForm form) {
+        if (form.getParentId() == null) return;
+        if (form.getAudioUrl() != null && !form.getAudioUrl().isBlank()) return;
+        Question parent = questionRepository.findById(form.getParentId()).orElse(null);
+        if (parent != null && parent.getAudioUrl() != null && !parent.getAudioUrl().isBlank()) {
+            form.setAudioUrl(parent.getAudioUrl());
+        }
+    }
+
+    private void syncQuestionOptions(Question saved, ManagerQuestionForm form) {
+        if ("PASSAGE".equals(saved.getQuestionType())) return;
+
+        List<QuestionOption> existing = questionOptionRepository.findByQuestionIdOrderByLabelAsc(saved.getId());
+        Map<String, QuestionOption> byLabel = new LinkedHashMap<>();
+        for (QuestionOption opt : existing) byLabel.put(opt.getLabel(), opt);
+
+        Set<String> validAnswers = form.getAnswerKeys() != null ? new HashSet<>(form.getAnswerKeys()) : Set.of();
+        Map<String, String> formOptions = new LinkedHashMap<>();
+        if (!isBlank(form.getOptionA())) formOptions.put("A", form.getOptionA().trim());
+        if (!isBlank(form.getOptionB())) formOptions.put("B", form.getOptionB().trim());
+        if (!isBlank(form.getOptionC())) formOptions.put("C", form.getOptionC().trim());
+        if (!isBlank(form.getOptionD())) formOptions.put("D", form.getOptionD().trim());
+
+        List<QuestionOption> toSave = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (Map.Entry<String, String> entry : formOptions.entrySet()) {
+            String label = entry.getKey();
+            seen.add(label);
+            QuestionOption opt = byLabel.getOrDefault(label, new QuestionOption());
+            opt.setQuestionId(saved.getId());
+            opt.setLabel(label);
+            opt.setOptionText(entry.getValue());
+            opt.setIsCorrect(validAnswers.contains(label));
+            toSave.add(opt);
+        }
+        List<QuestionOption> toDelete = existing.stream().filter(o -> !seen.contains(o.getLabel())).toList();
+        if (!toDelete.isEmpty()) questionOptionRepository.deleteAll(toDelete);
+        if (!toSave.isEmpty()) questionOptionRepository.saveAll(toSave);
     }
 
     private String norm(String v) { return v == null ? "" : v.trim(); }
