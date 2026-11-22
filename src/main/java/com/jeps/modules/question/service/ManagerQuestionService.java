@@ -37,6 +37,14 @@ public class ManagerQuestionService {
     public static final int PAGE_SIZE = 20;
 
     @Transactional(readOnly = true)
+    public List<Long> searchAllIds(String search, String questionType,
+                                   String jlptLevel, String skillType, String status) {
+        return questionRepository.searchIdsForManager(
+                norm(search), norm(questionType),
+                norm(jlptLevel), norm(skillType), norm(status));
+    }
+
+    @Transactional(readOnly = true)
     public Page<QuestionListRow> search(String search, String questionType,
                                         String jlptLevel, String skillType, String status, int page) {
         Page<Question> questions = questionRepository.searchForManager(
@@ -100,37 +108,59 @@ public class ManagerQuestionService {
         return saved;
     }
 
+    public record BulkUpdateResult(int updated, int skipped) {}
+
     @Transactional
-    public int bulkUpdateStatus(List<Long> ids, String newStatus) {
+    public BulkUpdateResult bulkUpdateStatus(List<Long> ids, String newStatus) {
         if (ids == null || ids.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một câu hỏi.");
         }
         if (Arrays.stream(QuestionStatusEnum.values()).noneMatch(v -> v.name().equals(newStatus))) {
             throw new IllegalArgumentException("Trạng thái không hợp lệ.");
         }
-        List<Question> questions = questionRepository.findAllById(ids);
-        if (questions.size() != ids.size()) {
-            throw new IllegalArgumentException("Một số câu hỏi không tồn tại.");
-        }
-        int updated = 0;
-        for (Question q : questions) {
-            if (q.getStatus().equals(newStatus)) continue;
-            if ("ARCHIVED".equals(newStatus)) {
-                long activeExams = questionRepository.countActiveExamUsages(q.getId());
-                long activeQuizzes = questionRepository.countActiveQuizUsages(q.getId());
-                if (activeExams > 0 || activeQuizzes > 0) {
-                    throw new IllegalArgumentException("Câu hỏi #" + q.getId()
-                            + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED.");
+        int totalRequested = ids.size();
+
+        if ("ACTIVE".equals(newStatus)) {
+            Set<Long> excluded = new HashSet<>();
+            excluded.addAll(questionRepository.findIdsWithIncompleteInfo(ids));
+            excluded.addAll(questionRepository.findIdsWithMissingAnswers(ids));
+
+            List<Long> childIds = questionRepository.findChildIdsByParentIds(ids);
+            if (!childIds.isEmpty()) {
+                List<Long> badChildIds = new ArrayList<>();
+                badChildIds.addAll(questionRepository.findIdsWithIncompleteInfo(childIds));
+                badChildIds.addAll(questionRepository.findIdsWithMissingAnswers(childIds));
+                if (!badChildIds.isEmpty()) {
+                    excluded.addAll(questionRepository.findParentIdsOfChildren(badChildIds));
                 }
             }
-            q.setStatus(newStatus);
-            updated++;
-            if ("PASSAGE".equals(q.getQuestionType())) {
-                cascadeStatusToChildren(q.getId(), newStatus);
+
+            ids = ids.stream().filter(id -> !excluded.contains(id)).toList();
+            if (ids.isEmpty()) {
+                throw new IllegalArgumentException("Không có câu hỏi nào đủ điều kiện để chuyển sang ACTIVE (thiếu cấp độ JLPT, kỹ năng hoặc đáp án).");
             }
         }
-        questionRepository.saveAll(questions);
-        return updated;
+
+        if ("ARCHIVED".equals(newStatus)) {
+            List<Long> allIdsToCheck = new ArrayList<>(ids);
+            List<Long> childIds = questionRepository.findChildIdsByParentIds(ids);
+            allIdsToCheck.addAll(childIds);
+
+            List<Long> blockedByExam = questionRepository.findIdsUsedInActiveExams(allIdsToCheck);
+            List<Long> blockedByQuiz = questionRepository.findIdsUsedInActiveQuizzes(allIdsToCheck);
+            Set<Long> blocked = new HashSet<>(blockedByExam);
+            blocked.addAll(blockedByQuiz);
+            if (!blocked.isEmpty()) {
+                Long first = blocked.iterator().next();
+                throw new IllegalArgumentException("Câu hỏi #" + first
+                        + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED.");
+            }
+        }
+
+        int updated = questionRepository.bulkSetStatus(ids, newStatus);
+        questionRepository.bulkSetStatusByParentIds(ids, newStatus);
+        int skipped = totalRequested - updated;
+        return new BulkUpdateResult(updated, skipped);
     }
 
     @Transactional
@@ -270,6 +300,10 @@ public class ManagerQuestionService {
                 && !SkillTypeEnum.questionSkillNames().contains(form.getSkillType())) {
             throw new IllegalArgumentException("Loại kỹ năng không hợp lệ.");
         }
+        boolean listeningPassage = "PASSAGE".equals(form.getQuestionType()) && "LISTENING".equals(form.getSkillType());
+        if (!listeningPassage && isBlank(form.getContent())) {
+            throw new IllegalArgumentException("Nội dung câu hỏi không được để trống.");
+        }
         if (!"PASSAGE".equals(form.getQuestionType())) {
             if (isBlank(form.getOptionA()) || isBlank(form.getOptionB())) {
                 throw new IllegalArgumentException("Cần ít nhất đáp án A và B.");
@@ -287,6 +321,14 @@ public class ManagerQuestionService {
             }
             if (form.getAnswerKeys().size() > 1) {
                 throw new IllegalArgumentException("Câu hỏi trắc nghiệm chỉ được chọn 1 đáp án đúng.");
+            }
+        }
+        if ("ACTIVE".equals(form.getStatus())) {
+            if (isBlank(form.getJlptLevel())) {
+                throw new IllegalArgumentException("Câu hỏi ACTIVE phải có cấp độ JLPT.");
+            }
+            if (isBlank(form.getSkillType())) {
+                throw new IllegalArgumentException("Câu hỏi ACTIVE phải có loại kỹ năng.");
             }
         }
         if (form.getParentId() != null) {
