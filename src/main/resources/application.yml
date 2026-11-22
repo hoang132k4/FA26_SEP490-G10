@@ -5,7 +5,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
   application:
-    name: jlpp-platform
+    name: jeps-platform
 
   servlet:
     multipart:
@@ -95,7 +95,7 @@ app:
 # Logging
 logging:
   level:
-    com.jlpp: DEBUG
+    com.jeps: DEBUG
     org.springframework.web: INFO
 
 ---
