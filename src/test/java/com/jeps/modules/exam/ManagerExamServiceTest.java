@@ -483,10 +483,55 @@ class ManagerExamServiceTest {
     void removeQuestionDeletesLink() {
         ExamQuestionId id = new ExamQuestionId(EXAM_ID, 10L);
         when(examQuestionRepository.existsById(id)).thenReturn(true);
+        stubExamExists();
 
         service.removeQuestionFromExam(EXAM_ID, 10L);
 
         verify(examQuestionRepository).deleteById(id);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PUBLISHED", "ACTIVE"})
+    void removeQuestionBlockedWhileExamIsOpen(String status) {
+        when(examQuestionRepository.existsById(new ExamQuestionId(EXAM_ID, 10L))).thenReturn(true);
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(EXAM_ID, status)));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.removeQuestionFromExam(EXAM_ID, 10L));
+
+        assertEquals("Không thể gỡ câu hỏi khỏi đề thi đang " + status + ". Hãy chuyển đề về DRAFT trước.", ex.getMessage());
+        verify(examQuestionRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void addQuestionsRejectsQuestionOfAnotherLevel() {
+        stubExamExists();
+        Question n1 = question(10L, "ACTIVE");
+        n1.setJlptLevel("N1");
+        stubQuestion(n1);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.addQuestionsToExam(EXAM_ID, questionForm(List.of(10L), "LANGUAGE")));
+
+        assertEquals("Câu hỏi #10 thuộc cấp N1, không khớp cấp độ đề thi (N5).", ex.getMessage());
+        verify(examQuestionRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updateRejectsLevelChangeWhenExamHasQuestions() {
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(EXAM_ID, "DRAFT")));
+        when(examQuestionRepository.countByExamId(EXAM_ID)).thenReturn(3L);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.update(EXAM_ID, examForm("JLPT_MOCK", "N4", "DRAFT")));
+
+        assertEquals("Không thể đổi cấp độ khi đề thi đã có câu hỏi. Hãy gỡ hết câu hỏi trước.", ex.getMessage());
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void examTypesIncludeCourseMidtermAndFinal() {
+        assertTrue(service.options().examTypes().containsAll(List.of("MIDTERM", "FINAL")));
     }
 
     @Test
@@ -1101,7 +1146,7 @@ class ManagerExamServiceTest {
     }
 
     private static Question question(long id, String status) {
-        Question q = Question.builder().content("Câu " + id).status(status).build();
+        Question q = Question.builder().content("Câu " + id).status(status).jlptLevel("N5").build();
         q.setId(id);
         return q;
     }

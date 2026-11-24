@@ -447,7 +447,7 @@ class ManagerExamIntegrationTest {
         var first = (org.springframework.data.domain.Page<Question>) mockMvc
                 .perform(get("/manager/exams/{id}/questions", exam.getExamId()).param("jlptLevel", "N1").param("skillType", "LISTENING"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("jlptLevel=N1")))
+                .andExpect(content().string(containsString("skillType=LISTENING")))
                 .andExpect(content().string(containsString("Đến trang")))
                 .andReturn().getModelAndView().getModel().get("availableQuestions");
         assertEquals(20, first.getContent().size());

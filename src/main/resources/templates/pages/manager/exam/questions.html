@@ -122,11 +122,8 @@
 
         <!-- Bộ lọc câu hỏi khả dụng -->
         <form class="row g-2 mb-3" method="get" th:action="@{/manager/exams/{id}/questions(id=${exam.examId})}">
-            <div class="col-md-3">
-                <select class="form-select" name="jlptLevel">
-                    <option value="">Tất cả Level</option>
-                    <option th:each="item : ${jlptLevels}" th:value="${item}" th:text="${item}" th:selected="${item == filterJlptLevel}"></option>
-                </select>
+            <div class="col-md-3 d-flex align-items-center">
+                <span class="text-muted">Cấp độ: <strong th:text="${exam.jlptLevel}"></strong> (theo đề thi)</span>
             </div>
             <div class="col-md-3">
                 <select class="form-select" name="skillType">

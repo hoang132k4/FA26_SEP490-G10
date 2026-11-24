@@ -103,6 +103,9 @@ public class ManagerExamService {
         validateSectionCounts(form);
         validatePublishReady(examId, form);
         Exam exam = findById(examId);
+        if (!form.getJlptLevel().equals(exam.getJlptLevel()) && examQuestionRepository.countByExamId(examId) > 0) {
+            throw new IllegalArgumentException("Không thể đổi cấp độ khi đề thi đã có câu hỏi. Hãy gỡ hết câu hỏi trước.");
+        }
         JlptExamStructure jlpt = JlptExamStructure.of(form.getJlptLevel());
         exam.setExamTitle(clean(form.getExamTitle()));
         exam.setExamType(form.getExamType());
@@ -255,6 +258,10 @@ public class ManagerExamService {
             }
             if (!"ACTIVE".equals(question.getStatus())) {
                 throw new IllegalArgumentException("Câu hỏi #" + questionId + " chưa được kích hoạt (ACTIVE).");
+            }
+            if (!Objects.equals(question.getJlptLevel(), exam.getJlptLevel())) {
+                throw new IllegalArgumentException("Câu hỏi #" + questionId + " thuộc cấp " + question.getJlptLevel()
+                        + ", không khớp cấp độ đề thi (" + exam.getJlptLevel() + ").");
             }
             if (alreadyLinked.contains(questionId)) {
                 continue;
@@ -519,6 +526,10 @@ public class ManagerExamService {
         ExamQuestionId eqId = new ExamQuestionId(examId, questionId);
         if (!examQuestionRepository.existsById(eqId)) {
             throw new IllegalArgumentException("Câu hỏi này không nằm trong đề thi.");
+        }
+        String status = findById(examId).getStatus();
+        if ("PUBLISHED".equals(status) || "ACTIVE".equals(status)) {
+            throw new IllegalArgumentException("Không thể gỡ câu hỏi khỏi đề thi đang " + status + ". Hãy chuyển đề về DRAFT trước.");
         }
         examQuestionRepository.deleteById(eqId);
     }
