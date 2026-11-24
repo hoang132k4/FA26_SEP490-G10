@@ -91,11 +91,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
 
     @Override
-    public String getLatestGeneratedResetLink(String email) {
-        return null;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public boolean validateResetToken(String token) {
         if (token == null || token.isBlank()) {

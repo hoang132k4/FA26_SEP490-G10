@@ -5,16 +5,14 @@
         <!-- Question Header (Image Style) -->
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
             <div class="d-flex align-items-center">
-                <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-bold fs-7" th:text="'Câu ' + ${index}">Câu 1</span>
-                <span th:if="${q.points != null}" class="text-muted ms-2 small fw-semibold" th:text="${q.points} + ' điểm'">5.0 điểm</span>
+                <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-bold fs-7" th:text="'Câu ' + ${index}"></span>
+                <span th:if="${q.points != null}" class="text-muted ms-2 small fw-semibold" th:text="${q.points} + ' điểm'"></span>
             </div>
-            <span class="badge rounded-pill px-3 py-1.5 fw-medium" style="background-color: #EBF4FA; color: #173B57;" th:text="${q.skillGroupLabel != null ? q.skillGroupLabel : (q.category != null ? q.category : 'Tổng hợp')}">Từ vựng - Ngữ pháp</span>
+            <span class="badge rounded-pill px-3 py-1.5 fw-medium" style="background-color: #EBF4FA; color: #173B57;" th:text="${q.skillGroupLabel != null ? q.skillGroupLabel : (q.category != null ? q.category : 'Tổng hợp')}"></span>
         </div>
 
         <!-- Question Content -->
-        <div class="question-content fs-5 mb-4 text-dark" style="line-height: 1.7;" th:utext="${q.content}">
-            昨日、田中さんと映画を____。
-        </div>
+        <div class="question-content fs-5 mb-4 text-dark" style="line-height: 1.7;" th:utext="${q.content}"></div>
 
         <!-- Audio Player if listening question has audio -->
         <div th:if="${q.audioUrl != null}" class="mb-4 p-3 bg-light rounded-3 border">

@@ -125,25 +125,25 @@
                             <div class="col-sm-6">
                                 <div class="p-3 bg-light rounded-3">
                                     <span class="text-muted small d-block mb-1">Tên đăng nhập</span>
-                                    <strong class="text-secondary" th:text="${profile.username != null ? profile.username : 'Chưa thiết lập'}">learner01</strong>
+                                    <strong class="text-secondary" th:text="${profile.username != null ? profile.username : 'Chưa thiết lập'}"></strong>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="p-3 bg-light rounded-3">
                                     <span class="text-muted small d-block mb-1">Vai trò tài khoản</span>
-                                    <strong class="text-secondary" th:text="${profile.roleDisplayName}">Học viên</strong>
+                                    <strong class="text-secondary" th:text="${profile.roleDisplayName}"></strong>
                                 </div>
                             </div>
                             <div class="col-sm-6" th:if="${profile.learner}">
                                 <div class="p-3 bg-light rounded-3">
                                     <span class="text-muted small d-block mb-1">Trình độ JLPT hiện tại</span>
-                                    <span class="badge bg-secondary" th:text="${profile.currentJlptLevel}">N5</span>
+                                    <span class="badge bg-secondary" th:text="${profile.currentJlptLevel}"></span>
                                 </div>
                             </div>
                             <div class="col-sm-6" th:if="${profile.learner}">
                                 <div class="p-3 bg-light rounded-3">
                                     <span class="text-muted small d-block mb-1">Mục tiêu JLPT</span>
-                                    <span class="badge bg-secondary" th:text="${profile.targetJlptLevel != null and !profile.targetJlptLevel.isBlank() ? profile.targetJlptLevel : 'Chưa thiết lập'}">N3</span>
+                                    <span class="badge bg-secondary" th:text="${profile.targetJlptLevel != null and !profile.targetJlptLevel.isBlank() ? profile.targetJlptLevel : 'Chưa thiết lập'}"></span>
                                 </div>
                             </div>
                         </div>

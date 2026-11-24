@@ -42,23 +42,19 @@
                         <tr th:each="order : ${orders}" class="border-bottom order-row">
                             <!-- Order Number -->
                             <td class="ps-4 py-3 fw-bold" style="color: var(--navy-dark)">
-                                <span th:text="${order.orderNumber}">ORD-20261009-001</span>
+                                <span th:text="${order.orderNumber}"></span>
                             </td>
 
                             <!-- Order Date -->
-                            <td class="py-3 text-muted" th:text="${order.orderDateFormatted}">
-                                2026/10/09
-                            </td>
+                            <td class="py-3 text-muted" th:text="${order.orderDateFormatted}"></td>
 
                             <!-- Course / Item Summary -->
                             <td class="py-3" style="color: var(--text-main)">
-                                <span class="fw-semibold" th:text="${order.itemSummary}">JLPT N4 Full Course</span>
+                                <span class="fw-semibold" th:text="${order.itemSummary}"></span>
                             </td>
 
                             <!-- Total Amount -->
-                            <td class="py-3 fw-bold" style="color: var(--navy-dark)" th:text="${order.totalAmountFormatted}">
-                                2,500,000 VND
-                            </td>
+                            <td class="py-3 fw-bold" style="color: var(--navy-dark)" th:text="${order.totalAmountFormatted}"></td>
 
                             <!-- Order Status Badge -->
                             <td class="py-3">
@@ -73,7 +69,7 @@
                                 </span>
                             </td>
 
-                            <!-- Action: View Detail (Mockup element 2) -->
+                            <!-- Action: View Detail -->
                             <td class="text-end pe-4 py-3">
                                 <a th:href="@{/orders/{orderNumber}(orderNumber=${order.orderNumber})}"
                                    class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
@@ -87,15 +83,11 @@
 
             <!-- Pagination Footer -->
             <div id="ordersPagination" class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-light-subtle" th:if="${hasOrders}">
-                <div class="text-muted small" id="ordersPageInfo">
-                    Hiển thị <strong>1 - 5</strong> trong tổng số <strong>3</strong> đơn hàng
-                </div>
+                <div class="text-muted small" id="ordersPageInfo"></div>
                 <nav aria-label="Phân trang đơn hàng">
                     <ul class="pagination pagination-sm mb-0" id="ordersPageNav">
                     </ul>
                 </nav>
-            </div>
-
             </div>
 
             <!-- Empty State -->
@@ -106,11 +98,8 @@
                     </div>
                 </div>
                 <h5 class="fw-bold mb-1" style="color: var(--navy-dark)">Không tìm thấy đơn hàng</h5>
-                <p class="text-muted small mb-4">Bạn chưa có đơn hàng nào phù hợp với bộ lọc này.</p>
+                <p class="text-muted small mb-4">Bạn chưa có đơn hàng nào trong hệ thống.</p>
                 <div class="d-flex justify-content-center gap-2">
-                    <a th:href="@{/orders(status='ALL')}" class="btn btn-outline-secondary px-3 py-2 rounded-3">
-                        Xem tất cả đơn hàng
-                    </a>
                     <a th:href="@{/courses}" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
                         <i class="bi bi-bag-plus me-1"></i> Khám phá khóa học ngay
                     </a>

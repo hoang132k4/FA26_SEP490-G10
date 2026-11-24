@@ -76,15 +76,15 @@
                         <div class="row g-2 p-3 rounded-3 mb-4" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                             <div class="col-4 text-center border-end">
                                 <span class="d-block small text-muted">Thời lượng</span>
-                                <strong class="fs-6 text-dark" th:text="${exam.durationMinutes != null ? exam.durationMinutes + ' phút' : '--'}">50 phút</strong>
+                                <strong class="fs-6 text-dark" th:text="${exam.durationMinutes != null ? exam.durationMinutes + ' phút' : '--'}"></strong>
                             </div>
                             <div class="col-4 text-center border-end">
                                 <span class="d-block small text-muted">Số câu hỏi</span>
-                                <strong class="fs-6 text-dark" th:text="${exam.totalQuestions + ' câu'}">35 câu</strong>
+                                <strong class="fs-6 text-dark" th:text="${exam.totalQuestions + ' câu'}"></strong>
                             </div>
                             <div class="col-4 text-center">
                                 <span class="d-block small text-muted">Điểm chuẩn</span>
-                                <strong class="fs-6 text-dark" th:text="${exam.passingScore != null ? exam.passingScore + ' điểm' : '--'}">35 điểm</strong>
+                                <strong class="fs-6 text-dark" th:text="${exam.passingScore != null ? exam.passingScore + ' điểm' : '--'}"></strong>
                             </div>
                         </div>
                     </div>

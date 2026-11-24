@@ -11,9 +11,7 @@
                 <li class="breadcrumb-item">
                     <a th:href="@{/exams/history}" class="text-decoration-none fw-semibold" style="color: #2563EB;">Lịch sử làm bài</a>
                 </li>
-                <li class="breadcrumb-item active fw-medium" aria-current="page" style="color: #475569;" th:text="${result.resultId != null ? 'Chi tiết kết quả #' + result.resultId : 'Chi tiết kết quả'}">
-                    Chi tiết kết quả #14
-                </li>
+                <li class="breadcrumb-item active fw-medium" aria-current="page" style="color: #475569;" th:text="${result.resultId != null ? 'Chi tiết kết quả #' + result.resultId : 'Chi tiết kết quả'}"></li>
             </ol>
         </nav>
 
@@ -25,7 +23,7 @@
                     <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
                         <!-- Exam Level Badge -->
                         <span class="badge rounded-pill bg-white text-dark px-3 py-1.5 fs-7 fw-bold shadow-sm"
-                              th:text="${result.jlptLevel != null ? result.jlptLevel : 'N4'}">N4</span>
+                              th:text="${result.jlptLevel != null ? result.jlptLevel : 'N4'}"></span>
 
                         <!-- Pass/Fail Badge -->
                         <span th:if="${result.passed == true}" class="badge bg-success text-white rounded-pill px-3 py-1.5 fs-7 fw-bold shadow-sm">
@@ -38,13 +36,11 @@
                         <!-- Master Saved Badge -->
                         <span th:if="${result.resultId != null}" class="badge rounded-pill px-3 py-1.5 fs-7 fw-medium"
                               style="background-color: rgba(255, 255, 255, 0.18); color: white;">
-                            <i class="bi bi-journal-check me-1"></i> Lưu kết quả: #<span th:text="${result.resultId}">14</span>
+                            <i class="bi bi-journal-check me-1"></i> Lưu kết quả: #<span th:text="${result.resultId}"></span>
                         </span>
                     </div>
 
-                    <h2 class="fw-bold mb-2 text-white" th:text="${result.examTitle}">
-                        Đề thi thử Tiếng Nhật JLPT N4 – Kiến thức ngôn ngữ (Từ vựng – Ngữ pháp)
-                    </h2>
+                    <h2 class="fw-bold mb-2 text-white" th:text="${result.examTitle}"></h2>
                     <p class="text-white-50 mb-4 small" style="max-width: 650px; line-height: 1.5;">
                         Điểm số thực tế được tính toán tự động từ ngân hàng đề thi và phương án chính xác trong cơ sở dữ liệu Supabase.
                     </p>
@@ -54,22 +50,22 @@
                         <div>
                             <div class="small text-white-50">Điểm đạt được</div>
                             <div class="fs-2 fw-bold text-white">
-                                <span th:text="${result.score}">0</span>
-                                <span th:if="${result.totalPossibleScore != null}"> / <span th:text="${result.totalPossibleScore}">75</span></span>
+                                <span th:text="${result.score}"></span>
+                                <span th:if="${result.totalPossibleScore != null}"> / <span th:text="${result.totalPossibleScore}"></span></span>
                                 <span th:if="${result.totalPossibleScore == null}" class="fs-4 text-white-50"> điểm</span>
                             </div>
                         </div>
                         <div class="border-start border-white border-opacity-25 ps-4">
                             <div class="small text-white-50">Tỷ lệ chính xác</div>
-                            <div class="fs-2 fw-bold text-warning" th:text="${result.percentage != null ? result.percentage + '%' : '0.0%'}">0.0%</div>
+                            <div class="fs-2 fw-bold text-warning" th:text="${result.percentage != null ? result.percentage + '%' : '0.0%'}"></div>
                         </div>
                         <div class="border-start border-white border-opacity-25 ps-4" th:if="${result.examType != 'PLACEMENT_TEST'}">
                             <div class="small text-white-50">Điểm sàn yêu cầu</div>
-                            <div class="fs-2 fw-bold text-white" th:text="${result.passingScore != null ? result.passingScore + ' điểm' : '35 điểm'}">35 điểm</div>
+                            <div class="fs-2 fw-bold text-white" th:text="${result.passingScore != null ? result.passingScore + ' điểm' : '--'}"></div>
                         </div>
                         <div class="border-start border-white border-opacity-25 ps-4" th:if="${result.completionDate != null}">
                             <div class="small text-white-50">Thời gian nộp bài</div>
-                            <div class="fs-5 fw-bold text-white mt-1" th:text="${result.completionDate}">07/11/2026 23:00</div>
+                            <div class="fs-5 fw-bold text-white mt-1" th:text="${result.completionDate}"></div>
                         </div>
                     </div>
                 </div>
@@ -78,7 +74,7 @@
                 <div class="col-lg-4 text-center text-lg-end">
                     <div class="d-inline-flex flex-column align-items-center justify-content-center rounded-circle border border-2 border-white border-opacity-25 shadow-sm text-center"
                          style="width: 145px; height: 145px; background: rgba(255, 255, 255, 0.08);">
-                        <div class="fs-2 fw-bold text-white mb-0" th:text="${result.percentage != null ? result.percentage + ' %' : '0.0 %'}">0.0 %</div>
+                        <div class="fs-2 fw-bold text-white mb-0" th:text="${result.percentage != null ? result.percentage + ' %' : '0.0 %'}"></div>
                         <div class="small text-white-50" style="font-size: 13px;">Độ chính xác</div>
                     </div>
                 </div>
@@ -92,7 +88,7 @@
                 <div class="card p-3 border-0 shadow-sm text-start bg-white rounded-4 h-100">
                     <span class="small text-secondary fw-medium d-block mb-1">Số câu đúng</span>
                     <h3 class="fw-bold text-success mb-0 d-flex align-items-center gap-1">
-                        <i class="bi bi-check-lg fs-4"></i> <span th:text="${result.correctCount}">0</span>
+                        <i class="bi bi-check-lg fs-4"></i> <span th:text="${result.correctCount}"></span>
                     </h3>
                 </div>
             </div>
@@ -102,7 +98,7 @@
                 <div class="card p-3 border-0 shadow-sm text-start bg-white rounded-4 h-100">
                     <span class="small text-secondary fw-medium d-block mb-1">Số câu sai</span>
                     <h3 class="fw-bold text-danger mb-0 d-flex align-items-center gap-1">
-                        <i class="bi bi-x-lg fs-4"></i> <span th:text="${result.incorrectCount}">15</span>
+                        <i class="bi bi-x-lg fs-4"></i> <span th:text="${result.incorrectCount}"></span>
                     </h3>
                 </div>
             </div>
@@ -112,7 +108,7 @@
                 <div class="card p-3 border-0 shadow-sm text-start bg-white rounded-4 h-100">
                     <span class="small text-secondary fw-medium d-block mb-1">Chưa trả lời</span>
                     <h3 class="fw-bold text-secondary mb-0 d-flex align-items-center gap-1">
-                        <span class="fs-4">&mdash;</span> <span th:text="${result.unansweredCount}">0</span>
+                        <span class="fs-4">&mdash;</span> <span th:text="${result.unansweredCount}"></span>
                     </h3>
                 </div>
             </div>
@@ -123,7 +119,7 @@
                     <span class="small text-secondary fw-medium d-block mb-1">Thời gian làm bài</span>
                     <h3 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         <i class="bi bi-stopwatch text-secondary fs-4"></i>
-                        <span th:text="${result.formattedTimeSpent != null ? result.formattedTimeSpent : '05:12'}">05:12</span>
+                        <span th:text="${result.formattedTimeSpent != null ? result.formattedTimeSpent : '00:00'}"></span>
                     </h3>
                 </div>
             </div>
@@ -141,14 +137,14 @@
                     <!-- Skill bars -->
                     <div class="mb-4" th:each="skill : ${result.skillBreakdown}">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-semibold text-dark small" th:text="${skill.skillName}">Từ vựng - Ngữ pháp</span>
+                            <span class="fw-semibold text-dark small" th:text="${skill.skillName}"></span>
                             <span class="small text-muted d-flex align-items-center gap-1.5">
-                                <strong th:text="${skill.earnedPoints}">0</strong>/<span th:text="${skill.totalPoints}">75</span> điểm 
-                                (<span th:text="${skill.percentage} + '%'">0%</span>)
+                                <strong th:text="${skill.earnedPoints}"></strong>/<span th:text="${skill.totalPoints}"></span> điểm 
+                                (<span th:text="${skill.percentage} + '%'"></span>)
                                 <span th:if="${skill.belowMinimum != null and skill.belowMinimum}" 
                                       class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5 rounded-pill fw-bold" 
                                       style="font-size: 0.72rem;">
-                                    <i class="bi bi-exclamation-triangle-fill me-0.5"></i> Điểm liệt (sàn: <span th:text="${skill.minRequired}">19</span>đ)
+                                    <i class="bi bi-exclamation-triangle-fill me-0.5"></i> Điểm liệt (sàn: <span th:text="${skill.minRequired}"></span>đ)
                                 </span>
                             </span>
                         </div>
@@ -175,13 +171,13 @@
                                 <span class="badge bg-success-subtle text-success px-3 py-1.5 rounded-pill fw-semibold">
                                     <i class="bi bi-star-fill me-1 text-success"></i> Kỹ năng tốt nhất
                                 </span>
-                                <div class="fw-bold mt-1 text-dark small" th:text="${result.strongestSkill != null ? result.strongestSkill : 'Chưa có kỹ năng nổi bật'}">Chưa có kỹ năng nổi bật</div>
+                                <div class="fw-bold mt-1 text-dark small" th:text="${result.strongestSkill != null ? result.strongestSkill : 'Chưa có kỹ năng nổi bật'}"></div>
                             </div>
                             <div class="col-sm-6 text-start">
                                 <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-1.5 rounded-pill fw-semibold">
                                     <i class="bi bi-exclamation-triangle-fill me-1 text-warning"></i> Cần cải thiện
                                 </span>
-                                <div class="fw-bold mt-1 text-dark small" th:text="${result.weakestSkill != null ? result.weakestSkill : 'Không có'}">Không có</div>
+                                <div class="fw-bold mt-1 text-dark small" th:text="${result.weakestSkill != null ? result.weakestSkill : 'Không có'}"></div>
                             </div>
                         </div>
                     </div>
@@ -195,12 +191,10 @@
                         <i class="bi bi-lightbulb-fill text-warning me-2"></i> Nhận xét và Đánh giá năng lực
                     </h5>
                     <div class="flex-grow-1">
-                        <p class="text-secondary mb-3 small" style="line-height: 1.7;" th:text="${result.aiFeedback}">
-                            Kết quả hiện tại chưa đạt điểm sàn JLPT N4 (0/75 điểm). Bạn cần tập trung bổ sung kiến thức từ vựng và luyện tập lại các thể động từ cơ bản.
-                        </p>
+                        <p class="text-secondary mb-3 small" style="line-height: 1.7;" th:text="${result.aiFeedback}"></p>
                         <div th:if="${result.recommendation != null}" class="small mt-2" style="line-height: 1.6; color: #1E293B;">
                             <span class="text-danger me-1">📌</span> 
-                            <strong>Khuyến nghị:</strong> <span th:text="${result.recommendation}">Ôn tập giáo trình Minnano Nihongo Bài 26 - 35 và thi thử lại sau 2 tuần.</span>
+                            <strong>Khuyến nghị:</strong> <span th:text="${result.recommendation}"></span>
                         </div>
                     </div>
                 </div>
@@ -420,8 +414,8 @@
                     <!-- Question Top Header: Number, Points, Skill Category, Answer Status -->
                     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="fw-bold fs-6" style="color: #E11D48;" th:text="'Câu hỏi ' + ${stat.count}">Câu hỏi 1</span>
-                            <span class="badge text-secondary fw-normal px-2 py-1" style="background-color: #F1F5F9;" th:text="${q.points != null ? q.points + ' điểm' : '2 điểm'}">30 điểm</span>
+                            <span class="fw-bold fs-6" style="color: #E11D48;" th:text="'Câu hỏi ' + ${stat.count}"></span>
+                            <span class="badge text-secondary fw-normal px-2 py-1" style="background-color: #F1F5F9;" th:text="${q.points != null ? q.points + ' điểm' : '2 điểm'}"></span>
                             <!-- Trạng thái làm bài của thí sinh -->
                             <span th:if="${q.userAnswerId != null and q.isUserCorrect == true}" 
                                   class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small fw-bold">
@@ -436,13 +430,11 @@
                                 <i class="bi bi-dash-circle me-1"></i> Chưa trả lời
                             </span>
                         </div>
-                        <span class="text-secondary small fw-medium" th:text="${q.category != null ? q.category : (q.skillGroupLabel != null ? q.skillGroupLabel : 'Từ vựng (Goi)')}">Từ vựng (Goi)</span>
+                        <span class="text-secondary small fw-medium" th:text="${q.category != null ? q.category : (q.skillGroupLabel != null ? q.skillGroupLabel : 'Tổng hợp')}"></span>
                     </div>
 
                     <!-- Question Content -->
-                    <div class="question-content fs-6 fw-medium mb-3 text-dark" style="line-height: 1.7;" th:utext="${q.content}">
-                        会話の資料を____しておきましたので、ご確認ください。
-                    </div>
+                    <div class="question-content fs-6 fw-medium mb-3 text-dark" style="line-height: 1.7;" th:utext="${q.content}"></div>
 
                     <!-- Optional Audio player if listening -->
                     <div th:if="${q.audioUrl != null}" class="mb-3 p-2 bg-light rounded-3 border" style="max-width: 480px;">
@@ -502,9 +494,7 @@
                             <i class="bi bi-check-circle-fill"></i> Giải thích chi tiết:
                         </div>
                         <p class="mb-0 text-dark small" style="line-height: 1.6;" 
-                           th:text="${q.explanation != null and !q.explanation.isBlank() ? q.explanation : 'Cụm từ hoặc kiến thức ngữ pháp này được sử dụng theo cấu trúc chuẩn trong tiếng Nhật.'}">
-                            Cụm từ 準備しておきました mang ý nghĩa chuẩn bị sẵn tài liệu cho cuộc họp.
-                        </p>
+                           th:text="${q.explanation != null and !q.explanation.isBlank() ? q.explanation : 'Cụm từ hoặc kiến thức ngữ pháp này được sử dụng theo cấu trúc chuẩn trong tiếng Nhật.'}"></p>
                     </div>
                 </div>
             </div>
