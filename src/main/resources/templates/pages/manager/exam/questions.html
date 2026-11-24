@@ -94,11 +94,11 @@
 
     <!-- Tự động chọn câu từ ngân hàng -->
     <div class="kotoba-card p-4 mb-4" th:if="${exam.status == 'DRAFT'}">
-        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Tự động chọn câu theo cấu trúc JLPT</h5>
+        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Tự động chọn câu theo cấu hình đề</h5>
         <form class="row g-2 align-items-center" method="post"
               th:action="@{/manager/exams/{id}/questions/generate(id=${exam.examId})}">
             <div class="col-md-9">
-                <small class="text-muted">Lấy ngẫu nhiên câu hỏi ACTIVE cấp <strong th:text="${exam.jlptLevel}"></strong> trong ngân hàng câu hỏi, đủ số câu từng phần theo cấu trúc JLPT. Câu đã chọn tay được giữ nguyên; bài đọc/nghe được lấy cả cụm. Bạn sẽ xem trước kết quả và có thể chọn lại từng phần trước khi xác nhận.</small>
+                <small class="text-muted">Lấy ngẫu nhiên câu hỏi ACTIVE cấp <strong th:text="${exam.jlptLevel}"></strong> trong ngân hàng câu hỏi, đủ số câu từng phần đã cấu hình cho đề. Câu đã chọn tay được giữ nguyên; bài đọc/nghe được lấy cả cụm. Bạn sẽ xem trước kết quả và có thể chọn lại từng phần trước khi xác nhận.</small>
             </div>
             <div class="col-md-3"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-magic me-1"></i>Tự động chọn câu</button></div>
         </form>
@@ -122,11 +122,8 @@
 
         <!-- Bộ lọc câu hỏi khả dụng -->
         <form class="row g-2 mb-3" method="get" th:action="@{/manager/exams/{id}/questions(id=${exam.examId})}">
-            <div class="col-md-3">
-                <select class="form-select" name="jlptLevel">
-                    <option value="">Tất cả Level</option>
-                    <option th:each="item : ${jlptLevels}" th:value="${item}" th:text="${item}" th:selected="${item == filterJlptLevel}"></option>
-                </select>
+            <div class="col-md-3 d-flex align-items-center">
+                <span class="text-muted">Cấp độ: <strong th:text="${exam.jlptLevel}"></strong> (theo đề thi)</span>
             </div>
             <div class="col-md-3">
                 <select class="form-select" name="skillType">

@@ -124,9 +124,9 @@ public class ManagerExamController {
             var exam = managerExamService.findById(examId);
             model.addAttribute("exam", exam);
             model.addAttribute("examQuestions", managerExamService.getExamQuestions(examId));
-            model.addAttribute("availableQuestions", managerExamService.findAvailableQuestions(examId, jlptLevel, skillType, page));
+            model.addAttribute("availableQuestions", managerExamService.findAvailableQuestions(examId, exam.getJlptLevel(), skillType, page));
             model.addAttribute("pageUrl", PageLinks.of("/manager/exams/" + examId + "/questions",
-                    "jlptLevel", jlptLevel, "skillType", skillType));
+                    "skillType", skillType));
             model.addAttribute("addForm", new ExamQuestionForm());
             model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
             model.addAttribute("jlptLevels", Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList());

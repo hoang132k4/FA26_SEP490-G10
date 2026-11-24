@@ -395,8 +395,8 @@ class ManagerExamIntegrationTest {
     // ── Auto generate ──
 
     @Test
-    void generateFillsDraftExamWithOfficialJlptStructureFromBank() throws Exception {
-        Exam exam = saveExam("Đề tự động", "JLPT_MOCK", "N5", "DRAFT", 1, 1, 1);
+    void generateFillsDraftExamToConfiguredSectionCounts() throws Exception {
+        Exam exam = saveExam("Đề tự động", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
         Question handPicked = saveQuestion("ACTIVE", "GRAMMAR");
         mockMvc.perform(addQuestions(exam, handPicked));
         saveQuestions(37, "VOCABULARY", null);
@@ -447,7 +447,7 @@ class ManagerExamIntegrationTest {
         var first = (org.springframework.data.domain.Page<Question>) mockMvc
                 .perform(get("/manager/exams/{id}/questions", exam.getExamId()).param("jlptLevel", "N1").param("skillType", "LISTENING"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("jlptLevel=N1")))
+                .andExpect(content().string(containsString("skillType=LISTENING")))
                 .andExpect(content().string(containsString("Đến trang")))
                 .andReturn().getModelAndView().getModel().get("availableQuestions");
         assertEquals(20, first.getContent().size());
@@ -608,9 +608,9 @@ class ManagerExamIntegrationTest {
         Exam published = saveExam("Đề đã đăng nút", "JLPT_MOCK", "N5", "PUBLISHED", 38, 5, 24);
 
         mockMvc.perform(get("/manager/exams/{id}/questions", draft.getExamId()))
-                .andExpect(content().string(containsString("Tự động chọn câu theo cấu trúc JLPT")));
+                .andExpect(content().string(containsString("Tự động chọn câu theo cấu hình đề")));
         mockMvc.perform(get("/manager/exams/{id}/questions", published.getExamId()))
-                .andExpect(content().string(not(containsString("Tự động chọn câu theo cấu trúc JLPT"))));
+                .andExpect(content().string(not(containsString("Tự động chọn câu theo cấu hình đề"))));
     }
 
     @Test
