@@ -165,6 +165,7 @@ public class ManagerQuizRepository {
     private static final String AVAILABLE_QUESTIONS_WHERE = """
             WHERE q.status = 'ACTIVE'
               AND q.parent_id IS NULL
+              AND q.question_type <> 'PASSAGE'
               AND q.id NOT IN (SELECT eq.question_id FROM exercise_questions eq WHERE eq.exercise_id = ?)
               AND (? = '' OR q.jlpt_level = ?)
               AND (? = '' OR q.skill_type = ?)
@@ -219,6 +220,12 @@ public class ManagerQuizRepository {
     public boolean questionIsActive(long questionId) {
         return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
                 "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ? AND status = 'ACTIVE')",
+                Boolean.class, questionId));
+    }
+
+    public boolean questionIsPassage(long questionId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ? AND question_type = 'PASSAGE')",
                 Boolean.class, questionId));
     }
 
