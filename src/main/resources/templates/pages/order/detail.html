@@ -15,7 +15,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h3 class="fw-bold mb-0" style="color: var(--navy-dark)">Chi tiết đơn hàng (Order Detail)</h3>
-                <span class="text-muted small">Mã đơn: <strong th:text="${order.orderNumber}">ORD-20261009-001</strong></span>
+                <span class="text-muted small">Mã đơn: <strong th:text="${order.orderNumber}"></strong></span>
             </div>
             <div>
                 <span th:if="${order.orderStatus.name() == 'COMPLETED'}" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold fs-6">
@@ -31,7 +31,7 @@
         </div>
 
         <div class="row g-4">
-            <!-- Box 1: Order Information Card (Mockup element 2) -->
+            <!-- Box 1: Order Information Card -->
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
                     <h5 class="fw-bold mb-3 d-flex align-items-center" style="color: var(--navy-dark)">
@@ -41,19 +41,19 @@
                         <div class="col-md-6 col-lg-3">
                             <div class="p-3 bg-light rounded-3">
                                 <span class="text-muted small d-block mb-1">Order No. :</span>
-                                <strong class="fs-6" style="color: var(--navy-dark)" th:text="${order.orderNumber}">ORD-20261009-001</strong>
+                                <strong class="fs-6" style="color: var(--navy-dark)" th:text="${order.orderNumber}"></strong>
                             </div>
                         </div>
                         <div class="col-md-6 col-lg-3">
                             <div class="p-3 bg-light rounded-3">
                                 <span class="text-muted small d-block mb-1">Order Date :</span>
-                                <strong class="fs-6" style="color: var(--text-main)" th:text="${order.orderDateFormatted}">2026/10/09 14:25</strong>
+                                <strong class="fs-6" style="color: var(--text-main)" th:text="${order.orderDateFormatted}"></strong>
                             </div>
                         </div>
                         <div class="col-md-6 col-lg-3">
                             <div class="p-3 bg-light rounded-3">
                                 <span class="text-muted small d-block mb-1">Payment Method :</span>
-                                <strong class="fs-6 text-primary" th:text="${order.paymentMethod}">VNPay QR</strong>
+                                <strong class="fs-6 text-primary" th:text="${order.paymentMethod}"></strong>
                             </div>
                         </div>
                         <div class="col-md-6 col-lg-3">
@@ -61,16 +61,14 @@
                                 <span class="text-muted small d-block mb-1">Status :</span>
                                 <strong class="fs-6"
                                         th:classappend="${order.orderStatus.name() == 'COMPLETED'} ? 'text-success' : (${order.orderStatus.name() == 'CANCELLED'} ? 'text-danger' : 'text-warning-emphasis')"
-                                        th:text="${order.statusEnglish}">
-                                    Completed
-                                </strong>
+                                        th:text="${order.statusEnglish}"></strong>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Box 2: Order Items Card (Mockup element 3) -->
+            <!-- Box 2: Order Items Card -->
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
                     <div class="p-4 border-bottom">
@@ -97,38 +95,30 @@
                                                 <i class="bi bi-journal-bookmark fs-5"></i>
                                             </div>
                                             <div>
-                                                <strong class="d-block" style="color: var(--navy-dark)" th:text="${item.itemName}">JLPT N4 Full Course</strong>
-                                                <span class="text-muted small" th:if="${item.courseId != null}">Mã khóa học: #<span th:text="${item.courseId}">1</span></span>
+                                                <strong class="d-block" style="color: var(--navy-dark)" th:text="${item.itemName}"></strong>
+                                                <span class="text-muted small" th:if="${item.courseId != null}">Mã khóa học: #<span th:text="${item.courseId}"></span></span>
                                             </div>
                                         </div>
                                     </td>
 
                                     <!-- Price -->
-                                    <td class="py-3 text-muted fw-semibold" th:text="${item.priceFormatted}">
-                                        2,500,000 VND
-                                    </td>
+                                    <td class="py-3 text-muted fw-semibold" th:text="${item.priceFormatted}"></td>
 
                                     <!-- Quantity -->
-                                    <td class="py-3 text-center fw-semibold" th:text="${item.quantity}">
-                                        1
-                                    </td>
+                                    <td class="py-3 text-center fw-semibold" th:text="${item.quantity}"></td>
 
                                     <!-- Subtotal -->
-                                    <td class="text-end pe-4 py-3 fw-bold" style="color: var(--navy-dark)" th:text="${item.subtotalFormatted}">
-                                        2,500,000 VND
-                                    </td>
+                                    <td class="text-end pe-4 py-3 fw-bold" style="color: var(--navy-dark)" th:text="${item.subtotalFormatted}"></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Bottom Summary Area (Mockup element 3 Total in red/coral) -->
+                    <!-- Bottom Summary Area -->
                     <div class="p-4 bg-light d-flex justify-content-end align-items-center border-top">
                         <div class="text-end">
                             <span class="text-muted small d-block">Tổng giá trị đơn hàng (Total Amount)</span>
-                            <span class="fs-4 fw-bold" style="color: var(--sunset-coral);" th:text="'Total: ' + ${order.totalAmountFormatted}">
-                                Total: 2,500,000 VND
-                            </span>
+                            <span class="fs-4 fw-bold" style="color: var(--sunset-coral);" th:text="'Total: ' + ${order.totalAmountFormatted}"></span>
                         </div>
                     </div>
                 </div>
