@@ -122,7 +122,8 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query(value = """
             SELECT id FROM questions
-            WHERE id IN (:ids) AND (jlpt_level IS NULL OR jlpt_level = '' OR skill_type IS NULL OR skill_type = '')
+            WHERE id IN (:ids) AND (jlpt_level IS NULL OR jlpt_level = '' OR skill_type IS NULL OR skill_type = ''
+              OR (question_type = 'PASSAGE' AND skill_type = 'LISTENING' AND (audio_url IS NULL OR audio_url = '')))
             """, nativeQuery = true)
     List<Long> findIdsWithIncompleteInfo(@Param("ids") List<Long> ids);
 

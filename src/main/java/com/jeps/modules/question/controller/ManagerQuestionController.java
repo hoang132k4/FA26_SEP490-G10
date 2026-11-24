@@ -59,10 +59,17 @@ public class ManagerQuestionController {
     }
 
     @GetMapping("/new")
-    public String createPage(@RequestParam(required = false) Long parentId, Model model) {
+    public String createPage(@RequestParam(required = false) Long parentId, Model model,
+                             RedirectAttributes redirectAttributes) {
         ManagerQuestionForm form = new ManagerQuestionForm();
         if (parentId != null) {
-            var parent = managerQuestionService.findById(parentId);
+            com.jeps.modules.question.entity.Question parent;
+            try {
+                parent = managerQuestionService.findById(parentId);
+            } catch (IllegalArgumentException exception) {
+                redirectAttributes.addFlashAttribute("questionError", exception.getMessage());
+                return "redirect:/manager/questions";
+            }
             form.setParentId(parentId);
             form.setQuestionType("MULTI_CHOICE");
             form.setJlptLevel(parent.getJlptLevel());

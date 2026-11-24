@@ -374,11 +374,11 @@ class ManagerQuizIntegrationTest {
     void importCreatesActiveQuestionsAndLinksOnlyChoiceQuestions() throws Exception {
         long quizId = saveQuiz("Quiz import", "DRAFT", 5);
         var file = QuestionExcel.xlsx(
-                List.of("group", "question_type", "content", "option_a", "option_b", "answer", "status"),
+                List.of("group", "question_type", "content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "status"),
                 List.of(
-                        List.of("", "MULTI_CHOICE", MARK + "Câu import", "A", "B", "A", "DRAFT"),
-                        List.of("1", "PASSAGE", MARK + "Đoạn import", "", "", "", ""),
-                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "A", "B", "B", "")));
+                        List.of("", "MULTI_CHOICE", MARK + "Câu import", "N5", "VOCABULARY", "A", "B", "A", "DRAFT"),
+                        List.of("1", "PASSAGE", MARK + "Đoạn import", "N5", "READING", "", "", "", ""),
+                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "N5", "READING", "A", "B", "B", "")));
 
         mockMvc.perform(multipart("/manager/quizzes/{id}/import", quizId).file(file).with(csrf()))
                 .andExpect(flash().attribute("quizSuccess", "Đã import và gắn 1 câu hỏi vào quiz."));

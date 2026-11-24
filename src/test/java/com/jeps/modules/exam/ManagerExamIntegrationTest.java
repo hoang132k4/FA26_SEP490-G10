@@ -339,10 +339,10 @@ class ManagerExamIntegrationTest {
     void importCreatesActiveQuestionsAndLinksThemToExam() throws Exception {
         Exam exam = saveExam("Đề import", "JLPT_MOCK", "N5", "DRAFT", 10, 5, 5);
         var file = QuestionExcel.xlsx(
-                List.of("question_type", "content", "skill_type", "option_a", "option_b", "answer", "status", "section"),
+                List.of("question_type", "content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "status", "section"),
                 List.of(
-                        List.of("MULTI_CHOICE", MARK + "Câu import 1", "VOCABULARY", "あ", "い", "A", "DRAFT", ""),
-                        List.of("MULTI_CHOICE", MARK + "Câu import 2", "READING", "う", "え", "B", "", "")));
+                        List.of("MULTI_CHOICE", MARK + "Câu import 1", "N5", "VOCABULARY", "あ", "い", "A", "DRAFT", ""),
+                        List.of("MULTI_CHOICE", MARK + "Câu import 2", "N5", "READING", "う", "え", "B", "", "")));
 
         mockMvc.perform(multipart("/manager/exams/{id}/import", exam.getExamId()).file(file).with(csrf()))
                 .andExpect(flash().attribute("examSuccess", "Đã import và gắn 2 câu hỏi vào đề thi."));
@@ -364,10 +364,10 @@ class ManagerExamIntegrationTest {
         Exam exam = examRepository.save(new Exam(null, MARK + "Đề import lỗi", "JLPT_MOCK", "N5", 90, 67, 80, "DRAFT", null));
         try {
             var file = QuestionExcel.xlsx(
-                    List.of("content", "option_a", "option_b", "answer", "section"),
+                    List.of("content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "section"),
                     List.of(
-                            List.of(MARK + "Câu hợp lệ", "あ", "い", "A", ""),
-                            List.of(MARK + "Câu sai phần", "う", "え", "A", "WRITING")));
+                            List.of(MARK + "Câu hợp lệ", "N5", "VOCABULARY", "あ", "い", "A", ""),
+                            List.of(MARK + "Câu sai phần", "N5", "VOCABULARY", "う", "え", "A", "WRITING")));
 
             mockMvc.perform(multipart("/manager/exams/{id}/import", exam.getExamId()).file(file).with(csrf()))
                     .andExpect(flash().attribute("examError", containsString("Import thất bại")))

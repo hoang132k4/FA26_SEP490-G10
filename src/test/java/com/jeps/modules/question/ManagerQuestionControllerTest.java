@@ -55,6 +55,16 @@ class ManagerQuestionControllerTest {
         when(managerQuestionService.options()).thenReturn(OPTIONS);
     }
 
+    @Test
+    void createPage_unknownParent_redirectsWithError() throws Exception {
+        when(managerQuestionService.findById(999L)).thenThrow(new IllegalArgumentException("Không tìm thấy câu hỏi."));
+
+        mockMvc.perform(get("/manager/questions/new").param("parentId", "999"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/questions"))
+                .andExpect(flash().attribute("questionError", "Không tìm thấy câu hỏi."));
+    }
+
     // ── LIST ──
 
     @Test

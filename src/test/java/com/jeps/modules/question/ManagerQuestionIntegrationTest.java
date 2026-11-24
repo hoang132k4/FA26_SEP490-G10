@@ -144,7 +144,7 @@ class ManagerQuestionIntegrationTest {
                         .param("status", "DRAFT")
                         .param("optionA", "A").param("optionB", "B").param("answerKeys", "A"))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeHasFieldErrors("questionForm", "content"));
+                .andExpect(model().attribute("questionError", "Nội dung câu hỏi không được để trống."));
 
         assertEquals(before, questionRepository.count());
     }
@@ -258,11 +258,11 @@ class ManagerQuestionIntegrationTest {
     @Test
     void importCreatesPassageWithChildrenAndStandaloneQuestion() throws Exception {
         var file = QuestionExcel.xlsx(
-                List.of("group", "question_type", "content", "option_a", "option_b", "answer", "status"),
+                List.of("group", "question_type", "content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "status"),
                 List.of(
-                        List.of("", "MULTI_CHOICE", MARK + "Câu đơn import", "A", "B", "A", "ACTIVE"),
-                        List.of("1", "PASSAGE", MARK + "Đoạn văn import", "", "", "", ""),
-                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "A", "B", "B", "")));
+                        List.of("", "MULTI_CHOICE", MARK + "Câu đơn import", "N5", "VOCABULARY", "A", "B", "A", "ACTIVE"),
+                        List.of("1", "PASSAGE", MARK + "Đoạn văn import", "N5", "READING", "", "", "", ""),
+                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "N5", "READING", "A", "B", "B", "")));
 
         mockMvc.perform(multipart("/manager/questions/import").file(file).with(csrf()))
                 .andExpect(redirectedUrl("/manager/questions"))
