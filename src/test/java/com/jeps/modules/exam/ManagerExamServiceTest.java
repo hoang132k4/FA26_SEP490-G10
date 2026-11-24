@@ -805,7 +805,19 @@ class ManagerExamServiceTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.previewQuestions(EXAM_ID));
 
-        assertEquals("Đề thi đã đủ câu theo cấu trúc JLPT N5.", ex.getMessage());
+        assertEquals("Đề thi đã đủ số câu từng phần theo cấu hình.", ex.getMessage());
+    }
+
+    @Test
+    void previewQuestions_usesExamSectionCounts() {
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(EXAM_ID, "DRAFT", 2, 1, 1)));
+        stubBank(fullN5Bank());
+
+        var preview = service.previewQuestions(EXAM_ID);
+
+        assertEquals(2, preview.sections().get("LANGUAGE").size());
+        assertEquals(1, preview.sections().get("READING").size());
+        assertEquals(1, preview.sections().get("LISTENING").size());
     }
 
     @Test
@@ -816,7 +828,7 @@ class ManagerExamServiceTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.previewQuestions(EXAM_ID));
 
-        assertTrue(ex.getMessage().contains("đã gán 40 câu, vượt cấu trúc JLPT N5 (38 câu)"));
+        assertTrue(ex.getMessage().contains("đã gán 40 câu, vượt số câu đã cấu hình (38 câu)"));
     }
 
     @Test
@@ -919,18 +931,19 @@ class ManagerExamServiceTest {
     }
 
     @Test
-    void confirmGenerate_resetsSectionCountsToJlptStructure() {
+    void confirmGenerate_keepsExamSectionCounts() {
         Exam custom = exam(EXAM_ID, "DRAFT", 10, 5, 5);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(custom));
         stubBank(fullN5Bank());
 
-        service.confirmGenerate(EXAM_ID, fullN5Preview());
+        int added = service.confirmGenerate(EXAM_ID, preview(Map.of("LANGUAGE", ids(1, 10, "VOCABULARY"),
+                "READING", ids(201, 205, "READING"), "LISTENING", ids(301, 305, "LISTENING"))));
 
-        assertEquals(38, custom.getLanguageQuestions());
+        assertEquals(20, added);
+        assertEquals(10, custom.getLanguageQuestions());
         assertEquals(5, custom.getReadingQuestions());
-        assertEquals(24, custom.getListeningQuestions());
-        assertEquals(67, custom.getTotalQuestions());
-        verify(examRepository).save(custom);
+        assertEquals(5, custom.getListeningQuestions());
+        verify(examRepository, never()).save(any());
     }
 
     @Test
