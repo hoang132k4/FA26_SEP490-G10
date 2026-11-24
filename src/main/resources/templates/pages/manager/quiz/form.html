@@ -30,6 +30,7 @@
             <div class="col-md-6">
                 <label class="form-label">Bài học <span class="text-danger">*</span></label>
                 <select class="form-select" th:field="*{lessonId}" required>
+                    <option value="">-- Chọn bài học --</option>
                     <optgroup th:each="group : ${lessonGroups}" th:label="${group.key}">
                         <option th:each="lesson : ${group.value}" th:value="${lesson.id}" th:text="${lesson.title}"></option>
                     </optgroup>

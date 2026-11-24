@@ -80,7 +80,7 @@ public class ManagerQuizService {
     public ManagerQuizForm toForm(QuizOption quiz) {
         ManagerQuizForm form = new ManagerQuizForm();
         form.setId(quiz.id());
-        form.setLessonId(quiz.lessonId());
+        form.setLessonId(quiz.lessonId() > 0 ? quiz.lessonId() : null);
         form.setTitle(quiz.title());
         form.setPassingScore(quiz.passingScore());
         form.setStatus(quiz.status());
@@ -151,6 +151,9 @@ public class ManagerQuizService {
             }
             if (!repository.questionIsActive(questionId)) {
                 throw new IllegalArgumentException("Câu hỏi #" + questionId + " chưa được kích hoạt (ACTIVE).");
+            }
+            if (repository.questionIsPassage(questionId)) {
+                throw new IllegalArgumentException("Câu hỏi #" + questionId + " là bài đọc/nghe (PASSAGE), quiz chỉ gắn được câu trắc nghiệm.");
             }
             if (repository.exerciseQuestionExists(quizId, questionId)) {
                 continue;

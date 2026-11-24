@@ -456,13 +456,13 @@ class ManagerQuizIntegrationTest {
     // ── helpers ──
 
     private void saveCourse(long id, String title, String jlptLevel) {
-        jdbc.update("INSERT INTO courses (id, course_id, title, course_title, level, jlpt_level, price) VALUES (?, ?, ?, ?, 'N5', ?, 0)",
-                id, id, MARK + title, MARK + title, jlptLevel);
+        jdbc.update("INSERT INTO courses (course_id, title, level, price) VALUES (?, ?, ?, 0)",
+                id, MARK + title, jlptLevel);
     }
 
     private void saveLesson(long id, Long courseId, String section) {
-        jdbc.update("INSERT INTO lessons (id, lesson_id, course_id, title, lesson_title, section_name, order_index) VALUES (?, ?, ?, ?, ?, ?, 1)",
-                id, id, courseId, MARK + "Bài " + id, MARK + "Bài " + id, section);
+        jdbc.update("INSERT INTO lessons (lesson_id, course_id, title, section_name, order_index) VALUES (?, ?, ?, ?, 1)",
+                id, courseId, MARK + "Bài " + id, section);
     }
 
     private static List<Long> lessonIds(Map<String, List<LessonOption>> groups, String group) {

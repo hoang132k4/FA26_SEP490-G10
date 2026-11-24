@@ -312,6 +312,26 @@ class ManagerQuizServiceTest {
     }
 
     @Test
+    void addQuestionsRejectsPassage() {
+        stubQuizExists();
+        stubActiveQuestion(1L);
+        when(repository.questionIsPassage(1L)).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L))));
+
+        assertEquals("Câu hỏi #1 là bài đọc/nghe (PASSAGE), quiz chỉ gắn được câu trắc nghiệm.", ex.getMessage());
+        verify(repository, never()).insertExerciseQuestion(anyLong(), anyLong());
+    }
+
+    @Test
+    void toFormLeavesLessonEmptyWhenQuizHasNoLesson() {
+        ManagerQuizForm form = service.toForm(new QuizOption(QUIZ_ID, 0L, null, "Quiz cũ", 5, 60, "PUBLISHED", 5));
+
+        assertEquals(null, form.getLessonId());
+    }
+
+    @Test
     void addQuestionsThrowsWhenQuizMissing() {
         when(repository.findById(999L)).thenReturn(Optional.empty());
 
