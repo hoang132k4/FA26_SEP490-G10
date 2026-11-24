@@ -746,7 +746,7 @@ class AssessmentScoringServiceTest {
     @Test
     @DisplayName("Normal: scoreQuestions với Exam entity context")
     void testScoreQuestions_WithExamEntityContext() {
-        com.jlpp.modules.exam.entity.Exam exam = new com.jlpp.modules.exam.entity.Exam(
+        com.jeps.modules.exam.entity.Exam exam = new com.jeps.modules.exam.entity.Exam(
                 50L, "Entity Exam Test", "JLPT_MOCK", "N3", 60, 0, 95, "ACTIVE", "Desc"
         );
 

@@ -54,13 +54,13 @@ public class ExamControllerTest {
     private NotificationService notificationService;
 
     @MockBean
-    private com.jlpp.modules.course.repository.CourseRepository courseRepository;
+    private com.jeps.modules.course.repository.CourseRepository courseRepository;
 
     @MockBean
-    private com.jlpp.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
+    private com.jeps.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
 
     @MockBean
-    private com.jlpp.modules.course.service.CourseRecommendationService courseRecommendationService;
+    private com.jeps.modules.course.service.CourseRecommendationService courseRecommendationService;
 
     @BeforeEach
     void setUp() {

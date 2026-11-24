@@ -433,7 +433,7 @@ public class ExamServiceImpl implements ExamService {
         boolean passed = isPlacement || (score >= passingScore && allAboveMin);
 
         // strongestSkill / weakestSkill: phân tích chính xác theo tỷ lệ % và các kỹ năng thực tế của bài thi
-        SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown);
+        SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown, questions);
         String strongestSkill = skillAnalysis.strongestSkill();
         String weakestSkill = skillAnalysis.weakestSkill();
 
@@ -660,7 +660,7 @@ public class ExamServiceImpl implements ExamService {
                             .build());
                 }
 
-                SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown);
+                SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown, questions);
                 String strongestSkill = skillAnalysis.strongestSkill();
                 String weakestSkill = skillAnalysis.weakestSkill();
 
@@ -754,7 +754,7 @@ public class ExamServiceImpl implements ExamService {
             if (strongest != null) {
                 sb.append("Thế mạnh của bạn nằm ở: ").append(strongest).append(". ");
             } else {
-                sb.append("Hiện chưa có câu trả lời đúng nào để xác định thế mạnh nổi bật. ");
+                sb.append("Hiện chưa có kỹ năng nổi bật đạt ngưỡng an toàn. ");
             }
             if (weakest != null) {
                 sb.append("Khu vực cần bổ trợ thêm là: ").append(weakest).append(". ");
@@ -782,6 +782,8 @@ public class ExamServiceImpl implements ExamService {
 
         if (strongest != null) {
             sb.append("Kỹ năng nổi bật nhất của bạn là: ").append(strongest).append(". ");
+        } else {
+            sb.append("Hiện chưa có kỹ năng nổi bật đạt mức yêu cầu. ");
         }
         if (weakest != null) {
             sb.append("Kỹ năng cần tập trung ôn tập thêm là: ").append(weakest).append(". ");
@@ -790,59 +792,82 @@ public class ExamServiceImpl implements ExamService {
         return sb.toString();
     }
 
-    private SkillAnalysisResult analyzeSkills(List<ExamResultResponse.SkillScoreDto> breakdown) {
+    private SkillAnalysisResult analyzeSkills(List<ExamResultResponse.SkillScoreDto> breakdown, List<QuestionDto> questions) {
         if (breakdown == null || breakdown.isEmpty()) {
             return new SkillAnalysisResult(null, null);
         }
 
-        // 1. Tìm maxPct (Kỹ năng tốt nhất)
+        // Nếu bài thi chỉ có 1 nhóm phần thi gộp (ví dụ N4/N5 thiếu Nghe hiểu nên chỉ còn "Ngôn ngữ + Đọc hiểu"),
+        // kiểm tra xem các câu hỏi bên trong có thuộc từ 2 kỹ năng chi tiết (Từ vựng, Ngữ pháp, Chữ Hán, Đọc hiểu...) trở lên không
+        List<ExamResultResponse.SkillScoreDto> targetList = breakdown;
+        if (breakdown.size() == 1 && questions != null && !questions.isEmpty() && scoringService != null) {
+            List<ExamResultResponse.SkillScoreDto> fineGrained = scoringService.calculateSkillBreakdown(questions, false);
+            if (fineGrained != null && fineGrained.size() > 1) {
+                targetList = fineGrained;
+            }
+        }
+
+        // 1. Tìm maxPct và minPct trên danh sách kỹ năng đánh giá
         BigDecimal maxPct = BigDecimal.ZERO;
-        for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+        BigDecimal minPct = BigDecimal.valueOf(101);
+        for (ExamResultResponse.SkillScoreDto skill : targetList) {
             BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
             if (p.compareTo(maxPct) > 0) {
                 maxPct = p;
             }
-        }
-
-        String strongestSkill = null;
-        if (maxPct.compareTo(BigDecimal.ZERO) > 0) {
-            List<String> strongList = new ArrayList<>();
-            for (ExamResultResponse.SkillScoreDto skill : breakdown) {
-                BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
-                if (p.compareTo(maxPct) == 0) {
-                    strongList.add(skill.getSkillName());
-                }
-            }
-            strongestSkill = String.join(", ", strongList);
-        }
-
-        // 2. Tìm minPct (Kỹ năng thấp nhất)
-        BigDecimal minPct = BigDecimal.valueOf(101);
-        for (ExamResultResponse.SkillScoreDto skill : breakdown) {
-            BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
             if (p.compareTo(minPct) < 0) {
                 minPct = p;
             }
         }
 
+        // 2. Xác định Kỹ năng cần cải thiện (weakestSkill): các kỹ năng có tỷ lệ thấp nhất (minPct) nếu < 75%
         String weakestSkill = null;
-        // Nếu tất cả các kỹ năng đều đạt >= 75%: không có kỹ năng yếu
-        if (minPct.compareTo(BigDecimal.valueOf(75)) >= 0) {
-            weakestSkill = null;
-        } else {
+        if (minPct.compareTo(BigDecimal.valueOf(75)) < 0) {
             List<String> weakList = new ArrayList<>();
-            for (ExamResultResponse.SkillScoreDto skill : breakdown) {
+            for (ExamResultResponse.SkillScoreDto skill : targetList) {
                 BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
                 if (p.compareTo(minPct) == 0) {
                     weakList.add(skill.getSkillName());
                 }
             }
 
-            // Nếu TẤT CẢ các kỹ năng đều có điểm bằng nhau và < 75% (đặc biệt khi đều 0%)
-            if (weakList.size() == breakdown.size() && breakdown.size() > 1) {
-                weakestSkill = "Toàn diện các kỹ năng (" + String.join(", ", weakList) + ")";
+            if (weakList.size() == targetList.size() && targetList.size() > 1) {
+                // Nếu bài thi chỉ có 1 nhóm gộp trên UI nhưng phân rã ra đều yếu ở mọi kỹ năng con,
+                // hoặc nhiều nhóm phần thi đều bằng nhau và < 75%
+                if (targetList != breakdown && breakdown.size() == 1) {
+                    weakestSkill = breakdown.get(0).getSkillName();
+                } else {
+                    weakestSkill = "Toàn diện các kỹ năng (" + String.join(", ", weakList) + ")";
+                }
             } else {
                 weakestSkill = String.join(", ", weakList);
+            }
+        }
+
+        // 3. Xác định Kỹ năng tốt nhất (strongestSkill):
+        // Không bao giờ được trùng với kỹ năng đang yếu!
+        // - Nếu chỉ có 1 nhóm kỹ năng duy nhất (hoặc mọi kỹ năng bằng điểm nhau: maxPct == minPct):
+        //   Chỉ công nhận là "Kỹ năng tốt nhất" khi đạt từ ngưỡng 60% trở lên và không bị điểm liệt.
+        // - Nếu có sự phân hóa giữa các kỹ năng (maxPct > minPct):
+        //   Kỹ năng đạt maxPct (> 0%) được ghi nhận là kỹ năng tốt nhất (tương đối so với phần còn lại).
+        String strongestSkill = null;
+        boolean hasDifferentiation = maxPct.compareTo(minPct) > 0;
+        boolean meetsAbsoluteThreshold = maxPct.compareTo(BigDecimal.valueOf(60)) >= 0;
+
+        if (maxPct.compareTo(BigDecimal.ZERO) > 0 && (hasDifferentiation || meetsAbsoluteThreshold)) {
+            List<String> strongList = new ArrayList<>();
+            for (ExamResultResponse.SkillScoreDto skill : targetList) {
+                BigDecimal p = skill.getPercentage() != null ? skill.getPercentage() : BigDecimal.ZERO;
+                if (p.compareTo(maxPct) == 0) {
+                    // Nếu không có sự phân hóa (chỉ có 1 kỹ năng duy nhất), không chọn nếu kỹ năng đó đang bị điểm liệt
+                    if (!hasDifferentiation && Boolean.TRUE.equals(skill.getBelowMinimum())) {
+                        continue;
+                    }
+                    strongList.add(skill.getSkillName());
+                }
+            }
+            if (!strongList.isEmpty()) {
+                strongestSkill = String.join(", ", strongList);
             }
         }
 

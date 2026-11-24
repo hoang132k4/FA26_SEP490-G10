@@ -175,7 +175,7 @@
                                 <span class="badge bg-success-subtle text-success px-3 py-1.5 rounded-pill fw-semibold">
                                     <i class="bi bi-star-fill me-1 text-success"></i> Kỹ năng tốt nhất
                                 </span>
-                                <div class="fw-bold mt-1 text-dark small" th:text="${result.strongestSkill != null ? result.strongestSkill : 'Chưa xác định (0%)'}">Chưa xác định (0%)</div>
+                                <div class="fw-bold mt-1 text-dark small" th:text="${result.strongestSkill != null ? result.strongestSkill : 'Chưa có kỹ năng nổi bật'}">Chưa có kỹ năng nổi bật</div>
                             </div>
                             <div class="col-sm-6 text-start">
                                 <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-1.5 rounded-pill fw-semibold">
@@ -382,22 +382,6 @@
                             </a>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Learning Path Navigation Bar -->
-            <div class="mt-3 p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-color: #E2E8F0 !important;">
-                <div class="small text-muted d-flex align-items-center gap-2">
-                    <i class="bi bi-diagram-3 text-primary fs-5"></i>
-                    <span>Xem toàn bộ lộ trình học tập cá nhân hóa được tạo riêng theo kết quả bài thi này:</span>
-                </div>
-                <div class="d-flex gap-2">
-                    <a th:href="@{/learning-path}" class="btn btn-sm btn-primary rounded-pill px-3.5 fw-semibold shadow-sm">
-                        <i class="bi bi-diagram-3-fill me-1"></i> Xem Lộ trình học tập (Learning Path)
-                    </a>
-                    <a th:href="@{/courses}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                        Xem tất cả khóa học
-                    </a>
                 </div>
             </div>
 
