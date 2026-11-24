@@ -351,6 +351,42 @@ class ManagerQuizIntegrationTest {
     }
 
     @Test
+    void addingPassageIsRejected() throws Exception {
+        long quizId = saveQuiz("Quiz bài đọc", "DRAFT", 5);
+        Question passage = questionRepository.saveAndFlush(Question.builder()
+                .content(MARK + "Đoạn văn").questionType("PASSAGE").jlptLevel("N5").skillType("READING").status("ACTIVE").build());
+
+        mockMvc.perform(get("/manager/quizzes/{id}/questions", quizId).param("skillType", "READING"))
+                .andExpect(content().string(not(containsString(MARK + "Đoạn văn"))));
+        mockMvc.perform(addQuestions(quizId, passage))
+                .andExpect(flash().attribute("quizError", "Câu hỏi #" + passage.getId()
+                        + " là bài đọc/nghe (PASSAGE), quiz chỉ gắn được câu trắc nghiệm."));
+
+        assertEquals(0L, linkCount(quizId));
+    }
+
+    @Test
+    void editPageOfQuizWithoutLessonLeavesLessonUnselected() throws Exception {
+        GeneratedKeyHolder keys = new GeneratedKeyHolder();
+        jdbc.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO exercises (lesson_id, exercise_title, total_questions, passing_score, status) VALUES (NULL, ?, 0, 60, 'DRAFT')",
+                    Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, MARK + "Quiz không bài học");
+            return ps;
+        }, keys);
+        long quizId = ((Number) keys.getKeys().get("EXERCISE_ID")).longValue();
+
+        var result = mockMvc.perform(get("/manager/quizzes/{id}/edit", quizId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("-- Chọn bài học --")))
+                .andReturn();
+
+        var form = (com.jeps.modules.quiz.dto.ManagerQuizForm) result.getModelAndView().getModel().get("quizForm");
+        assertEquals(null, form.getLessonId());
+    }
+
+    @Test
     void removeUnlinksQuestion() throws Exception {
         long quizId = saveQuiz("Quiz gỡ câu", "DRAFT", 5);
         Question q = saveQuestion("ACTIVE");
