@@ -53,11 +53,11 @@
         document.querySelectorAll('.bulk-check').forEach(function(cb) { cb.checked = false; });
         var headerCb = document.getElementById('bulkCheckAll');
         if (headerCb) headerCb.checked = false;
-        refresh();
+        window.bulkRefresh();
     };
 
     document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('bulk-check')) refresh();
+        if (e.target.classList.contains('bulk-check')) window.bulkRefresh();
     });
 })();
 </script>

@@ -98,13 +98,12 @@ public class ManagerQuestionService {
         validateDomain(form);
         Question question = findById(id);
         validateStatusTransition(question, form.getStatus());
-        String oldStatus = question.getStatus();
+        if ("PASSAGE".equals(question.getQuestionType()) && !question.getStatus().equals(form.getStatus())) {
+            cascadeStatusToChildren(id, form.getStatus());
+        }
         applyForm(question, form);
         Question saved = questionRepository.save(question);
         syncQuestionOptions(saved, form);
-        if ("PASSAGE".equals(question.getQuestionType()) && !oldStatus.equals(form.getStatus())) {
-            cascadeStatusToChildren(id, form.getStatus());
-        }
         return saved;
     }
 
@@ -141,7 +140,7 @@ public class ManagerQuestionService {
             }
         }
 
-        if ("ARCHIVED".equals(newStatus)) {
+        if (!"ACTIVE".equals(newStatus)) {
             List<Long> allIdsToCheck = new ArrayList<>(ids);
             List<Long> childIds = questionRepository.findChildIdsByParentIds(ids);
             allIdsToCheck.addAll(childIds);
@@ -153,7 +152,7 @@ public class ManagerQuestionService {
             if (!blocked.isEmpty()) {
                 Long first = blocked.iterator().next();
                 throw new IllegalArgumentException("Câu hỏi #" + first
-                        + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED.");
+                        + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang " + newStatus + ".");
             }
         }
 
@@ -252,14 +251,23 @@ public class ManagerQuestionService {
 
     private void cascadeStatusToChildren(long parentId, String newStatus) {
         List<Question> children = questionRepository.findByParentIdOrderById(parentId);
+        if ("ACTIVE".equals(newStatus) && !children.isEmpty()) {
+            List<Long> childIds = children.stream().map(Question::getId).toList();
+            Set<Long> incomplete = new TreeSet<>(questionRepository.findIdsWithIncompleteInfo(childIds));
+            incomplete.addAll(questionRepository.findIdsWithMissingAnswers(childIds));
+            if (!incomplete.isEmpty()) {
+                throw new IllegalArgumentException("Câu hỏi con #" + incomplete.iterator().next()
+                        + " chưa đủ cấp độ, kỹ năng hoặc đáp án nên không thể chuyển sang ACTIVE.");
+            }
+        }
         for (Question child : children) {
             if (!child.getStatus().equals(newStatus)) {
-                if ("ARCHIVED".equals(newStatus)) {
+                if (!"ACTIVE".equals(newStatus)) {
                     long activeExams = questionRepository.countActiveExamUsages(child.getId());
                     long activeQuizzes = questionRepository.countActiveQuizUsages(child.getId());
                     if (activeExams > 0 || activeQuizzes > 0) {
                         throw new IllegalArgumentException("Câu hỏi con #" + child.getId()
-                                + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED.");
+                                + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang " + newStatus + ".");
                     }
                 }
                 child.setStatus(newStatus);
@@ -271,11 +279,11 @@ public class ManagerQuestionService {
     }
 
     private void validateStatusTransition(Question current, String newStatus) {
-        if ("ARCHIVED".equals(newStatus) && !"ARCHIVED".equals(current.getStatus())) {
+        if (!"ACTIVE".equals(newStatus) && !newStatus.equals(current.getStatus())) {
             long activeExams = questionRepository.countActiveExamUsages(current.getId());
             long activeQuizzes = questionRepository.countActiveQuizUsages(current.getId());
             if (activeExams > 0 || activeQuizzes > 0) {
-                StringBuilder msg = new StringBuilder("Không thể chuyển sang ARCHIVED: câu hỏi đang được sử dụng trong ");
+                StringBuilder msg = new StringBuilder("Không thể chuyển sang " + newStatus + ": câu hỏi đang được sử dụng trong ");
                 if (activeExams > 0) msg.append(activeExams).append(" đề thi đang hoạt động");
                 if (activeExams > 0 && activeQuizzes > 0) msg.append(" và ");
                 if (activeQuizzes > 0) msg.append(activeQuizzes).append(" quiz đang hoạt động");
@@ -329,6 +337,9 @@ public class ManagerQuestionService {
             }
             if (isBlank(form.getSkillType())) {
                 throw new IllegalArgumentException("Câu hỏi ACTIVE phải có loại kỹ năng.");
+            }
+            if (listeningPassage && isBlank(form.getAudioUrl())) {
+                throw new IllegalArgumentException("Bài nghe ACTIVE phải có file audio.");
             }
         }
         if (form.getParentId() != null) {

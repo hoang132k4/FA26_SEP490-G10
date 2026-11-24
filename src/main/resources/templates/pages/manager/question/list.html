@@ -148,15 +148,17 @@
 
         var origRefresh = window.bulkRefresh;
         window.bulkRefresh = function() {
-            origRefresh();
             var checked = document.querySelectorAll('.bulk-check:checked');
             var all = document.querySelectorAll('.bulk-check');
+            if (allSelected && checked.length !== all.length) {
+                allSelected = false;
+            }
             if (allSelected) {
-                banner.style.display = 'block';
-                pageMsg.style.display = 'none';
-                selectAllLink.style.display = 'none';
-                allMsg.style.display = 'inline';
-            } else if (all.length > 0 && checked.length === all.length && totalElements > all.length) {
+                applyAllIds();
+                return;
+            }
+            origRefresh();
+            if (all.length > 0 && checked.length === all.length && totalElements > all.length) {
                 banner.style.display = 'block';
                 pageMsg.style.display = 'inline';
                 selectAllLink.style.display = 'inline';
