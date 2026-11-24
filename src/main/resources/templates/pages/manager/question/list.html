@@ -66,11 +66,19 @@
         <div class="px-4 py-3 border-bottom">
             <span class="text-muted">Tổng số: <strong th:text="${questionCount}">0</strong> câu hỏi</span>
         </div>
+        <div id="bulkSelectAllBanner" class="alert alert-info py-2 px-4 mb-0 text-center" style="display:none; border-radius:0;">
+            <span id="bulkBannerPageMsg">Đã chọn tất cả <strong id="bulkPageCount">0</strong> câu hỏi trên trang này.</span>
+            <a href="#" id="bulkSelectAllLink" class="fw-bold ms-2">Chọn tất cả <strong id="bulkTotalCount" th:text="${questions.totalElements}">0</strong> câu hỏi phù hợp bộ lọc</a>
+            <span id="bulkBannerAllMsg" style="display:none;">Đã chọn tất cả <strong th:text="${questions.totalElements}">0</strong> câu hỏi phù hợp bộ lọc.
+                <a href="#" id="bulkDeselectAllLink" class="ms-2">Bỏ chọn</a>
+            </span>
+        </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
                 <thead>
                 <tr>
-                    <th class="ps-4">ID</th>
+                    <th class="ps-4" style="width:40px;"><input type="checkbox" id="bulkCheckAll" onclick="bulkToggleAll(this)"></th>
+                    <th>ID</th>
                     <th>Nội dung</th>
                     <th>Level</th>
                     <th>Kỹ năng</th>
@@ -81,7 +89,8 @@
                 </thead>
                 <tbody>
                 <tr th:each="question : ${questions}">
-                    <td class="ps-4" th:text="${question.id}"></td>
+                    <td class="ps-4"><input type="checkbox" class="bulk-check" th:value="${question.id}"></td>
+                    <td th:text="${question.id}"></td>
                     <td style="min-width:250px;max-width:400px;">
                         <div class="text-truncate" style="max-width:400px;" th:text="${question.content}"></div>
                     </td>
@@ -106,12 +115,111 @@
                         </a>
                     </td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(questions)}">
-                    <td colspan="7" class="text-center text-muted py-5">Không tìm thấy câu hỏi.</td>
+                <tr th:if="${questions.isEmpty()}">
+                    <td colspan="8" class="text-center text-muted py-5">Không tìm thấy câu hỏi.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
+    <div th:replace="~{fragments/components/pagination :: pagination(${questions}, ${pageUrl})}"></div>
+    <div th:replace="~{fragments/components/page-jump :: pageJump(${questions}, ${pageUrl})}"></div>
+    <div th:insert="~{fragments/components/bulk-status :: bulkStatus(@{/manager/questions/bulk-status}, ${options.statuses})}"></div>
+
+    <script th:inline="javascript">
+    (function() {
+        var totalElements = /*[[${questions.totalElements}]]*/ 0;
+        var banner = document.getElementById('bulkSelectAllBanner');
+        var pageMsg = document.getElementById('bulkBannerPageMsg');
+        var allMsg = document.getElementById('bulkBannerAllMsg');
+        var selectAllLink = document.getElementById('bulkSelectAllLink');
+        var deselectAllLink = document.getElementById('bulkDeselectAllLink');
+        var pageCountEl = document.getElementById('bulkPageCount');
+        var allSelected = false;
+        var allIds = null;
+
+        var filterParams = new URLSearchParams({
+            search: /*[[${search}]]*/ '',
+            questionType: /*[[${questionType}]]*/ '',
+            jlptLevel: /*[[${jlptLevel}]]*/ '',
+            skillType: /*[[${skillType}]]*/ '',
+            status: /*[[${status}]]*/ ''
+        });
+
+        var origRefresh = window.bulkRefresh;
+        window.bulkRefresh = function() {
+            origRefresh();
+            var checked = document.querySelectorAll('.bulk-check:checked');
+            var all = document.querySelectorAll('.bulk-check');
+            if (allSelected) {
+                banner.style.display = 'block';
+                pageMsg.style.display = 'none';
+                selectAllLink.style.display = 'none';
+                allMsg.style.display = 'inline';
+            } else if (all.length > 0 && checked.length === all.length && totalElements > all.length) {
+                banner.style.display = 'block';
+                pageMsg.style.display = 'inline';
+                selectAllLink.style.display = 'inline';
+                allMsg.style.display = 'none';
+                pageCountEl.textContent = all.length;
+            } else {
+                banner.style.display = 'none';
+                allSelected = false;
+            }
+        };
+
+        selectAllLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (allIds) {
+                applyAllIds();
+                return;
+            }
+            fetch('/manager/questions/all-ids?' + filterParams.toString())
+                .then(function(r) { return r.json(); })
+                .then(function(ids) {
+                    allIds = ids;
+                    applyAllIds();
+                });
+        });
+
+        function applyAllIds() {
+            allSelected = true;
+            var container = document.getElementById('bulkIdsContainer');
+            var countEl = document.getElementById('bulkCount');
+            container.innerHTML = '';
+            allIds.forEach(function(id) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids';
+                input.value = id;
+                container.appendChild(input);
+            });
+            countEl.textContent = allIds.length;
+            document.getElementById('bulkBar').style.display = 'flex';
+            pageMsg.style.display = 'none';
+            selectAllLink.style.display = 'none';
+            allMsg.style.display = 'inline';
+            banner.style.display = 'block';
+        }
+
+        deselectAllLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            allSelected = false;
+            allIds = null;
+            bulkClearAll();
+            banner.style.display = 'none';
+        });
+
+        var origToggleAll = window.bulkToggleAll;
+        window.bulkToggleAll = function(source) {
+            if (!source.checked) {
+                allSelected = false;
+                allIds = null;
+            }
+            origToggleAll(source);
+            window.bulkRefresh();
+        };
+    })();
+    </script>
 </div>
 </div>

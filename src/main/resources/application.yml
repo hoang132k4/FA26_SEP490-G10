@@ -5,7 +5,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
   application:
-    name: jlpp-platform
+    name: jeps-platform
 
   servlet:
     multipart:
@@ -59,8 +59,8 @@ spring:
   mail:
     host: ${SPRING_MAIL_HOST:smtp.gmail.com}
     port: ${SPRING_MAIL_PORT:587}
-    username: phanmanh14122000@gmail.com
-    password: nfcqielpfwmsfjbw
+    username: ${SPRING_MAIL_USERNAME:phanmanh14122000@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         debug: true
@@ -95,7 +95,7 @@ app:
 # Logging
 logging:
   level:
-    com.jlpp: DEBUG
+    com.jeps: DEBUG
     org.springframework.web: INFO
 
 ---
@@ -106,7 +106,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.eztcijnvnmcievogjufk.supabase.co:5432/postgres}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    password: ${SPRING_DATASOURCE_PASSWORD:Cme85Dpt1b2HwrBQ}
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

@@ -82,26 +82,32 @@
                 </div>
 
                 <!-- ================= 0. COURSERA GRADED ASSESSMENT HUB ================= -->
-                <div th:if="${lesson.isExam() or effectiveSkill == 'EXAM' or exam != null}" 
-                    class="card p-0 kotoba-card mb-4 border-0 shadow-sm overflow-hidden lesson-exam-card" 
-                     style="border-radius: 20px; background: #FFFFFF;">
+                <div th:if="${lesson.isExam() or effectiveSkill == 'EXAM' or exam != null}"
+                    class="card p-0 kotoba-card mb-4 border-0 shadow-sm overflow-hidden lesson-exam-card"
+                    style="border-radius: 20px; background: #FFFFFF;">
                     <!-- Top Hero Banner (Coursera Deep Navy Gradient) -->
-                    <div class="p-4 p-md-5 lesson-exam-hero" style="background: linear-gradient(135deg, #0F2744 0%, #173B57 50%, #204B6E 100%); color: white;">
+                    <div class="p-4 p-md-5 lesson-exam-hero"
+                        style="background: linear-gradient(135deg, #0F2744 0%, #173B57 50%, #204B6E 100%); color: white;">
                         <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-                            <span class="badge rounded-pill px-3 py-1.5 fw-bold shadow-sm" style="background: #FEE2E2; color: #991B1B; font-size: 0.85rem;">
-                                <i class="bi bi-award-fill me-1 text-danger"></i> GRADED ASSESSMENT &bull; ĐÁNH GIÁ CÓ TÍNH ĐIỂM
+                            <span class="badge rounded-pill px-3 py-1.5 fw-bold shadow-sm"
+                                style="background: #FEE2E2; color: #991B1B; font-size: 0.85rem;">
+                                <i class="bi bi-award-fill me-1 text-danger"></i> GRADED ASSESSMENT &bull; ĐÁNH GIÁ CÓ
+                                TÍNH ĐIỂM
                             </span>
-                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5" th:if="${course != null}" th:text="'Khóa học: ' + ${course.title}">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5"
+                                th:if="${course != null}" th:text="'Khóa học: ' + ${course.title}">
                                 Khóa học JLPT
                             </span>
-                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5" th:if="${course != null}" th:text="'Cấp độ: ' + ${course.level}">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1.5"
+                                th:if="${course != null}" th:text="'Cấp độ: ' + ${course.level}">
                                 Cấp độ: N4
                             </span>
                         </div>
 
-                        <h2 class="fw-bold mb-3 text-white" th:text="${lesson.title}">Bài thi đánh giá giữa kì (Midterm Assessment)</h2>
-                        <p class="text-white-50 mb-0" style="font-size: 1.05rem; line-height: 1.6; max-width: 750px;" 
-                           th:text="${lesson.description != null ? lesson.description : 'Bài kiểm tra năng lực chính thức của khóa học nhằm đánh giá toàn diện trình độ tiếng Nhật (Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu). Điểm số sẽ được ghi nhận vào bảng kết quả học tập.'}">
+                        <h2 class="fw-bold mb-3 text-white" th:text="${lesson.title}">Bài thi đánh giá giữa kì (Midterm
+                            Assessment)</h2>
+                        <p class="text-white-50 mb-0" style="font-size: 1.05rem; line-height: 1.6; max-width: 750px;"
+                            th:text="${lesson.description != null ? lesson.description : 'Bài kiểm tra năng lực chính thức của khóa học nhằm đánh giá toàn diện trình độ tiếng Nhật (Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu). Điểm số sẽ được ghi nhận vào bảng kết quả học tập.'}">
                             Bài kiểm tra năng lực chính thức của khóa học.
                         </p>
                     </div>
@@ -111,30 +117,42 @@
                         <div class="row g-3">
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-clock-history text-warning me-1"></i> Thời lượng thi</div>
-                                    <div class="fs-4 fw-bold text-dark font-monospace" th:text="${(exam != null ? exam.durationMinutes : (lesson.durationMinutes != null ? lesson.durationMinutes : 35)) + ' phút'}">35 phút</div>
+                                    <div class="text-muted small mb-1"><i
+                                            class="bi bi-clock-history text-warning me-1"></i> Thời lượng thi</div>
+                                    <div class="fs-4 fw-bold text-dark font-monospace"
+                                        th:text="${(exam != null ? exam.durationMinutes : (lesson.durationMinutes != null ? lesson.durationMinutes : 35)) + ' phút'}">
+                                        35 phút</div>
                                     <div class="small text-muted" style="font-size: 0.75rem;">Đếm ngược tự động</div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-check2-circle text-success me-1"></i> Yêu cầu đạt</div>
-                                    <div class="fs-4 fw-bold text-success font-monospace" th:text="${(exam != null && exam.passingScore != null ? exam.passingScore : 50) + '%'}">50%</div>
+                                    <div class="text-muted small mb-1"><i
+                                            class="bi bi-check2-circle text-success me-1"></i> Yêu cầu đạt</div>
+                                    <div class="fs-4 fw-bold text-success font-monospace"
+                                        th:text="${(exam != null && exam.passingScore != null ? exam.passingScore : 50) + '%'}">
+                                        50%</div>
                                     <div class="small text-muted" style="font-size: 0.75rem;">Điểm sàn qua môn</div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-question-circle text-primary me-1"></i> Định dạng đề</div>
-                                    <div class="fs-4 fw-bold text-primary font-monospace" th:text="${(exam != null && exam.totalQuestions != null ? exam.totalQuestions : 10) + ' câu'}">10 câu</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">Trắc nghiệm chuẩn JLPT</div>
+                                    <div class="text-muted small mb-1"><i
+                                            class="bi bi-question-circle text-primary me-1"></i> Định dạng đề</div>
+                                    <div class="fs-4 fw-bold text-primary font-monospace"
+                                        th:text="${(exam != null && exam.totalQuestions != null ? exam.totalQuestions : 10) + ' câu'}">
+                                        10 câu</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Trắc nghiệm chuẩn JLPT
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-md-3">
                                 <div class="card p-3 border-0 shadow-sm h-100 rounded-3 text-center bg-white">
-                                    <div class="text-muted small mb-1"><i class="bi bi-shield-check text-info me-1"></i> Chế độ thi</div>
+                                    <div class="text-muted small mb-1"><i class="bi bi-shield-check text-info me-1"></i>
+                                        Chế độ thi</div>
                                     <div class="fs-5 fw-bold text-dark mt-1">Phòng thi ảo</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">Tập trung (Focus Mode)</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Tập trung (Focus Mode)
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -143,22 +161,29 @@
                     <!-- Body: Instructions & CTA Button -->
                     <div class="p-4 p-md-5">
                         <h5 class="fw-bold text-dark mb-3">
-                            <i class="bi bi-info-circle-fill text-primary me-2"></i>Hướng dẫn quy chế thi &amp; Tiêu chuẩn hoàn thành
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>Hướng dẫn quy chế thi &amp; Tiêu
+                            chuẩn hoàn thành
                         </h5>
-                        <div class="p-3.5 rounded-3 mb-4" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; line-height: 1.8;">
+                        <div class="p-3.5 rounded-3 mb-4"
+                            style="background-color: #F8FAFC; border: 1px solid #E2E8F0; line-height: 1.8;">
                             <ul class="mb-0 text-secondary ps-3 small" style="font-size: 0.95rem;">
-                                <li><b>Chuẩn bị:</b> Đảm bảo đường truyền internet ổn định và không gian yên tĩnh trước khi nhấn nút bắt đầu.</li>
-                                <li><b>Quy trình làm bài:</b> Hệ thống sẽ đưa bạn vào <b>Phòng thi ảo chuyên dụng</b> (tương tự như kỳ thi thử JLPT và Đánh giá đầu vào). Bạn có thể tự do di chuyển giữa các câu hỏi, đặt cờ các câu khó để xem lại trước khi nộp.</li>
-                                <li><b>Thời gian làm bài:</b> Đồng hồ sẽ tự động đếm ngược. Khi hết giờ làm bài, hệ thống sẽ tự động thu bài và chấm điểm ngay lập tức.</li>
-                                <li><b>Công nhận kết quả:</b> Điểm số đạt được sẽ được lưu vào cơ sở dữ liệu học tập của bạn để tính điều kiện hoàn thành khóa học và cấp chứng nhận.</li>
+                                <li><b>Chuẩn bị:</b> Đảm bảo đường truyền internet ổn định và không gian yên tĩnh trước
+                                    khi nhấn nút bắt đầu.</li>
+                                <li><b>Quy trình làm bài:</b> Hệ thống sẽ đưa bạn vào <b>Phòng thi ảo chuyên dụng</b>
+                                    (tương tự như kỳ thi thử JLPT và Đánh giá đầu vào). Bạn có thể tự do di chuyển giữa
+                                    các câu hỏi, đặt cờ các câu khó để xem lại trước khi nộp.</li>
+                                <li><b>Thời gian làm bài:</b> Đồng hồ sẽ tự động đếm ngược. Khi hết giờ làm bài, hệ
+                                    thống sẽ tự động thu bài và chấm điểm ngay lập tức.</li>
+                                <li><b>Công nhận kết quả:</b> Điểm số đạt được sẽ được lưu vào cơ sở dữ liệu học tập của
+                                    bạn để tính điều kiện hoàn thành khóa học và cấp chứng nhận.</li>
                             </ul>
                         </div>
 
                         <!-- Big Coursera CTA Hero Button -->
                         <div class="text-center py-3">
                             <a th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}"
-                               class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center gap-3 transition-all"
-                               style="font-size: 1.25rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); border: none;">
+                                class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center gap-3 transition-all"
+                                style="font-size: 1.25rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); border: none;">
                                 <i class="bi bi-mortarboard-fill fs-3"></i>
                                 <span>VÀO PHÒNG THI ẢO NGAY</span>
                                 <i class="bi bi-arrow-right fs-4"></i>
@@ -173,8 +198,7 @@
                 <!-- ================= SKILL-SPECIFIC LESSON CONTENT BOARDS ================= -->
 
                 <!-- 0. EXAM HERO BOARD (DÀNH CHO BÀI THI GIỮA KÌ & CUỐI KÌ) -->
-                <div th:if="${false}"
-                    class="card p-4 p-md-5 mb-4 shadow-sm border-0 text-center"
+                <div th:if="${false}" class="card p-4 p-md-5 mb-4 shadow-sm border-0 text-center"
                     style="background: linear-gradient(135deg, #173B57 0%, #0F2338 100%); color: #FFFFFF; border-radius: 20px;">
                     <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-3 p-3 rounded-circle"
                         style="background-color: rgba(239, 68, 68, 0.2); width: 80px; height: 80px;">
@@ -234,45 +258,193 @@
                     </small>
                 </div>
 
-                <!-- 1. KANJI STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and effectiveSkill != 'EXAM' and exam == null and (effectiveSkill == 'KANJI' or (studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character'])))}"
+                <!-- 0. DEDICATED JAPANESE AUDIO & LISTENING PLAYER CARD -->
+                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'LISTENING' or lesson.lessonType == 'AUDIO' or (attachedMaterials != null and !attachedMaterials.isEmpty() and attachedMaterials.?[materialType == 'AUDIO'].size() > 0))}"
+                    class="card p-4 mb-4 border-0 shadow-sm rounded-4 text-white"
+                    style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0D4E5B 100%);">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-3 py-1.5 fw-bold"
+                                style="background: rgba(245, 158, 11, 0.25); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);">
+                                <i class="bi bi-soundwave me-1"></i> BÀI NGHE AUDIO &amp; LUYỆN ÂM BẢN XỨ
+                            </span>
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-2.5 py-1 small">
+                                <i class="bi bi-mic-fill me-1 text-warning"></i> Giọng đọc Tokyo
+                            </span>
+                        </div>
+                        <span class="text-white-50 small">
+                            <i class="bi bi-headphones me-1"></i> Choukai Listening
+                        </span>
+                    </div>
+
+                    <!-- Audio Tracks List -->
+                    <div class="d-flex flex-column gap-3">
+                        <!-- Attached Audio Materials from DB -->
+                        <div th:if="${attachedMaterials != null and !attachedMaterials.isEmpty() and attachedMaterials.?[materialType == 'AUDIO'].size() > 0}"
+                            th:each="audioMat, aStat : ${attachedMaterials.?[materialType == 'AUDIO']}"
+                            class="bg-white bg-opacity-10 p-3 rounded-3 border border-white border-opacity-10">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-play-circle-fill text-warning fs-4"></i>
+                                    <strong class="text-white small"
+                                        th:text="${audioMat.materialTitle != null ? audioMat.materialTitle : 'Audio luyện nghe bài học'}">Audio
+                                        bài nghe</strong>
+                                </div>
+                                <span class="badge bg-warning text-dark font-monospace small"
+                                    style="font-size: 0.72rem;">Audio Track</span>
+                            </div>
+                            <p class="text-white-50 small mb-2" th:if="${audioMat.description != null}"
+                                th:text="${audioMat.description}">Mô tả bài nghe</p>
+                            <div class="audio-player-wrapper">
+                                <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm"
+                                    style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                                    <source th:src="${audioMat.audioUrl}" type="audio/wav">
+                                    <source th:src="${audioMat.audioUrl}" type="audio/ogg">
+                                    <source th:src="${audioMat.audioUrl}" type="audio/mpeg">
+                                    Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
+                                </audio>
+                                <div
+                                    class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="text-white-50 me-1 small"><i
+                                                class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 0.75)">0.75x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark"
+                                            style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 1.25)">1.25x</button>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, -5)"
+                                            title="Tua lùi 5 giây"><i
+                                                class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, 5)"
+                                            title="Tua tới 5 giây">+5s<i
+                                                class="bi bi-arrow-clockwise ms-0.5"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Collapsible Transcript if bodyContent is available -->
+                            <div th:if="${audioMat.bodyContent != null and !audioMat.bodyContent.isBlank()}"
+                                class="mt-2">
+                                <button
+                                    class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 small text-white border-opacity-50"
+                                    type="button" data-bs-toggle="collapse"
+                                    th:attr="data-bs-target='#scriptMat' + ${audioMat.materialId}"
+                                    aria-expanded="false">
+                                    <i class="bi bi-card-text me-1 text-warning"></i> Xem lời thoại &amp; Bản dịch
+                                    (Script)
+                                </button>
+                                <div class="collapse mt-2" th:id="'scriptMat' + ${audioMat.materialId}">
+                                    <div class="p-3 rounded-3 bg-dark bg-opacity-50 text-white-75 border border-white border-opacity-10 small font-monospace"
+                                        style="line-height: 1.8; white-space: pre-wrap;"
+                                        th:text="${audioMat.bodyContent}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fallback Audio Track if listening lesson has no attachedMaterials yet -->
+                        <div th:if="${attachedMaterials == null or attachedMaterials.isEmpty() or attachedMaterials.?[materialType == 'AUDIO'].isEmpty()}"
+                            class="bg-white bg-opacity-10 p-3 rounded-3 border border-white border-opacity-10">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-play-circle-fill text-warning fs-4"></i>
+                                    <strong class="text-white small" th:text="${lesson.title}">Bài nghe hội
+                                        thoại</strong>
+                                </div>
+                                <span class="badge bg-warning text-dark font-monospace small"
+                                    style="font-size: 0.72rem;">Audio Track</span>
+                            </div>
+                            <p class="text-white-50 small mb-2"
+                                th:text="${lesson.description != null ? lesson.description : 'Nghe đoạn hội thoại mẫu giọng chuẩn Tokyo và luyện phản xạ câu hỏi.'}">
+                                Mô tả</p>
+                            <div class="audio-player-wrapper">
+                                <audio controls preload="metadata" class="w-100 rounded-pill shadow-sm">
+                                    <source src="/audio/japanese_conversation_audio.wav" type="audio/wav">
+                                    <source src="/audio/coffee_shop.ogg" type="audio/ogg">
+                                    Trình duyệt của bạn không hỗ trợ thẻ audio HTML5.
+                                </audio>
+                                <div
+                                    class="d-flex align-items-center justify-content-between w-100 px-1 mt-2 small flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="text-white-50 me-1 small"><i
+                                                class="bi bi-speedometer2 me-1"></i>Tốc độ:</span>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 0.75)">0.75x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn active btn-warning text-dark"
+                                            style="font-size: 0.75rem;" onclick="setAudioSpeed(this, 1.0)">1.0x</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white audio-speed-btn"
+                                            style="font-size: 0.75rem;"
+                                            onclick="setAudioSpeed(this, 1.25)">1.25x</button>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, -5)"
+                                            title="Tua lùi 5 giây"><i
+                                                class="bi bi-arrow-counterclockwise me-0.5"></i>-5s</button>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-light border-opacity-25 px-2 py-0.5 text-white"
+                                            style="font-size: 0.75rem;" onclick="skipAudio(this, 5)"
+                                            title="Tua tới 5 giây">+5s<i
+                                                class="bi bi-arrow-clockwise ms-0.5"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. KANJI STUDY BOARD (Chỉ hiện khi có dữ liệu từ điển Hán tự thực) -->
+                <div th:if="${!lesson.isExam() and effectiveSkill != 'EXAM' and exam == null and studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character'])}"
                     class="kanji-study-board mb-4">
                     <div class="kanji-study-shell">
                         <!-- CỘT TRÁI: THÔNG TIN HÁN TỰ -->
                         <div class="kanji-overview-col">
                             <div class="kanji-stroke-box">
-                                <span class="kanji-main-char"
-                                    th:text="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['character'] != null and !#strings.isEmpty(studyView.kanjiDetail['character']) ? studyView.kanjiDetail['character'] : lesson.title}">字</span>
-                                <span class="kanji-stroke-badge"
-                                    th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['strokeCount'] != null}"
+                                <span class="kanji-main-char" th:text="${studyView.kanjiDetail['character']}">字</span>
+                                <span class="kanji-stroke-badge" th:if="${studyView.kanjiDetail['strokeCount'] != null}"
                                     th:text="|${studyView.kanjiDetail['strokeCount']} nét|">6 nét</span>
                             </div>
 
                             <div class="kanji-hanviet-tag"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['hanviet'] != null and !#strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
+                                th:if="${studyView.kanjiDetail['hanviet'] != null and !#strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
                                 th:text="${studyView.kanjiDetail['hanviet']}">HÁN VIỆT</div>
-                            <div class="kanji-hanviet-tag"
-                                th:if="${studyView == null or studyView.kanjiDetail == null or studyView.kanjiDetail['hanviet'] == null or #strings.isEmpty(studyView.kanjiDetail['hanviet'])}"
-                                th:text="${lesson.title}">HÁN TỰ</div>
 
                             <hr class="kanji-col-divider">
 
                             <div class="kanji-reading-item"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['kunReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['kunReading'])}">
+                                th:if="${studyView.kanjiDetail['kunReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['kunReading'])}">
                                 <span class="kanji-badge-icon is-kun" title="Âm Kun">訓</span>
                                 <span class="kanji-reading-text"
                                     th:text="${studyView.kanjiDetail['kunReading']}">まわ・る</span>
                             </div>
 
                             <div class="kanji-reading-item"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['onReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['onReading'])}">
+                                th:if="${studyView.kanjiDetail['onReading'] != null and !#strings.isEmpty(studyView.kanjiDetail['onReading'])}">
                                 <span class="kanji-badge-icon is-on" title="Âm On">音</span>
                                 <span class="kanji-reading-text"
                                     th:text="${studyView.kanjiDetail['onReading']}">カイ</span>
                             </div>
 
                             <div class="kanji-meta-row"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and (studyView.kanjiDetail['radical'] != null or studyView.kanjiDetail['meaning'] != null)}">
+                                th:if="${studyView.kanjiDetail['radical'] != null or studyView.kanjiDetail['meaning'] != null}">
                                 <span class="badge bg-light text-dark border"
                                     th:if="${studyView.kanjiDetail['radical'] != null and !#strings.isEmpty(studyView.kanjiDetail['radical'])}"
                                     th:text="|Bộ: ${studyView.kanjiDetail['radical']}|">Bộ thủ</span>
@@ -291,7 +463,7 @@
                                 <i class="bi bi-collection text-primary me-2"></i>Từ ghép thông dụng &amp; Cách dùng
                             </h5>
                             <div class="kanji-compounds-list"
-                                th:if="${studyView != null and studyView.kanjiDetail != null and studyView.kanjiDetail['compounds'] != null and !#lists.isEmpty(studyView.kanjiDetail['compounds'])}">
+                                th:if="${studyView.kanjiDetail['compounds'] != null and !#lists.isEmpty(studyView.kanjiDetail['compounds'])}">
                                 <div class="kanji-compound-entry"
                                     th:each="comp : ${studyView.kanjiDetail['compounds']}">
                                     <div class="kanji-compound-word-wrap">
@@ -299,6 +471,12 @@
                                             th:text="${comp['compoundReading'] != null and !#strings.isEmpty(comp['compoundReading']) ? comp['compoundReading'] : comp['reading']}">ふりがな</span>
                                         <span class="kanji-compound-word"
                                             th:text="${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['compoundWord'] : comp['word']}">漢字</span>
+                                        <button type="button" class="btn btn-sm btn-link text-primary p-0 ms-1 border-0"
+                                            th:attr="data-speak=${comp['compoundWord'] != null and !#strings.isEmpty(comp['compoundWord']) ? comp['compoundWord'] : comp['word']}"
+                                            onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                            title="Nghe phát âm chuẩn">
+                                            <i class="bi bi-volume-up-fill"></i>
+                                        </button>
                                     </div>
                                     <div class="kanji-compound-meaning"
                                         th:text="${comp['compoundMeaning'] != null and !#strings.isEmpty(comp['compoundMeaning']) ? comp['compoundMeaning'] : comp['meaning']}">
@@ -306,32 +484,17 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div
-                                th:if="${studyView == null or studyView.kanjiDetail == null or studyView.kanjiDetail['compounds'] == null or #lists.isEmpty(studyView.kanjiDetail['compounds'])}">
-                                <div class="lesson-content-body"
-                                    th:if="${lesson.content != null && !lesson.content.isBlank()}">
-                                    <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
-                                    <div id="renderedContent" class="markdown-body"></div>
-                                </div>
-                                <div th:unless="${lesson.content != null && !lesson.content.isBlank()}"
-                                    class="text-center py-4 text-muted">
-                                    <p class="small mb-0"
-                                        th:text="${lesson.description != null ? lesson.description : 'Đang cập nhật danh sách từ ghép cho chữ Hán này.'}">
-                                        Mô tả bài học</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. GRAMMAR STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'GRAMMAR' or (studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning'])))}"
+                <!-- 2. GRAMMAR STUDY BOARD (Chỉ hiện khi có từ điển mẫu câu thực sự, KHÔNG hiện tiêu đề bài học làm ý nghĩa giả) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.grammarDetail != null and (((studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Bài ') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Ngữ pháp & Mẫu câu') and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title))) or (studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])))}"
                     class="grammar-study-board mb-4">
                     <div class="grammar-study-card">
                         <!-- CẤU TRÚC KẾT HỢP -->
                         <div class="grammar-formation-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['formationRows'] != null and !#lists.isEmpty(studyView.grammarDetail['formationRows'])}">
+                            th:if="${studyView.grammarDetail['formationRows'] != null and !#lists.isEmpty(studyView.grammarDetail['formationRows'])}">
                             <div class="grammar-formation-grid">
                                 <div class="grammar-formation-row"
                                     th:each="fRow : ${studyView.grammarDetail['formationRows']}">
@@ -343,25 +506,25 @@
                             </div>
                         </div>
                         <div class="grammar-formation-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and (studyView.grammarDetail['formationRows'] == null or #lists.isEmpty(studyView.grammarDetail['formationRows'])) and studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])}">
+                            th:if="${(studyView.grammarDetail['formationRows'] == null or #lists.isEmpty(studyView.grammarDetail['formationRows'])) and studyView.grammarDetail['formation'] != null and !#strings.isEmpty(studyView.grammarDetail['formation'])}">
                             <div class="grammar-formation-single" th:text="${studyView.grammarDetail['formation']}">Cấu
                                 trúc ngữ pháp</div>
                         </div>
 
-                        <!-- ĐƯỜNG PHÂN CÁCH NÉT ĐỨT -->
-                        <hr class="grammar-dashed-line">
-
-                        <!-- Ý NGHĨA -->
-                        <div class="grammar-meaning-wrap">
-                            <span class="grammar-meaning-label">Ý nghĩa:</span>
-                            <span class="grammar-meaning-val"
-                                th:text="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) ? studyView.grammarDetail['meaning'] : lesson.title}">Ý
-                                nghĩa mẫu ngữ pháp</span>
+                        <!-- Ý NGHĨA (CHỈ HIỂN THỊ KHI CÓ Ý NGHĨA THỰC SỰ TRONG TỪ ĐIỂN, TUYỆT ĐỐI KHÔNG HIỂN THỊ TIÊU ĐỀ BÀI HỌC) -->
+                        <div
+                            th:if="${studyView.grammarDetail['meaning'] != null and !#strings.isEmpty(studyView.grammarDetail['meaning']) and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Bài ') and !#strings.containsIgnoreCase(studyView.grammarDetail['meaning'], 'Ngữ pháp & Mẫu câu') and !studyView.grammarDetail['meaning'].equalsIgnoreCase(lesson.title)}">
+                            <hr class="grammar-dashed-line">
+                            <div class="grammar-meaning-wrap">
+                                <span class="grammar-meaning-label">Ý nghĩa:</span>
+                                <span class="grammar-meaning-val" th:text="${studyView.grammarDetail['meaning']}">Ý
+                                    nghĩa mẫu ngữ pháp</span>
+                            </div>
                         </div>
 
                         <!-- CÁCH DÙNG & GIẢI THÍCH (❖) -->
                         <div class="grammar-notes-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['usageNotes'] != null and !#lists.isEmpty(studyView.grammarDetail['usageNotes'])}">
+                            th:if="${studyView.grammarDetail['usageNotes'] != null and !#lists.isEmpty(studyView.grammarDetail['usageNotes'])}">
                             <div class="grammar-note-item" th:each="note : ${studyView.grammarDetail['usageNotes']}">
                                 <span class="grammar-note-bullet">❖</span>
                                 <span class="grammar-note-text" th:text="${note}">Giải thích cách dùng chi
@@ -371,35 +534,34 @@
 
                         <!-- CÂU VÍ DỤ MINH HỌA -->
                         <div class="grammar-examples-box"
-                            th:if="${studyView != null and studyView.grammarDetail != null and studyView.grammarDetail['examples'] != null and !#lists.isEmpty(studyView.grammarDetail['examples'])}">
+                            th:if="${studyView.grammarDetail['examples'] != null and !#lists.isEmpty(studyView.grammarDetail['examples'])}">
                             <h6 class="grammar-examples-title"><i class="bi bi-chat-quote me-1"></i>Ví dụ thực tế:</h6>
                             <div class="grammar-ex-item" th:each="ex : ${studyView.grammarDetail['examples']}">
                                 <span class="grammar-ex-bullet">•</span>
                                 <div class="grammar-ex-content">
-                                    <strong class="grammar-ex-jp" th:text="${ex['jp']}">日本語は、勉強すればするほど面白くなる。</strong>
+                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                        <strong class="grammar-ex-jp"
+                                            th:text="${ex['jp']}">日本語は、勉強すればするほど面白くなる。</strong>
+                                        <button type="button" class="btn btn-sm btn-link text-primary p-0 border-0"
+                                            th:attr="data-speak=${ex['jp']}"
+                                            onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                            title="Nghe phát âm câu ví dụ">
+                                            <i class="bi bi-volume-up-fill"></i>
+                                        </button>
+                                    </div>
                                     <span class="grammar-ex-vi"
                                         th:if="${ex['vi'] != null and !#strings.isEmpty(ex['vi'])}"
                                         th:text="|(${ex['vi']})|">(Càng học tiếng Nhật càng thấy thú vị.)</span>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- FALLBACK MARKDOWN CHO GRAMMAR -->
-                        <div th:if="${lesson.content != null && !lesson.content.isBlank()}">
-                            <hr class="grammar-dashed-line">
-                            <div class="lesson-content-body">
-                                <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
-                                <div id="renderedContent" class="markdown-body"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- 3. VOCABULARY STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'VOCABULARY' or (studyView != null and studyView.vocabDetail != null and studyView.vocabDetail['words'] != null and !#lists.isEmpty(studyView.vocabDetail['words'])))}"
+                <!-- 3. VOCABULARY STUDY BOARD (Chỉ hiện khi có danh sách từ vựng chi tiết) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.vocabDetail != null and studyView.vocabDetail['words'] != null and !#lists.isEmpty(studyView.vocabDetail['words'])}"
                     class="vocab-study-board mb-4">
-                    <div class="vocab-table-card"
-                        th:if="${studyView != null and studyView.vocabDetail != null and studyView.vocabDetail['words'] != null and !#lists.isEmpty(studyView.vocabDetail['words'])}">
+                    <div class="vocab-table-card">
                         <div class="vocab-entry-row" th:each="vWord, vStat : ${studyView.vocabDetail['words']}"
                             th:classappend="${vStat.odd} ? ' is-odd' : ' is-even'">
 
@@ -407,6 +569,12 @@
                             <div class="vocab-info-col">
                                 <div class="vocab-header-line">
                                     <span class="vocab-word" th:text="${vWord['word']}">単語</span>
+                                    <button type="button" class="btn btn-sm btn-link text-primary p-0 ms-1 border-0"
+                                        th:attr="data-speak=${vWord['word']}"
+                                        onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                        title="Nghe phát âm từ vựng">
+                                        <i class="bi bi-volume-up-fill"></i>
+                                    </button>
                                     <span class="vocab-pos"
                                         th:if="${vWord['partOfSpeech'] != null and !#strings.isEmpty(vWord['partOfSpeech'])}"
                                         th:text="${vWord['partOfSpeech']}">(N)</span>
@@ -434,7 +602,16 @@
                                     <div class="vocab-example-item" th:each="ex : ${vWord['examples']}">
                                         <span class="vocab-bullet">•</span>
                                         <div class="vocab-example-text-wrap">
-                                            <span class="vocab-ex-jp" th:text="${ex['jp']}">毎日新しい単語を覚えます。</span>
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                <span class="vocab-ex-jp" th:text="${ex['jp']}">毎日新しい単語を覚えます。</span>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-link text-primary p-0 border-0"
+                                                    th:attr="data-speak=${ex['jp']}"
+                                                    onclick="speakJapanese(this.getAttribute('data-speak'))"
+                                                    title="Nghe phát âm câu ví dụ">
+                                                    <i class="bi bi-volume-up-fill"></i>
+                                                </button>
+                                            </div>
                                             <span class="vocab-ex-vi"
                                                 th:if="${ex['vi'] != null and !#strings.isEmpty(ex['vi'])}"
                                                 th:text="|(${ex['vi']})|">(Mỗi ngày tôi đều ghi nhớ từ mới.)</span>
@@ -448,36 +625,17 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- NẾU CHƯA CÓ WORDS, HIỂN THỊ NỘI DUNG MARKDOWN DỰ PHÒNG -->
-                    <div
-                        th:if="${studyView == null or studyView.vocabDetail == null or studyView.vocabDetail['words'] == null or #lists.isEmpty(studyView.vocabDetail['words'])}">
-                        <div class="card p-4 kotoba-card bg-white shadow-sm border">
-                            <div class="lesson-content-body"
-                                th:if="${lesson.content != null && !lesson.content.isBlank()}">
-                                <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
-                                <div id="renderedContent" class="markdown-body"></div>
-                            </div>
-                            <div th:unless="${lesson.content != null && !lesson.content.isBlank()}"
-                                class="text-center py-4 text-muted">
-                                <p class="small mb-0"
-                                    th:text="${lesson.description != null ? lesson.description : 'Chưa có dữ liệu từ vựng chi tiết cho bài học này.'}">
-                                    Mô tả</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- 4. LISTENING STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'LISTENING' or (studyView != null and studyView.listeningQuestions != null and !studyView.listeningQuestions.isEmpty()))}"
+                <!-- 4. LISTENING QUESTIONS BOARD (NẾU CÓ CÂU HỎI TRẮC NGHIỆM NGHE) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.listeningQuestions != null and !studyView.listeningQuestions.isEmpty()}"
                     class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
                     <h5 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-headphones text-warning me-2"></i>Luyện Nghe Hiểu (Choukai)
+                        <i class="bi bi-question-circle text-warning me-2"></i>Câu hỏi trắc nghiệm nghe hiểu
                     </h5>
 
-                    <div class="manager-listening-questions"
-                        th:if="${studyView != null and studyView.listeningQuestions != null and !studyView.listeningQuestions.isEmpty()}">
-                        <article class="manager-listening-question p-3 rounded-3 border bg-light"
+                    <div class="manager-listening-questions">
+                        <article class="manager-listening-question p-3 rounded-3 border bg-light mb-3"
                             th:each="question, questionStat : ${studyView.listeningQuestions}">
                             <header class="manager-listening-question-heading mb-2">
                                 <h5 class="fw-bold text-dark mb-1" th:text="|Câu ${questionStat.count}:|">Câu 1:</h5>
@@ -525,35 +683,29 @@
                             </div>
                         </article>
                     </div>
-
-                    <div th:if="${studyView == null or studyView.listeningQuestions == null or studyView.listeningQuestions.isEmpty()}"
-                        class="text-center py-4 text-muted">
-                        <i class="bi bi-soundwave fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                        <p class="small mb-0">Bài nghe này hiện đang được biên tập câu hỏi hoặc audio.</p>
-                    </div>
                 </div>
 
-                <!-- 5. READING STUDY BOARD -->
-                <div th:if="${!lesson.isExam() and exam == null and (effectiveSkill == 'READING' or (studyView != null and studyView.readingQuestions != null and !studyView.readingQuestions.isEmpty()))}"
+                <!-- 5. READING QUESTIONS BOARD (NẾU CÓ CÂU HỎI TRẮC NGHIỆM ĐỌC) -->
+                <div th:if="${!lesson.isExam() and exam == null and studyView != null and studyView.readingQuestions != null and !studyView.readingQuestions.isEmpty()}"
                     class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
                     <h5 class="fw-bold text-dark mb-3">
                         <i class="bi bi-book-half text-primary me-2"></i>Luyện Đọc Hiểu (Dokkai)
                     </h5>
 
                     <!-- Đoạn văn đọc hiểu -->
-                    <div class="manager-reading-content mb-4">
+                    <div class="manager-reading-content mb-4"
+                        th:if="${studyView.readingPassage != null and !studyView.readingPassage.isBlank()}">
                         <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-text me-1 text-secondary"></i>Đoạn văn
                             đọc hiểu:</h6>
                         <div class="p-3.5 rounded-3 border bg-light-subtle text-dark"
                             style="font-size: 1.05rem; line-height: 1.85; white-space: pre-wrap;"
-                            th:text="${(studyView != null and studyView.readingPassage != null and !studyView.readingPassage.isBlank()) ? studyView.readingPassage : ((lesson.content != null and !lesson.content.isBlank()) ? lesson.content : lesson.description)}">
+                            th:text="${studyView.readingPassage}">
                             Nội dung bài đọc tiếng Nhật...
                         </div>
                     </div>
 
                     <!-- Câu hỏi đọc hiểu -->
-                    <div class="manager-listening-questions manager-reading-questions"
-                        th:if="${studyView != null and studyView.readingQuestions != null and !studyView.readingQuestions.isEmpty()}">
+                    <div class="manager-listening-questions manager-reading-questions">
                         <h6 class="fw-bold text-dark mb-2"><i class="bi bi-question-circle me-1 text-secondary"></i>Câu
                             hỏi trắc nghiệm đọc hiểu:</h6>
                         <article class="manager-listening-question p-3 rounded-3 border bg-light mb-3"
@@ -595,42 +747,32 @@
                             </div>
                         </article>
                     </div>
-
-                    <div th:if="${studyView == null or studyView.readingQuestions == null or studyView.readingQuestions.isEmpty()}"
-                        class="text-center py-4 text-muted">
-                        <i class="bi bi-journal-text fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                        <p class="small mb-0">Bài đọc này chưa có câu hỏi trắc nghiệm.</p>
-                    </div>
                 </div>
 
-                <!-- 6. GENERAL THEORY / MARKDOWN FALLBACK (KHI KHÔNG THUỘC 5 SKILL HOẶC LÝ THUYẾT CHUNG) -->
-                <div th:if="${!lesson.isExam() and exam == null and effectiveSkill != 'KANJI' and effectiveSkill != 'GRAMMAR' and effectiveSkill != 'VOCABULARY' and effectiveSkill != 'READING' and effectiveSkill != 'LISTENING'}"
-                    class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
-                    <!-- Markdown Formatted Lesson Content -->
-                    <div class="lesson-content-body" th:if="${lesson.content != null && !lesson.content.isBlank()}">
+                <!-- 6. MAIN LESSON BODY / MARKDOWN CONTENT -->
+                <div th:if="${!lesson.isExam() and exam == null and lesson.content != null and !lesson.content.isBlank()}"
+                    class="card p-4 p-md-5 kotoba-card mb-4 bg-white shadow-sm border">
+                    <div class="lesson-content-body">
                         <div id="rawMarkdown" style="display:none;" th:text="${lesson.content}"></div>
                         <div id="renderedContent" class="markdown-body"></div>
                     </div>
+                </div>
 
-                    <!-- Dynamic Content when lesson.content is empty -->
-                    <div th:unless="${lesson.content != null && !lesson.content.isBlank()}">
-                        <!-- Description if present in DB -->
-                        <div th:if="${lesson.description != null && !lesson.description.isBlank()}" class="mb-4">
-                            <h5 class="fw-bold text-dark mb-2">
-                                <i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học
-                            </h5>
-                            <p class="text-muted" style="line-height: 1.8;" th:text="${lesson.description}">
-                                Mô tả bài học.
-                            </p>
-                        </div>
-
-                        <!-- Neutral empty state -->
-                        <div th:if="${lesson.description == null || lesson.description.isBlank()}"
-                            class="text-center py-4 text-muted">
-                            <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                            <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi
-                                tài liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
-                        </div>
+                <!-- Fallback khi bài học chưa có nội dung markdown chi tiết -->
+                <div th:if="${!lesson.isExam() and exam == null and (lesson.content == null or lesson.content.isBlank())}"
+                    class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
+                    <div th:if="${lesson.description != null and !lesson.description.isBlank()}" class="mb-2">
+                        <h5 class="fw-bold text-dark mb-2">
+                            <i class="bi bi-info-circle text-primary me-2"></i>Mục tiêu &amp; Giới thiệu bài học
+                        </h5>
+                        <p class="text-muted" style="line-height: 1.8;" th:text="${lesson.description}">Mô tả bài học.
+                        </p>
+                    </div>
+                    <div th:if="${lesson.description == null or lesson.description.isBlank()}"
+                        class="text-center py-4 text-muted">
+                        <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi tài
+                            liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
                     </div>
                 </div>
 
@@ -762,15 +904,15 @@
 
                         <!-- Quiz / Exam Button -->
                         <div>
-                            <a th:if="${lesson.isExam() or exam != null}" 
-                               th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}" 
-                               class="btn btn-danger d-flex align-items-center gap-2 px-4 rounded-pill fw-bold text-white shadow-sm">
+                            <a th:if="${lesson.isExam() or exam != null}"
+                                th:href="@{/exams/{id}/start(id=${exam != null ? exam.examId : (lesson.examId != null ? lesson.examId : targetExamId)})}"
+                                class="btn btn-danger d-flex align-items-center gap-2 px-4 rounded-pill fw-bold text-white shadow-sm">
                                 <i class="bi bi-mortarboard-fill"></i>
                                 <span>Vào phòng thi ảo</span>
                             </a>
-                            <a th:unless="${lesson.isExam() or exam != null}" 
-                               th:href="@{/quiz/do(lessonId=${lesson.id})}" 
-                               class="btn btn-outline-primary d-flex align-items-center gap-1.5 px-3">
+                            <a th:unless="${lesson.isExam() or exam != null}"
+                                th:href="@{/quiz/do(lessonId=${lesson.id})}"
+                                class="btn btn-outline-primary d-flex align-items-center gap-1.5 px-3">
                                 <i class="bi bi-pencil-square"></i>
                                 <span>Làm bài trắc nghiệm</span>
                             </a>
@@ -794,7 +936,8 @@
 
             <!-- Right Column: Course Curriculum & Lessons (4 Columns) -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 p-3 p-xl-4 bg-white sticky-top lesson-curriculum-card" style="top: 85px; z-index: 10;">
+                <div class="card border-0 shadow-sm rounded-4 p-3 p-xl-4 bg-white sticky-top lesson-curriculum-card"
+                    style="top: 85px; z-index: 10;">
 
                     <!-- Top Meta: Level & Label -->
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -820,12 +963,20 @@
                             style="font-size: 0.8rem;">
                             <span class="text-muted fw-medium">Tiến độ hoàn thành</span>
                             <span class="fw-bold text-primary fs-6"
-                                th:text="${registration != null ? registration.progressPercent : 0} + '%'">0%</span>
+                                th:text="${registration != null && registration.progressPercent != null ? registration.progressPercent : 0} + '%'">0%</span>
                         </div>
                         <div class="progress" style="height: 6px; border-radius: 4px; background-color: #E2E8F0;">
                             <div class="progress-bar bg-primary"
-                                th:style="'width: ' + (${registration != null ? registration.progressPercent : 0}) + '%; border-radius: 4px;'">
+                                role="progressbar"
+                                th:aria-valuenow="${registration != null && registration.progressPercent != null ? registration.progressPercent : 0}"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                th:style="'width: ' + (${registration != null && registration.progressPercent != null ? registration.progressPercent : 0}) + '%; border-radius: 4px;'">
                             </div>
+                        </div>
+                        <div class="mt-1.5 d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                            <span>Đã học: <b class="text-dark" th:text="${completedLessonsCount != null ? completedLessonsCount : 0}">0</b>/<span th:text="${totalLessonsCount != null ? totalLessonsCount : 0}">0</span> bài</span>
+                            <span th:text="${registration != null && registration.progressPercent != null && registration.progressPercent >= 100 ? 'Đã hoàn thành' : 'Đang học'}">Đang học</span>
                         </div>
                     </div>
 
@@ -872,8 +1023,12 @@
                                                     class="bi bi-clipboard2-check-fill text-danger fs-5"
                                                     title="Bài thi đánh giá"></i>
                                                 <i th:if="${!sLesson.isExam() && sLesson.id == lesson.id}"
-                                                    class="bi bi-play-circle-fill text-primary fs-5"></i>
-                                                <i th:if="${!sLesson.isExam() && sLesson.id != lesson.id}"
+                                                    class="bi bi-play-circle-fill text-primary fs-5"
+                                                    title="Đang học"></i>
+                                                <i th:if="${!sLesson.isExam() && sLesson.id != lesson.id && completedLessonIds != null && completedLessonIds.contains(sLesson.id)}"
+                                                    class="bi bi-check-circle-fill text-success fs-5"
+                                                    title="Đã hoàn thành"></i>
+                                                <i th:if="${!sLesson.isExam() && sLesson.id != lesson.id && (completedLessonIds == null || !completedLessonIds.contains(sLesson.id))}"
                                                     class="bi bi-circle text-secondary opacity-50"
                                                     style="font-size: 0.95rem;"></i>
                                             </div>
@@ -887,6 +1042,11 @@
                                                     Tên bài học
                                                 </div>
                                                 <div class="d-flex align-items-center justify-content-end gap-2 mt-1">
+                                                    <span th:if="${completedLessonIds != null && completedLessonIds.contains(sLesson.id)}"
+                                                        class="badge bg-success-subtle text-success border border-success-subtle rounded-pill"
+                                                        style="font-size: 0.65rem; font-weight: 600;">
+                                                        <i class="bi bi-check2 me-0.5"></i>Đã học
+                                                    </span>
                                                     <span class="badge rounded-pill"
                                                         th:classappend="${sLesson.isExam()} ? 'bg-danger text-white' : (${sLesson.id == lesson.id} ? 'bg-primary text-white' : 'bg-light text-secondary border')"
                                                         style="font-size: 0.65rem; font-weight: 500;"
@@ -932,6 +1092,43 @@
         <!-- Markdown Parser Library (marked.js) for rendering formatted lesson contents -->
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <script>
+            function speakJapanese(text) {
+                if (!text || !('speechSynthesis' in window)) return;
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ja-JP';
+                    utterance.rate = 0.85;
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {
+                    console.warn('Speech synthesis error:', e);
+                }
+            }
+
+            function setAudioSpeed(btn, speed) {
+                const card = btn.closest('.audio-player-wrapper, .bg-white.bg-opacity-10, .card');
+                if (!card) return;
+                const audio = card.querySelector('audio');
+                if (audio) {
+                    audio.playbackRate = speed;
+                    card.querySelectorAll('.audio-speed-btn').forEach(b => {
+                        b.classList.remove('active', 'btn-warning', 'text-dark');
+                        b.classList.add('btn-outline-light', 'text-white');
+                    });
+                    btn.classList.add('active', 'btn-warning', 'text-dark');
+                    btn.classList.remove('btn-outline-light', 'text-white');
+                }
+            }
+
+            function skipAudio(btn, seconds) {
+                const card = btn.closest('.audio-player-wrapper, .bg-white.bg-opacity-10, .card');
+                if (!card) return;
+                const audio = card.querySelector('audio');
+                if (audio) {
+                    audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + seconds));
+                }
+            }
+
             function selectQuizOption(el) {
                 if (!el) return;
                 const parent = el.closest('.interactive-options');
@@ -1020,57 +1217,108 @@
         </script>
         <style>
             .markdown-body {
-                line-height: 1.8;
-                color: #334155;
+                line-height: 1.85;
+                color: #2d3748;
+                font-size: 1.02rem;
             }
 
-            .markdown-body h1,
-            .markdown-body h2,
-            .markdown-body h3,
-            .markdown-body h4 {
+            .markdown-body h1 {
                 color: var(--navy-dark);
+                font-size: 1.65rem;
+                font-weight: 800;
+                margin-top: 1.8rem;
+                margin-bottom: 1rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 2px solid #e2e8f0;
+            }
+
+            .markdown-body h2 {
+                color: var(--navy-dark);
+                font-size: 1.4rem;
+                font-weight: 750;
+                margin-top: 1.6rem;
+                margin-bottom: 0.85rem;
+                padding-bottom: 0.35rem;
+                border-bottom: 1.5px solid #edf2f7;
+            }
+
+            .markdown-body h3 {
+                color: #1e3a8a;
+                font-size: 1.25rem;
                 font-weight: 700;
-                margin-top: 1.5rem;
-                margin-bottom: 0.8rem;
+                margin-top: 1.7rem;
+                margin-bottom: 0.85rem;
+                padding: 6px 14px;
+                background: linear-gradient(90deg, rgba(239, 246, 255, 0.95) 0%, rgba(248, 250, 252, 0.4) 100%);
+                border-left: 4px solid #3b82f6;
+                border-radius: 0 8px 8px 0;
+            }
+
+            .markdown-body h4 {
+                color: #334155;
+                font-size: 1.1rem;
+                font-weight: 650;
+                margin-top: 1.3rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .markdown-body strong {
+                color: #0f172a;
+                font-weight: 700;
+            }
+
+            .markdown-body code {
+                background: #f1f5f9;
+                color: #0369a1;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.95em;
+                font-family: inherit;
             }
 
             .markdown-body table {
                 width: 100%;
                 border-collapse: collapse;
-                margin: 1.2rem 0;
-                border-radius: 8px;
+                margin: 1.4rem 0;
+                border-radius: 10px;
                 overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             }
 
             .markdown-body th,
             .markdown-body td {
-                padding: 10px 14px;
-                border: 1px solid #E2E8F0;
+                padding: 11px 16px;
+                border: 1px solid #e2e8f0;
             }
 
             .markdown-body th {
-                background-color: #F8FAFC;
-                color: var(--navy-dark);
-                font-weight: 600;
+                background-color: #f8fafc;
+                color: #1e293b;
+                font-weight: 650;
+            }
+
+            .markdown-body tr:nth-child(even) td {
+                background-color: #fafbfc;
             }
 
             .markdown-body blockquote {
-                border-left: 4px solid var(--steel-blue);
-                background-color: #F8FAFC;
+                border-left: 4px solid #f59e0b;
+                background-color: #fffbeb;
                 padding: 12px 18px;
-                margin: 1rem 0;
+                margin: 1.2rem 0;
                 border-radius: 0 8px 8px 0;
-                font-style: italic;
+                color: #92400e;
+                font-style: normal;
             }
 
             .markdown-body ul,
             .markdown-body ol {
                 padding-left: 1.5rem;
-                margin-bottom: 1rem;
+                margin-bottom: 1.1rem;
             }
 
             .markdown-body li {
-                margin-bottom: 0.4rem;
+                margin-bottom: 0.45rem;
             }
 
             .cursor-pointer {
@@ -1102,16 +1350,16 @@
                 font-size: 0.78rem;
             }
 
-            .lesson-study-page .breadcrumb-item + .breadcrumb-item::before {
+            .lesson-study-page .breadcrumb-item+.breadcrumb-item::before {
                 color: #cbd5e1;
                 padding-right: 1rem;
             }
 
-            .lesson-study-page .breadcrumb-item + .breadcrumb-item {
+            .lesson-study-page .breadcrumb-item+.breadcrumb-item {
                 padding-left: 1rem;
             }
 
-            .lesson-study-page > .row {
+            .lesson-study-page>.row {
                 --bs-gutter-x: 1rem;
             }
 
@@ -1132,16 +1380,16 @@
                 line-height: 1.25;
             }
 
-            .lesson-study-page .lesson-exam-card > .border-bottom {
+            .lesson-study-page .lesson-exam-card>.border-bottom {
                 padding: 1rem 1.4rem !important;
             }
 
-            .lesson-study-page .lesson-exam-card > .border-bottom .card {
+            .lesson-study-page .lesson-exam-card>.border-bottom .card {
                 border: 1px solid #e2e8f0 !important;
                 box-shadow: none !important;
             }
 
-            .lesson-study-page .lesson-exam-card > .p-4:last-child {
+            .lesson-study-page .lesson-exam-card>.p-4:last-child {
                 padding: 1.2rem 1.4rem 1.45rem !important;
             }
 
@@ -1177,6 +1425,7 @@
                 .lesson-study-page .lesson-curriculum-card {
                     max-height: none;
                 }
+
                 .lesson-study-page .curriculum-scroll-container {
                     max-height: 400px !important;
                 }

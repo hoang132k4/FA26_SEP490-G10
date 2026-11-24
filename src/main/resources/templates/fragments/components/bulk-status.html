@@ -1,0 +1,64 @@
+<!-- Bulk status change bar + checkbox logic -->
+<div th:fragment="bulkStatus(actionUrl, statuses)">
+<div id="bulkBar"
+     class="position-fixed bottom-0 start-50 translate-middle-x mb-3 px-4 py-2 bg-dark text-white rounded-pill shadow align-items-center gap-3"
+     style="display:none; z-index:1050;">
+    <span><strong id="bulkCount">0</strong> mục đã chọn</span>
+    <form method="post" th:action="${actionUrl}" id="bulkForm" class="d-inline-flex align-items-center gap-2 mb-0">
+        <div id="bulkIdsContainer"></div>
+        <select name="status" class="form-select form-select-sm bg-dark text-white border-secondary" style="width:auto;">
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"></option>
+        </select>
+        <button type="submit" class="btn btn-sm btn-warning fw-bold">Đổi trạng thái</button>
+    </form>
+    <button type="button" class="btn btn-sm btn-outline-light" onclick="bulkClearAll()">Bỏ chọn</button>
+</div>
+<script th:inline="javascript">
+(function() {
+    var bar = document.getElementById('bulkBar');
+    var countEl = document.getElementById('bulkCount');
+    var container = document.getElementById('bulkIdsContainer');
+
+    function refresh() {
+        var checked = document.querySelectorAll('.bulk-check:checked');
+        var ids = Array.from(checked).map(function(cb) { return cb.value; });
+        countEl.textContent = ids.length;
+        container.innerHTML = '';
+        ids.forEach(function(id) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids';
+            input.value = id;
+            container.appendChild(input);
+        });
+        bar.style.display = ids.length > 0 ? 'flex' : 'none';
+        var headerCb = document.getElementById('bulkCheckAll');
+        if (headerCb) {
+            var all = document.querySelectorAll('.bulk-check');
+            headerCb.checked = all.length > 0 && checked.length === all.length;
+            headerCb.indeterminate = checked.length > 0 && checked.length < all.length;
+        }
+    }
+
+    window.bulkRefresh = refresh;
+
+    window.bulkToggleAll = function(source) {
+        document.querySelectorAll('.bulk-check').forEach(function(cb) {
+            cb.checked = source.checked;
+        });
+        refresh();
+    };
+
+    window.bulkClearAll = function() {
+        document.querySelectorAll('.bulk-check').forEach(function(cb) { cb.checked = false; });
+        var headerCb = document.getElementById('bulkCheckAll');
+        if (headerCb) headerCb.checked = false;
+        refresh();
+    };
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('bulk-check')) refresh();
+    });
+})();
+</script>
+</div>

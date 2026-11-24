@@ -163,7 +163,10 @@
                     return;
                 }
                 var card = event.target.closest('.manager-skill-lesson');
-                if (!card) return;
+                if (!card || card.getAttribute('draggable') === 'false') {
+                    event.preventDefault();
+                    return;
+                }
                 draggedCard = card;
                 card.classList.add('is-dragging');
                 if (event.dataTransfer) {
@@ -231,10 +234,284 @@
         });
     }
 
+    /* ------------------------------------------------ search and filter */
+    function initLessonSearchAndFilter() {
+        var searchInput = document.getElementById('lessonSearchInput');
+        if (!searchInput) return;
+
+        var filterForm = document.getElementById('lessonFilterForm');
+        var chapterFilter = document.getElementById('lessonChapterFilter');
+        var skillFilter = document.getElementById('lessonSkillFilter');
+        var statusFilter = document.getElementById('lessonStatusFilter');
+        var freeFilter = document.getElementById('lessonFreeFilter');
+        var resetButton = document.getElementById('lessonFilterReset');
+        var emptyResetButton = document.getElementById('lessonEmptyResetBtn');
+        var visibleCountEl = document.getElementById('lessonVisibleCount');
+        var totalCountEl = document.getElementById('lessonTotalCount');
+        var filterBadge = document.getElementById('lessonFilterActiveBadge');
+        var emptyMsg = document.getElementById('lessonFilterEmptyMessage');
+        var emptyState = document.getElementById('lessonEmptyFilterState');
+
+        var allLessonCards = Array.prototype.slice.call(document.querySelectorAll('.manager-skill-lesson'));
+        var totalLessons = allLessonCards.length;
+        if (totalCountEl) totalCountEl.textContent = String(totalLessons);
+
+        function normalizeText(str) {
+            if (!str) return '';
+            return str.toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'd')
+                .trim();
+        }
+
+        function applyFilter() {
+            var query = normalizeText(searchInput ? searchInput.value : '');
+            var selectedChapter = chapterFilter ? chapterFilter.value.trim() : '';
+            var selectedSkill = skillFilter ? skillFilter.value.trim().toUpperCase() : '';
+            var selectedStatus = statusFilter ? statusFilter.value.trim().toUpperCase() : '';
+            var selectedFree = freeFilter ? freeFilter.value.trim().toUpperCase() : '';
+
+            var isFiltering = query.length > 0 || selectedChapter.length > 0 ||
+                              selectedSkill.length > 0 || selectedStatus.length > 0 ||
+                              selectedFree.length > 0;
+
+            var matchingCount = 0;
+
+            // Filter individual lesson cards
+            allLessonCards.forEach(function (card) {
+                var title = normalizeText(card.getAttribute('data-title') || '');
+                var desc = normalizeText(card.getAttribute('data-description') || '');
+                var cardChapter = (card.getAttribute('data-chapter') || '').trim();
+                var cardSkill = (card.getAttribute('data-skill') || '').trim().toUpperCase();
+                var cardStatus = (card.getAttribute('data-status') || '').trim().toUpperCase();
+                var cardFree = (card.getAttribute('data-free') || 'false').trim().toLowerCase();
+                var isFlashcard = card.getAttribute('data-is-flashcard') === 'true';
+                var isPractice = card.getAttribute('data-is-practice') === 'true';
+
+                // 1. Text search (matches title, description, or tags text)
+                var matchesText = true;
+                if (query.length > 0) {
+                    var cardText = title + ' ' + desc;
+                    if (isFlashcard) cardText += ' flashcard';
+                    if (isPractice) cardText += ' practice luyen tap quiz';
+                    matchesText = cardText.indexOf(query) !== -1;
+                }
+
+                // 2. Chapter filter
+                var matchesChapter = true;
+                if (selectedChapter.length > 0) {
+                    matchesChapter = cardChapter.toLowerCase() === selectedChapter.toLowerCase();
+                }
+
+                // 3. Skill / Type filter
+                var matchesSkill = true;
+                if (selectedSkill.length > 0) {
+                    if (selectedSkill === 'FLASHCARD') {
+                        matchesSkill = isFlashcard;
+                    } else if (selectedSkill === 'PRACTICE') {
+                        matchesSkill = isPractice;
+                    } else if (selectedSkill === 'OTHER') {
+                        matchesSkill = cardSkill === 'OTHER' || !cardSkill;
+                    } else {
+                        matchesSkill = cardSkill === selectedSkill;
+                    }
+                }
+
+                // 4. Status filter
+                var matchesStatus = true;
+                if (selectedStatus.length > 0) {
+                    matchesStatus = cardStatus === selectedStatus;
+                }
+
+                // 5. Free preview filter
+                var matchesFree = true;
+                if (selectedFree.length > 0) {
+                    if (selectedFree === 'FREE') {
+                        matchesFree = cardFree === 'true';
+                    } else if (selectedFree === 'PAID') {
+                        matchesFree = cardFree !== 'true';
+                    }
+                }
+
+                var isVisible = matchesText && matchesChapter && matchesSkill && matchesStatus && matchesFree;
+
+                if (isVisible) {
+                    card.style.display = '';
+                    matchingCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+
+                // If filtering is active, disable drag to avoid broken order saves
+                card.setAttribute('draggable', isFiltering ? 'false' : 'true');
+            });
+
+            // Update column headers & badges
+            var skillCards = document.querySelectorAll('.manager-skill-card');
+            skillCards.forEach(function (skillCard) {
+                var lessonsInCol = skillCard.querySelectorAll('.manager-skill-lesson');
+                var visibleInCol = 0;
+                lessonsInCol.forEach(function (card) {
+                    if (card.style.display !== 'none') visibleInCol++;
+                });
+                var countBadge = skillCard.querySelector('header b');
+                if (countBadge) {
+                    countBadge.textContent = String(visibleInCol);
+                }
+                var colLessonsContainer = skillCard.querySelector('.manager-skill-lessons');
+                if (colLessonsContainer) {
+                    if (isFiltering) {
+                        colLessonsContainer.classList.add('is-filtered');
+                    } else {
+                        colLessonsContainer.classList.remove('is-filtered');
+                    }
+                }
+                // Show subtle indicator if column has 0 visible items when filtered
+                var noLessonsEl = skillCard.querySelector('.manager-no-lessons');
+                if (noLessonsEl) {
+                    if (lessonsInCol.length > 0 && visibleInCol === 0 && isFiltering) {
+                        noLessonsEl.textContent = 'Không có bài học phù hợp';
+                        noLessonsEl.style.display = 'block';
+                    } else if (lessonsInCol.length === 0) {
+                        noLessonsEl.textContent = 'Chưa có bài học';
+                        noLessonsEl.style.display = 'block';
+                    } else {
+                        noLessonsEl.style.display = 'none';
+                    }
+                }
+            });
+
+            // Update chapters
+            var chapterArticles = document.querySelectorAll('.manager-chapter');
+            chapterArticles.forEach(function (chap) {
+                var lessonsInChap = chap.querySelectorAll('.manager-skill-lesson');
+                var visibleInChap = 0;
+                lessonsInChap.forEach(function (card) {
+                    if (card.style.display !== 'none') visibleInChap++;
+                });
+
+                var chapCountEl = chap.querySelector('.manager-chapter-count');
+                if (chapCountEl) {
+                    if (isFiltering) {
+                        chapCountEl.textContent = visibleInChap + ' / ' + lessonsInChap.length + ' bài học';
+                    } else {
+                        chapCountEl.textContent = lessonsInChap.length + ' bài học';
+                    }
+                }
+
+                // If chapter has 0 visible lessons when filtering, hide the chapter
+                if (isFiltering && visibleInChap === 0) {
+                    chap.style.display = 'none';
+                } else {
+                    chap.style.display = '';
+                }
+            });
+
+            // Update summary stats & empty states
+            if (visibleCountEl) visibleCountEl.textContent = String(matchingCount);
+            if (filterBadge) filterBadge.style.display = isFiltering ? 'inline-flex' : 'none';
+
+            if (totalLessons > 0 && matchingCount === 0) {
+                if (emptyState) emptyState.style.display = 'block';
+                if (emptyMsg) emptyMsg.style.display = 'block';
+            } else {
+                if (emptyState) emptyState.style.display = 'none';
+                if (emptyMsg) emptyMsg.style.display = 'none';
+            }
+
+            // Update active state on stat cards
+            var selectedSkillForCard = selectedSkill || '';
+            document.querySelectorAll('.js-stat-card').forEach(function (statCard) {
+                var cardSkill = (statCard.getAttribute('data-stat-skill') || '').toUpperCase();
+                if (cardSkill === selectedSkillForCard && (selectedSkillForCard || !isFiltering)) {
+                    statCard.classList.add('is-active-filter');
+                } else {
+                    statCard.classList.remove('is-active-filter');
+                }
+            });
+
+            // Update URL query params without reloading
+            try {
+                var url = new URL(window.location.href);
+                if (query) url.searchParams.set('search', searchInput.value.trim()); else url.searchParams.delete('search');
+                if (selectedChapter) url.searchParams.set('filterChapter', selectedChapter); else url.searchParams.delete('filterChapter');
+                if (selectedSkill) url.searchParams.set('filterSkill', selectedSkill); else url.searchParams.delete('filterSkill');
+                if (selectedStatus) url.searchParams.set('filterStatus', selectedStatus); else url.searchParams.delete('filterStatus');
+                if (selectedFree) url.searchParams.set('filterFree', selectedFree); else url.searchParams.delete('filterFree');
+                window.history.replaceState({}, '', url.toString());
+            } catch (e) {}
+        }
+
+        // Chi loc khi bam nut "Loc" hoac submit form (Enter trong o tim kiem)
+        if (filterForm) {
+            filterForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                applyFilter();
+            });
+        }
+
+        function resetFilters() {
+            if (searchInput) searchInput.value = '';
+            if (chapterFilter) chapterFilter.value = '';
+            if (skillFilter) skillFilter.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (freeFilter) freeFilter.value = '';
+            applyFilter();
+        }
+
+        if (resetButton) {
+            resetButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                resetFilters();
+            });
+        }
+        if (emptyResetButton) {
+            emptyResetButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                resetFilters();
+            });
+        }
+
+        // Tuong tac click vao the thong ke de loc nhanh
+        document.querySelectorAll('.js-stat-card').forEach(function (statCard) {
+            statCard.addEventListener('click', function () {
+                var targetSkill = statCard.getAttribute('data-stat-skill') || '';
+                if (skillFilter) {
+                    skillFilter.value = targetSkill;
+                    applyFilter();
+                }
+            });
+        });
+
+        document.querySelectorAll('.js-stat-pill').forEach(function (statPill) {
+            statPill.addEventListener('click', function () {
+                var targetSkill = statPill.getAttribute('data-stat-skill');
+                var targetFree = statPill.getAttribute('data-stat-free');
+                if (targetSkill && skillFilter) {
+                    skillFilter.value = targetSkill;
+                    applyFilter();
+                } else if (targetFree && freeFilter) {
+                    freeFilter.value = targetFree;
+                    applyFilter();
+                }
+            });
+        });
+
+        // Initial run on page load
+        applyFilter();
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initChapterLessonOrdering);
+        document.addEventListener('DOMContentLoaded', function () {
+            initChapterLessonOrdering();
+            initLessonSearchAndFilter();
+        });
     } else {
         initChapterLessonOrdering();
+        initLessonSearchAndFilter();
     }
 
     /* ------------------------------------------------------------ lesson popup */
@@ -532,7 +809,25 @@
                 existingRow.remove();
                 libraryPick.classList.remove('is-selected');
                 libraryPick.setAttribute('aria-pressed', 'false');
+                if (vocabRows.querySelectorAll('.lesson-word-grid').length === 0) {
+                    var emptyFrag = vocabTemplate.content.cloneNode(true);
+                    vocabRows.appendChild(emptyFrag);
+                }
             } else {
+                // Xóa các ô từ vựng trống trước khi thêm từ từ thư viện
+                var existingWordRows = vocabRows.querySelectorAll('.lesson-word-grid');
+                existingWordRows.forEach(function (wRow) {
+                    var wordVal = (wRow.querySelector('[name="word"]') && wRow.querySelector('[name="word"]').value.trim()) || '';
+                    var readingVal = (wRow.querySelector('[name="wordReading"]') && wRow.querySelector('[name="wordReading"]').value.trim()) || '';
+                    var meaningVal = (wRow.querySelector('[name="wordMeaning"]') && wRow.querySelector('[name="wordMeaning"]').value.trim()) || '';
+                    var hanvietVal = (wRow.querySelector('[name="hanviet"]') && wRow.querySelector('[name="hanviet"]').value.trim()) || '';
+                    var exampleVal = (wRow.querySelector('[name="wordExample"]') && wRow.querySelector('[name="wordExample"]').value.trim()) || '';
+                    var exampleViVal = (wRow.querySelector('[name="wordExampleVi"]') && wRow.querySelector('[name="wordExampleVi"]').value.trim()) || '';
+                    if (!wordVal && !readingVal && !meaningVal && !hanvietVal && !exampleVal && !exampleViVal) {
+                        wRow.remove();
+                    }
+                });
+
                 var fragment = vocabTemplate.content.cloneNode(true);
                 var row = fragment.querySelector('.lesson-word-grid');
                 row.dataset.libraryEntry = entryId;
@@ -612,6 +907,11 @@
     var deleteForm = document.querySelector('[data-confirm-delete]');
     if (deleteForm) {
         deleteForm.addEventListener('submit', function (event) {
+            var submitBtn = deleteForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) {
+                event.preventDefault();
+                return;
+            }
             var confirmed = window.confirm('Xoá bài học này khỏi kỹ năng? Các bài còn lại sẽ được đánh số lại.');
             if (!confirmed) {
                 event.preventDefault();
@@ -620,49 +920,39 @@
     }
 
     /* ------------------------------------------------------- unsaved-changes guard & validation */
+    var JAPANESE_REGEX = /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBFー\s\u3000-\u303F]+$/;
+    var HIRAGANA_REGEX = /^[\u3040-\u309Fー\s]+$/;
+    var KANJI_REGEX = /^[\u4E00-\u9FAF\u3400-\u4DBF]+$/;
+    var ON_KUN_REGEX = /^[\u3040-\u309F\u30A0-\u30FFー・\s]+$/;
+
     function clearFieldFeedback(field) {
         if (!field) return;
         field.classList.remove('is-invalid');
-        var container = field.closest('.lesson-field-unit')
-            || field.closest('.lesson-audio-row')
-            || field;
-        var parent = container.parentElement;
-        if (parent) {
-            var fb = parent.querySelector(':scope > .lesson-field-feedback');
-            if (fb) fb.remove();
-        }
     }
 
-    function showFieldError(field, message) {
+    function showFieldError(field) {
         if (!field) return;
         field.classList.add('is-invalid');
 
-        var targetToInsertAfter = field;
-        if (field.closest('.lesson-field-unit')) {
-            targetToInsertAfter = field.closest('.lesson-field-unit');
-        } else if (field.closest('.lesson-audio-row')) {
-            targetToInsertAfter = field.closest('.lesson-audio-row');
-        }
-
-        var parent = targetToInsertAfter.parentElement;
-        if (parent) {
-            var existing = parent.querySelector(':scope > .lesson-field-feedback');
-            if (existing) {
-                var textEl = existing.querySelector('.feedback-text');
-                if (textEl) textEl.textContent = message;
-                else existing.textContent = message;
-            } else {
-                var div = document.createElement('div');
-                div.className = 'lesson-field-feedback text-danger small mt-1';
-                div.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i><span class="feedback-text">' + message + '</span>';
-                targetToInsertAfter.insertAdjacentElement('afterend', div);
-            }
-        }
-
         var clearHandler = function () {
-            clearFieldFeedback(field);
+            field.classList.remove('is-invalid');
             field.removeEventListener('input', clearHandler);
             field.removeEventListener('change', clearHandler);
+
+            var form = field.closest('form');
+            if (form && !form.querySelector('.is-invalid')) {
+                var clientAlert = form.querySelector('.lesson-client-alert');
+                if (clientAlert) {
+                    clientAlert.style.display = 'none';
+                    var txt = clientAlert.querySelector('.lesson-client-alert-text');
+                    if (txt) txt.textContent = '';
+                    else clientAlert.textContent = '';
+                }
+                var serverAlert = form.querySelector('.lesson-modal-alert');
+                if (serverAlert) {
+                    serverAlert.style.display = 'none';
+                }
+            }
         };
         field.addEventListener('input', clearHandler);
         field.addEventListener('change', clearHandler);
@@ -678,7 +968,132 @@
         var clientAlert = form.querySelector('.lesson-client-alert');
         if (clientAlert) {
             clientAlert.style.display = 'none';
-            clientAlert.textContent = '';
+            var txt = clientAlert.querySelector('.lesson-client-alert-text');
+            if (txt) txt.textContent = '';
+            else clientAlert.textContent = '';
+        }
+        var serverAlert = form.querySelector('.lesson-modal-alert');
+        if (serverAlert) {
+            serverAlert.style.display = 'none';
+        }
+    }
+
+    function highlightServerInvalidField(form, alertMsg) {
+        if (!form || !alertMsg) return;
+        var msg = alertMsg.toLowerCase();
+
+        var quoteMatch = alertMsg.match(/[“"']([^”"']+)[”"']/);
+        var quotedText = quoteMatch ? quoteMatch[1].trim() : '';
+
+        if (quotedText) {
+            var wordInputs = form.querySelectorAll('input[name="word"]');
+            for (var i = 0; i < wordInputs.length; i++) {
+                if (wordInputs[i].value.trim() === quotedText) {
+                    var row = wordInputs[i].closest('.lesson-word-grid');
+                    if (row) {
+                        if (msg.includes('cách đọc') || msg.includes('hiragana')) {
+                            var rd = row.querySelector('input[name="wordReading"]');
+                            if (rd) { showFieldError(rd); rd.focus(); return; }
+                        }
+                        if (msg.includes('từ loại')) {
+                            var pos = row.querySelector('input[name="partOfSpeech"]');
+                            if (pos) { showFieldError(pos); pos.focus(); return; }
+                        }
+                        if (msg.includes('nghĩa') || msg.includes('ý nghĩa')) {
+                            var mn = row.querySelector('input[name="wordMeaning"]');
+                            if (mn) { showFieldError(mn); mn.focus(); return; }
+                        }
+                        if (msg.includes('ví dụ') || msg.includes('dịch')) {
+                            var exVi = row.querySelector('input[name="wordExampleVi"]');
+                            var exJp = row.querySelector('input[name="wordExample"]');
+                            if (msg.includes('việt') && exVi) { showFieldError(exVi); exVi.focus(); return; }
+                            if (exJp) { showFieldError(exJp); exJp.focus(); return; }
+                        }
+                    }
+                    showFieldError(wordInputs[i]);
+                    wordInputs[i].focus();
+                    return;
+                }
+            }
+
+            var kanjiInput = form.querySelector('#kanjiCharacter');
+            if (kanjiInput && kanjiInput.value.trim() === quotedText) {
+                showFieldError(kanjiInput);
+                kanjiInput.focus();
+                return;
+            }
+
+            var grammarInput = form.querySelector('#grammarPattern');
+            if (grammarInput && grammarInput.value.trim() === quotedText) {
+                showFieldError(grammarInput);
+                grammarInput.focus();
+                return;
+            }
+        }
+
+        if (msg.includes('tên bài học') || msg.includes('tiêu đề')) {
+            var title = form.querySelector('#lessonTitle, #otherLessonTitle, input[name="title"]');
+            if (title) { showFieldError(title); title.focus(); return; }
+        }
+        if (msg.includes('chương')) {
+            var sec = form.querySelector('#lessonSectionName, #otherLessonSectionName, select[name="sectionName"]');
+            if (sec) { showFieldError(sec); sec.focus(); return; }
+        }
+        if (msg.includes('cách đọc') || msg.includes('hiragana')) {
+            var reading = form.querySelector('input[name="wordReading"]');
+            if (reading) { showFieldError(reading); reading.focus(); return; }
+        }
+        if (msg.includes('từ loại')) {
+            var posField = form.querySelector('input[name="partOfSpeech"]');
+            if (posField) { showFieldError(posField); posField.focus(); return; }
+        }
+        if (msg.includes('từ vựng')) {
+            var word = form.querySelector('input[name="word"]');
+            if (word) { showFieldError(word); word.focus(); return; }
+        }
+        if (msg.includes('chữ hán') || msg.includes('kanji')) {
+            var kj = form.querySelector('#kanjiCharacter');
+            if (kj) { showFieldError(kj); kj.focus(); return; }
+        }
+        if (msg.includes('hán việt')) {
+            var hv = form.querySelector('#kanjiHanviet');
+            if (hv) { showFieldError(hv); hv.focus(); return; }
+        }
+        if (msg.includes('số nét') || msg.includes('nét')) {
+            var st = form.querySelector('#kanjiStrokes');
+            if (st) { showFieldError(st); st.focus(); return; }
+        }
+        if (msg.includes('âm on') || msg.includes('âm kun')) {
+            var on = form.querySelector('#kanjiOn');
+            var kun = form.querySelector('#kanjiKun');
+            if (on && !on.value.trim()) showFieldError(on);
+            if (kun && !kun.value.trim()) showFieldError(kun);
+            if (on) on.focus();
+            return;
+        }
+        if (msg.includes('ngữ pháp') || msg.includes('mẫu câu')) {
+            var gp = form.querySelector('#grammarPattern');
+            if (gp) { showFieldError(gp); gp.focus(); return; }
+        }
+        if (msg.includes('đoạn văn')) {
+            var ps = form.querySelector('#readingPassage, textarea[name="passage"]');
+            if (ps) { showFieldError(ps); ps.focus(); return; }
+        }
+        if (msg.includes('file nghe') || msg.includes('url')) {
+            var au = form.querySelector('input[name="questionAudioUrl"], input[name="questionAudioFile"]');
+            if (au) { showFieldError(au); au.focus(); return; }
+        }
+        if (msg.includes('đáp án') || msg.includes('phương án')) {
+            var opt = form.querySelector('input[name="optionA"], input[name="optionB"]');
+            if (opt) { showFieldError(opt); opt.focus(); return; }
+        }
+        if (msg.includes('câu hỏi')) {
+            var qt = form.querySelector('input[name="questionText"]');
+            if (qt) { showFieldError(qt); qt.focus(); return; }
+        }
+        if (msg.includes('nội dung')) {
+            var ct = form.querySelector('#otherLessonContent, textarea[name="content"]');
+            if (ct) { showFieldError(ct); ct.focus(); return; }
         }
     }
 
@@ -692,27 +1107,27 @@
             dirty = true;
         });
 
-        // Nếu server trả về lỗi (ví dụ trùng tên bài học), highlight ngay trường tên bài học
         var serverAlert = editorForm.querySelector('.lesson-modal-alert');
+        var clientAlert = editorForm.querySelector('.lesson-client-alert');
+        if (clientAlert) {
+            clientAlert.style.display = 'none';
+        }
         if (serverAlert && serverAlert.textContent.trim()) {
-            var alertMsg = serverAlert.textContent.trim();
-            if (alertMsg.toLowerCase().includes('tên bài học') || alertMsg.toLowerCase().includes('đã tồn tại')) {
-                var titleInput = editorForm.querySelector('#lessonTitle, #otherLessonTitle, input[name="title"]');
-                if (titleInput) {
-                    showFieldError(titleInput, alertMsg);
-                }
-            }
+            serverAlert.style.display = 'block';
+            highlightServerInvalidField(editorForm, serverAlert.textContent.trim());
         }
 
         editorForm.addEventListener('submit', function (event) {
             clearAllErrors(editorForm);
             var firstInvalid = null;
+            var firstInvalidMessage = '';
 
             function flagError(field, message) {
                 if (!field) return;
-                showFieldError(field, message);
+                showFieldError(field);
                 if (!firstInvalid) {
                     firstInvalid = field;
+                    firstInvalidMessage = message;
                 }
             }
 
@@ -763,47 +1178,69 @@
                 var wordRows = wordRepeat.querySelectorAll('.lesson-word-grid:not(.lesson-word-head)');
                 if (wordRows.length === 0) {
                     var addWordBtn = editorForm.querySelector('[data-add-row="wordRowTemplate"]');
-                    flagError(addWordBtn || wordRepeat, 'Vui lòng thêm ít nhất một từ vựng.');
+                    flagError(addWordBtn || wordRepeat, 'Bài học Từ vựng phải có ít nhất 1 từ vựng.');
                 } else {
+                    var seenWords = new Set();
                     wordRows.forEach(function (row, idx) {
                         var wordInput = row.querySelector('input[name="word"]');
                         var readingInput = row.querySelector('input[name="wordReading"]');
+                        var posInput = row.querySelector('input[name="partOfSpeech"]');
                         var meaningInput = row.querySelector('input[name="wordMeaning"]');
                         var exJpInput = row.querySelector('input[name="wordExample"]');
                         var exViInput = row.querySelector('input[name="wordExampleVi"]');
 
+                        var wVal = wordInput ? wordInput.value.trim() : '';
+                        var rVal = readingInput ? readingInput.value.trim() : '';
+                        var pVal = posInput ? posInput.value.trim() : '';
+                        var mVal = meaningInput ? meaningInput.value.trim() : '';
+                        var jpVal = exJpInput ? exJpInput.value.trim() : '';
+                        var viVal = exViInput ? exViInput.value.trim() : '';
+
                         if (wordInput) {
-                            var wVal = wordInput.value.trim();
                             if (!wVal) {
                                 flagError(wordInput, 'Vui lòng nhập từ vựng (dòng #' + (idx + 1) + ').');
                             } else if (wVal.length > 50) {
                                 flagError(wordInput, 'Từ vựng không vượt quá 50 ký tự.');
+                            } else if (!JAPANESE_REGEX.test(wVal)) {
+                                flagError(wordInput, 'Từ vựng “' + wVal + '” phải được viết bằng tiếng Nhật (Hiragana, Katakana, hoặc Kanji).');
+                            } else if (seenWords.has(wVal.toLowerCase())) {
+                                flagError(wordInput, 'Từ vựng “' + wVal + '” bị trùng lặp trong bài học.');
+                            } else {
+                                seenWords.add(wVal.toLowerCase());
                             }
                         }
+
                         if (readingInput) {
-                            var rVal = readingInput.value.trim();
                             if (!rVal) {
-                                flagError(readingInput, 'Vui lòng nhập cách đọc (dòng #' + (idx + 1) + ').');
+                                flagError(readingInput, 'Vui lòng nhập cách đọc cho từ: “' + (wVal || ('#' + (idx + 1))) + '”.');
                             } else if (rVal.length > 50) {
-                                flagError(readingInput, 'Cách đọc không vượt quá 50 ký tự.');
+                                flagError(readingInput, 'Cách đọc của từ “' + (wVal || '') + '” tối đa 50 ký tự.');
+                            } else if (!HIRAGANA_REGEX.test(rVal)) {
+                                flagError(readingInput, 'Cách đọc của từ “' + (wVal || '') + '” phải được viết bằng chữ Hiragana.');
                             }
                         }
+
+                        if (posInput) {
+                            if (!pVal) {
+                                flagError(posInput, 'Vui lòng nhập từ loại cho từ: “' + (wVal || ('#' + (idx + 1))) + '”.');
+                            }
+                        }
+
                         if (meaningInput) {
-                            var mVal = meaningInput.value.trim();
                             if (!mVal) {
-                                flagError(meaningInput, 'Vui lòng nhập ý nghĩa (dòng #' + (idx + 1) + ').');
-                            } else if (mVal.length > 150) {
-                                flagError(meaningInput, 'Ý nghĩa không vượt quá 150 ký tự.');
+                                flagError(meaningInput, 'Vui lòng nhập ý nghĩa cho từ: “' + (wVal || ('#' + (idx + 1))) + '”.');
+                            } else if (mVal.length > 255) {
+                                flagError(meaningInput, 'Ý nghĩa của từ “' + (wVal || '') + '” tối đa 255 ký tự.');
                             }
                         }
-                        if (exJpInput && exViInput) {
-                            var jpVal = exJpInput.value.trim();
-                            var viVal = exViInput.value.trim();
-                            if (jpVal && !viVal) {
-                                flagError(exViInput, 'Vui lòng nhập bản dịch tiếng Việt cho ví dụ (dòng #' + (idx + 1) + ').');
-                            } else if (viVal && !jpVal) {
-                                flagError(exJpInput, 'Vui lòng nhập câu ví dụ tiếng Nhật (dòng #' + (idx + 1) + ').');
-                            }
+
+                        if (jpVal && !JAPANESE_REGEX.test(jpVal)) {
+                            flagError(exJpInput, 'Câu ví dụ tiếng Nhật của từ “' + (wVal || '') + '” phải được viết bằng tiếng Nhật.');
+                        }
+                        if (jpVal && !viVal) {
+                            flagError(exViInput, 'Vui lòng nhập câu dịch tiếng Việt cho ví dụ của từ: “' + (wVal || '') + '”.');
+                        } else if (viVal && !jpVal) {
+                            flagError(exJpInput, 'Vui lòng nhập câu ví dụ tiếng Nhật cho ví dụ của từ: “' + (wVal || '') + '”.');
                         }
                     });
                 }
@@ -817,6 +1254,8 @@
                     flagError(kanjiChar, 'Vui lòng nhập chữ Hán (Kanji).');
                 } else if (charVal.length !== 1) {
                     flagError(kanjiChar, 'Chữ Hán (Kanji) phải đúng 1 ký tự.');
+                } else if (!KANJI_REGEX.test(charVal)) {
+                    flagError(kanjiChar, 'Chữ Hán “' + charVal + '” phải là chữ Kanji hợp lệ.');
                 }
 
                 var hanviet = editorForm.querySelector('#kanjiHanviet');
@@ -843,15 +1282,24 @@
                 if (kanjiStrokes) {
                     var stVal = kanjiStrokes.value.trim();
                     var stNum = Number(stVal);
-                    if (!stVal || isNaN(stNum) || stNum < 1 || stNum > 40) {
-                        flagError(kanjiStrokes, 'Số nét của chữ Hán phải từ 1 đến 40.');
+                    if (!stVal || isNaN(stNum) || !Number.isInteger(stNum) || stNum < 1 || stNum > 40) {
+                        flagError(kanjiStrokes, 'Số nét của chữ Hán phải từ 1 đến 40 nét.');
                     }
                 }
 
                 var kanjiOn = editorForm.querySelector('#kanjiOn');
                 var kanjiKun = editorForm.querySelector('#kanjiKun');
-                if (kanjiOn && kanjiKun && !kanjiOn.value.trim() && !kanjiKun.value.trim()) {
+                var onVal = kanjiOn ? kanjiOn.value.trim() : '';
+                var kunVal = kanjiKun ? kanjiKun.value.trim() : '';
+                if (kanjiOn && kanjiKun && !onVal && !kunVal) {
                     flagError(kanjiOn, 'Chữ Hán cần có ít nhất một âm On hoặc âm Kun.');
+                } else {
+                    if (onVal && !ON_KUN_REGEX.test(onVal)) {
+                        flagError(kanjiOn, 'Âm On phải được viết bằng chữ tiếng Nhật (Katakana hoặc Hiragana).');
+                    }
+                    if (kunVal && !ON_KUN_REGEX.test(kunVal)) {
+                        flagError(kanjiKun, 'Âm Kun phải được viết bằng chữ tiếng Nhật (Hiragana hoặc Katakana).');
+                    }
                 }
 
                 var compoundRows = editorForm.querySelectorAll('[data-repeat="compounds"] .lesson-compound-row');
@@ -945,10 +1393,26 @@
                         if (qText && !qText.value.trim()) {
                             flagError(qText, 'Vui lòng nhập nội dung câu hỏi #' + (idx + 1) + '.');
                         }
-                        if (optA && !optA.value.trim()) flagError(optA, 'Vui lòng nhập phương án A (câu #' + (idx + 1) + ').');
-                        if (optB && !optB.value.trim()) flagError(optB, 'Vui lòng nhập phương án B (câu #' + (idx + 1) + ').');
-                        if (optC && !optC.value.trim()) flagError(optC, 'Vui lòng nhập phương án C (câu #' + (idx + 1) + ').');
-                        if (optD && !optD.value.trim()) flagError(optD, 'Vui lòng nhập phương án D (câu #' + (idx + 1) + ').');
+
+                        var optCount = 0;
+                        if (optA && optA.value.trim()) optCount++;
+                        if (optB && optB.value.trim()) optCount++;
+                        if (optC && optC.value.trim()) optCount++;
+                        if (optD && optD.value.trim()) optCount++;
+
+                        if (optCount < 2) {
+                            var targetField = (optA && !optA.value.trim()) ? optA : ((optB && !optB.value.trim()) ? optB : card);
+                            flagError(targetField, 'Mỗi câu hỏi đọc hiểu phải có từ 2 đến 4 đáp án (câu #' + (idx + 1) + ').');
+                        } else {
+                            var correctSelect = card.querySelector('select[name="correct"]');
+                            if (correctSelect) {
+                                var selVal = parseInt(correctSelect.value, 10);
+                                var opts = [optA, optB, optC, optD];
+                                if (opts[selVal] && !opts[selVal].value.trim()) {
+                                    flagError(correctSelect, 'Đáp án đúng được chọn chưa có nội dung (câu #' + (idx + 1) + ').');
+                                }
+                            }
+                        }
                     });
                 }
             }
@@ -988,10 +1452,26 @@
                         if (qText && !qText.value.trim()) {
                             flagError(qText, 'Vui lòng nhập nội dung câu hỏi #' + (idx + 1) + '.');
                         }
-                        if (optA && !optA.value.trim()) flagError(optA, 'Vui lòng nhập phương án A (câu #' + (idx + 1) + ').');
-                        if (optB && !optB.value.trim()) flagError(optB, 'Vui lòng nhập phương án B (câu #' + (idx + 1) + ').');
-                        if (optC && !optC.value.trim()) flagError(optC, 'Vui lòng nhập phương án C (câu #' + (idx + 1) + ').');
-                        if (optD && !optD.value.trim()) flagError(optD, 'Vui lòng nhập phương án D (câu #' + (idx + 1) + ').');
+
+                        var optCount = 0;
+                        if (optA && optA.value.trim()) optCount++;
+                        if (optB && optB.value.trim()) optCount++;
+                        if (optC && optC.value.trim()) optCount++;
+                        if (optD && optD.value.trim()) optCount++;
+
+                        if (optCount < 2) {
+                            var targetField = (optA && !optA.value.trim()) ? optA : ((optB && !optB.value.trim()) ? optB : card);
+                            flagError(targetField, 'Mỗi câu hỏi nghe hiểu phải có từ 2 đến 4 đáp án (câu #' + (idx + 1) + ').');
+                        } else {
+                            var correctSelect = card.querySelector('select[name="correct"]');
+                            if (correctSelect) {
+                                var selVal = parseInt(correctSelect.value, 10);
+                                var opts = [optA, optB, optC, optD];
+                                if (opts[selVal] && !opts[selVal].value.trim()) {
+                                    flagError(correctSelect, 'Đáp án đúng được chọn chưa có nội dung (câu #' + (idx + 1) + ').');
+                                }
+                            }
+                        }
                     });
                 }
             }
@@ -1001,10 +1481,17 @@
                 event.preventDefault();
                 event.stopImmediatePropagation();
 
+                var serverAlert = editorForm.querySelector('.lesson-modal-alert');
+                if (serverAlert) {
+                    serverAlert.style.display = 'none';
+                }
+
                 var clientAlert = editorForm.querySelector('.lesson-client-alert');
                 if (clientAlert) {
+                    var txt = clientAlert.querySelector('.lesson-client-alert-text');
+                    if (txt) txt.textContent = firstInvalidMessage;
+                    else clientAlert.textContent = firstInvalidMessage;
                     clientAlert.style.display = 'block';
-                    clientAlert.textContent = 'Vui lòng kiểm tra và sửa lại các trường thông tin bị lỗi bên dưới.';
                 }
 
                 firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });

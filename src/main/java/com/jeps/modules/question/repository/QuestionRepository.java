@@ -1,0 +1,165 @@
+package com.jeps.modules.question.repository;
+
+import com.jeps.modules.question.entity.Question;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Set;
+
+@Repository
+public interface QuestionRepository extends JpaRepository<Question, Long> {
+
+    @Query("""
+            select q from Question q
+            where (:search = '' or lower(q.content) like lower(concat('%', :search, '%')))
+              and (:questionType = '' or q.questionType = :questionType)
+              and (:jlptLevel = '' or q.jlptLevel = :jlptLevel)
+              and (:skillType = '' or q.skillType = :skillType)
+              and (:status = '' or q.status = :status)
+              and (q.parentId is null)
+            order by q.id desc
+            """)
+    Page<Question> searchForManager(@Param("search") String search,
+                                    @Param("questionType") String questionType,
+                                    @Param("jlptLevel") String jlptLevel,
+                                    @Param("skillType") String skillType,
+                                    @Param("status") String status,
+                                    Pageable pageable);
+
+    @Query("""
+            select q.id from Question q
+            where (:search = '' or lower(q.content) like lower(concat('%', :search, '%')))
+              and (:questionType = '' or q.questionType = :questionType)
+              and (:jlptLevel = '' or q.jlptLevel = :jlptLevel)
+              and (:skillType = '' or q.skillType = :skillType)
+              and (:status = '' or q.status = :status)
+              and (q.parentId is null)
+            order by q.id desc
+            """)
+    List<Long> searchIdsForManager(@Param("search") String search,
+                                   @Param("questionType") String questionType,
+                                   @Param("jlptLevel") String jlptLevel,
+                                   @Param("skillType") String skillType,
+                                   @Param("status") String status);
+
+    @Query("select distinct q.category from Question q where q.category is not null and q.category <> '' order by q.category")
+    List<String> findDistinctCategories();
+
+    List<Question> findByParentIdOrderById(Long parentId);
+
+    @Query("select count(q) from Question q where q.parentId is null")
+    long countTopLevel();
+
+    @Query("""
+            select q from Question q
+            where q.status = 'ACTIVE'
+              and q.questionType <> 'PASSAGE'
+              and (:jlptLevel = '' or q.jlptLevel = :jlptLevel)
+              and (:skillType = '' or q.skillType = :skillType)
+              and q.id not in (select eq.id.questionId from ExamQuestion eq where eq.id.examId = :examId)
+            order by q.id desc
+            """)
+    List<Question> findAvailableForExam(@Param("examId") Long examId,
+                                        @Param("jlptLevel") String jlptLevel,
+                                        @Param("skillType") String skillType);
+
+    @Query("""
+            select q from Question q
+            where q.status = 'ACTIVE'
+              and q.questionType <> 'PASSAGE'
+              and (:jlptLevel = '' or q.jlptLevel = :jlptLevel)
+              and (:skillType = '' or q.skillType = :skillType)
+              and q.id not in (select eq.id.questionId from ExamQuestion eq where eq.id.examId = :examId)
+            order by q.id desc
+            """)
+    Page<Question> findAvailableForExam(@Param("examId") Long examId,
+                                        @Param("jlptLevel") String jlptLevel,
+                                        @Param("skillType") String skillType,
+                                        Pageable pageable);
+
+    // ── Usage stats ──
+
+    @Query(value = "SELECT COUNT(*) FROM exam_questions WHERE question_id = :questionId", nativeQuery = true)
+    long countExamUsages(@Param("questionId") Long questionId);
+
+    @Query(value = "SELECT COUNT(*) FROM exercise_questions WHERE question_id = :questionId", nativeQuery = true)
+    long countQuizUsages(@Param("questionId") Long questionId);
+
+    @Query(value = """
+            SELECT COUNT(*) FROM exam_questions eq
+            JOIN exams e ON e.exam_id = eq.exam_id
+            WHERE eq.question_id = :questionId AND UPPER(e.status) IN ('PUBLISHED', 'ACTIVE')
+            """, nativeQuery = true)
+    long countActiveExamUsages(@Param("questionId") Long questionId);
+
+    @Query(value = """
+            SELECT COUNT(*) FROM exercise_questions eq
+            JOIN exercises e ON e.exercise_id = eq.exercise_id
+            WHERE eq.question_id = :questionId AND UPPER(e.status) = 'PUBLISHED'
+            """, nativeQuery = true)
+    long countActiveQuizUsages(@Param("questionId") Long questionId);
+
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM exam_questions WHERE question_id = :questionId UNION SELECT 1 FROM exercise_questions WHERE question_id = :questionId)", nativeQuery = true)
+    boolean isUsedAnywhere(@Param("questionId") Long questionId);
+
+    @Query(value = "SELECT question_id, COUNT(*) FROM exam_questions WHERE question_id IN (:ids) GROUP BY question_id", nativeQuery = true)
+    List<Object[]> batchCountExamUsages(@Param("ids") List<Long> ids);
+
+    @Query(value = "SELECT question_id, COUNT(*) FROM exercise_questions WHERE question_id IN (:ids) GROUP BY question_id", nativeQuery = true)
+    List<Object[]> batchCountQuizUsages(@Param("ids") List<Long> ids);
+
+    @Query(value = "SELECT parent_id, COUNT(*) FROM questions WHERE parent_id IN (:ids) GROUP BY parent_id", nativeQuery = true)
+    List<Object[]> batchCountChildren(@Param("ids") List<Long> ids);
+
+    long countByIdIn(List<Long> ids);
+
+    @Query(value = """
+            SELECT id FROM questions
+            WHERE id IN (:ids) AND (jlpt_level IS NULL OR jlpt_level = '' OR skill_type IS NULL OR skill_type = '')
+            """, nativeQuery = true)
+    List<Long> findIdsWithIncompleteInfo(@Param("ids") List<Long> ids);
+
+    @Query(value = """
+            SELECT id FROM questions
+            WHERE id IN (:ids) AND question_type <> 'PASSAGE'
+              AND (options IS NULL OR options = '[]' OR answer_key IS NULL OR answer_key = '[]')
+            """, nativeQuery = true)
+    List<Long> findIdsWithMissingAnswers(@Param("ids") List<Long> ids);
+
+    @Query(value = """
+            SELECT eq.question_id FROM exam_questions eq
+            JOIN exams e ON e.exam_id = eq.exam_id
+            WHERE eq.question_id IN (:ids) AND UPPER(e.status) IN ('PUBLISHED', 'ACTIVE')
+            GROUP BY eq.question_id
+            """, nativeQuery = true)
+    List<Long> findIdsUsedInActiveExams(@Param("ids") List<Long> ids);
+
+    @Query(value = """
+            SELECT eq.question_id FROM exercise_questions eq
+            JOIN exercises e ON e.exercise_id = eq.exercise_id
+            WHERE eq.question_id IN (:ids) AND UPPER(e.status) = 'PUBLISHED'
+            GROUP BY eq.question_id
+            """, nativeQuery = true)
+    List<Long> findIdsUsedInActiveQuizzes(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Query("UPDATE Question q SET q.status = :status WHERE q.id IN :ids")
+    int bulkSetStatus(@Param("ids") List<Long> ids, @Param("status") String status);
+
+    @Modifying
+    @Query("UPDATE Question q SET q.status = :status WHERE q.parentId IN :parentIds")
+    int bulkSetStatusByParentIds(@Param("parentIds") List<Long> parentIds, @Param("status") String status);
+
+    @Query("SELECT q.id FROM Question q WHERE q.parentId IN :parentIds")
+    List<Long> findChildIdsByParentIds(@Param("parentIds") List<Long> parentIds);
+
+    @Query("SELECT DISTINCT q.parentId FROM Question q WHERE q.id IN :childIds AND q.parentId IS NOT NULL")
+    Set<Long> findParentIdsOfChildren(@Param("childIds") List<Long> childIds);
+}

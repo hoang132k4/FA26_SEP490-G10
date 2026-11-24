@@ -86,10 +86,10 @@
                             <div class="w-100">
                                 <span class="text-muted small d-block" th:text="'Tiến độ ' + (${activeCourse != null ? activeCourse.title : 'Khóa học N4'})">Tiến độ JLPT N4</span>
                                 <h3 class="fw-bold mb-1" style="color: var(--navy-dark)" 
-                                    th:text="(${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 50}) + '%'">50%</h3>
+                                    th:text="(${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 0}) + '%'">0%</h3>
                                 <div class="progress progress-kotoba mb-1" style="height: 6px;">
                                     <div class="progress-bar" 
-                                         th:style="'width: ' + (${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 50}) + '%; background-color: var(--medium-blue);'"></div>
+                                         th:style="'width: ' + (${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 0}) + '%; background-color: var(--medium-blue);'"></div>
                                 </div>
                                 <a th:if="${activeCourse != null}" th:href="@{/learning/courses/{id}/lessons(id=${activeCourse.id})}" class="small text-decoration-none" style="color: #64748B; font-size: 0.78rem;">
                                     Xem chi tiết tiến độ &rarr;
@@ -125,7 +125,7 @@
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <div class="progress progress-kotoba w-75" style="height: 5px;">
                                             <div class="progress-bar" 
-                                                 th:style="'width: ' + (${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 50}) + '%; background-color: var(--steel-blue);'"></div>
+                                                 th:style="'width: ' + (${activeRegistration != null && activeRegistration.progressPercent != null ? activeRegistration.progressPercent : 0}) + '%; background-color: var(--steel-blue);'"></div>
                                         </div>
                                         <span class="small text-muted" style="font-size: 0.75rem;" 
                                               th:text="${activeCourseCompletedLessons} + '/' + ${activeCourseLessonCount}">6/12</span>
