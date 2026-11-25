@@ -26,4 +26,6 @@ public class ProfileResponse {
     private boolean isLearner;
     private String createdAtFormatted;
     private String avatarUrl;
+    private String pendingEmail;
+    private boolean emailVerificationSent;
 }

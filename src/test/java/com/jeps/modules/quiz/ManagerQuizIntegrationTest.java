@@ -351,6 +351,42 @@ class ManagerQuizIntegrationTest {
     }
 
     @Test
+    void addingPassageIsRejected() throws Exception {
+        long quizId = saveQuiz("Quiz bài đọc", "DRAFT", 5);
+        Question passage = questionRepository.saveAndFlush(Question.builder()
+                .content(MARK + "Đoạn văn").questionType("PASSAGE").jlptLevel("N5").skillType("READING").status("ACTIVE").build());
+
+        mockMvc.perform(get("/manager/quizzes/{id}/questions", quizId).param("skillType", "READING"))
+                .andExpect(content().string(not(containsString(MARK + "Đoạn văn"))));
+        mockMvc.perform(addQuestions(quizId, passage))
+                .andExpect(flash().attribute("quizError", "Câu hỏi #" + passage.getId()
+                        + " là bài đọc/nghe (PASSAGE), quiz chỉ gắn được câu trắc nghiệm."));
+
+        assertEquals(0L, linkCount(quizId));
+    }
+
+    @Test
+    void editPageOfQuizWithoutLessonLeavesLessonUnselected() throws Exception {
+        GeneratedKeyHolder keys = new GeneratedKeyHolder();
+        jdbc.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO exercises (lesson_id, exercise_title, total_questions, passing_score, status) VALUES (NULL, ?, 0, 60, 'DRAFT')",
+                    Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, MARK + "Quiz không bài học");
+            return ps;
+        }, keys);
+        long quizId = ((Number) keys.getKeys().get("EXERCISE_ID")).longValue();
+
+        var result = mockMvc.perform(get("/manager/quizzes/{id}/edit", quizId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("-- Chọn bài học --")))
+                .andReturn();
+
+        var form = (com.jeps.modules.quiz.dto.ManagerQuizForm) result.getModelAndView().getModel().get("quizForm");
+        assertEquals(null, form.getLessonId());
+    }
+
+    @Test
     void removeUnlinksQuestion() throws Exception {
         long quizId = saveQuiz("Quiz gỡ câu", "DRAFT", 5);
         Question q = saveQuestion("ACTIVE");
@@ -374,11 +410,11 @@ class ManagerQuizIntegrationTest {
     void importCreatesActiveQuestionsAndLinksOnlyChoiceQuestions() throws Exception {
         long quizId = saveQuiz("Quiz import", "DRAFT", 5);
         var file = QuestionExcel.xlsx(
-                List.of("group", "question_type", "content", "option_a", "option_b", "answer", "status"),
+                List.of("group", "question_type", "content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "status"),
                 List.of(
-                        List.of("", "MULTI_CHOICE", MARK + "Câu import", "A", "B", "A", "DRAFT"),
-                        List.of("1", "PASSAGE", MARK + "Đoạn import", "", "", "", ""),
-                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "A", "B", "B", "")));
+                        List.of("", "MULTI_CHOICE", MARK + "Câu import", "N5", "VOCABULARY", "A", "B", "A", "DRAFT"),
+                        List.of("1", "PASSAGE", MARK + "Đoạn import", "N5", "READING", "", "", "", ""),
+                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "N5", "READING", "A", "B", "B", "")));
 
         mockMvc.perform(multipart("/manager/quizzes/{id}/import", quizId).file(file).with(csrf()))
                 .andExpect(flash().attribute("quizSuccess", "Đã import và gắn 1 câu hỏi vào quiz."));
@@ -456,13 +492,13 @@ class ManagerQuizIntegrationTest {
     // ── helpers ──
 
     private void saveCourse(long id, String title, String jlptLevel) {
-        jdbc.update("INSERT INTO courses (id, course_id, title, course_title, level, jlpt_level, price) VALUES (?, ?, ?, ?, 'N5', ?, 0)",
-                id, id, MARK + title, MARK + title, jlptLevel);
+        jdbc.update("INSERT INTO courses (course_id, title, level, price) VALUES (?, ?, ?, 0)",
+                id, MARK + title, jlptLevel);
     }
 
     private void saveLesson(long id, Long courseId, String section) {
-        jdbc.update("INSERT INTO lessons (id, lesson_id, course_id, title, lesson_title, section_name, order_index) VALUES (?, ?, ?, ?, ?, ?, 1)",
-                id, id, courseId, MARK + "Bài " + id, MARK + "Bài " + id, section);
+        jdbc.update("INSERT INTO lessons (lesson_id, course_id, title, section_name, order_index) VALUES (?, ?, ?, ?, 1)",
+                id, courseId, MARK + "Bài " + id, section);
     }
 
     private static List<Long> lessonIds(Map<String, List<LessonOption>> groups, String group) {

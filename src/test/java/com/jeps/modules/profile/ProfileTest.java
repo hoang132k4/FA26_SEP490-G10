@@ -1,6 +1,7 @@
 package com.jeps.modules.profile;
 
 import com.jeps.common.constants.RoleEnum;
+import com.jeps.modules.auth.service.EmailService;
 import com.jeps.modules.profile.dto.EditProfileRequest;
 import com.jeps.modules.profile.dto.ProfileResponse;
 import com.jeps.modules.profile.service.ProfileService;
@@ -9,9 +10,11 @@ import com.jeps.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,6 +25,9 @@ import org.springframework.mock.web.MockMultipartFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,6 +51,9 @@ public class ProfileTest {
 
     @Autowired
     private ProfileService profileService;
+
+    @MockBean
+    private EmailService emailService;
 
     private static final String LEARNER_EMAIL = "learner_prof@jeps.edu.vn";
     private static final String MANAGER_EMAIL = "manager_prof@jeps.edu.vn";
@@ -202,7 +211,7 @@ public class ProfileTest {
     }
 
     @Test
-    @DisplayName("EP-04: Valid email update changes email in database")
+    @DisplayName("EP-04: Valid email update sends confirmation email and updates email after clicking verify link")
     @WithMockUser(username = LEARNER_EMAIL, roles = {"LEARNER"})
     void editProfile_validEmailUpdate_success() throws Exception {
         mockMvc.perform(post("/profile/edit")
@@ -212,10 +221,25 @@ public class ProfileTest {
                         .param("phone", "0987654321"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/profile"))
-                .andExpect(flash().attributeExists("successMessage"));
+                .andExpect(flash().attribute("successMessage", containsString(NEW_EMAIL)));
+
+        User pendingUser = userRepository.findById(learnerUser.getId()).orElseThrow();
+        assertThat(pendingUser.getEmail()).isEqualTo(LEARNER_EMAIL);
+        assertThat(pendingUser.getPendingEmail()).isEqualTo(NEW_EMAIL);
+        assertThat(pendingUser.getEmailVerificationTokenHash()).isNotBlank();
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendEmailChangeVerificationEmail(eq(NEW_EMAIL), anyString(), linkCaptor.capture());
+        String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
+
+        mockMvc.perform(get("/profile/verify-email").param("token", rawToken))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login?emailVerified=true"));
 
         User updatedUser = userRepository.findById(learnerUser.getId()).orElseThrow();
         assertThat(updatedUser.getEmail()).isEqualTo(NEW_EMAIL);
+        assertThat(updatedUser.getPendingEmail()).isNull();
+        assertThat(updatedUser.getEmailVerificationTokenHash()).isNull();
     }
 
     @Test

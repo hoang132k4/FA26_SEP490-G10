@@ -12,4 +12,12 @@ public interface RegisterService {
      * @return the newly persisted User entity
      */
     User register(RegisterRequest request);
+
+    /**
+     * Verifies a newly registered user's email address using the verification token and activates the account.
+     *
+     * @param token raw verification token from email link
+     * @return the activated User entity
+     */
+    User verifyRegistrationEmail(String token);
 }

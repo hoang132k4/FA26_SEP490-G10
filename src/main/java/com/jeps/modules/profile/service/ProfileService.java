@@ -17,4 +17,8 @@ public interface ProfileService {
     }
 
     ProfileResponse updateAvatar(String identifier, MultipartFile avatarFile);
+
+    ProfileResponse verifyEmailChange(String token);
+
+    ProfileResponse cancelPendingEmailChange(String identifier);
 }

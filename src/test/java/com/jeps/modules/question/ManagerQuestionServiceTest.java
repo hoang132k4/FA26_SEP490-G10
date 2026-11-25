@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -963,6 +964,143 @@ class ManagerQuestionServiceTest {
 
         verify(questionOptionRepository).deleteByQuestionIdIn(List.of(2L, 3L));
         verify(questionOptionRepository).deleteByQuestionId(1L);
+    }
+
+    // ── status rules ──
+
+    @Test
+    void draftingQuestionUsedByActiveExamIsBlocked() {
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(question(1L, "MULTI_CHOICE", "ACTIVE")));
+        when(questionRepository.countActiveExamUsages(1L)).thenReturn(1L);
+        when(questionRepository.countActiveQuizUsages(1L)).thenReturn(0L);
+
+        assertRejected(choice(f -> f.setStatus("DRAFT")),
+                "Không thể chuyển sang DRAFT: câu hỏi đang được sử dụng trong 1 đề thi đang hoạt động. Hãy gỡ câu hỏi hoặc chuyển đề thi/quiz sang trạng thái khác trước.",
+                true);
+    }
+
+    @Test
+    void bulkDraft_blockedWhenQuestionUsedInActiveQuiz() {
+        when(questionRepository.findChildIdsByParentIds(List.of(1L, 2L))).thenReturn(List.of());
+        when(questionRepository.findIdsUsedInActiveExams(List.of(1L, 2L))).thenReturn(List.of());
+        when(questionRepository.findIdsUsedInActiveQuizzes(List.of(1L, 2L))).thenReturn(List.of(2L));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(1L, 2L), "DRAFT"));
+
+        assertEquals("Câu hỏi #2 đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang DRAFT.", ex.getMessage());
+        verify(questionRepository, never()).bulkSetStatus(anyList(), anyString());
+    }
+
+    @Test
+    void activeListeningPassageWithoutAudio_rejected() {
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setJlptLevel("N5");
+        form.setSkillType("LISTENING");
+        form.setStatus("ACTIVE");
+
+        assertRejected(form, "Bài nghe ACTIVE phải có file audio.");
+    }
+
+    @Test
+    void passageToActive_blockedWhenChildIncomplete() {
+        Question passage = question(1L, "PASSAGE", "DRAFT");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of(question(2L, "MULTI_CHOICE", "DRAFT")));
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(2L))).thenReturn(List.of(2L));
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setContent("Đoạn văn");
+        form.setJlptLevel("N5");
+        form.setSkillType("READING");
+        form.setStatus("ACTIVE");
+
+        assertRejected(form, "Câu hỏi con #2 chưa đủ cấp độ, kỹ năng hoặc đáp án nên không thể chuyển sang ACTIVE.", true);
+    }
+
+    @Test
+    void deleteQuestionWithLearnerResultsIsRejectedWithFriendlyMessage() {
+        Question q = question(1L, "MULTI_CHOICE", "ACTIVE");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(q));
+        when(questionRepository.isUsedAnywhere(1L)).thenReturn(false);
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of());
+        org.mockito.Mockito.doThrow(new org.springframework.dao.DataIntegrityViolationException("exam_result_details_question_id_fkey"))
+                .when(questionRepository).flush();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.delete(1L));
+
+        assertEquals("Câu hỏi đã có kết quả làm bài của học viên nên không thể xóa. Hãy chuyển câu hỏi sang ARCHIVED thay vì xóa.",
+                ex.getMessage());
+    }
+
+    // ── edits of questions already used in exams ──
+
+    @Test
+    void updateRejectsChangingQuestionType() {
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(question(1L, "MULTI_CHOICE", "DRAFT")));
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setContent("Đoạn văn");
+        form.setStatus("DRAFT");
+
+        assertRejected(form, "Không thể đổi loại câu hỏi sau khi đã tạo.", true);
+    }
+
+    @Test
+    void updateRejectsLevelChangeOfQuestionUsedInExam() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        existing.setJlptLevel("N5");
+        existing.setSkillType("VOCABULARY");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.countExamUsages(1L)).thenReturn(1L);
+
+        assertRejected(choice(f -> { f.setJlptLevel("N1"); f.setSkillType("VOCABULARY"); }),
+                "Câu hỏi đang nằm trong đề thi nên không đổi được cấp độ hoặc phần thi (Ngôn ngữ/Đọc/Nghe). Hãy gỡ khỏi đề trước.", true);
+    }
+
+    @Test
+    void updateRejectsSkillChangeThatMovesQuestionToAnotherExamSection() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        existing.setJlptLevel("N5");
+        existing.setSkillType("VOCABULARY");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.countExamUsages(1L)).thenReturn(2L);
+
+        assertRejected(choice(f -> { f.setJlptLevel("N5"); f.setSkillType("READING"); }),
+                "Câu hỏi đang nằm trong đề thi nên không đổi được cấp độ hoặc phần thi (Ngôn ngữ/Đọc/Nghe). Hãy gỡ khỏi đề trước.", true);
+    }
+
+    @Test
+    void updateAllowsSkillChangeWithinTheSameExamSection() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        existing.setJlptLevel("N5");
+        existing.setSkillType("VOCABULARY");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.save(existing)).thenReturn(existing);
+
+        Question saved = service.update(1L, choice(f -> { f.setJlptLevel("N5"); f.setSkillType("GRAMMAR"); }));
+
+        assertEquals("GRAMMAR", saved.getSkillType());
+        verify(questionRepository, never()).countExamUsages(anyLong());
+    }
+
+    @Test
+    void updatingPassageAudioCopiesItToChildren() {
+        Question passage = question(1L, "PASSAGE", "DRAFT");
+        passage.setSkillType("LISTENING");
+        passage.setAudioUrl("/uploads/old.mp3");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.save(passage)).thenReturn(passage);
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setSkillType("LISTENING");
+        form.setStatus("DRAFT");
+        form.setAudioUrl("/uploads/new.mp3");
+
+        service.update(1L, form);
+
+        verify(questionRepository).copyAudioToChildren(1L, "/uploads/new.mp3", "/uploads/old.mp3");
     }
 
     // ── helpers ──

@@ -144,7 +144,7 @@ class ManagerQuestionIntegrationTest {
                         .param("status", "DRAFT")
                         .param("optionA", "A").param("optionB", "B").param("answerKeys", "A"))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeHasFieldErrors("questionForm", "content"));
+                .andExpect(model().attribute("questionError", "Nội dung câu hỏi không được để trống."));
 
         assertEquals(before, questionRepository.count());
     }
@@ -258,11 +258,11 @@ class ManagerQuestionIntegrationTest {
     @Test
     void importCreatesPassageWithChildrenAndStandaloneQuestion() throws Exception {
         var file = QuestionExcel.xlsx(
-                List.of("group", "question_type", "content", "option_a", "option_b", "answer", "status"),
+                List.of("group", "question_type", "content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "status"),
                 List.of(
-                        List.of("", "MULTI_CHOICE", MARK + "Câu đơn import", "A", "B", "A", "ACTIVE"),
-                        List.of("1", "PASSAGE", MARK + "Đoạn văn import", "", "", "", ""),
-                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "A", "B", "B", "")));
+                        List.of("", "MULTI_CHOICE", MARK + "Câu đơn import", "N5", "VOCABULARY", "A", "B", "A", "ACTIVE"),
+                        List.of("1", "PASSAGE", MARK + "Đoạn văn import", "N5", "READING", "", "", "", ""),
+                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "N5", "READING", "A", "B", "B", "")));
 
         mockMvc.perform(multipart("/manager/questions/import").file(file).with(csrf()))
                 .andExpect(redirectedUrl("/manager/questions"))
@@ -294,6 +294,111 @@ class ManagerQuestionIntegrationTest {
         } finally {
             jdbc.update("DELETE FROM questions WHERE content LIKE ?", MARK + "%");
         }
+    }
+
+    @Test
+    void draftingQuestionUsedInPublishedExamIsBlocked() throws Exception {
+        Question q = saveChoice("Câu trong đề đã đăng", "ACTIVE");
+        linkToExam(q, "PUBLISHED");
+
+        mockMvc.perform(update(q, "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("questionError", containsString("Không thể chuyển sang DRAFT")));
+
+        assertEquals("ACTIVE", statusOf(q));
+    }
+
+    @Test
+    void activeListeningPassageWithoutAudioIsRejected() throws Exception {
+        long before = questionRepository.count();
+
+        mockMvc.perform(post("/manager/questions").with(csrf())
+                        .param("questionType", "PASSAGE")
+                        .param("content", "")
+                        .param("jlptLevel", "N5")
+                        .param("skillType", "LISTENING")
+                        .param("status", "ACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("questionError", "Bài nghe ACTIVE phải có file audio."));
+
+        assertEquals(before, questionRepository.count());
+    }
+
+    @Test
+    void passageCannotBecomeActiveWhileAChildIsIncomplete() throws Exception {
+        Question passage = questionRepository.save(Question.builder().content(MARK + "Đoạn văn nháp").questionType("PASSAGE")
+                .jlptLevel("N5").skillType("READING").status("DRAFT").build());
+        Question child = questionRepository.save(Question.builder().content(MARK + "Câu con thiếu kỹ năng").questionType("MULTI_CHOICE")
+                .parentId(passage.getId()).jlptLevel("N5")
+                .options("[{\"key\":\"A\",\"text\":\"A\"},{\"key\":\"B\",\"text\":\"B\"}]").answerKey("[\"A\"]")
+                .status("DRAFT").build());
+        entityManager.flush();
+
+        mockMvc.perform(post("/manager/questions/{id}", passage.getId()).with(csrf())
+                        .param("questionType", "PASSAGE")
+                        .param("content", passage.getContent())
+                        .param("jlptLevel", "N5")
+                        .param("skillType", "READING")
+                        .param("status", "ACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("questionError", "Câu hỏi con #" + child.getId()
+                        + " chưa đủ cấp độ, kỹ năng hoặc đáp án nên không thể chuyển sang ACTIVE."));
+
+        assertEquals("DRAFT", statusOf(passage));
+        assertEquals("DRAFT", statusOf(child));
+    }
+
+    @Test
+    void addingAudioToListeningPassageCopiesItToChildren() throws Exception {
+        Question passage = questionRepository.save(Question.builder().content("").questionType("PASSAGE")
+                .jlptLevel("N5").skillType("LISTENING").status("DRAFT").build());
+        Question child = questionRepository.save(Question.builder().content(MARK + "Câu con bài nghe").questionType("MULTI_CHOICE")
+                .parentId(passage.getId()).jlptLevel("N5").skillType("LISTENING")
+                .options("[{\"key\":\"A\",\"text\":\"A\"},{\"key\":\"B\",\"text\":\"B\"}]").answerKey("[\"A\"]")
+                .status("DRAFT").build());
+        entityManager.flush();
+
+        mockMvc.perform(post("/manager/questions/{id}", passage.getId()).with(csrf())
+                        .param("questionType", "PASSAGE")
+                        .param("content", "")
+                        .param("jlptLevel", "N5")
+                        .param("skillType", "LISTENING")
+                        .param("status", "DRAFT")
+                        .param("audioUrl", "/uploads/questions/audio/listening.mp3"))
+                .andExpect(redirectedUrl("/manager/questions"));
+
+        entityManager.flush();
+        assertEquals("/uploads/questions/audio/listening.mp3",
+                jdbc.queryForObject("SELECT audio_url FROM questions WHERE id = ?", String.class, child.getId()));
+    }
+
+    @Test
+    void levelOfQuestionUsedInExamCannotBeChanged() throws Exception {
+        Question q = saveChoice("Câu N5 trong đề", "ACTIVE");
+        q.setJlptLevel("N5");
+        q.setSkillType("VOCABULARY");
+        questionRepository.save(q);
+        linkToExam(q, "DRAFT");
+
+        mockMvc.perform(post("/manager/questions/{id}", q.getId()).with(csrf())
+                        .param("questionType", "MULTI_CHOICE")
+                        .param("content", q.getContent())
+                        .param("jlptLevel", "N1")
+                        .param("skillType", "VOCABULARY")
+                        .param("status", "ACTIVE")
+                        .param("optionA", "A").param("optionB", "B").param("answerKeys", "A"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("questionError", containsString("không đổi được cấp độ")));
+
+        entityManager.flush();
+        assertEquals("N5", jdbc.queryForObject("SELECT jlpt_level FROM questions WHERE id = ?", String.class, q.getId()));
+    }
+
+    @Test
+    void newChildPageWithUnknownParentRedirectsToList() throws Exception {
+        mockMvc.perform(get("/manager/questions/new").param("parentId", "999999999"))
+                .andExpect(redirectedUrl("/manager/questions"))
+                .andExpect(flash().attribute("questionError", "Không tìm thấy câu hỏi."));
     }
 
     // ── helpers ──

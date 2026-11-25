@@ -339,10 +339,10 @@ class ManagerExamIntegrationTest {
     void importCreatesActiveQuestionsAndLinksThemToExam() throws Exception {
         Exam exam = saveExam("Đề import", "JLPT_MOCK", "N5", "DRAFT", 10, 5, 5);
         var file = QuestionExcel.xlsx(
-                List.of("question_type", "content", "skill_type", "option_a", "option_b", "answer", "status", "section"),
+                List.of("question_type", "content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "status", "section"),
                 List.of(
-                        List.of("MULTI_CHOICE", MARK + "Câu import 1", "VOCABULARY", "あ", "い", "A", "DRAFT", ""),
-                        List.of("MULTI_CHOICE", MARK + "Câu import 2", "READING", "う", "え", "B", "", "")));
+                        List.of("MULTI_CHOICE", MARK + "Câu import 1", "N5", "VOCABULARY", "あ", "い", "A", "DRAFT", ""),
+                        List.of("MULTI_CHOICE", MARK + "Câu import 2", "N5", "READING", "う", "え", "B", "", "")));
 
         mockMvc.perform(multipart("/manager/exams/{id}/import", exam.getExamId()).file(file).with(csrf()))
                 .andExpect(flash().attribute("examSuccess", "Đã import và gắn 2 câu hỏi vào đề thi."));
@@ -364,10 +364,10 @@ class ManagerExamIntegrationTest {
         Exam exam = examRepository.save(new Exam(null, MARK + "Đề import lỗi", "JLPT_MOCK", "N5", 90, 67, 80, "DRAFT", null));
         try {
             var file = QuestionExcel.xlsx(
-                    List.of("content", "option_a", "option_b", "answer", "section"),
+                    List.of("content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "section"),
                     List.of(
-                            List.of(MARK + "Câu hợp lệ", "あ", "い", "A", ""),
-                            List.of(MARK + "Câu sai phần", "う", "え", "A", "WRITING")));
+                            List.of(MARK + "Câu hợp lệ", "N5", "VOCABULARY", "あ", "い", "A", ""),
+                            List.of(MARK + "Câu sai phần", "N5", "VOCABULARY", "う", "え", "A", "WRITING")));
 
             mockMvc.perform(multipart("/manager/exams/{id}/import", exam.getExamId()).file(file).with(csrf()))
                     .andExpect(flash().attribute("examError", containsString("Import thất bại")))
@@ -395,8 +395,8 @@ class ManagerExamIntegrationTest {
     // ── Auto generate ──
 
     @Test
-    void generateFillsDraftExamWithOfficialJlptStructureFromBank() throws Exception {
-        Exam exam = saveExam("Đề tự động", "JLPT_MOCK", "N5", "DRAFT", 1, 1, 1);
+    void generateFillsDraftExamToConfiguredSectionCounts() throws Exception {
+        Exam exam = saveExam("Đề tự động", "JLPT_MOCK", "N5", "DRAFT", 38, 5, 24);
         Question handPicked = saveQuestion("ACTIVE", "GRAMMAR");
         mockMvc.perform(addQuestions(exam, handPicked));
         saveQuestions(37, "VOCABULARY", null);
@@ -447,7 +447,7 @@ class ManagerExamIntegrationTest {
         var first = (org.springframework.data.domain.Page<Question>) mockMvc
                 .perform(get("/manager/exams/{id}/questions", exam.getExamId()).param("jlptLevel", "N1").param("skillType", "LISTENING"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("jlptLevel=N1")))
+                .andExpect(content().string(containsString("skillType=LISTENING")))
                 .andExpect(content().string(containsString("Đến trang")))
                 .andReturn().getModelAndView().getModel().get("availableQuestions");
         assertEquals(20, first.getContent().size());
@@ -608,9 +608,9 @@ class ManagerExamIntegrationTest {
         Exam published = saveExam("Đề đã đăng nút", "JLPT_MOCK", "N5", "PUBLISHED", 38, 5, 24);
 
         mockMvc.perform(get("/manager/exams/{id}/questions", draft.getExamId()))
-                .andExpect(content().string(containsString("Tự động chọn câu theo cấu trúc JLPT")));
+                .andExpect(content().string(containsString("Tự động chọn câu theo cấu hình đề")));
         mockMvc.perform(get("/manager/exams/{id}/questions", published.getExamId()))
-                .andExpect(content().string(not(containsString("Tự động chọn câu theo cấu trúc JLPT"))));
+                .andExpect(content().string(not(containsString("Tự động chọn câu theo cấu hình đề"))));
     }
 
     @Test
@@ -619,6 +619,97 @@ class ManagerExamIntegrationTest {
 
         mockMvc.perform(post("/manager/exams/{id}/questions/generate", exam.getExamId()).with(csrf()))
                 .andExpect(flash().attribute("examError", "Chỉ tự động chọn câu cho đề thi ở trạng thái DRAFT."));
+    }
+
+    @Test
+    void courseMidtermExamKeepsItsTypeWhenEdited() throws Exception {
+        Exam exam = saveExam("Đề giữa kỳ", "MIDTERM", "N5", "DRAFT", 1, 0, 0);
+
+        mockMvc.perform(get("/manager/exams/{id}/edit", exam.getExamId()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<option value=\"MIDTERM\" selected=\"selected\">")));
+        mockMvc.perform(updateExam(exam, "DRAFT", 1, 0, 0))
+                .andExpect(redirectedUrl("/manager/exams"))
+                .andExpect(flash().attribute("examSuccess", "Đã cập nhật đề thi."));
+
+        entityManager.flush();
+        assertEquals("MIDTERM", jdbc.queryForObject("SELECT exam_type FROM exams WHERE exam_id = ?", String.class, exam.getExamId()));
+    }
+
+    @Test
+    void savingPublishedCourseExamKeepsItsTimingScaleAndQuestionCount() throws Exception {
+        Exam course = examRepository.save(new Exam(null, MARK + "Giữa kỳ khoá học", "MIDTERM", "N5", 35, 2, 50, "DRAFT", null));
+        course.setTotalPoints(100);
+        examRepository.save(course);
+        mockMvc.perform(addQuestions(course, saveQuestion("ACTIVE"), saveQuestion("ACTIVE")));
+        entityManager.flush();
+        jdbc.update("UPDATE exams SET status = 'PUBLISHED', language_questions = NULL, reading_questions = NULL, listening_questions = NULL WHERE exam_id = ?",
+                course.getExamId());
+        entityManager.clear();
+
+        var form = (com.jeps.modules.exam.dto.ManagerExamForm) mockMvc.perform(get("/manager/exams/{id}/edit", course.getExamId()))
+                .andReturn().getModelAndView().getModel().get("examForm");
+        assertEquals(2, form.getLanguageQuestions());
+        assertEquals(0, form.getReadingQuestions());
+        assertEquals(0, form.getListeningQuestions());
+
+        mockMvc.perform(withSections(post("/manager/exams/{id}", course.getExamId()).with(csrf()), 2, 0, 0)
+                        .param("examTitle", MARK + "Giữa kỳ khoá học (sửa tên)")
+                        .param("examType", "MIDTERM")
+                        .param("jlptLevel", "N5")
+                        .param("status", "PUBLISHED"))
+                .andExpect(redirectedUrl("/manager/exams"));
+
+        entityManager.flush();
+        Map<String, Object> row = jdbc.queryForMap(
+                "SELECT duration_minutes, passing_score, total_points, total_questions FROM exams WHERE exam_id = ?", course.getExamId());
+        assertEquals(35, ((Number) row.get("DURATION_MINUTES")).intValue());
+        assertEquals(50, ((Number) row.get("PASSING_SCORE")).intValue());
+        assertEquals(100, ((Number) row.get("TOTAL_POINTS")).intValue());
+        assertEquals(2, ((Number) row.get("TOTAL_QUESTIONS")).intValue());
+    }
+
+    @Test
+    void removingQuestionFromPublishedExamIsBlocked() throws Exception {
+        Exam exam = saveExam("Đề đã đăng gỡ câu", "JLPT_MOCK", "N5", "DRAFT", 1, 0, 0);
+        Question q = saveQuestion("ACTIVE");
+        mockMvc.perform(addQuestions(exam, q));
+        mockMvc.perform(updateExam(exam, "PUBLISHED", 1, 0, 0));
+
+        mockMvc.perform(post("/manager/exams/{eid}/questions/{qid}/remove", exam.getExamId(), q.getId()).with(csrf()))
+                .andExpect(flash().attribute("examError", "Không thể gỡ câu hỏi khỏi đề thi đang PUBLISHED. Hãy chuyển đề về DRAFT trước."));
+
+        assertEquals(1, linkedCount(exam, q.getId()));
+    }
+
+    @Test
+    void addingQuestionOfAnotherLevelIsRejected() throws Exception {
+        Exam exam = saveExam("Đề N5 thêm câu N1", "JLPT_MOCK", "N5", "DRAFT", 1, 0, 0);
+        Question n1 = saveQuestion("ACTIVE");
+        n1.setJlptLevel("N1");
+        questionRepository.saveAndFlush(n1);
+
+        mockMvc.perform(addQuestions(exam, n1))
+                .andExpect(flash().attribute("examError", "Câu hỏi #" + n1.getId() + " thuộc cấp N1, không khớp cấp độ đề thi (N5)."));
+
+        assertEquals(0, linkedCount(exam, n1.getId()));
+    }
+
+    @Test
+    void changingLevelOfExamWithQuestionsIsRejected() throws Exception {
+        Exam exam = saveExam("Đề đổi cấp", "JLPT_MOCK", "N5", "DRAFT", 1, 0, 0);
+        mockMvc.perform(addQuestions(exam, saveQuestion("ACTIVE")));
+
+        mockMvc.perform(withSections(post("/manager/exams/{id}", exam.getExamId()).with(csrf()), 1, 0, 0)
+                        .param("examTitle", exam.getExamTitle())
+                        .param("examType", "JLPT_MOCK")
+                        .param("jlptLevel", "N4")
+                        .param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("examError", "Không thể đổi cấp độ khi đề thi đã có câu hỏi. Hãy gỡ hết câu hỏi trước."));
+
+        entityManager.flush();
+        assertEquals("N5", jdbc.queryForObject("SELECT jlpt_level FROM exams WHERE exam_id = ?", String.class, exam.getExamId()));
     }
 
     // ── helpers ──

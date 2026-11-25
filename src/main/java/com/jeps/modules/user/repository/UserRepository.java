@@ -13,6 +13,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     boolean existsByEmailIgnoreCase(String email);
 
+    boolean existsByPendingEmailIgnoreCaseAndIdNot(String pendingEmail, Long id);
+
     Optional<User> findByProviderId(String providerId);
 
     Optional<User> findByAuthProviderAndProviderId(String authProvider, String providerId);
@@ -22,4 +24,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
  
     Optional<User> findByResetTokenHash(String resetTokenHash);
+
+    Optional<User> findByEmailVerificationTokenHash(String emailVerificationTokenHash);
 }

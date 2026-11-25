@@ -3,5 +3,7 @@ package com.jeps.common.constants;
 public enum ExamTypeEnum {
     PLACEMENT_TEST,
     JLPT_MOCK,
-    MILESTONE
+    MILESTONE,
+    MIDTERM,
+    FINAL
 }

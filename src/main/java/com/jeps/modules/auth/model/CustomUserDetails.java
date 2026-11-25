@@ -67,6 +67,8 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return !"DISABLED".equalsIgnoreCase(status) && !"LOCKED".equalsIgnoreCase(status);
+        return !"DISABLED".equalsIgnoreCase(status)
+                && !"LOCKED".equalsIgnoreCase(status)
+                && !"UNVERIFIED".equalsIgnoreCase(status);
     }
 }

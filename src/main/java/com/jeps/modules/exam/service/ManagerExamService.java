@@ -103,14 +103,19 @@ public class ManagerExamService {
         validateSectionCounts(form);
         validatePublishReady(examId, form);
         Exam exam = findById(examId);
+        boolean levelChanged = !form.getJlptLevel().equals(exam.getJlptLevel());
+        if (levelChanged && examQuestionRepository.countByExamId(examId) > 0) {
+            throw new IllegalArgumentException("Không thể đổi cấp độ khi đề thi đã có câu hỏi. Hãy gỡ hết câu hỏi trước.");
+        }
+        // Course exams keep their own duration and 100-point scale; only a new level resets them to the JLPT standard.
         JlptExamStructure jlpt = JlptExamStructure.of(form.getJlptLevel());
+        if (levelChanged || exam.getDurationMinutes() == null) exam.setDurationMinutes(jlpt.durationMinutes());
+        if (levelChanged || exam.getTotalPoints() == null) exam.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
+        if (levelChanged || exam.getPassingScore() == null) exam.setPassingScore(jlpt.passingScore());
         exam.setExamTitle(clean(form.getExamTitle()));
         exam.setExamType(form.getExamType());
         exam.setJlptLevel(form.getJlptLevel());
-        exam.setDurationMinutes(jlpt.durationMinutes());
         exam.setTotalQuestions(totalQuestions(form));
-        exam.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
-        exam.setPassingScore(jlpt.passingScore());
         exam.setStatus(form.getStatus());
         exam.setDescription(optional(form.getDescription()));
         applySectionCounts(exam, form);
@@ -184,9 +189,18 @@ public class ManagerExamService {
         form.setExamTitle(exam.getExamTitle());
         form.setExamType(exam.getExamType());
         form.setJlptLevel(exam.getJlptLevel());
-        form.setLanguageQuestions(requiredQuestions(exam, JlptExamStructure.LANGUAGE));
-        form.setReadingQuestions(requiredQuestions(exam, READING));
-        form.setListeningQuestions(requiredQuestions(exam, LISTENING));
+        boolean noStoredCounts = exam.getLanguageQuestions() == null && exam.getReadingQuestions() == null
+                && exam.getListeningQuestions() == null;
+        if (noStoredCounts && examQuestionRepository.countByExamId(exam.getExamId()) > 0) {
+            // Older course exams never stored per-section counts; show what is actually linked instead of JLPT defaults.
+            form.setLanguageQuestions((int) examQuestionRepository.countByExamIdAndSection(exam.getExamId(), JlptExamStructure.LANGUAGE));
+            form.setReadingQuestions((int) examQuestionRepository.countByExamIdAndSection(exam.getExamId(), READING));
+            form.setListeningQuestions((int) examQuestionRepository.countByExamIdAndSection(exam.getExamId(), LISTENING));
+        } else {
+            form.setLanguageQuestions(requiredQuestions(exam, JlptExamStructure.LANGUAGE));
+            form.setReadingQuestions(requiredQuestions(exam, READING));
+            form.setListeningQuestions(requiredQuestions(exam, LISTENING));
+        }
         form.setStatus(exam.getStatus());
         form.setDescription(exam.getDescription());
         return form;
@@ -256,6 +270,10 @@ public class ManagerExamService {
             if (!"ACTIVE".equals(question.getStatus())) {
                 throw new IllegalArgumentException("Câu hỏi #" + questionId + " chưa được kích hoạt (ACTIVE).");
             }
+            if (!Objects.equals(question.getJlptLevel(), exam.getJlptLevel())) {
+                throw new IllegalArgumentException("Câu hỏi #" + questionId + " thuộc cấp " + question.getJlptLevel()
+                        + ", không khớp cấp độ đề thi (" + exam.getJlptLevel() + ").");
+            }
             if (alreadyLinked.contains(questionId)) {
                 continue;
             }
@@ -323,15 +341,14 @@ public class ManagerExamService {
         requireDraft(exam);
         Map<Long, Question> bank = loadBank(examId, exam.getJlptLevel());
         Map<String, Map<String, List<Long>>> unitsBySection = buildUnits(bank);
-        JlptExamStructure jlpt = JlptExamStructure.of(exam.getJlptLevel());
 
         Map<String, List<GeneratePreview.PreviewQuestion>> sections = new LinkedHashMap<>();
         for (String section : SECTIONS) {
-            List<Long> ids = pickSection(examId, section, jlpt, unitsBySection, bank, exam.getJlptLevel());
+            List<Long> ids = pickSection(exam, section, unitsBySection, bank);
             sections.put(section, ids.stream().map(id -> toPreviewQuestion(bank.get(id))).toList());
         }
         int total = sections.values().stream().mapToInt(List::size).sum();
-        if (total == 0) throw new IllegalArgumentException("Đề thi đã đủ câu theo cấu trúc JLPT " + exam.getJlptLevel() + ".");
+        if (total == 0) throw new IllegalArgumentException("Đề thi đã đủ số câu từng phần theo cấu hình.");
         return new GeneratePreview(examId, exam.getJlptLevel(), sections);
     }
 
@@ -343,9 +360,8 @@ public class ManagerExamService {
         requireDraft(exam);
         Map<Long, Question> bank = loadBank(examId, exam.getJlptLevel());
         Map<String, Map<String, List<Long>>> unitsBySection = buildUnits(bank);
-        JlptExamStructure jlpt = JlptExamStructure.of(exam.getJlptLevel());
 
-        List<Long> ids = pickSection(examId, section, jlpt, unitsBySection, bank, exam.getJlptLevel());
+        List<Long> ids = pickSection(exam, section, unitsBySection, bank);
         Map<String, List<GeneratePreview.PreviewQuestion>> sections = new LinkedHashMap<>(current.sections());
         sections.put(section, ids.stream().map(id -> toPreviewQuestion(bank.get(id))).toList());
         return new GeneratePreview(examId, exam.getJlptLevel(), sections);
@@ -356,24 +372,16 @@ public class ManagerExamService {
     public int confirmGenerate(long examId, GeneratePreview preview) {
         Exam exam = findById(examId);
         requireDraft(exam);
-        JlptExamStructure jlpt = JlptExamStructure.of(exam.getJlptLevel());
         // The preview lives in the session; questions may have been linked by hand or archived since it was made.
         Map<Long, Question> bank = loadBank(examId, exam.getJlptLevel());
         Map<String, List<Long>> idMap = preview.toIdMap();
         for (Map.Entry<String, List<Long>> entry : idMap.entrySet()) {
             long linked = examQuestionRepository.countByExamIdAndSection(examId, entry.getKey());
-            if (linked + entry.getValue().size() > jlpt.questions(entry.getKey())
+            if (linked + entry.getValue().size() > requiredQuestions(exam, entry.getKey())
                     || !bank.keySet().containsAll(entry.getValue())) {
                 throw new IllegalArgumentException(STALE_PREVIEW);
             }
         }
-        exam.setLanguageQuestions(jlpt.languageQuestions());
-        exam.setReadingQuestions(jlpt.readingQuestions());
-        exam.setListeningQuestions(jlpt.listeningQuestions());
-        exam.setTotalQuestions(jlpt.totalQuestions());
-        exam.setDurationMinutes(jlpt.durationMinutes());
-        exam.setPassingScore(jlpt.passingScore());
-        examRepository.save(exam);
 
         idMap.forEach((section, ids) -> {
             if (ids.isEmpty()) return;
@@ -425,15 +433,17 @@ public class ManagerExamService {
         return unitsBySection;
     }
 
-    private List<Long> pickSection(long examId, String section, JlptExamStructure jlpt,
+    private List<Long> pickSection(Exam exam, String section,
                                     Map<String, Map<String, List<Long>>> unitsBySection,
-                                    Map<Long, Question> bank, String level) {
+                                    Map<Long, Question> bank) {
+        long examId = exam.getExamId();
+        String level = exam.getJlptLevel();
         String label = SECTION_LABELS.get(section);
         long linked = examQuestionRepository.countByExamIdAndSection(examId, section);
-        int required = jlpt.questions(section);
+        int required = requiredQuestions(exam, section);
         if (linked > required) {
-            throw new IllegalArgumentException("Phần " + label + " đã gán " + linked + " câu, vượt cấu trúc JLPT " + level
-                    + " (" + required + " câu). Hãy gỡ bớt trước.");
+            throw new IllegalArgumentException("Phần " + label + " đã gán " + linked + " câu, vượt số câu đã cấu hình ("
+                    + required + " câu). Hãy gỡ bớt trước.");
         }
         int missing = (int) (required - linked);
         if (missing == 0) return List.of();
@@ -519,6 +529,10 @@ public class ManagerExamService {
         ExamQuestionId eqId = new ExamQuestionId(examId, questionId);
         if (!examQuestionRepository.existsById(eqId)) {
             throw new IllegalArgumentException("Câu hỏi này không nằm trong đề thi.");
+        }
+        String status = findById(examId).getStatus();
+        if ("PUBLISHED".equals(status) || "ACTIVE".equals(status)) {
+            throw new IllegalArgumentException("Không thể gỡ câu hỏi khỏi đề thi đang " + status + ". Hãy chuyển đề về DRAFT trước.");
         }
         examQuestionRepository.deleteById(eqId);
     }

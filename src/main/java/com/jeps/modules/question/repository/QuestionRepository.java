@@ -122,7 +122,8 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query(value = """
             SELECT id FROM questions
-            WHERE id IN (:ids) AND (jlpt_level IS NULL OR jlpt_level = '' OR skill_type IS NULL OR skill_type = '')
+            WHERE id IN (:ids) AND (jlpt_level IS NULL OR jlpt_level = '' OR skill_type IS NULL OR skill_type = ''
+              OR (question_type = 'PASSAGE' AND skill_type = 'LISTENING' AND (audio_url IS NULL OR audio_url = '')))
             """, nativeQuery = true)
     List<Long> findIdsWithIncompleteInfo(@Param("ids") List<Long> ids);
 
@@ -156,6 +157,14 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Modifying
     @Query("UPDATE Question q SET q.status = :status WHERE q.parentId IN :parentIds")
     int bulkSetStatusByParentIds(@Param("parentIds") List<Long> parentIds, @Param("status") String status);
+
+    @Modifying
+    @Query("""
+            UPDATE Question q SET q.audioUrl = :audioUrl
+            WHERE q.parentId = :parentId AND (q.audioUrl IS NULL OR q.audioUrl = '' OR q.audioUrl = :oldAudioUrl)
+            """)
+    int copyAudioToChildren(@Param("parentId") Long parentId, @Param("audioUrl") String audioUrl,
+                            @Param("oldAudioUrl") String oldAudioUrl);
 
     @Query("SELECT q.id FROM Question q WHERE q.parentId IN :parentIds")
     List<Long> findChildIdsByParentIds(@Param("parentIds") List<Long> parentIds);
