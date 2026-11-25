@@ -103,17 +103,19 @@ public class ManagerExamService {
         validateSectionCounts(form);
         validatePublishReady(examId, form);
         Exam exam = findById(examId);
-        if (!form.getJlptLevel().equals(exam.getJlptLevel()) && examQuestionRepository.countByExamId(examId) > 0) {
+        boolean levelChanged = !form.getJlptLevel().equals(exam.getJlptLevel());
+        if (levelChanged && examQuestionRepository.countByExamId(examId) > 0) {
             throw new IllegalArgumentException("Không thể đổi cấp độ khi đề thi đã có câu hỏi. Hãy gỡ hết câu hỏi trước.");
         }
+        // Course exams keep their own duration and 100-point scale; only a new level resets them to the JLPT standard.
         JlptExamStructure jlpt = JlptExamStructure.of(form.getJlptLevel());
+        if (levelChanged || exam.getDurationMinutes() == null) exam.setDurationMinutes(jlpt.durationMinutes());
+        if (levelChanged || exam.getTotalPoints() == null) exam.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
+        if (levelChanged || exam.getPassingScore() == null) exam.setPassingScore(jlpt.passingScore());
         exam.setExamTitle(clean(form.getExamTitle()));
         exam.setExamType(form.getExamType());
         exam.setJlptLevel(form.getJlptLevel());
-        exam.setDurationMinutes(jlpt.durationMinutes());
         exam.setTotalQuestions(totalQuestions(form));
-        exam.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
-        exam.setPassingScore(jlpt.passingScore());
         exam.setStatus(form.getStatus());
         exam.setDescription(optional(form.getDescription()));
         applySectionCounts(exam, form);
@@ -187,9 +189,18 @@ public class ManagerExamService {
         form.setExamTitle(exam.getExamTitle());
         form.setExamType(exam.getExamType());
         form.setJlptLevel(exam.getJlptLevel());
-        form.setLanguageQuestions(requiredQuestions(exam, JlptExamStructure.LANGUAGE));
-        form.setReadingQuestions(requiredQuestions(exam, READING));
-        form.setListeningQuestions(requiredQuestions(exam, LISTENING));
+        boolean noStoredCounts = exam.getLanguageQuestions() == null && exam.getReadingQuestions() == null
+                && exam.getListeningQuestions() == null;
+        if (noStoredCounts && examQuestionRepository.countByExamId(exam.getExamId()) > 0) {
+            // Older course exams never stored per-section counts; show what is actually linked instead of JLPT defaults.
+            form.setLanguageQuestions((int) examQuestionRepository.countByExamIdAndSection(exam.getExamId(), JlptExamStructure.LANGUAGE));
+            form.setReadingQuestions((int) examQuestionRepository.countByExamIdAndSection(exam.getExamId(), READING));
+            form.setListeningQuestions((int) examQuestionRepository.countByExamIdAndSection(exam.getExamId(), LISTENING));
+        } else {
+            form.setLanguageQuestions(requiredQuestions(exam, JlptExamStructure.LANGUAGE));
+            form.setReadingQuestions(requiredQuestions(exam, READING));
+            form.setListeningQuestions(requiredQuestions(exam, LISTENING));
+        }
         form.setStatus(exam.getStatus());
         form.setDescription(exam.getDescription());
         return form;
