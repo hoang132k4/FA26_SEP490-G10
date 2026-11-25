@@ -19,12 +19,14 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -70,6 +72,20 @@ class ManagerCourseIntegrationTest {
                 .andExpect(view().name("pages/manager/course/manager-courses"))
                 .andExpect(model().attributeExists("courses"))
                 .andExpect(model().attribute("courseCount", 1));
+    }
+
+    @Test
+    @DisplayName("Manager displays base price when a zero discount means no discount")
+    @WithMockUser(username = "manager@jeps.edu.vn", roles = "MANAGER")
+    void managerDisplaysBasePriceForZeroDiscount() throws Exception {
+        CourseOption course = new CourseOption(2L, "Zero Discount Course", "ZD-01", "N5", "PUBLISHED", 10,
+                "Desc", "Full", "/thumb.jpg", 100000.0, 0.0, 120, "Grammar", false);
+        when(courseService.findCourses()).thenReturn(List.of(course));
+
+        mockMvc.perform(get("/manager/courses"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("100,000 đ")))
+                .andExpect(content().string(not(containsString("Miễn phí"))));
     }
 
     @Test

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -108,6 +109,46 @@ public class RegisterTest {
         User activated = userRepository.findByEmailIgnoreCase("nguyenvana@example.com").orElseThrow();
         assertThat(activated.getStatus()).isEqualTo("ACTIVE");
         assertThat(activated.getEmailVerificationTokenHash()).isNull();
+    }
+
+    @Test
+    @DisplayName("New account registration preserves the selected course through login")
+    void testRegisterAndLoginReturnsToSelectedCourse() throws Exception {
+        var registerPage = mockMvc.perform(get("/auth/register")
+                        .param("continue", "/courses/8101"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("continuePath", "/courses/8101"))
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) registerPage.getRequest().getSession(false);
+
+        mockMvc.perform(post("/auth/register")
+                        .session(session)
+                        .with(csrf())
+                        .param("continue", "/courses/8101")
+                        .param("fullName", "Nguyễn Văn B")
+                        .param("email", "checkout-user@example.com")
+                        .param("phone", "0987654322")
+                        .param("password", "SecurePass123!")
+                        .param("confirmPassword", "SecurePass123!"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login"));
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendRegistrationVerificationEmail(
+                eq("checkout-user@example.com"), anyString(), linkCaptor.capture());
+        String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
+        mockMvc.perform(get("/auth/verify-email").param("token", rawToken))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login"));
+
+        mockMvc.perform(post("/auth/login")
+                        .session(session)
+                        .with(csrf())
+                        .param("continue", "/courses/8101")
+                        .param("username", "checkout-user@example.com")
+                        .param("password", "SecurePass123!"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/courses/8101"));
     }
 
     @Test

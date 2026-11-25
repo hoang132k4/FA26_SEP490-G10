@@ -367,7 +367,8 @@ public class ExamController {
 
             boolean isRecommendedEnrolled = false;
             if (userId != null && courseRegistrationRepository != null && recommendedCourse != null) {
-                isRecommendedEnrolled = courseRegistrationRepository.existsByUserIdAndCourseId(userId, recommendedCourse.getId());
+                isRecommendedEnrolled = courseRegistrationRepository
+                        .existsEligibleByUserIdAndCourseId(userId, recommendedCourse.getId());
             }
 
             // Sinh dữ liệu gợi ý khóa học thông minh đa tầng (Multi-tier recommendations)

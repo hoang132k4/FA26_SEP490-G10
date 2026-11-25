@@ -19,7 +19,7 @@ public interface LessonProgressService {
      * Cập nhật vào cột JSONB lesson_progress trên bảng learning_paths và đồng bộ
      * progress_percent lên bảng course_registrations.
      */
-    void markLessonCompleted(Long userId, Long courseId, Long lessonId);
+    boolean markLessonCompleted(Long userId, Long courseId, Long lessonId);
 
     /**
      * Kiểm tra một bài học có trạng thái hoàn thành hay chưa, hỗ trợ tương thích ngược

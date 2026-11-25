@@ -15,6 +15,7 @@ import com.jeps.modules.learningpath.repository.LearningPathRepository;
 import com.jeps.modules.learningpath.service.LessonProgressService;
 import com.jeps.modules.user.entity.User;
 import com.jeps.modules.user.repository.UserRepository;
+import com.jeps.modules.course.service.CourseRegistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,10 +39,8 @@ public class LessonProgressServiceImpl implements LessonProgressService {
     private final LearningPathRepository learningPathRepository;
     private final CourseRegistrationRepository courseRegistrationRepository;
     private final LessonRepository lessonRepository;
+    private final CourseRegistrationService courseRegistrationService;
     private final ObjectMapper objectMapper;
-
-    @Autowired(required = false)
-    private UserRepository userRepository;
 
     @Autowired(required = false)
     private CourseRepository courseRepository;
@@ -50,6 +49,9 @@ public class LessonProgressServiceImpl implements LessonProgressService {
     @Transactional(readOnly = true)
     public LearningPathProgressDto getLessonProgress(Long userId, Long courseId) {
         if (userId == null || courseId == null) {
+            return new LearningPathProgressDto();
+        }
+        if (!courseRegistrationService.isUserEnrolled(userId, courseId)) {
             return new LearningPathProgressDto();
         }
 
@@ -85,10 +87,10 @@ public class LessonProgressServiceImpl implements LessonProgressService {
 
     @Override
     @Transactional
-    public void markLessonCompleted(Long userId, Long courseId, Long lessonId) {
+    public boolean markLessonCompleted(Long userId, Long courseId, Long lessonId) {
         if (userId == null || courseId == null || lessonId == null) {
             log.warn("Invalid parameters to markLessonCompleted: userId={}, courseId={}, lessonId={}", userId, courseId, lessonId);
-            return;
+            return false;
         }
 
         // 1. Enrollment validation with Pessimistic Row Lock on CourseRegistration
@@ -96,33 +98,27 @@ public class LessonProgressServiceImpl implements LessonProgressService {
                 .or(() -> courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId));
         CourseRegistration reg;
         if (regOpt.isEmpty()) {
-            User user = (userRepository != null) ? userRepository.findById(userId).orElse(null) : null;
-            Course enrolledCourse = (courseRepository != null) ? courseRepository.findById(courseId).orElse(null) : null;
-            if (user != null && enrolledCourse != null) {
-                CourseRegistration newReg = CourseRegistration.builder()
-                        .user(user)
-                        .course(enrolledCourse)
-                        .registeredAt(LocalDateTime.now())
-                        .status("ACTIVE")
-                        .progressPercent(0)
-                        .paymentMethod("FREE")
-                        .paidAmount(0.0)
-                        .build();
-                reg = courseRegistrationRepository.saveAndFlush(newReg);
-                log.info("Auto-enrolled userId={} in courseId={} during markLessonCompleted", userId, courseId);
-            } else {
+            Optional<CourseRegistration> freeRegistration =
+                    courseRegistrationService.ensureFreeRegistrationForAccess(userId, courseId);
+            if (freeRegistration.isEmpty()) {
                 log.warn("Enrollment validation failed: userId={} is not enrolled in courseId={}", userId, courseId);
-                return;
+                return false;
             }
+            reg = freeRegistration.get();
         } else {
             reg = regOpt.get();
+        }
+        if (!isAccessEligible(reg.getStatus())) {
+            log.warn("Lesson completion denied for ineligible registration: userId={}, courseId={}, status={}",
+                    userId, courseId, reg.getStatus());
+            return false;
         }
 
         // 2. Course-to-Lesson ownership validation
         Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
         if (lesson == null || lesson.getCourse() == null || !lesson.getCourse().getId().equals(courseId)) {
             log.warn("Course-to-lesson validation failed: lessonId={} does not belong to courseId={}", lessonId, courseId);
-            return;
+            return false;
         }
 
         // 3. Pessimistic Row Lock on LearningPath
@@ -236,6 +232,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             log.info("Authoritative sync courseRegistration progressPercent={} (completedCount={}/{}) for userId={}, courseId={}",
                     newPercent, completedCount, totalLessons, userId, courseId);
         }
+        return true;
     }
 
     @Override
@@ -243,6 +240,9 @@ public class LessonProgressServiceImpl implements LessonProgressService {
     public Set<Long> getCompletedLessonIds(Long userId, Long courseId, List<Lesson> courseLessons, int progressPercent) {
         Set<Long> completedIds = new HashSet<>();
         if (userId == null || courseId == null || courseLessons == null || courseLessons.isEmpty()) {
+            return completedIds;
+        }
+        if (!courseRegistrationService.isUserEnrolled(userId, courseId)) {
             return completedIds;
         }
 
@@ -281,6 +281,10 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             Long userId, Long courseId, Long lessonId,
             int lessonOrderIndex, int totalCourseLessons, int registrationProgressPercent) {
 
+        if (userId == null || courseId == null || lessonId == null
+                || !courseRegistrationService.isUserEnrolled(userId, courseId)) {
+            return false;
+        }
         LearningPathProgressDto progressDto = getLessonProgress(userId, courseId);
         if (progressDto.isLessonCompleted(lessonId)) {
             return true;
@@ -320,6 +324,9 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         if (userId == null || courseId == null) {
             return completedIds;
         }
+        if (!courseRegistrationService.isUserEnrolled(userId, courseId)) {
+            return completedIds;
+        }
         List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
         Optional<CourseRegistration> regOpt = courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId);
         int progressPercent = regOpt.map(r -> r.getProgressPercent() != null ? r.getProgressPercent() : 0).orElse(0);
@@ -331,6 +338,11 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             }
         }
         return completedIds;
+    }
+
+    private boolean isAccessEligible(String status) {
+        return CourseRegistration.STATUS_ACTIVE.equalsIgnoreCase(status)
+                || CourseRegistration.STATUS_COMPLETED.equalsIgnoreCase(status);
     }
 
     private LearningPathProgressDto parseProgressDto(String json) {

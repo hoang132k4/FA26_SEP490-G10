@@ -21,6 +21,7 @@ import com.jeps.modules.course.service.CourseService;
 import com.jeps.modules.course.service.StudyMaterialService;
 import com.jeps.modules.user.entity.User;
 import com.jeps.modules.user.repository.UserRepository;
+import com.jeps.modules.course.service.CoursePriceCalculator;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 public class LearnerCourseController {
 
     private final CourseService courseService;
+    private final CoursePriceCalculator priceCalculator;
     private final CourseRepository courseRepository;
     private final CourseRegistrationService registrationService;
     private final CourseRecommendationService recommendationService;
@@ -187,6 +189,9 @@ public class LearnerCourseController {
         }
 
         Course course = courseService.getCourseById(targetCourseId);
+        if (!ensureCourseAccess(learner.getId(), course)) {
+            return "redirect:/learning/courses/" + targetCourseId + "/register";
+        }
         List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(targetCourseId);
 
         // Group lessons by Chapter / Section
@@ -245,6 +250,9 @@ public class LearnerCourseController {
 
         if (courseId != null) {
             filterCourse = courseService.getCourseById(courseId);
+            if (!ensureCourseAccess(learner.getId(), filterCourse)) {
+                return "redirect:/learning/courses/" + courseId + "/register";
+            }
             materials = studyMaterialService.getMaterialsByCourseId(courseId);
         } else {
             materials = studyMaterialService.searchMaterials(level, skill, type, keyword);
@@ -284,6 +292,13 @@ public class LearnerCourseController {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài học có ID: " + lessonId));
         Course course = lesson.getCourse();
+        if (courseId != null && !courseId.equals(course.getId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND);
+        }
+        if (!ensureCourseAccess(learner.getId(), course)) {
+            return "redirect:/learning/courses/" + course.getId() + "/register";
+        }
 
         List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(course.getId());
         Map<String, List<Lesson>> groupedLessons = courseLessons.stream()
@@ -421,10 +436,17 @@ public class LearnerCourseController {
 
         // Record granular lesson completion in Learning Path & synchronize course registration progress
         try {
-            lessonProgressService.markLessonCompleted(learner.getId(), course.getId(), lesson.getId());
+            if (!lessonProgressService.markLessonCompleted(learner.getId(), course.getId(), lesson.getId())) {
+                redirectAttributes.addFlashAttribute("warningMessage",
+                        "Bạn cần đăng ký và thanh toán khóa học trước khi tiếp tục.");
+                return "redirect:/learning/courses/" + course.getId() + "/register";
+            }
         } catch (Exception e) {
             log.warn("Could not mark granular lesson completion for userId={}, lessonId={}: {}",
                     learner.getId(), lesson.getId(), e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Không thể cập nhật tiến độ bài học. Vui lòng thử lại.");
+            return "redirect:/learning/lessons/" + lesson.getId();
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Chúc mừng bạn đã hoàn thành bài học: " + lesson.getTitle() + "!");
@@ -497,19 +519,32 @@ public class LearnerCourseController {
         User learner = getCurrentLearner(principal, session);
         Course course = courseService.getCourseById(id);
 
+        CourseRegistration existingRegistration =
+                registrationService.getRegistration(learner.getId(), course.getId());
         if (registrationService.isUserEnrolled(learner.getId(), course.getId())) {
             redirectAttributes.addFlashAttribute("warningMessage",
                     "Bạn đã đăng ký khóa học này trước đó. Dưới đây là thông tin chi tiết khóa học của bạn.");
             return "redirect:/courses/" + id;
         }
 
+        if (existingRegistration != null) {
+            if (CourseRegistration.STATUS_PENDING_PAYMENT.equalsIgnoreCase(existingRegistration.getStatus())) {
+                return "redirect:/checkout/" + id + "?registrationId=" + existingRegistration.getId();
+            }
+            redirectAttributes.addFlashAttribute("warningMessage",
+                    "Đăng ký khóa học hiện không thể tiếp tục. Vui lòng liên hệ hỗ trợ.");
+            return "redirect:/courses/" + id;
+        }
+
+        java.math.BigDecimal finalPrice = priceCalculator.calculateFinalPrice(course);
+        boolean freeCourse = finalPrice.signum() == 0;
         if (!model.containsAttribute("registrationRequest")) {
             CourseRegistrationRequest request = CourseRegistrationRequest.builder()
                     .courseId(course.getId())
                     .fullName(learner.getFullName())
                     .email(learner.getEmail())
                     .phone(learner.getPhone())
-                    .paymentMethod(course.getPrice() == 0 ? "FREE" : "VNPAY")
+                    .paymentMethod(freeCourse ? "FREE" : "SEPAY")
                     .termsAccepted(true)
                     .build();
             model.addAttribute("registrationRequest", request);
@@ -517,6 +552,8 @@ public class LearnerCourseController {
 
         model.addAttribute("learner", learner);
         model.addAttribute("course", course);
+        model.addAttribute("finalCoursePrice", finalPrice);
+        model.addAttribute("isFreeCourse", freeCourse);
         model.addAttribute("activeMenu", "courses");
         return "pages/learning/register-course";
     }
@@ -541,12 +578,22 @@ public class LearnerCourseController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("learner", learner);
             model.addAttribute("course", course);
+            java.math.BigDecimal finalPrice = priceCalculator.calculateFinalPrice(course);
+            model.addAttribute("finalCoursePrice", finalPrice);
+            model.addAttribute("isFreeCourse", finalPrice.signum() == 0);
             model.addAttribute("activeMenu", "courses");
             return "pages/learning/register-course";
         }
 
         try {
-            registrationService.registerCourse(learner.getId(), request);
+            java.math.BigDecimal finalPrice = priceCalculator.calculateFinalPrice(course);
+            if (finalPrice.signum() == 0) {
+                registrationService.registerCourse(learner.getId(), request);
+            } else {
+                CourseRegistration pendingRegistration =
+                        registrationService.createPendingRegistration(learner.getId(), request);
+                return "redirect:/checkout/" + id + "?registrationId=" + pendingRegistration.getId();
+            }
             redirectAttributes.addFlashAttribute("successMessage",
                     "Chúc mừng bạn đã đăng ký thành công khóa học: " + course.getTitle() + "! Bạn có thể bắt đầu bài học ngay bây giờ.");
             return "redirect:/courses/" + id;
@@ -558,6 +605,9 @@ public class LearnerCourseController {
             model.addAttribute("errorMessage", "Đã có lỗi xảy ra trong quá trình đăng ký khóa học. Vui lòng thử lại sau.");
             model.addAttribute("learner", learner);
             model.addAttribute("course", course);
+            java.math.BigDecimal finalPrice = priceCalculator.calculateFinalPrice(course);
+            model.addAttribute("finalCoursePrice", finalPrice);
+            model.addAttribute("isFreeCourse", finalPrice.signum() == 0);
             model.addAttribute("activeMenu", "courses");
             return "pages/learning/register-course";
         }
@@ -586,5 +636,12 @@ public class LearnerCourseController {
         model.addAttribute("completedCount", completedCount);
         model.addAttribute("activeMenu", "my-courses");
         return "pages/learning/my-courses";
+    }
+
+    private boolean ensureCourseAccess(Long userId, Course course) {
+        if (registrationService.isUserEnrolled(userId, course.getId())) {
+            return true;
+        }
+        return registrationService.ensureFreeRegistrationForAccess(userId, course.getId()).isPresent();
     }
 }

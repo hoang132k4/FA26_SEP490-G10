@@ -15,6 +15,7 @@
         </div>
 
         <form th:action="@{/auth/login}" method="post">
+            <input th:if="${continuePath != null}" type="hidden" name="continue" th:value="${continuePath}">
             <div class="mb-3">
                 <label class="form-label small fw-semibold" style="color: var(--text-primary)">Email hoặc Tên đăng nhập</label>
                 <div class="input-group">
@@ -58,7 +59,8 @@
 
             <div class="text-center mt-4 small text-muted">
                 Chưa có tài khoản? 
-                <a th:href="@{/auth/register}" class="fw-semibold text-decoration-none" style="color: var(--sakura-accent)">
+                <a th:href="${continuePath != null} ? @{/auth/register(continue=${continuePath})} : @{/auth/register}"
+                   class="fw-semibold text-decoration-none" style="color: var(--sakura-accent)">
                     Đăng ký miễn phí
                 </a>
             </div>

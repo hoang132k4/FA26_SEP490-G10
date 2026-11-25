@@ -152,6 +152,22 @@ public class LearningPathTest {
                 .build());
     }
 
+    @Test
+    @DisplayName("Pending payment registration cannot access a learning path")
+    void pendingRegistrationIsExcludedFromLearningPath() {
+        CourseRegistration registration = courseRegistrationRepository
+                .findByUserIdAndCourseId(userWithPath.getId(), courseN4.getId())
+                .orElseThrow();
+        registration.setStatus(CourseRegistration.STATUS_PENDING_PAYMENT);
+        courseRegistrationRepository.saveAndFlush(registration);
+
+        LearningPathResponse response =
+                learningPathService.getLearningPath(userWithPath.getUsername(), courseN4.getId());
+
+        assertThat(response.isHasPath()).isFalse();
+        assertThat(response.getItems()).isEmpty();
+    }
+
     // ==========================================
     // VIEW LEARNING PATH (UC-27) TESTS
     // ==========================================
@@ -363,14 +379,11 @@ public class LearningPathTest {
         RecalibratePreviewResponse preview = learningPathService.getRecalibratePreview(LEARNER_WITH_PATH, request);
 
         assertThat(preview).isNotNull();
-        assertThat(preview.getRescheduledItems()).hasSize(4);
-
-        // First 2 lessons are completed - maintain original completed status
-        assertThat(preview.getRescheduledItems().get(0).getStatus()).isEqualTo("COMPLETED");
-        assertThat(preview.getRescheduledItems().get(1).getStatus()).isEqualTo("COMPLETED");
-
-        // Third lesson (first uncompleted) must be in progress
-        assertThat(preview.getRescheduledItems().get(2).getStatus()).isEqualTo("IN_PROGRESS");
+        assertThat(preview.getRescheduledItems()).hasSize(2);
+        assertThat(preview.getRescheduledItems().get(0).getId()).isEqualTo(203L);
+        assertThat(preview.getRescheduledItems().get(0).getStatus()).isEqualTo("IN_PROGRESS");
+        assertThat(preview.getRescheduledItems().get(1).getId()).isEqualTo(204L);
+        assertThat(preview.getRescheduledItems().get(1).getStatus()).isEqualTo("UPCOMING");
     }
 
     @Test

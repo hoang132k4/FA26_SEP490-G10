@@ -49,7 +49,8 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         // 1. Primary Recommendation: Target Level Course
         List<Course> targetCourses = courseRepository.findByLevelAndStatus(targetLevel, "PUBLISHED");
         for (Course c : targetCourses) {
-            boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, c.getId());
+            boolean enrolled = userId != null
+                    && registrationRepository.existsEligibleByUserIdAndCourseId(userId, c.getId());
             items.add(RecommendedCourseItem.builder()
                     .course(c)
                     .matchPercentage(98)
@@ -63,7 +64,8 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         if (!currentLevel.equalsIgnoreCase(targetLevel)) {
             List<Course> currentCourses = courseRepository.findByLevelAndStatus(currentLevel, "PUBLISHED");
             for (Course c : currentCourses) {
-                boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, c.getId());
+                boolean enrolled = userId != null
+                        && registrationRepository.existsEligibleByUserIdAndCourseId(userId, c.getId());
                 items.add(RecommendedCourseItem.builder()
                         .course(c)
                         .matchPercentage(92)
@@ -78,7 +80,8 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         if (items.isEmpty()) {
             List<Course> all = courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED");
             for (Course c : all) {
-                boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, c.getId());
+                boolean enrolled = userId != null
+                        && registrationRepository.existsEligibleByUserIdAndCourseId(userId, c.getId());
                 items.add(RecommendedCourseItem.builder()
                         .course(c)
                         .matchPercentage(85)
@@ -184,7 +187,8 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         }
         if (primaryCourse != null) {
             addedCourseIds.add(primaryCourse.getId());
-            boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, primaryCourse.getId());
+            boolean enrolled = userId != null
+                    && registrationRepository.existsEligibleByUserIdAndCourseId(userId, primaryCourse.getId());
             String reason = percentage >= 60 
                     ? "Khóa học mục tiêu trọng tâm giúp bạn chinh phục JLPT " + primaryRecommendedLevel + " theo lộ trình chuẩn."
                     : "Củng cố toàn diện nền móng kiến thức " + primaryRecommendedLevel + " trước khi tiến lên cấp độ cao hơn.";
@@ -201,7 +205,8 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         Course skillGapCourse = findSkillGapCourse(allPublished, primaryRecommendedLevel, assignedLevel, weakestSkill, addedCourseIds);
         if (skillGapCourse != null) {
             addedCourseIds.add(skillGapCourse.getId());
-            boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, skillGapCourse.getId());
+            boolean enrolled = userId != null
+                    && registrationRepository.existsEligibleByUserIdAndCourseId(userId, skillGapCourse.getId());
             recommendations.add(RecommendedCourseItem.builder()
                     .course(skillGapCourse)
                     .matchPercentage(88)
@@ -215,7 +220,8 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         Course practiceCourse = findPracticeCourse(allPublished, primaryRecommendedLevel, targetLevel, addedCourseIds);
         if (practiceCourse != null) {
             addedCourseIds.add(practiceCourse.getId());
-            boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, practiceCourse.getId());
+            boolean enrolled = userId != null
+                    && registrationRepository.existsEligibleByUserIdAndCourseId(userId, practiceCourse.getId());
             recommendations.add(RecommendedCourseItem.builder()
                     .course(practiceCourse)
                     .matchPercentage(85)
@@ -231,7 +237,8 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
                 if (!addedCourseIds.contains(c.getId())) {
                     if (targetLevel.equalsIgnoreCase(c.getLevel()) || assignedLevel.equalsIgnoreCase(c.getLevel())) {
                         addedCourseIds.add(c.getId());
-                        boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, c.getId());
+                        boolean enrolled = userId != null
+                                && registrationRepository.existsEligibleByUserIdAndCourseId(userId, c.getId());
                         recommendations.add(RecommendedCourseItem.builder()
                                 .course(c)
                                 .matchPercentage(80)

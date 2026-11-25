@@ -44,6 +44,10 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         }
 
         String targetUrl = determineTargetUrl(authentication);
+        String continuePath = resolveContinuePath(request);
+        if (continuePath != null && hasLearnerRole(authentication)) {
+            targetUrl = continuePath;
+        }
         log.info("User '{}' authenticated successfully, redirecting to: {}", authentication.getName(), targetUrl);
 
         if (response.isCommitted()) {
@@ -52,6 +56,26 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         }
 
         redirectStrategy.sendRedirect(request, response, targetUrl);
+    }
+
+    private String resolveContinuePath(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        String target = AuthRedirectTarget.validate(request.getParameter("continue"));
+        if (target == null && session != null) {
+            Object storedTarget = session.getAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+            if (storedTarget instanceof String storedPath) {
+                target = AuthRedirectTarget.validate(storedPath);
+            }
+        }
+        if (session != null) {
+            session.removeAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+        }
+        return target;
+    }
+
+    private boolean hasLearnerRole(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_LEARNER".equals(authority.getAuthority()));
     }
 
     protected String determineTargetUrl(Authentication authentication) {

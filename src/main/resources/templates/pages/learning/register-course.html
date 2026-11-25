@@ -33,7 +33,7 @@
                         </div>
                         <div>
                             <h4 class="fw-bold mb-0 text-dark" style="color: var(--navy-dark);">Xác Nhận Kích Hoạt Khóa Học</h4>
-                            <p class="small text-muted mb-0">Khóa học sẽ được tích hợp ngay vào tài khoản học tập của bạn</p>
+                            <p class="small text-muted mb-0">Khóa học được kích hoạt sau khi hoàn tất đăng ký và xác nhận thanh toán (nếu có)</p>
                         </div>
                     </div>
 
@@ -81,49 +81,26 @@
                         </div>
 
                         <!-- Step 2: Payment Method (if course has fee) -->
-                        <div class="mb-4" th:if="${course.price > 0}">
+                        <div class="mb-4" th:if="${!isFreeCourse}">
                             <label class="small text-uppercase fw-bold text-muted mb-2 d-block" style="letter-spacing: 0.5px;">
                                 <i class="bi bi-credit-card me-1"></i>Chọn phương thức thanh toán
                             </label>
 
-                            <div class="d-flex flex-column gap-2.5">
-                                <!-- Option 1: VNPay QR / Banking -->
-                                <label class="card p-3 border rounded-3 cursor-pointer d-flex flex-row align-items-center gap-3 transition-all" style="background-color: #FAFCFE; border-color: #C8DBEE !important;">
-                                    <input type="radio" th:field="*{paymentMethod}" value="VNPAY" class="form-check-input mt-0" checked>
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="fw-bold text-dark small">Thanh toán qua VNPay (Quét mã QR / Mobile Banking / Thẻ ATM)</span>
-                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">Khuyên dùng</span>
-                                        </div>
-                                        <small class="text-muted d-block" style="font-size: 0.78rem;">Khóa học được mở khóa ngay lập tức trong tài khoản sau khi quét mã</small>
-                                    </div>
+                            <div class="d-flex flex-column gap-2">
+                                <input type="hidden" th:field="*{paymentMethod}" value="SEPAY">
+                                <div class="card p-3 border rounded-3 d-flex flex-row align-items-center gap-3"
+                                     style="background-color: #FAFCFE; border-color: #C8DBEE !important;">
                                     <i class="bi bi-qr-code fs-4 text-primary"></i>
-                                </label>
-
-                                <!-- Option 2: Direct Bank Transfer -->
-                                <label class="card p-3 border rounded-3 cursor-pointer d-flex flex-row align-items-center gap-3 transition-all" style="background-color: #FFFFFF;">
-                                    <input type="radio" th:field="*{paymentMethod}" value="BANK_TRANSFER" class="form-check-input mt-0">
                                     <div class="flex-grow-1">
-                                        <span class="fw-bold text-dark small d-block">Chuyển khoản trực tiếp tới tài khoản ngân hàng của JEPS</span>
-                                        <small class="text-muted d-block" style="font-size: 0.78rem;">Chuyển khoản qua số tài khoản hoặc mã VietQR 24/7</small>
+                                        <span class="fw-bold text-dark small d-block">Thanh toán qua SePay VietQR</span>
+                                        <small class="text-muted d-block" style="font-size: 0.78rem;">Khóa học chỉ được kích hoạt sau khi hệ thống xác nhận giao dịch thành công.</small>
                                     </div>
-                                    <i class="bi bi-bank fs-4 text-muted"></i>
-                                </label>
-
-                                <!-- Option 3: MoMo Wallet -->
-                                <label class="card p-3 border rounded-3 cursor-pointer d-flex flex-row align-items-center gap-3 transition-all" style="background-color: #FFFFFF;">
-                                    <input type="radio" th:field="*{paymentMethod}" value="MOMO" class="form-check-input mt-0">
-                                    <div class="flex-grow-1">
-                                        <span class="fw-bold text-dark small d-block">Ví điện tử MoMo</span>
-                                        <small class="text-muted d-block" style="font-size: 0.78rem;">Thanh toán siêu tốc qua ứng dụng MoMo</small>
-                                    </div>
-                                    <i class="bi bi-wallet2 fs-4 text-muted"></i>
-                                </label>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Free Course Notice (if price == 0) -->
-                        <div class="mb-4" th:if="${course.price == 0}">
+                        <!-- Free Course Notice -->
+                        <div class="mb-4" th:if="${isFreeCourse}">
                             <input type="hidden" th:field="*{paymentMethod}" value="FREE">
                             <div class="p-3 rounded-3 d-flex align-items-center gap-3" style="background-color: #EDF7EE; border: 1px solid #C8E6C9;">
                                 <div class="rounded-circle p-2 bg-success text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; flex-shrink: 0;">
@@ -148,7 +125,7 @@
                         <!-- Submit CTA Button -->
                         <button type="submit" class="btn btn-sakura btn-lg w-100 py-3 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
                             <i class="bi bi-check-circle-fill fs-5"></i>
-                            <span th:text="${course.price > 0 ? 'Xác nhận &amp; Tiến hành thanh toán' : 'Kích hoạt &amp; Bắt đầu học ngay'}">Kích hoạt khóa học</span>
+                            <span th:text="${!isFreeCourse ? 'Tạo đăng ký &amp; Tiến hành thanh toán' : 'Kích hoạt &amp; Bắt đầu học ngay'}">Kích hoạt khóa học</span>
                         </button>
 
                         <div class="text-center mt-3">
@@ -210,16 +187,10 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <span class="fw-bold text-dark fs-6">Tổng thanh toán:</span>
                         <div>
-                            <h3 class="fw-bold text-danger mb-0 text-end" 
-                                th:if="${course.discountPrice != null && course.discountPrice > 0}"
-                                th:text="${#numbers.formatDecimal(course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
-                                199,000 đ
-                            </h3>
-                            <h3 class="fw-bold text-dark mb-0 text-end" 
-                                th:if="${course.discountPrice == null || course.discountPrice == 0}"
-                                th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : 'Miễn phí'}">
-                                0 đ
-                            </h3>
+                        <h3 class="fw-bold mb-0 text-end"
+                            th:classappend="${!isFreeCourse ? ' text-danger' : ' text-dark'}"
+                            th:text="${isFreeCourse ? 'Miễn phí' : #numbers.formatDecimal(finalCoursePrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                            0 đ</h3>
                         </div>
                     </div>
 

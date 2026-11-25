@@ -11,6 +11,7 @@ import com.jeps.modules.course.repository.LessonRepository;
 import com.jeps.modules.learningpath.entity.LearningPath;
 import com.jeps.modules.learningpath.repository.LearningPathRepository;
 import com.jeps.modules.learningpath.service.impl.LessonProgressServiceImpl;
+import com.jeps.modules.course.service.CourseRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ public class LessonProgressServiceTest {
     @Mock
     private LessonRepository lessonRepository;
 
+    @Mock
+    private CourseRegistrationService courseRegistrationService;
+
     private ObjectMapper objectMapper;
     private LessonProgressServiceImpl lessonProgressService;
 
@@ -60,9 +64,9 @@ public class LessonProgressServiceTest {
                 learningPathRepository,
                 courseRegistrationRepository,
                 lessonRepository,
+                courseRegistrationService,
                 objectMapper
         );
-
         course = Course.builder().title("Khóa N4").level("N4").lessonCount(2).build();
         course.setId(courseId);
 
@@ -96,7 +100,7 @@ public class LessonProgressServiceTest {
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
                 .thenReturn(Optional.of(learningPath));
 
-        lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id);
+        assertThat(lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id)).isTrue();
 
         verify(courseRegistrationRepository, times(1)).saveAndFlush(registration);
         assertThat(registration.getProgressPercent()).isEqualTo(50);
@@ -120,7 +124,7 @@ public class LessonProgressServiceTest {
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
                 .thenReturn(Optional.of(learningPath));
 
-        lessonProgressService.markLessonCompleted(userId, courseId, lesson2Id);
+        assertThat(lessonProgressService.markLessonCompleted(userId, courseId, lesson2Id)).isTrue();
 
         verify(courseRegistrationRepository, times(1)).saveAndFlush(registration);
         assertThat(registration.getProgressPercent()).isEqualTo(100);
@@ -143,7 +147,7 @@ public class LessonProgressServiceTest {
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
                 .thenReturn(Optional.of(learningPath));
 
-        lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id);
+        assertThat(lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id)).isTrue();
 
         assertThat(registration.getProgressPercent()).isEqualTo(50);
         assertThat(registration.getStatus()).isEqualTo("ACTIVE");
@@ -154,17 +158,50 @@ public class LessonProgressServiceTest {
     void testMarkLessonCompleted_NotEnrolled_DoesNothing() {
         when(courseRegistrationRepository.findForUpdateByUserIdAndCourseId(userId, courseId))
                 .thenReturn(Optional.empty());
+        when(courseRegistrationService.ensureFreeRegistrationForAccess(userId, courseId))
+                .thenReturn(Optional.empty());
 
-        lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id);
+        assertThat(lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id)).isFalse();
 
         verify(learningPathRepository, never()).save(any());
         verify(courseRegistrationRepository, never()).save(any());
     }
 
     @Test
+    void pendingRegistrationCannotReadOrWriteLessonProgress() {
+        CourseRegistration pending = CourseRegistration.builder()
+                .status(CourseRegistration.STATUS_PENDING_PAYMENT)
+                .progressPercent(0)
+                .build();
+        when(courseRegistrationRepository.findForUpdateByUserIdAndCourseId(userId, courseId))
+                .thenReturn(Optional.of(pending));
+        when(courseRegistrationService.isUserEnrolled(userId, courseId)).thenReturn(false);
+
+        assertThat(lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id)).isFalse();
+        assertThat(lessonProgressService.getLessonProgress(userId, courseId).getLessons()).isEmpty();
+        assertThat(lessonProgressService.getCompletedLessonIds(userId, courseId)).isEmpty();
+        verify(learningPathRepository, never()).save(any());
+    }
+
+    @Test
+    void completedRegistrationRemainsEligibleForCourseReview() {
+        registration.setStatus(CourseRegistration.STATUS_COMPLETED);
+        when(courseRegistrationRepository.findForUpdateByUserIdAndCourseId(userId, courseId))
+                .thenReturn(Optional.of(registration));
+        when(lessonRepository.findById(lesson1Id)).thenReturn(Optional.of(lesson1));
+        when(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId)).thenReturn(List.of(lesson1, lesson2));
+        when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
+                .thenReturn(Optional.of(learningPath));
+
+        assertThat(lessonProgressService.markLessonCompleted(userId, courseId, lesson1Id)).isTrue();
+        assertThat(registration.getStatus()).isEqualTo(CourseRegistration.STATUS_COMPLETED);
+    }
+
+    @Test
     @DisplayName("getCompletedLessonIds: Trả về tập hợp ID các bài học đã hoàn thành")
     void testGetCompletedLessonIds() {
         learningPath.setLessonProgress("{\"lessons\":{\"" + lesson1Id + "\":{\"status\":\"COMPLETED\"}}}");
+        when(courseRegistrationService.isUserEnrolled(userId, courseId)).thenReturn(true);
         when(courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId))
                 .thenReturn(Optional.of(registration));
         when(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId)).thenReturn(List.of(lesson1, lesson2));
@@ -179,6 +216,7 @@ public class LessonProgressServiceTest {
     @DisplayName("isLessonCompleted: Trả về true khi lessonId nằm trong JSON lộ trình học tập")
     void testIsLessonCompleted_TrueWhenInJson() {
         learningPath.setLessonProgress("[{\"lessonId\":" + lesson1Id + ",\"completedAt\":\"2026-11-17T00:00:00Z\"}]");
+        when(courseRegistrationService.isUserEnrolled(userId, courseId)).thenReturn(true);
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
                 .thenReturn(Optional.of(learningPath));
 
@@ -192,6 +230,7 @@ public class LessonProgressServiceTest {
     @Test
     @DisplayName("isLessonCompleted: Suy diễn theo orderIndex khi JSON tiến độ rỗng")
     void testIsLessonCompleted_FallbackLinearOrder() {
+        when(courseRegistrationService.isUserEnrolled(userId, courseId)).thenReturn(true);
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
                 .thenReturn(Optional.empty());
 
@@ -207,6 +246,7 @@ public class LessonProgressServiceTest {
     @DisplayName("getLessonProgress: Đọc đúng danh sách bài học đã hoàn thành từ JSON")
     void testGetLessonProgress_ParsesSuccessfully() {
         learningPath.setLessonProgress("{\"lessons\":{\"" + lesson1Id + "\":{\"status\":\"COMPLETED\",\"completedAt\":\"2026-11-17T10:00:00Z\"}}}");
+        when(courseRegistrationService.isUserEnrolled(userId, courseId)).thenReturn(true);
         when(learningPathRepository.findFirstByUserIdAndCourseIdOrderByScheduledDateDescIdDesc(userId, courseId))
                 .thenReturn(Optional.of(learningPath));
 
