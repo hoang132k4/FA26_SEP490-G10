@@ -97,14 +97,38 @@ public class ManagerQuestionService {
     public Question update(long id, ManagerQuestionForm form) {
         validateDomain(form);
         Question question = findById(id);
+        validatePlacementUnchanged(question, form);
         validateStatusTransition(question, form.getStatus());
         if ("PASSAGE".equals(question.getQuestionType()) && !question.getStatus().equals(form.getStatus())) {
             cascadeStatusToChildren(id, form.getStatus());
         }
+        String oldAudio = question.getAudioUrl();
         applyForm(question, form);
         Question saved = questionRepository.save(question);
         syncQuestionOptions(saved, form);
+        if ("PASSAGE".equals(saved.getQuestionType()) && !isBlank(saved.getAudioUrl())
+                && !saved.getAudioUrl().equals(oldAudio)) {
+            questionRepository.copyAudioToChildren(id, saved.getAudioUrl(), oldAudio);
+        }
         return saved;
+    }
+
+    /** Exams place a question by its level and skill, so those cannot drift once it is linked to an exam. */
+    private void validatePlacementUnchanged(Question question, ManagerQuestionForm form) {
+        if (!Objects.equals(question.getQuestionType(), form.getQuestionType())) {
+            throw new IllegalArgumentException("Không thể đổi loại câu hỏi sau khi đã tạo.");
+        }
+        boolean levelChanged = !Objects.equals(question.getJlptLevel(), optional(form.getJlptLevel()));
+        boolean sectionChanged = !examSection(question.getSkillType()).equals(examSection(optional(form.getSkillType())));
+        if ((levelChanged || sectionChanged) && questionRepository.countExamUsages(question.getId()) > 0) {
+            throw new IllegalArgumentException("Câu hỏi đang nằm trong đề thi nên không đổi được cấp độ hoặc phần thi "
+                    + "(Ngôn ngữ/Đọc/Nghe). Hãy gỡ khỏi đề trước.");
+        }
+    }
+
+    private static String examSection(String skillType) {
+        if ("READING".equals(skillType) || "LISTENING".equals(skillType)) return skillType;
+        return "LANGUAGE";
     }
 
     public record BulkUpdateResult(int updated, int skipped) {}

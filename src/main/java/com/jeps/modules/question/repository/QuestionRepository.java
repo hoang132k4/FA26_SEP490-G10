@@ -158,6 +158,14 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("UPDATE Question q SET q.status = :status WHERE q.parentId IN :parentIds")
     int bulkSetStatusByParentIds(@Param("parentIds") List<Long> parentIds, @Param("status") String status);
 
+    @Modifying
+    @Query("""
+            UPDATE Question q SET q.audioUrl = :audioUrl
+            WHERE q.parentId = :parentId AND (q.audioUrl IS NULL OR q.audioUrl = '' OR q.audioUrl = :oldAudioUrl)
+            """)
+    int copyAudioToChildren(@Param("parentId") Long parentId, @Param("audioUrl") String audioUrl,
+                            @Param("oldAudioUrl") String oldAudioUrl);
+
     @Query("SELECT q.id FROM Question q WHERE q.parentId IN :parentIds")
     List<Long> findChildIdsByParentIds(@Param("parentIds") List<Long> parentIds);
 

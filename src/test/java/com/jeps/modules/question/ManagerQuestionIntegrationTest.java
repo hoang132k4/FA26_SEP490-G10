@@ -349,6 +349,52 @@ class ManagerQuestionIntegrationTest {
     }
 
     @Test
+    void addingAudioToListeningPassageCopiesItToChildren() throws Exception {
+        Question passage = questionRepository.save(Question.builder().content("").questionType("PASSAGE")
+                .jlptLevel("N5").skillType("LISTENING").status("DRAFT").build());
+        Question child = questionRepository.save(Question.builder().content(MARK + "Câu con bài nghe").questionType("MULTI_CHOICE")
+                .parentId(passage.getId()).jlptLevel("N5").skillType("LISTENING")
+                .options("[{\"key\":\"A\",\"text\":\"A\"},{\"key\":\"B\",\"text\":\"B\"}]").answerKey("[\"A\"]")
+                .status("DRAFT").build());
+        entityManager.flush();
+
+        mockMvc.perform(post("/manager/questions/{id}", passage.getId()).with(csrf())
+                        .param("questionType", "PASSAGE")
+                        .param("content", "")
+                        .param("jlptLevel", "N5")
+                        .param("skillType", "LISTENING")
+                        .param("status", "DRAFT")
+                        .param("audioUrl", "/uploads/questions/audio/listening.mp3"))
+                .andExpect(redirectedUrl("/manager/questions"));
+
+        entityManager.flush();
+        assertEquals("/uploads/questions/audio/listening.mp3",
+                jdbc.queryForObject("SELECT audio_url FROM questions WHERE id = ?", String.class, child.getId()));
+    }
+
+    @Test
+    void levelOfQuestionUsedInExamCannotBeChanged() throws Exception {
+        Question q = saveChoice("Câu N5 trong đề", "ACTIVE");
+        q.setJlptLevel("N5");
+        q.setSkillType("VOCABULARY");
+        questionRepository.save(q);
+        linkToExam(q, "DRAFT");
+
+        mockMvc.perform(post("/manager/questions/{id}", q.getId()).with(csrf())
+                        .param("questionType", "MULTI_CHOICE")
+                        .param("content", q.getContent())
+                        .param("jlptLevel", "N1")
+                        .param("skillType", "VOCABULARY")
+                        .param("status", "ACTIVE")
+                        .param("optionA", "A").param("optionB", "B").param("answerKeys", "A"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("questionError", containsString("không đổi được cấp độ")));
+
+        entityManager.flush();
+        assertEquals("N5", jdbc.queryForObject("SELECT jlpt_level FROM questions WHERE id = ?", String.class, q.getId()));
+    }
+
+    @Test
     void newChildPageWithUnknownParentRedirectsToList() throws Exception {
         mockMvc.perform(get("/manager/questions/new").param("parentId", "999999999"))
                 .andExpect(redirectedUrl("/manager/questions"))
