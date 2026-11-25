@@ -1019,6 +1019,90 @@ class ManagerQuestionServiceTest {
         assertRejected(form, "Câu hỏi con #2 chưa đủ cấp độ, kỹ năng hoặc đáp án nên không thể chuyển sang ACTIVE.", true);
     }
 
+    @Test
+    void deleteQuestionWithLearnerResultsIsRejectedWithFriendlyMessage() {
+        Question q = question(1L, "MULTI_CHOICE", "ACTIVE");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(q));
+        when(questionRepository.isUsedAnywhere(1L)).thenReturn(false);
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of());
+        org.mockito.Mockito.doThrow(new org.springframework.dao.DataIntegrityViolationException("exam_result_details_question_id_fkey"))
+                .when(questionRepository).flush();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.delete(1L));
+
+        assertEquals("Câu hỏi đã có kết quả làm bài của học viên nên không thể xóa. Hãy chuyển câu hỏi sang ARCHIVED thay vì xóa.",
+                ex.getMessage());
+    }
+
+    // ── edits of questions already used in exams ──
+
+    @Test
+    void updateRejectsChangingQuestionType() {
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(question(1L, "MULTI_CHOICE", "DRAFT")));
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setContent("Đoạn văn");
+        form.setStatus("DRAFT");
+
+        assertRejected(form, "Không thể đổi loại câu hỏi sau khi đã tạo.", true);
+    }
+
+    @Test
+    void updateRejectsLevelChangeOfQuestionUsedInExam() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        existing.setJlptLevel("N5");
+        existing.setSkillType("VOCABULARY");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.countExamUsages(1L)).thenReturn(1L);
+
+        assertRejected(choice(f -> { f.setJlptLevel("N1"); f.setSkillType("VOCABULARY"); }),
+                "Câu hỏi đang nằm trong đề thi nên không đổi được cấp độ hoặc phần thi (Ngôn ngữ/Đọc/Nghe). Hãy gỡ khỏi đề trước.", true);
+    }
+
+    @Test
+    void updateRejectsSkillChangeThatMovesQuestionToAnotherExamSection() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        existing.setJlptLevel("N5");
+        existing.setSkillType("VOCABULARY");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.countExamUsages(1L)).thenReturn(2L);
+
+        assertRejected(choice(f -> { f.setJlptLevel("N5"); f.setSkillType("READING"); }),
+                "Câu hỏi đang nằm trong đề thi nên không đổi được cấp độ hoặc phần thi (Ngôn ngữ/Đọc/Nghe). Hãy gỡ khỏi đề trước.", true);
+    }
+
+    @Test
+    void updateAllowsSkillChangeWithinTheSameExamSection() {
+        Question existing = question(1L, "MULTI_CHOICE", "DRAFT");
+        existing.setJlptLevel("N5");
+        existing.setSkillType("VOCABULARY");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(questionRepository.save(existing)).thenReturn(existing);
+
+        Question saved = service.update(1L, choice(f -> { f.setJlptLevel("N5"); f.setSkillType("GRAMMAR"); }));
+
+        assertEquals("GRAMMAR", saved.getSkillType());
+        verify(questionRepository, never()).countExamUsages(anyLong());
+    }
+
+    @Test
+    void updatingPassageAudioCopiesItToChildren() {
+        Question passage = question(1L, "PASSAGE", "DRAFT");
+        passage.setSkillType("LISTENING");
+        passage.setAudioUrl("/uploads/old.mp3");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.save(passage)).thenReturn(passage);
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setSkillType("LISTENING");
+        form.setStatus("DRAFT");
+        form.setAudioUrl("/uploads/new.mp3");
+
+        service.update(1L, form);
+
+        verify(questionRepository).copyAudioToChildren(1L, "/uploads/new.mp3", "/uploads/old.mp3");
+    }
+
     // ── helpers ──
 
     private void assertRejected(ManagerQuestionForm form, String message) {
