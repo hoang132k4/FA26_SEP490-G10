@@ -1,5 +1,6 @@
 package com.jlpp.modules.quiz.controller;
 
+import com.jlpp.common.util.CurrentUserSession;
 import com.jlpp.modules.auth.model.CustomUserDetails;
 import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.entity.Lesson;
@@ -8,7 +9,6 @@ import com.jlpp.modules.quiz.dto.QuizQuestionDto;
 import com.jlpp.modules.quiz.dto.QuizResultDto;
 import com.jlpp.modules.quiz.entity.Exercise;
 import com.jlpp.modules.quiz.service.QuizService;
-import com.jlpp.modules.user.entity.User;
 import com.jlpp.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.util.*;
@@ -32,25 +31,8 @@ public class QuizController {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
 
-    /**
-     * Start doing quiz / exercise for a lesson
-     */
     private Long resolveUserId(CustomUserDetails userDetails, Principal principal, HttpSession session) {
-        if (userDetails != null && userDetails.getId() != null) {
-            return userDetails.getId();
-        }
-        if (principal != null) {
-            String name = principal.getName();
-            return userRepository.findByEmailIgnoreCase(name)
-                    .or(() -> userRepository.findByUsername(name))
-                    .map(User::getId)
-                    .orElse(null);
-        }
-        if (session != null) {
-            Object id = session.getAttribute("CURRENT_LEARNER_ID");
-            if (id instanceof Long l) return l;
-        }
-        return null;
+        return CurrentUserSession.resolveUserId(userDetails, principal, session, userRepository);
     }
 
     @GetMapping("/do")
@@ -93,8 +75,7 @@ public class QuizController {
             @RequestParam Map<String, String> allParams,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             Principal principal,
-            HttpSession session,
-            RedirectAttributes redirectAttributes
+            HttpSession session
     ) {
         Long userId = resolveUserId(userDetails, principal, session);
         if (userId == null) {
@@ -132,7 +113,13 @@ public class QuizController {
             return "redirect:/auth/login?continue=/quiz/result/" + resultId;
         }
 
-        QuizResultDto result = quizService.getResult(resultId);
+        QuizResultDto result;
+        try {
+            result = quizService.getResult(resultId);
+        } catch (IllegalArgumentException ex) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, ex.getMessage());
+        }
         if (!userId.equals(result.getUserId())) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN, "Bạn không có quyền xem kết quả này.");

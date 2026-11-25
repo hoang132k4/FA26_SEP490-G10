@@ -4,9 +4,7 @@ import com.jlpp.modules.course.entity.Course;
 import com.jlpp.modules.course.repository.CourseRepository;
 import com.jlpp.modules.exam.entity.Exam;
 import com.jlpp.modules.exam.repository.ExamRepository;
-import com.jlpp.modules.lesson.dto.LessonPreview;
-import com.jlpp.modules.lesson.repository.LessonRepository;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,16 +16,14 @@ public class PublicCatalogService {
 
     private final CourseRepository courseRepository;
     private final ExamRepository examRepository;
-    private final LessonRepository lessonRepository;
 
     public PublicCatalogService(CourseRepository courseRepository,
-                                ExamRepository examRepository,
-                                @Qualifier("publicLessonRepository") LessonRepository lessonRepository) {
+                                ExamRepository examRepository) {
         this.courseRepository = courseRepository;
         this.examRepository = examRepository;
-        this.lessonRepository = lessonRepository;
     }
 
+    @Cacheable(value = "courses", key = "(#level ?: '') + '_' + (#keyword ?: '')")
     public List<Course> findCourses(String level, String keyword) {
         String normalizedLevel = normalize(level);
         String normalizedKeyword = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
@@ -43,27 +39,15 @@ public class PublicCatalogService {
                 .toList();
     }
 
+    @Cacheable(value = "courses", key = "'featured'")
     public List<Course> getFeaturedCourses() {
-        return courseRepository.findAll().stream()
+        return courseRepository.findByFeaturedTrueOrderByCourseIdAsc().stream()
                 .filter(this::isPublic)
-                .filter(c -> Boolean.TRUE.equals(c.getFeatured()))
-                .sorted((a, b) -> Long.compare(a.getId(), b.getId()))
                 .limit(6)
                 .toList();
     }
 
-    public List<Course> getLatestCourses(int limit) {
-        List<Long> featuredIds = getFeaturedCourses().stream()
-                .map(Course::getId)
-                .toList();
-        return courseRepository.findAll().stream()
-                .filter(this::isPublic)
-                .filter(c -> !featuredIds.contains(c.getId()))
-                .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
-                .limit(limit)
-                .toList();
-    }
-
+    @Cacheable(value = "courseDetails", key = "#id")
     public Optional<Course> findCourse(Long id) {
         return courseRepository.findById(id).filter(this::isPublic);
     }
@@ -76,14 +60,12 @@ public class PublicCatalogService {
         return "PUBLISHED".equals(s) || "ACTIVE".equals(s) || "PUBLIC".equals(s);
     }
 
-    public List<LessonPreview> findLessonPreviews(Long courseId) {
-        return lessonRepository.findPreviewsByCourseId(courseId);
-    }
-
+    @Cacheable(value = "exams", key = "'jlpt_mock_all'")
     public List<Exam> getJlptMockExams() {
         return examRepository.findByExamTypeIgnoreCase("JLPT_MOCK");
     }
 
+    @Cacheable(value = "exams", key = "'jlpt_mock_' + #id")
     public Optional<Exam> findJlptMockExam(Long id) {
         return examRepository.findById(id)
                 .filter(exam -> "JLPT_MOCK".equalsIgnoreCase(exam.getExamType()));

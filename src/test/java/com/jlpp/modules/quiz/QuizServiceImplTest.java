@@ -29,7 +29,6 @@ class QuizServiceImplTest {
 
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private QuizQuestionRepository questionRepository;
-    @Mock private QuestionOptionRepository questionOptionRepository;
     @Mock private ExerciseQuestionRepository exerciseQuestionRepository;
     @Mock private ExerciseResultRepository exerciseResultRepository;
     @Mock private ExerciseResultDetailRepository exerciseResultDetailRepository;
@@ -91,7 +90,6 @@ class QuizServiceImplTest {
             return q;
         });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -139,13 +137,14 @@ class QuizServiceImplTest {
     @DisplayName("getQuestionsForExercise - có câu hỏi với option → trả đúng DTO")
     void getQuestions_withQuestionAndOptions() {
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Nội dung?").category("Grammar").jlptLevel("N4").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đáp án A").isCorrect(true).build();
+        Question q = Question.builder().id(10L).content("Nội dung?").category("Grammar").jlptLevel("N4")
+                .options("[{\"key\":\"A\",\"text\":\"Đáp án A\"}]")
+                .answerKey("[\"A\"]")
+                .build();
 
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(opt));
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -164,7 +163,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(List.of(qb));
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -188,17 +186,15 @@ class QuizServiceImplTest {
     void submitQuiz_allCorrect_passes() {
         ExerciseQuestion eq1 = new ExerciseQuestion(1L, 10L, 1);
         ExerciseQuestion eq2 = new ExerciseQuestion(1L, 11L, 2);
-        Question q1 = Question.builder().id(10L).content("Q1").build();
-        Question q2 = Question.builder().id(11L).content("Q2").build();
-        QuestionOption opt1 = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ1").isCorrect(true).build();
-        QuestionOption opt2 = QuestionOption.builder().id(51L).questionId(11L).label("B").optionText("Đ2").isCorrect(true).build();
+        Question q1 = Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Đ1\"}]").answerKey("[\"A\"]").build();
+        Question q2 = Question.builder().id(11L).content("Q2")
+                .options("[{\"key\":\"B\",\"text\":\"Đ2\"}]").answerKey("[\"B\"]").build();
 
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(exercise));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq1, eq2));
         when(questionRepository.findByIdIn(List.of(10L, 11L))).thenReturn(List.of(q1, q2));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L)))
-                .thenReturn(List.of(opt1, opt2));
         when(exerciseResultRepository.countByExerciseIdAndUserId(1L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> {
             ExerciseResult r = inv.getArgument(0);
@@ -220,16 +216,14 @@ class QuizServiceImplTest {
     @DisplayName("submitQuiz - trả lời sai hết → failed, percentage = 0")
     void submitQuiz_allWrong_fails() {
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption optCorrect = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đúng").isCorrect(true).build();
-        QuestionOption optWrong = QuestionOption.builder().id(51L).questionId(10L).label("B").optionText("Sai").isCorrect(false).build();
+        Question q = Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Đúng\"},{\"key\":\"B\",\"text\":\"Sai\"}]")
+                .answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(exercise));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L)))
-                .thenReturn(List.of(optCorrect, optWrong));
         when(exerciseResultRepository.countByExerciseIdAndUserId(1L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> {
             ExerciseResult r = inv.getArgument(0);
@@ -249,15 +243,13 @@ class QuizServiceImplTest {
     @DisplayName("submitQuiz - null answers map → tất cả unanswered")
     void submitQuiz_nullAnswers_allUnanswered() {
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ1").isCorrect(true).build();
+        Question q = Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Đ1\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(exercise));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L)))
-                .thenReturn(List.of(opt));
         when(exerciseResultRepository.countByExerciseIdAndUserId(1L, 5L)).thenReturn(2L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> {
             ExerciseResult r = inv.getArgument(0);
@@ -305,8 +297,8 @@ class QuizServiceImplTest {
                 .isCorrect(true)
                 .build();
 
-        Question q = Question.builder().id(10L).content("Q1").category("Grammar").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ1").isCorrect(true).build();
+        Question q = Question.builder().id(10L).content("Q1").category("Grammar")
+                .options("[{\"key\":\"A\",\"text\":\"Đ1\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseResultRepository.findById(77L)).thenReturn(Optional.of(savedResult));
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(exercise));
@@ -314,7 +306,6 @@ class QuizServiceImplTest {
         when(exerciseResultDetailRepository.findByExerciseResultId(77L)).thenReturn(List.of(detail));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(opt));
 
         QuizResultDto result = quizService.getResult(77L);
 
@@ -349,7 +340,6 @@ class QuizServiceImplTest {
             return q;
         });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Exercise result = quizService.getOrCreateExerciseForLesson(200L);
@@ -376,7 +366,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(50L)).thenReturn(Collections.emptyList());
         when(questionRepository.save(any())).thenAnswer(inv -> { Question q = inv.getArgument(0); q.setId(99L); return q; });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Exercise result = quizService.getOrCreateExerciseForLesson(200L);
@@ -397,7 +386,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(60L)).thenReturn(Collections.emptyList());
         when(questionRepository.save(any())).thenAnswer(inv -> { Question q = inv.getArgument(0); q.setId(99L); return q; });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Exercise result = quizService.getOrCreateExerciseForLesson(300L);
@@ -425,7 +413,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(50L)).thenReturn(Collections.emptyList());
         when(questionRepository.save(any())).thenAnswer(inv -> { Question q = inv.getArgument(0); q.setId(99L); return q; });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         quizService.getOrCreateExerciseForLesson(200L);
@@ -446,7 +433,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -466,7 +452,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq1, eq2, eq3));
         when(questionRepository.findByIdIn(List.of(10L, 11L, 12L))).thenReturn(List.of(q1, q2, q3));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -487,7 +472,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -504,7 +488,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(List.of(qb));
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -515,15 +498,13 @@ class QuizServiceImplTest {
     @DisplayName("getQuestionsForExercise - options được map đúng label")
     void getQuestions_optionsSortedByLabel() {
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption optA = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Opt A").isCorrect(true).build();
-        QuestionOption optB = QuestionOption.builder().id(51L).questionId(10L).label("B").optionText("Opt B").isCorrect(false).build();
-        QuestionOption optC = QuestionOption.builder().id(52L).questionId(10L).label("C").optionText("Opt C").isCorrect(false).build();
+        Question q = Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Opt A\"},{\"key\":\"B\",\"text\":\"Opt B\"},{\"key\":\"C\",\"text\":\"Opt C\"}]")
+                .answerKey("[\"A\"]").build();
 
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(optA, optB, optC));
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -542,7 +523,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -559,7 +539,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(List.of(qb));
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> result = quizService.getQuestionsForExercise(1L);
 
@@ -575,18 +554,14 @@ class QuizServiceImplTest {
         ExerciseQuestion eq1 = new ExerciseQuestion(2L, 10L, 1);
         ExerciseQuestion eq2 = new ExerciseQuestion(2L, 11L, 2);
         ExerciseQuestion eq3 = new ExerciseQuestion(2L, 12L, 3);
-        Question q1 = Question.builder().id(10L).content("Q1").build();
-        Question q2 = Question.builder().id(11L).content("Q2").build();
-        Question q3 = Question.builder().id(12L).content("Q3").build();
-        QuestionOption opt1 = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ1").isCorrect(true).build();
-        QuestionOption opt2 = QuestionOption.builder().id(51L).questionId(11L).label("B").optionText("Đ2").isCorrect(true).build();
-        QuestionOption opt3 = QuestionOption.builder().id(52L).questionId(12L).label("C").optionText("Đ3").isCorrect(true).build();
+        Question q1 = Question.builder().id(10L).content("Q1").options("[{\"key\":\"A\",\"text\":\"Đ1\"}]").answerKey("[\"A\"]").build();
+        Question q2 = Question.builder().id(11L).content("Q2").options("[{\"key\":\"B\",\"text\":\"Đ2\"}]").answerKey("[\"B\"]").build();
+        Question q3 = Question.builder().id(12L).content("Q3").options("[{\"key\":\"C\",\"text\":\"Đ3\"}]").answerKey("[\"C\"]").build();
 
         when(exerciseRepository.findById(2L)).thenReturn(Optional.of(ex3));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(2L)).thenReturn(List.of(eq1, eq2, eq3));
         when(questionRepository.findByIdIn(List.of(10L, 11L, 12L))).thenReturn(List.of(q1, q2, q3));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L, 12L))).thenReturn(List.of(opt1, opt2, opt3));
         when(exerciseResultRepository.countByExerciseIdAndUserId(2L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(80L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
@@ -605,18 +580,14 @@ class QuizServiceImplTest {
         ExerciseQuestion eq1 = new ExerciseQuestion(2L, 10L, 1);
         ExerciseQuestion eq2 = new ExerciseQuestion(2L, 11L, 2);
         ExerciseQuestion eq3 = new ExerciseQuestion(2L, 12L, 3);
-        Question q1 = Question.builder().id(10L).content("Q1").build();
-        Question q2 = Question.builder().id(11L).content("Q2").build();
-        Question q3 = Question.builder().id(12L).content("Q3").build();
-        QuestionOption opt1 = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ1").isCorrect(true).build();
-        QuestionOption opt2 = QuestionOption.builder().id(51L).questionId(11L).label("B").optionText("Đ2").isCorrect(true).build();
-        QuestionOption opt3 = QuestionOption.builder().id(52L).questionId(12L).label("C").optionText("Đ3").isCorrect(true).build();
+        Question q1 = Question.builder().id(10L).content("Q1").options("[{\"key\":\"A\",\"text\":\"Đ1\"}]").answerKey("[\"A\"]").build();
+        Question q2 = Question.builder().id(11L).content("Q2").options("[{\"key\":\"B\",\"text\":\"Đ2\"}]").answerKey("[\"B\"]").build();
+        Question q3 = Question.builder().id(12L).content("Q3").options("[{\"key\":\"C\",\"text\":\"Đ3\"}]").answerKey("[\"C\"]").build();
 
         when(exerciseRepository.findById(2L)).thenReturn(Optional.of(ex3));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(2L)).thenReturn(List.of(eq1, eq2, eq3));
         when(questionRepository.findByIdIn(List.of(10L, 11L, 12L))).thenReturn(List.of(q1, q2, q3));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L, 12L))).thenReturn(List.of(opt1, opt2, opt3));
         when(exerciseResultRepository.countByExerciseIdAndUserId(2L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(81L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
@@ -634,13 +605,12 @@ class QuizServiceImplTest {
         Exercise ex5 = Exercise.builder().exerciseId(3L).lessonId(100L).totalQuestions(5).passingScore(60).status("PUBLISHED").build();
         List<ExerciseQuestion> eqs = new ArrayList<>();
         List<Question> qs = new ArrayList<>();
-        List<QuestionOption> opts = new ArrayList<>();
         Map<Long, String> answers = new HashMap<>();
         for (int i = 0; i < 5; i++) {
             long qId = 10L + i;
             eqs.add(new ExerciseQuestion(3L, qId, i + 1));
-            qs.add(Question.builder().id(qId).content("Q" + i).build());
-            opts.add(QuestionOption.builder().id(50L + i).questionId(qId).label("A").optionText("Đ").isCorrect(true).build());
+            qs.add(Question.builder().id(qId).content("Q" + i)
+                    .options("[{\"key\":\"A\",\"text\":\"Đ\"}]").answerKey("[\"A\"]").build());
             if (i < 3) answers.put(qId, "A"); // 3/5 = 60%
         }
         List<Long> qIds = List.of(10L, 11L, 12L, 13L, 14L);
@@ -649,7 +619,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(3L)).thenReturn(eqs);
         when(questionRepository.findByIdIn(qIds)).thenReturn(qs);
         when(questionBankRepository.findByQuestionIdIn(qIds)).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(qIds)).thenReturn(opts);
         when(exerciseResultRepository.countByExerciseIdAndUserId(3L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(82L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
@@ -666,7 +635,7 @@ class QuizServiceImplTest {
     void submitQuiz_matchByOptionId_isCorrect() {
         stubSingleQuestionSubmit();
 
-        QuizResultDto result = quizService.submitQuiz(1L, 5L, Map.of(10L, "50"));
+        QuizResultDto result = quizService.submitQuiz(1L, 5L, Map.of(10L, "1001"));
 
         assertEquals(1, result.getCorrectCount());
         assertTrue(result.isPassed());
@@ -719,18 +688,14 @@ class QuizServiceImplTest {
         ExerciseQuestion eq1 = new ExerciseQuestion(2L, 10L, 1);
         ExerciseQuestion eq2 = new ExerciseQuestion(2L, 11L, 2);
         ExerciseQuestion eq3 = new ExerciseQuestion(2L, 12L, 3);
-        Question q1 = Question.builder().id(10L).content("Q1").build();
-        Question q2 = Question.builder().id(11L).content("Q2").build();
-        Question q3 = Question.builder().id(12L).content("Q3").build();
-        QuestionOption opt1 = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ1").isCorrect(true).build();
-        QuestionOption opt2 = QuestionOption.builder().id(51L).questionId(11L).label("A").optionText("Đ2").isCorrect(true).build();
-        QuestionOption opt3 = QuestionOption.builder().id(52L).questionId(12L).label("A").optionText("Đ3").isCorrect(true).build();
+        Question q1 = Question.builder().id(10L).content("Q1").options("[{\"key\":\"A\",\"text\":\"Đ1\"}]").answerKey("[\"A\"]").build();
+        Question q2 = Question.builder().id(11L).content("Q2").options("[{\"key\":\"A\",\"text\":\"Đ2\"}]").answerKey("[\"A\"]").build();
+        Question q3 = Question.builder().id(12L).content("Q3").options("[{\"key\":\"A\",\"text\":\"Đ3\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(2L)).thenReturn(Optional.of(ex3));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(2L)).thenReturn(List.of(eq1, eq2, eq3));
         when(questionRepository.findByIdIn(List.of(10L, 11L, 12L))).thenReturn(List.of(q1, q2, q3));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L, 12L))).thenReturn(List.of(opt1, opt2, opt3));
         when(exerciseResultRepository.countByExerciseIdAndUserId(2L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(83L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
@@ -747,18 +712,14 @@ class QuizServiceImplTest {
         ExerciseQuestion eq1 = new ExerciseQuestion(2L, 10L, 1);
         ExerciseQuestion eq2 = new ExerciseQuestion(2L, 11L, 2);
         ExerciseQuestion eq3 = new ExerciseQuestion(2L, 12L, 3);
-        Question q1 = Question.builder().id(10L).content("Q1").build();
-        Question q2 = Question.builder().id(11L).content("Q2").build();
-        Question q3 = Question.builder().id(12L).content("Q3").build();
-        QuestionOption opt1 = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ1").isCorrect(true).build();
-        QuestionOption opt2 = QuestionOption.builder().id(51L).questionId(11L).label("B").optionText("Đ2").isCorrect(true).build();
-        QuestionOption opt3 = QuestionOption.builder().id(52L).questionId(12L).label("C").optionText("Đ3").isCorrect(true).build();
+        Question q1 = Question.builder().id(10L).content("Q1").options("[{\"key\":\"A\",\"text\":\"Đ1\"}]").answerKey("[\"A\"]").build();
+        Question q2 = Question.builder().id(11L).content("Q2").options("[{\"key\":\"B\",\"text\":\"Đ2\"}]").answerKey("[\"B\"]").build();
+        Question q3 = Question.builder().id(12L).content("Q3").options("[{\"key\":\"C\",\"text\":\"Đ3\"}]").answerKey("[\"C\"]").build();
 
         when(exerciseRepository.findById(2L)).thenReturn(Optional.of(ex3));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(2L)).thenReturn(List.of(eq1, eq2, eq3));
         when(questionRepository.findByIdIn(List.of(10L, 11L, 12L))).thenReturn(List.of(q1, q2, q3));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L, 12L))).thenReturn(List.of(opt1, opt2, opt3));
         when(exerciseResultRepository.countByExerciseIdAndUserId(2L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(84L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
@@ -795,14 +756,12 @@ class QuizServiceImplTest {
     void submitQuiz_attemptNumberIncrementsFromPriorAttempts() {
         Exercise ex1 = Exercise.builder().exerciseId(1L).lessonId(100L).totalQuestions(1).passingScore(60).status("PUBLISHED").build();
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ").isCorrect(true).build();
+        Question q = Question.builder().id(10L).content("Q1").options("[{\"key\":\"A\",\"text\":\"Đ\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(ex1));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(opt));
         when(exerciseResultRepository.countByExerciseIdAndUserId(1L, 5L)).thenReturn(2L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> {
             ExerciseResult r = inv.getArgument(0);
@@ -816,25 +775,26 @@ class QuizServiceImplTest {
     }
 
     @Test
-    @DisplayName("submitQuiz - không có option nào isCorrect → correctLabel mặc định 'A'")
-    void submitQuiz_noCorrectOptionDefined_defaultsToA() {
+    @DisplayName("submitQuiz - không có answer_key hợp lệ → không mặc định 'A' (correctLabel = null)")
+    void submitQuiz_noCorrectOptionDefined_neverDefaultsToA() {
         Exercise ex1 = Exercise.builder().exerciseId(1L).lessonId(100L).totalQuestions(1).passingScore(60).status("PUBLISHED").build();
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption optNoCorrect = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Opt").isCorrect(false).build();
+        Question q = Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Opt\"}]").answerKey("[]").build();
 
+        when(exerciseRepository.findById(1L)).thenReturn(Optional.of(exercise));
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(ex1));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(optNoCorrect));
         when(exerciseResultRepository.countByExerciseIdAndUserId(1L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(86L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
 
         QuizResultDto result = quizService.submitQuiz(1L, 5L, Map.of(10L, "A"));
 
-        assertEquals("A", result.getQuestions().get(0).getCorrectLabel());
+        assertNull(result.getQuestions().get(0).getCorrectLabel());
+        assertFalse(result.getQuestions().get(0).isUserCorrect());
         assertEquals(0, result.getCorrectCount());
     }
 
@@ -858,14 +818,12 @@ class QuizServiceImplTest {
     void submitQuiz_lessonIdNull_lessonTitleDefault() {
         Exercise exNoLesson = Exercise.builder().exerciseId(4L).lessonId(null).totalQuestions(1).passingScore(60).status("PUBLISHED").build();
         ExerciseQuestion eq = new ExerciseQuestion(4L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ").isCorrect(true).build();
+        Question q = Question.builder().id(10L).content("Q1").options("[{\"key\":\"A\",\"text\":\"Đ\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(4L)).thenReturn(Optional.of(exNoLesson));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(4L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(opt));
         when(exerciseResultRepository.countByExerciseIdAndUserId(4L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(87L); return r; });
 
@@ -883,7 +841,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(5L)).thenReturn(Collections.emptyList());
         when(questionRepository.findByIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(Collections.emptyList())).thenReturn(Collections.emptyList());
         when(exerciseResultRepository.countByExerciseIdAndUserId(5L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(88L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
@@ -899,14 +856,12 @@ class QuizServiceImplTest {
     void submitQuiz_passingScoreNull_defaultsTo60() {
         Exercise exNullScore = Exercise.builder().exerciseId(6L).lessonId(100L).totalQuestions(1).passingScore(null).status("PUBLISHED").build();
         ExerciseQuestion eq = new ExerciseQuestion(6L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đ").isCorrect(true).build();
+        Question q = Question.builder().id(10L).content("Q1").options("[{\"key\":\"A\",\"text\":\"Đ\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(6L)).thenReturn(Optional.of(exNullScore));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(6L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(opt));
         when(exerciseResultRepository.countByExerciseIdAndUserId(6L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(89L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
@@ -949,7 +904,6 @@ class QuizServiceImplTest {
         when(exerciseResultDetailRepository.findByExerciseResultId(77L)).thenReturn(Collections.emptyList());
         when(questionRepository.findByIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(Collections.emptyList())).thenReturn(Collections.emptyList());
 
         QuizResultDto result = quizService.getResult(77L);
 
@@ -971,7 +925,6 @@ class QuizServiceImplTest {
         when(exerciseResultDetailRepository.findByExerciseResultId(77L)).thenReturn(Collections.emptyList());
         when(questionRepository.findByIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(Collections.emptyList())).thenReturn(Collections.emptyList());
 
         QuizResultDto result = quizService.getResult(77L);
 
@@ -998,7 +951,6 @@ class QuizServiceImplTest {
         when(exerciseResultDetailRepository.findByExerciseResultId(77L)).thenReturn(List.of(d1, d2, d3));
         when(questionRepository.findByIdIn(List.of(10L, 11L, 12L))).thenReturn(List.of(q1, q2, q3));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
 
         QuizResultDto result = quizService.getResult(77L);
 
@@ -1020,7 +972,6 @@ class QuizServiceImplTest {
         when(exerciseResultDetailRepository.findByExerciseResultId(78L)).thenReturn(Collections.emptyList());
         when(questionRepository.findByIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(Collections.emptyList())).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(Collections.emptyList())).thenReturn(Collections.emptyList());
 
         QuizResultDto result = quizService.getResult(78L);
 
@@ -1039,7 +990,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(70L)).thenReturn(Collections.emptyList());
         when(questionRepository.save(any())).thenAnswer(inv -> { Question q = inv.getArgument(0); q.setId(99L); assertEquals("N4", q.getJlptLevel()); return q; });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -1071,7 +1021,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(80L)).thenReturn(Collections.emptyList());
         when(questionRepository.save(any())).thenAnswer(inv -> { Question q = inv.getArgument(0); q.setId(99L); return q; });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         quizService.seedQuizQuestionsForLesson(400L);
@@ -1081,14 +1030,20 @@ class QuizServiceImplTest {
     }
 
     @Test
-    @DisplayName("seed - lưu 5 question + 5 questionBank + 20 options + 5 exerciseQuestion")
+    @DisplayName("seed - lưu 5 question với JSON options thật + 5 questionBank + 5 exerciseQuestion (không ghi question_options)")
     void seed_savesQuestionBankAndOptionsForEachSeed() {
         when(lessonRepository.findById(100L)).thenReturn(Optional.empty());
         when(exerciseRepository.findByLessonId(100L)).thenReturn(Optional.of(exercise));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(Collections.emptyList());
-        when(questionRepository.save(any())).thenAnswer(inv -> { Question q = inv.getArgument(0); q.setId(99L); return q; });
+        when(questionRepository.save(any())).thenAnswer(inv -> {
+            Question q = inv.getArgument(0);
+            assertNotNull(q.getOptions());
+            assertFalse(q.getOptions().contains("\"text\":\"\""));
+            assertNotNull(q.getAnswerKey());
+            q.setId(99L);
+            return q;
+        });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -1096,7 +1051,6 @@ class QuizServiceImplTest {
 
         verify(questionRepository, times(5)).save(any());
         verify(questionBankRepository, times(5)).save(any());
-        verify(questionOptionRepository, times(20)).save(any()); // 5 questions * 4 options each
         verify(exerciseQuestionRepository, times(5)).save(any());
     }
 
@@ -1108,7 +1062,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(Collections.emptyList());
         when(questionRepository.save(any())).thenAnswer(inv -> { Question q = inv.getArgument(0); q.setId(99L); return q; });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseRepository.save(any())).thenAnswer(inv -> {
             Exercise e = inv.getArgument(0);
@@ -1128,14 +1081,13 @@ class QuizServiceImplTest {
     void submitQuiz_nullUserId_savedWithNullUserId() {
         Exercise ex1 = Exercise.builder().exerciseId(1L).lessonId(100L).totalQuestions(1).passingScore(60).status("PUBLISHED").build();
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        com.jlpp.modules.quiz.entity.Question q = com.jlpp.modules.quiz.entity.Question.builder().id(10L).content("Q1").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đáp án đúng").isCorrect(true).build();
+        com.jlpp.modules.quiz.entity.Question q = com.jlpp.modules.quiz.entity.Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Đáp án đúng\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(ex1));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(opt));
         when(exerciseResultRepository.countByExerciseIdAndUserId(1L, null)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> {
             ExerciseResult r = inv.getArgument(0);
@@ -1158,19 +1110,17 @@ class QuizServiceImplTest {
         ExerciseQuestion eq2 = new ExerciseQuestion(2L, 11L, 2);
         ExerciseQuestion eq3 = new ExerciseQuestion(2L, 12L, 3);
 
-        com.jlpp.modules.quiz.entity.Question q1 = com.jlpp.modules.quiz.entity.Question.builder().id(10L).content("Q1").build();
-        com.jlpp.modules.quiz.entity.Question q2 = com.jlpp.modules.quiz.entity.Question.builder().id(11L).content("Q2").build();
-        com.jlpp.modules.quiz.entity.Question q3 = com.jlpp.modules.quiz.entity.Question.builder().id(12L).content("Q3").build();
-
-        QuestionOption opt1 = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Yes").isCorrect(true).build();
-        QuestionOption opt2 = QuestionOption.builder().id(51L).questionId(11L).label("B").optionText("No").isCorrect(true).build();
-        QuestionOption opt3 = QuestionOption.builder().id(52L).questionId(12L).label("C").optionText("Maybe").isCorrect(true).build();
+        com.jlpp.modules.quiz.entity.Question q1 = com.jlpp.modules.quiz.entity.Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Yes\"}]").answerKey("[\"A\"]").build();
+        com.jlpp.modules.quiz.entity.Question q2 = com.jlpp.modules.quiz.entity.Question.builder().id(11L).content("Q2")
+                .options("[{\"key\":\"B\",\"text\":\"No\"}]").answerKey("[\"B\"]").build();
+        com.jlpp.modules.quiz.entity.Question q3 = com.jlpp.modules.quiz.entity.Question.builder().id(12L).content("Q3")
+                .options("[{\"key\":\"C\",\"text\":\"Maybe\"}]").answerKey("[\"C\"]").build();
 
         when(exerciseRepository.findById(2L)).thenReturn(Optional.of(ex));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(2L)).thenReturn(List.of(eq1, eq2, eq3));
         when(questionRepository.findByIdIn(List.of(10L, 11L, 12L))).thenReturn(List.of(q1, q2, q3));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L, 11L, 12L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L, 11L, 12L))).thenReturn(List.of(opt1, opt2, opt3));
         when(exerciseResultRepository.countByExerciseIdAndUserId(2L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> { ExerciseResult r = inv.getArgument(0); r.setExerciseResultId(91L); return r; });
         when(lessonRepository.findById(100L)).thenReturn(Optional.of(lesson(100L, "Test")));
@@ -1192,7 +1142,6 @@ class QuizServiceImplTest {
         when(exerciseResultDetailRepository.findByExerciseResultId(50L)).thenReturn(Collections.emptyList());
         when(questionRepository.findByIdIn(any())).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(any())).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(any())).thenReturn(Collections.emptyList());
         when(lessonRepository.findById(100L)).thenReturn(Optional.of(lesson(100L, "Hiragana")));
 
         QuizResultDto result = quizService.getResult(50L);
@@ -1212,7 +1161,6 @@ class QuizServiceImplTest {
         when(exerciseResultDetailRepository.findByExerciseResultId(51L)).thenReturn(Collections.emptyList());
         when(questionRepository.findByIdIn(any())).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(any())).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(any())).thenReturn(Collections.emptyList());
         when(lessonRepository.findById(100L)).thenReturn(Optional.of(lesson(100L, "Hiragana")));
 
         QuizResultDto result = quizService.getResult(51L);
@@ -1229,7 +1177,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(20L))).thenReturn(Collections.emptyList());
         when(questionBankRepository.findByQuestionIdIn(List.of(20L))).thenReturn(List.of(qb));
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(20L))).thenReturn(Collections.emptyList());
 
         List<QuizQuestionDto> dtos = quizService.getQuestionsForExercise(1L);
 
@@ -1251,7 +1198,6 @@ class QuizServiceImplTest {
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(99L)).thenReturn(Collections.emptyList());
         when(questionRepository.save(any())).thenAnswer(inv -> { com.jlpp.modules.quiz.entity.Question q = inv.getArgument(0); q.setId(50L); return q; });
         when(questionBankRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(questionOptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(exerciseQuestionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Exercise result = quizService.getOrCreateExerciseForLesson(200L);
@@ -1265,14 +1211,13 @@ class QuizServiceImplTest {
     private void stubSingleQuestionSubmit() {
         Exercise ex1 = Exercise.builder().exerciseId(1L).lessonId(100L).totalQuestions(1).passingScore(60).status("PUBLISHED").build();
         ExerciseQuestion eq = new ExerciseQuestion(1L, 10L, 1);
-        Question q = Question.builder().id(10L).content("Q1").build();
-        QuestionOption opt = QuestionOption.builder().id(50L).questionId(10L).label("A").optionText("Đáp án đúng").isCorrect(true).build();
+        Question q = Question.builder().id(10L).content("Q1")
+                .options("[{\"key\":\"A\",\"text\":\"Đáp án đúng\"}]").answerKey("[\"A\"]").build();
 
         when(exerciseRepository.findById(1L)).thenReturn(Optional.of(ex1));
         when(exerciseQuestionRepository.findByExerciseIdOrderByQuestionOrderAsc(1L)).thenReturn(List.of(eq));
         when(questionRepository.findByIdIn(List.of(10L))).thenReturn(List.of(q));
         when(questionBankRepository.findByQuestionIdIn(List.of(10L))).thenReturn(Collections.emptyList());
-        when(questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(List.of(10L))).thenReturn(List.of(opt));
         when(exerciseResultRepository.countByExerciseIdAndUserId(1L, 5L)).thenReturn(0L);
         when(exerciseResultRepository.save(any())).thenAnswer(inv -> {
             ExerciseResult r = inv.getArgument(0);

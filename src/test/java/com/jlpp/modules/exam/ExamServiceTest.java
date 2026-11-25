@@ -9,6 +9,11 @@ import com.jlpp.modules.exam.service.AssessmentScoringService;
 import com.jlpp.modules.exam.service.impl.AssessmentScoringServiceImpl;
 import com.jlpp.modules.exam.service.impl.ExamServiceImpl;
 import com.jlpp.modules.exam.writer.LearnerExamResultWriter;
+import com.jlpp.modules.course.entity.Course;
+import com.jlpp.modules.course.entity.Lesson;
+import com.jlpp.modules.course.repository.CourseRegistrationRepository;
+import com.jlpp.modules.course.repository.LessonRepository;
+import com.jlpp.modules.learningpath.service.LessonProgressService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +44,15 @@ public class ExamServiceTest {
 
     @Mock
     private LearnerExamResultReader resultReader;
+
+    @Mock
+    private CourseRegistrationRepository courseRegistrationRepository;
+
+    @Mock
+    private LessonRepository lessonRepository;
+
+    @Mock
+    private LessonProgressService lessonProgressService;
 
     @Spy
     private AssessmentScoringService scoringService = new AssessmentScoringServiceImpl();
@@ -1190,6 +1204,126 @@ public class ExamServiceTest {
 
         assertFalse(result.getPassed());
         assertTrue(result.getStatusNotice().contains("chưa đạt"));
+    }
+
+    // ── Prerequisites Validation Tests ──
+
+    private Lesson createLesson(Long id, Course course, String title, int orderIndex, String type, Long examId) {
+        Lesson l = Lesson.builder()
+                .course(course)
+                .title(title)
+                .orderIndex(orderIndex)
+                .lessonType(type)
+                .examId(examId)
+                .build();
+        l.setId(id);
+        return l;
+    }
+
+    @Test
+    @DisplayName("checkExamPrerequisites - Non-course exam (Mock/Placement) is unlocked freely")
+    void testCheckExamPrerequisites_FreeMockExam_UnlockedWithoutLessons() {
+        Exam mockExam = new Exam(801L, "JLPT N5 Mock", "JLPT_MOCK", "N5", 50, 20, 50, "ACTIVE", "Mock exam", null);
+        when(examRepository.findById(801L)).thenReturn(Optional.of(mockExam));
+
+        ExamPrerequisiteResult result = examService.checkExamPrerequisites(801L, 1L);
+
+        assertTrue(result.isUnlocked());
+        assertTrue(result.getMessage().contains("tự do"));
+    }
+
+    @Test
+    @DisplayName("checkExamPrerequisites - Course Exam without login is locked")
+    void testCheckExamPrerequisites_CourseExam_NotLoggedIn_Locked() {
+        Exam courseExam = new Exam(802L, "Midterm N5", "MIDTERM", "N5", 40, 20, 50, "ACTIVE", "Course midterm", 10L);
+        when(examRepository.findById(802L)).thenReturn(Optional.of(courseExam));
+
+        ExamPrerequisiteResult result = examService.checkExamPrerequisites(802L, null);
+
+        assertFalse(result.isUnlocked());
+        assertTrue(result.getMessage().contains("đăng nhập"));
+    }
+
+    @Test
+    @DisplayName("checkExamPrerequisites - Course Exam when user not enrolled is locked")
+    void testCheckExamPrerequisites_CourseExam_NotEnrolled_Locked() {
+        Exam courseExam = new Exam(803L, "Midterm N5", "MIDTERM", "N5", 40, 20, 50, "ACTIVE", "Course midterm", 10L);
+        when(examRepository.findById(803L)).thenReturn(Optional.of(courseExam));
+        when(courseRegistrationRepository.existsByUserIdAndCourseId(1L, 10L)).thenReturn(false);
+
+        ExamPrerequisiteResult result = examService.checkExamPrerequisites(803L, 1L);
+
+        assertFalse(result.isUnlocked());
+        assertTrue(result.getMessage().contains("đăng ký khóa học"));
+    }
+
+    @Test
+    @DisplayName("checkExamPrerequisites - Midterm Exam with preceding lessons uncompleted is locked")
+    void testCheckExamPrerequisites_CourseMidterm_PrecedingLessonsNotCompleted_Locked() {
+        Exam courseExam = new Exam(804L, "Midterm N5", "MIDTERM", "N5", 40, 20, 50, "ACTIVE", "Course midterm", 10L);
+        when(examRepository.findById(804L)).thenReturn(Optional.of(courseExam));
+        when(courseRegistrationRepository.existsByUserIdAndCourseId(1L, 10L)).thenReturn(true);
+
+        Course course = Course.builder().id(10L).title("N5 Master").build();
+        Lesson l1 = createLesson(101L, course, "Bài 1", 1, "VIDEO", null);
+        Lesson l2 = createLesson(102L, course, "Bài 2", 2, "READING", null);
+        Lesson l3 = createLesson(103L, course, "Bài 3", 3, "PRACTICE", null);
+        Lesson examLesson = createLesson(104L, course, "Bài thi giữa kì", 4, "EXAM", 804L);
+
+        when(lessonRepository.findByCourseIdOrderByOrderIndexAsc(10L)).thenReturn(List.of(l1, l2, l3, examLesson));
+        when(lessonProgressService.getCompletedLessonIds(1L, 10L)).thenReturn(Set.of(101L)); // only lesson 1 completed
+
+        ExamPrerequisiteResult result = examService.checkExamPrerequisites(804L, 1L);
+
+        assertFalse(result.isUnlocked());
+        assertEquals(3, result.getTotalRequiredLessons());
+        assertEquals(1, result.getCompletedRequiredLessons());
+        assertTrue(result.getMessage().contains("Cần hoàn thành 2 bài học trước đó"));
+    }
+
+    @Test
+    @DisplayName("checkExamPrerequisites - Midterm Exam with all preceding lessons completed is unlocked")
+    void testCheckExamPrerequisites_CourseMidterm_AllPrecedingCompleted_Unlocked() {
+        Exam courseExam = new Exam(805L, "Midterm N5", "MIDTERM", "N5", 40, 20, 50, "ACTIVE", "Course midterm", 10L);
+        when(examRepository.findById(805L)).thenReturn(Optional.of(courseExam));
+        when(courseRegistrationRepository.existsByUserIdAndCourseId(1L, 10L)).thenReturn(true);
+
+        Course course = Course.builder().id(10L).title("N5 Master").build();
+        Lesson l1 = createLesson(101L, course, "Bài 1", 1, "VIDEO", null);
+        Lesson l2 = createLesson(102L, course, "Bài 2", 2, "READING", null);
+        Lesson examLesson = createLesson(103L, course, "Bài thi giữa kì", 3, "EXAM", 805L);
+
+        when(lessonRepository.findByCourseIdOrderByOrderIndexAsc(10L)).thenReturn(List.of(l1, l2, examLesson));
+        when(lessonProgressService.getCompletedLessonIds(1L, 10L)).thenReturn(Set.of(101L, 102L)); // both completed
+
+        ExamPrerequisiteResult result = examService.checkExamPrerequisites(805L, 1L);
+
+        assertTrue(result.isUnlocked());
+        assertEquals(2, result.getTotalRequiredLessons());
+        assertEquals(2, result.getCompletedRequiredLessons());
+        assertTrue(result.getMessage().contains("Đã hoàn thành đủ"));
+    }
+
+    @Test
+    @DisplayName("checkExamPrerequisites - Final Exam requires all lessons preceding it in the course")
+    void testCheckExamPrerequisites_CourseFinal_RequiresAllLessons_Unlocked() {
+        Exam courseFinal = new Exam(806L, "Final N5", "FINAL", "N5", 60, 30, 60, "ACTIVE", "Course final", 10L);
+        when(examRepository.findById(806L)).thenReturn(Optional.of(courseFinal));
+        when(courseRegistrationRepository.existsByUserIdAndCourseId(1L, 10L)).thenReturn(true);
+
+        Course course = Course.builder().id(10L).title("N5 Master").build();
+        Lesson l1 = createLesson(101L, course, "Bài 1", 1, "VIDEO", null);
+        Lesson l2 = createLesson(102L, course, "Bài 2", 2, "READING", null);
+        Lesson finalLesson = createLesson(103L, course, "Bài thi cuối kì", 3, "EXAM", 806L);
+
+        when(lessonRepository.findByCourseIdOrderByOrderIndexAsc(10L)).thenReturn(List.of(l1, l2, finalLesson));
+        when(lessonProgressService.getCompletedLessonIds(1L, 10L)).thenReturn(Set.of(101L, 102L));
+
+        ExamPrerequisiteResult result = examService.checkExamPrerequisites(806L, 1L);
+
+        assertTrue(result.isUnlocked());
+        assertEquals(2, result.getTotalRequiredLessons());
+        assertEquals(2, result.getCompletedRequiredLessons());
     }
 }
 

@@ -408,9 +408,9 @@
             <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
                 <div>
                     <h5 class="fw-bold mb-1 text-dark d-flex align-items-center">
-                        <i class="bi bi-book-half text-success me-2"></i> Xem lại bài thi &amp; Lời giải chi tiết
+                        <i class="bi bi-book-half text-success me-2"></i> Xem lại bài thi &amp; Đáp án đối chiếu
                     </h5>
-                    <p class="text-muted small mb-0">Đối chiếu từng câu hỏi với đáp án bạn đã chọn và lời giải chính xác từ hệ thống.</p>
+                    <p class="text-muted small mb-0">Đối chiếu từng câu hỏi với đáp án bạn đã chọn và đáp án chính xác từ hệ thống.</p>
                 </div>
                 <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 shadow-none" onclick="window.print()">
                     <i class="bi bi-printer me-1"></i> In kết quả
@@ -512,16 +512,7 @@
                         </div>
                     </div>
 
-                    <!-- Detailed Explanation Box (Image 3 Style) -->
-                    <div class="p-3 rounded-3" style="background-color: #ECFDF5; border: 1px solid #A7F3D0;">
-                        <div class="d-flex align-items-center gap-1 text-success fw-bold small mb-1">
-                            <i class="bi bi-check-circle-fill"></i> Giải thích chi tiết:
-                        </div>
-                        <p class="mb-0 text-dark small" style="line-height: 1.6;" 
-                           th:text="${q.explanation != null and !q.explanation.isBlank() ? q.explanation : 'Cụm từ hoặc kiến thức ngữ pháp này được sử dụng theo cấu trúc chuẩn trong tiếng Nhật.'}">
-                            Cụm từ 準備しておきました mang ý nghĩa chuẩn bị sẵn tài liệu cho cuộc họp.
-                        </p>
-                    </div>
+
                 </div>
             </div>
 

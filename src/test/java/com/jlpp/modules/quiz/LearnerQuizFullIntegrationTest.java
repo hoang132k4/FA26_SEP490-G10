@@ -59,9 +59,6 @@ public class LearnerQuizFullIntegrationTest {
     private QuizQuestionRepository questionRepository;
 
     @Autowired
-    private QuestionOptionRepository questionOptionRepository;
-
-    @Autowired
     private ExerciseQuestionRepository exerciseQuestionRepository;
 
     @Autowired
@@ -128,19 +125,16 @@ public class LearnerQuizFullIntegrationTest {
                 .status("PUBLISHED")
                 .build());
 
-        // Question 1: Đâu là nghĩa của từ '食べる'?
+        // Question 1: Đâu là nghĩa của từ '食べる'? (canonical questions.options + answer_key)
         q1 = questionRepository.saveAndFlush(Question.builder()
                 .content("Đâu là nghĩa của từ '食べる'?")
                 .explanation("'食べる' nghĩa là ăn cơm/ăn uống.")
                 .category("VOCABULARY")
                 .jlptLevel("N5")
                 .difficulty("EASY")
+                .options("[{\"key\":\"A\",\"text\":\"Ăn\"},{\"key\":\"B\",\"text\":\"Uống\"}]")
+                .answerKey("[\"A\"]")
                 .build());
-
-        questionOptionRepository.saveAndFlush(QuestionOption.builder()
-                .questionId(q1.getId()).label("A").optionText("Ăn").isCorrect(true).build());
-        questionOptionRepository.saveAndFlush(QuestionOption.builder()
-                .questionId(q1.getId()).label("B").optionText("Uống").isCorrect(false).build());
 
         // Question 2: Chọn trợ từ thích hợp: 本____読みます。
         q2 = questionRepository.saveAndFlush(Question.builder()
@@ -149,12 +143,9 @@ public class LearnerQuizFullIntegrationTest {
                 .category("GRAMMAR")
                 .jlptLevel("N5")
                 .difficulty("EASY")
+                .options("[{\"key\":\"A\",\"text\":\"に\"},{\"key\":\"B\",\"text\":\"を\"}]")
+                .answerKey("[\"B\"]")
                 .build());
-
-        questionOptionRepository.saveAndFlush(QuestionOption.builder()
-                .questionId(q2.getId()).label("A").optionText("に").isCorrect(false).build());
-        questionOptionRepository.saveAndFlush(QuestionOption.builder()
-                .questionId(q2.getId()).label("B").optionText("を").isCorrect(true).build());
 
         // Link questions to Exercise
         exerciseQuestionRepository.saveAndFlush(ExerciseQuestion.builder()

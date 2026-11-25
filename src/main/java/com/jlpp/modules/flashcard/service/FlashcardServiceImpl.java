@@ -25,16 +25,6 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Flashcard> getFlashcards(String keyword, String level, Long lessonId, String reviewStatus) {
-        String cleanKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
-        String cleanLevel = (level != null && !level.trim().isEmpty() && !level.equalsIgnoreCase("ALL")) ? level.trim() : null;
-        String cleanStatus = (reviewStatus != null && !reviewStatus.trim().isEmpty() && !reviewStatus.equalsIgnoreCase("ALL")) ? reviewStatus.trim() : null;
-
-        return flashcardRepository.searchFlashcards(cleanKeyword, cleanLevel, lessonId, cleanStatus);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Flashcard getFlashcardById(Long id) {
         return flashcardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thẻ Flashcard với ID: " + id));
@@ -117,21 +107,13 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Flashcard> getPracticeFlashcards(String level, Long lessonId, Integer limit) {
-        return getPracticeFlashcards(level, lessonId, null, limit);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<Flashcard> getPracticeFlashcards(String level, Long lessonId, String deckName, Integer limit) {
         List<Flashcard> list;
         if (deckName != null && !deckName.trim().isEmpty()) {
-            list = flashcardRepository.findByCustomDeckName(deckName.trim());
+            String trimmed = deckName.trim();
+            list = flashcardRepository.findByCustomDeckName(trimmed);
             if (list.isEmpty()) {
-                // In case the deck name was grouped differently or matches case-insensitively
-                list = flashcardRepository.findAll().stream()
-                        .filter(c -> c.getCustomDeckName() != null && c.getCustomDeckName().equalsIgnoreCase(deckName.trim()))
-                        .collect(Collectors.toList());
+                list = flashcardRepository.findByCustomDeckNameIgnoreCase(trimmed);
             }
         } else {
             String cleanLevel = (level != null && !level.trim().isEmpty() && !level.equalsIgnoreCase("ALL")) ? level.trim() : null;
@@ -181,22 +163,31 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Transactional(readOnly = true)
     public Map<String, Long> getStatistics() {
         Map<String, Long> stats = new HashMap<>();
-        long total = flashcardRepository.count();
-        long newCount = flashcardRepository.countByReviewStatus("NEW");
-        long reviewingCount = flashcardRepository.countByReviewStatus("REVIEWING");
-        long masteredCount = flashcardRepository.countByReviewStatus("MASTERED");
+        long newCount = 0;
+        long reviewingCount = 0;
+        long masteredCount = 0;
+        long total = 0;
+
+        List<Object[]> grouped = flashcardRepository.countGroupedByReviewStatus();
+        for (Object[] row : grouped) {
+            String st = (String) row[0];
+            Long cnt = (Long) row[1];
+            if (cnt == null) cnt = 0L;
+            total += cnt;
+            if ("NEW".equalsIgnoreCase(st)) {
+                newCount += cnt;
+            } else if ("REVIEWING".equalsIgnoreCase(st)) {
+                reviewingCount += cnt;
+            } else if ("MASTERED".equalsIgnoreCase(st)) {
+                masteredCount += cnt;
+            }
+        }
 
         stats.put("total", total);
         stats.put("new", newCount);
         stats.put("reviewing", reviewingCount);
         stats.put("mastered", masteredCount);
         return stats;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<FlashcardDeckDto> getFlashcardDecks(String keyword, String level) {
-        return getSystemFlashcardDecks(keyword, level);
     }
 
     @Override
@@ -219,6 +210,15 @@ public class FlashcardServiceImpl implements FlashcardService {
                 .filter(c -> currentUserId == null || c.getCreatorId() == null || c.getCreatorId().equals(currentUserId))
                 .collect(Collectors.toList());
 
+        // Batch fetch all lessons for user cards at once instead of N queries
+        Set<Long> userLessonIds = userCards.stream()
+                .map(Flashcard::getLessonId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Lesson> userLessonMap = userLessonIds.isEmpty() ? Collections.emptyMap() :
+                lessonRepository.findAllById(userLessonIds).stream()
+                        .collect(Collectors.toMap(Lesson::getId, l -> l, (a, b) -> a));
+
         // Group user cards by customDeckName first, fallback to lesson or level
         Map<String, List<Flashcard>> byDeckName = new LinkedHashMap<>();
         for (Flashcard c : userCards) {
@@ -226,7 +226,7 @@ public class FlashcardServiceImpl implements FlashcardService {
             if (c.getCustomDeckName() != null && !c.getCustomDeckName().isBlank()) {
                 deckName = c.getCustomDeckName().trim();
             } else if (c.getLessonId() != null) {
-                Lesson l = lessonRepository.findById(c.getLessonId()).orElse(null);
+                Lesson l = userLessonMap.get(c.getLessonId());
                 deckName = (l != null) ? "Gói bài học: " + l.getTitle() : "Gói bài học #" + c.getLessonId();
             } else {
                 deckName = "Sổ tay từ vựng tự do " + (c.getJlptLevel() != null ? c.getJlptLevel() : "N4");
@@ -240,11 +240,7 @@ public class FlashcardServiceImpl implements FlashcardService {
             String deckTitle = entry.getKey();
             List<Flashcard> cards = entry.getValue();
 
-            int newC = (int) cards.stream().filter(c -> "NEW".equalsIgnoreCase(c.getReviewStatus())).count();
-            int revC = (int) cards.stream().filter(c -> "REVIEWING".equalsIgnoreCase(c.getReviewStatus())).count();
-            int masC = (int) cards.stream().filter(c -> "MASTERED".equalsIgnoreCase(c.getReviewStatus())).count();
-            int total = cards.size();
-            int rate = total > 0 ? (int) Math.round((masC * 100.0) / total) : 0;
+            DeckStatusCounts counts = countDeckStatuses(cards);
             String lvl = (!cards.isEmpty() && cards.get(0).getJlptLevel() != null) ? cards.get(0).getJlptLevel() : "N4";
             Long lId = (!cards.isEmpty()) ? cards.get(0).getLessonId() : null;
 
@@ -258,11 +254,11 @@ public class FlashcardServiceImpl implements FlashcardService {
                     .topicName("Không gian học viên")
                     .iconClass("bi-journal-bookmark-fill")
                     .cards(cards)
-                    .totalCards(total)
-                    .newCount(newC)
-                    .reviewingCount(revC)
-                    .masteredCount(masC)
-                    .masteryRate(rate)
+                    .totalCards(counts.total())
+                    .newCount(counts.newCount())
+                    .reviewingCount(counts.reviewingCount())
+                    .masteredCount(counts.masteredCount())
+                    .masteryRate(counts.masteryRate())
                     .deckType("USER")
                     .custom(true)
                     .creatorId(currentUserId)
@@ -287,10 +283,16 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         List<FlashcardDeckDto> decks = new ArrayList<>();
 
+        // Batch fetch all lessons for system decks at once instead of N queries
+        Set<Long> systemLessonIds = byLesson.keySet();
+        Map<Long, Lesson> systemLessonMap = systemLessonIds.isEmpty() ? Collections.emptyMap() :
+                lessonRepository.findAllById(systemLessonIds).stream()
+                        .collect(Collectors.toMap(Lesson::getId, l -> l, (a, b) -> a));
+
         for (Map.Entry<Long, List<Flashcard>> entry : byLesson.entrySet()) {
             Long lessonId = entry.getKey();
             List<Flashcard> cards = entry.getValue();
-            Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
+            Lesson lesson = systemLessonMap.get(lessonId);
 
             String jlpt = (lesson != null && lesson.getCourse() != null && lesson.getCourse().getLevel() != null)
                     ? lesson.getCourse().getLevel()
@@ -304,11 +306,7 @@ public class FlashcardServiceImpl implements FlashcardService {
                     ? lesson.getDescription()
                     : "Tổng hợp các thẻ ghi nhớ từ vựng, Hán tự và ví dụ mẫu chuẩn giáo trình JLPT.";
 
-            int newC = (int) cards.stream().filter(c -> "NEW".equalsIgnoreCase(c.getReviewStatus())).count();
-            int revC = (int) cards.stream().filter(c -> "REVIEWING".equalsIgnoreCase(c.getReviewStatus())).count();
-            int masC = (int) cards.stream().filter(c -> "MASTERED".equalsIgnoreCase(c.getReviewStatus())).count();
-            int total = cards.size();
-            int rate = total > 0 ? (int) Math.round((masC * 100.0) / total) : 0;
+            DeckStatusCounts counts = countDeckStatuses(cards);
 
             String icon = switch (jlpt.toUpperCase()) {
                 case "N5" -> "bi-flower1";
@@ -329,11 +327,11 @@ public class FlashcardServiceImpl implements FlashcardService {
                     .topicName(lesson != null && lesson.getSectionName() != null ? lesson.getSectionName() : "Chủ đề bài học")
                     .iconClass(icon)
                     .cards(cards)
-                    .totalCards(total)
-                    .newCount(newC)
-                    .reviewingCount(revC)
-                    .masteredCount(masC)
-                    .masteryRate(rate)
+                    .totalCards(counts.total())
+                    .newCount(counts.newCount())
+                    .reviewingCount(counts.reviewingCount())
+                    .masteredCount(counts.masteredCount())
+                    .masteryRate(counts.masteryRate())
                     .deckType(deckType)
                     .custom(custom)
                     .build();
@@ -344,11 +342,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         for (Map.Entry<String, List<Flashcard>> entry : withoutLesson.entrySet()) {
             String lvl = entry.getKey();
             List<Flashcard> cards = entry.getValue();
-            int newC = (int) cards.stream().filter(c -> "NEW".equalsIgnoreCase(c.getReviewStatus())).count();
-            int revC = (int) cards.stream().filter(c -> "REVIEWING".equalsIgnoreCase(c.getReviewStatus())).count();
-            int masC = (int) cards.stream().filter(c -> "MASTERED".equalsIgnoreCase(c.getReviewStatus())).count();
-            int total = cards.size();
-            int rate = total > 0 ? (int) Math.round((masC * 100.0) / total) : 0;
+            DeckStatusCounts counts = countDeckStatuses(cards);
 
             FlashcardDeckDto deck = FlashcardDeckDto.builder()
                     .deckId("general-" + lvl.toLowerCase())
@@ -360,11 +354,11 @@ public class FlashcardServiceImpl implements FlashcardService {
                     .topicName("Từ vựng mở rộng")
                     .iconClass("bi-collection-fill")
                     .cards(cards)
-                    .totalCards(total)
-                    .newCount(newC)
-                    .reviewingCount(revC)
-                    .masteredCount(masC)
-                    .masteryRate(rate)
+                    .totalCards(counts.total())
+                    .newCount(counts.newCount())
+                    .reviewingCount(counts.reviewingCount())
+                    .masteredCount(counts.masteredCount())
+                    .masteryRate(counts.masteryRate())
                     .deckType(deckType)
                     .custom(custom)
                     .build();
@@ -407,14 +401,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Override
     @Transactional
     public int updateDeckInfo(String oldDeckName, String newDeckName, String newJlptLevel, Long creatorId) {
-        List<Flashcard> allCards = flashcardRepository.findAll();
-        List<Flashcard> deckCards = allCards.stream()
-                .filter(c -> {
-                    boolean matchCreator = (creatorId == null) || creatorId.equals(c.getCreatorId());
-                    boolean matchDeck = oldDeckName != null && oldDeckName.equals(c.getCustomDeckName());
-                    return matchCreator && matchDeck;
-                })
-                .collect(Collectors.toList());
+        List<Flashcard> deckCards = findCustomDeckCards(oldDeckName, creatorId, false, false);
 
         for (Flashcard c : deckCards) {
             if (newDeckName != null && !newDeckName.isBlank()) {
@@ -431,16 +418,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Override
     @Transactional(readOnly = true)
     public List<Flashcard> getDeckCards(String deckName, Long creatorId) {
-        if (deckName == null || deckName.isBlank()) {
-            return Collections.emptyList();
-        }
-        List<Flashcard> allCards = flashcardRepository.findAll();
-        return allCards.stream()
-                .filter(c -> {
-                    boolean matchCreator = (creatorId == null) || (c.getCreatorId() == null) || creatorId.equals(c.getCreatorId());
-                    boolean matchDeck = deckName.equalsIgnoreCase(c.getCustomDeckName());
-                    return matchCreator && matchDeck;
-                })
+        return findCustomDeckCards(deckName, creatorId, true, true).stream()
                 .sorted(Comparator.comparing(Flashcard::getFlashcardId, Comparator.nullsLast(Comparator.naturalOrder())))
                 .collect(Collectors.toList());
     }
@@ -518,13 +496,7 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         // 3. If deck name changed, update any remaining cards under oldDeckName
         if (oldDeckName != null && !oldDeckName.equalsIgnoreCase(finalDeckName)) {
-            List<Flashcard> remaining = flashcardRepository.findAll().stream()
-                    .filter(c -> {
-                        boolean matchCreator = (creatorId == null) || (c.getCreatorId() == null) || creatorId.equals(c.getCreatorId());
-                        boolean matchDeck = oldDeckName.equalsIgnoreCase(c.getCustomDeckName());
-                        return matchCreator && matchDeck;
-                    })
-                    .collect(Collectors.toList());
+            List<Flashcard> remaining = findCustomDeckCards(oldDeckName, creatorId, true, true);
             for (Flashcard c : remaining) {
                 c.setCustomDeckName(finalDeckName);
                 c.setJlptLevel(finalLevel);
@@ -539,17 +511,46 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Override
     @Transactional
     public int deleteDeck(String deckName, Long creatorId) {
-        if (deckName == null || deckName.isBlank()) return 0;
-        List<Flashcard> allCards = flashcardRepository.findAll();
-        List<Flashcard> deckCards = allCards.stream()
-                .filter(c -> {
-                    boolean matchCreator = (creatorId == null) || (c.getCreatorId() == null) || creatorId.equals(c.getCreatorId());
-                    boolean matchDeck = deckName.equalsIgnoreCase(c.getCustomDeckName());
-                    return matchCreator && matchDeck;
-                })
-                .collect(Collectors.toList());
-
-        flashcardRepository.deleteAll(deckCards);
+        List<Flashcard> deckCards = findCustomDeckCards(deckName, creatorId, true, true);
+        if (!deckCards.isEmpty()) {
+            flashcardRepository.deleteAll(deckCards);
+        }
         return deckCards.size();
+    }
+
+    private List<Flashcard> findCustomDeckCards(
+            String deckName, Long creatorId, boolean allowNullCreator, boolean ignoreCase) {
+        if (deckName == null || deckName.isBlank()) {
+            return Collections.emptyList();
+        }
+        List<Flashcard> matches = ignoreCase
+                ? flashcardRepository.findByCustomDeckNameIgnoreCase(deckName.trim())
+                : flashcardRepository.findByCustomDeckName(deckName.trim());
+        return matches.stream()
+                .filter(c -> creatorId == null
+                        || (allowNullCreator && c.getCreatorId() == null)
+                        || creatorId.equals(c.getCreatorId()))
+                .collect(Collectors.toList());
+    }
+
+    private DeckStatusCounts countDeckStatuses(List<Flashcard> cards) {
+        int newCount = 0;
+        int reviewingCount = 0;
+        int masteredCount = 0;
+        for (Flashcard card : cards) {
+            if ("MASTERED".equalsIgnoreCase(card.getReviewStatus())) {
+                masteredCount++;
+            } else if ("REVIEWING".equalsIgnoreCase(card.getReviewStatus())) {
+                reviewingCount++;
+            } else if ("NEW".equalsIgnoreCase(card.getReviewStatus())) {
+                newCount++;
+            }
+        }
+        int total = cards.size();
+        int masteryRate = total > 0 ? (int) Math.round((masteredCount * 100.0) / total) : 0;
+        return new DeckStatusCounts(newCount, reviewingCount, masteredCount, total, masteryRate);
+    }
+
+    private record DeckStatusCounts(int newCount, int reviewingCount, int masteredCount, int total, int masteryRate) {
     }
 }

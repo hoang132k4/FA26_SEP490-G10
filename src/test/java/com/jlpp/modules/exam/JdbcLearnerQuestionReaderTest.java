@@ -13,6 +13,7 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -287,5 +288,88 @@ public class JdbcLearnerQuestionReaderTest {
         List<QuestionDto> list = questionReader.findQuestionsForEvaluation(8L);
         assertNotNull(list);
         assertTrue(list.isEmpty());
+    }
+
+    @Test
+    @DisplayName("findQuestionsForTaking - đọc options trực tiếp từ questions.options và ẩn correct")
+    void testFindQuestionsForTaking_parsesQuestionsOptionsJsonWithoutLeakingAnswers() throws Exception {
+        ResultSet rs = mockSingleQuestionResultSet(
+                67L,
+                "Từ vựng",
+                "問題？",
+                "[{\"key\":\"A\",\"text\":\"不便\"},{\"key\":\"B\",\"text\":\"便利\"}]",
+                "[\"B\"]"
+        );
+        when(jdbcTemplate.query(anyString(), any(ResultSetExtractor.class), eq(48L))).thenAnswer(inv -> {
+            @SuppressWarnings("unchecked")
+            ResultSetExtractor<List<QuestionDto>> extractor = inv.getArgument(1);
+            return extractor.extractData(rs);
+        });
+
+        List<QuestionDto> result = questionReader.findQuestionsForTaking(48L);
+
+        assertEquals(1, result.size());
+        assertEquals(2, result.get(0).getOptions().size());
+        assertEquals(6701L, result.get(0).getOptions().get(0).getId());
+        assertEquals("不便", result.get(0).getOptions().get(0).getText());
+        assertNull(result.get(0).getOptions().get(0).getCorrect());
+        assertNull(result.get(0).getOptions().get(1).getCorrect());
+    }
+
+    @Test
+    @DisplayName("findQuestionsForEvaluation - answer_key B đánh dấu đúng B; rỗng không mặc định A")
+    void testFindQuestionsForEvaluation_parsesAnswerKeyWithoutDefaultA() throws Exception {
+        ResultSet rsValid = mockSingleQuestionResultSet(
+                68L,
+                "Ngữ pháp",
+                "文法？",
+                "[{\"key\":\"A\",\"text\":\"を\"},{\"key\":\"B\",\"text\":\"に\"}]",
+                "[\"B\"]"
+        );
+        when(jdbcTemplate.query(anyString(), any(ResultSetExtractor.class), eq(48L))).thenAnswer(inv -> {
+            @SuppressWarnings("unchecked")
+            ResultSetExtractor<List<QuestionDto>> extractor = inv.getArgument(1);
+            return extractor.extractData(rsValid);
+        });
+
+        List<QuestionDto> eval = questionReader.findQuestionsForEvaluation(48L);
+        assertFalse(eval.get(0).getOptions().get(0).getCorrect());
+        assertTrue(eval.get(0).getOptions().get(1).getCorrect());
+
+        ResultSet rsNoKey = mockSingleQuestionResultSet(
+                69L,
+                "Ngữ pháp",
+                "文法2？",
+                "[{\"key\":\"A\",\"text\":\"を\"},{\"key\":\"B\",\"text\":\"に\"}]",
+                "[]"
+        );
+        when(jdbcTemplate.query(anyString(), any(ResultSetExtractor.class), eq(49L))).thenAnswer(inv -> {
+            @SuppressWarnings("unchecked")
+            ResultSetExtractor<List<QuestionDto>> extractor = inv.getArgument(1);
+            return extractor.extractData(rsNoKey);
+        });
+
+        List<QuestionDto> noKeyEval = questionReader.findQuestionsForEvaluation(49L);
+        assertFalse(noKeyEval.get(0).getOptions().get(0).getCorrect());
+        assertFalse(noKeyEval.get(0).getOptions().get(1).getCorrect());
+    }
+
+    private ResultSet mockSingleQuestionResultSet(long qId, String category, String content,
+                                                  String optionsJson, String answerKeyJson) throws Exception {
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.next()).thenReturn(true, false);
+        when(rs.getLong("q_id")).thenReturn(qId);
+        when(rs.getString("category")).thenReturn(category);
+        when(rs.getString("audio_url")).thenReturn(null);
+        when(rs.getString("section")).thenReturn("LANGUAGE");
+        when(rs.getString("options_json")).thenReturn(optionsJson);
+        lenient().when(rs.getString("answer_key_json")).thenReturn(answerKeyJson);
+        when(rs.getObject("points")).thenReturn(2);
+        when(rs.getInt("points")).thenReturn(2);
+        when(rs.getString("content")).thenReturn(content);
+        lenient().when(rs.getString("explanation")).thenReturn("Giải thích");
+        when(rs.getObject("order_index")).thenReturn(1);
+        when(rs.getInt("order_index")).thenReturn(1);
+        return rs;
     }
 }

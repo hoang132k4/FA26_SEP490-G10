@@ -1,6 +1,6 @@
 package com.jlpp.modules.manager.flashcards;
 
-import com.jlpp.modules.lesson.repository.LessonRepository;
+import com.jlpp.modules.course.repository.LessonRepository;
 import com.jlpp.modules.manager.flashcards.dto.ManagerFlashcardSetCardForm;
 import com.jlpp.modules.manager.flashcards.dto.ManagerFlashcardSetForm;
 import com.jlpp.modules.manager.flashcards.model.ManagerFlashcard;

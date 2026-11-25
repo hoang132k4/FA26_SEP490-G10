@@ -1,68 +1,45 @@
 package com.jlpp.modules.course.service.impl;
 
-import com.jlpp.modules.course.dto.CourseFilterRequest;
 import com.jlpp.modules.course.entity.Course;
+import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.CourseRepository;
+import com.jlpp.modules.course.repository.LessonRepository;
 import com.jlpp.modules.course.service.CourseService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
+    private final LessonRepository lessonRepository;
 
-    @Override
-    public Page<Course> getCourses(CourseFilterRequest filter) {
-        if (filter == null) {
-            filter = new CourseFilterRequest();
-        }
-
-        Sort sort = switch (filter.getSortBy() != null ? filter.getSortBy() : "popular") {
-            case "price_asc" -> Sort.by(Sort.Direction.ASC, "price");
-            case "price_desc" -> Sort.by(Sort.Direction.DESC, "price");
-            case "recently_updated" -> Sort.by(Sort.Direction.DESC, "updatedAt", "createdAt");
-            default -> Sort.by(Sort.Direction.DESC, "enrollmentCount", "createdAt");
-        };
-
-        int pageNum = Math.max(0, filter.getPage());
-        int pageSize = filter.getSize() > 0 ? filter.getSize() : 9;
-        Pageable pageable = PageRequest.of(pageNum, pageSize, sort);
-
-        String level = (filter.getLevel() != null && !filter.getLevel().trim().isEmpty() && !filter.getLevel().equalsIgnoreCase("ALL"))
-                ? filter.getLevel().trim().toUpperCase()
-                : null;
-        String keyword = (filter.getKeyword() != null && !filter.getKeyword().trim().isEmpty())
-                ? filter.getKeyword().trim()
-                : null;
-
-        return courseRepository.searchCourses(keyword, level, pageable);
+    @Autowired
+    public CourseServiceImpl(CourseRepository courseRepository, LessonRepository lessonRepository) {
+        this.courseRepository = courseRepository;
+        this.lessonRepository = lessonRepository;
     }
 
     @Override
+    @Cacheable(value = "courseDetails", key = "#id")
     public Course getCourseById(Long id) {
         return courseRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy khóa học với mã ID: " + id));
     }
 
     @Override
-    public List<Course> getFeaturedCourses() {
-        return courseRepository.findTop4ByFeaturedTrueAndStatus("PUBLISHED");
-    }
-
-    @Override
+    @Cacheable(value = "courses", key = "'other_' + #excludedId + '_' + (#level ?: 'ALL') + '_' + #limit")
     public List<Course> getOtherCourses(Long excludedId, String level, int limit) {
         List<Course> list = courseRepository.findTop3ByLevelAndStatusAndIdNot(level, "PUBLISHED", excludedId);
         if (list.size() < limit) {
@@ -75,5 +52,29 @@ public class CourseServiceImpl implements CourseService {
             }
         }
         return list;
+    }
+
+    @Override
+    @Cacheable(value = "lessons", key = "#courseId")
+    public List<Lesson> getCourseLessons(Long courseId) {
+        if (lessonRepository == null || courseId == null) {
+            return List.of();
+        }
+        return lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+    }
+
+    @Override
+    public Map<String, List<Lesson>> groupLessonsBySection(List<Lesson> lessons) {
+        if (lessons == null || lessons.isEmpty()) {
+            return Map.of();
+        }
+        return lessons.stream()
+                .collect(Collectors.groupingBy(
+                        l -> (l.getSectionName() != null && !l.getSectionName().isBlank())
+                                ? l.getSectionName()
+                                : "Chương 1: Bài học căn bản",
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
     }
 }

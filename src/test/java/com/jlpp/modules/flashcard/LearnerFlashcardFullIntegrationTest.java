@@ -124,9 +124,9 @@ public class LearnerFlashcardFullIntegrationTest {
         mockMvc.perform(get("/flashcards").param("tab", "system"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/flashcard/list"))
-                .andExpect(model().attributeExists("systemDecks", "userDecks", "stats", "flashcards"))
+                .andExpect(model().attributeExists("systemDecks", "userDecks", "stats"))
                 .andExpect(model().attribute("activeTab", is("system")))
-                .andExpect(model().attribute("flashcards", hasItem(hasProperty("vocabulary", is("勉強")))));
+                .andExpect(model().attribute("systemDecks", hasItem(hasProperty("cards", hasItem(hasProperty("vocabulary", is("勉強")))))));
     }
 
     @Test
@@ -149,8 +149,8 @@ public class LearnerFlashcardFullIntegrationTest {
                         .param("level", "N4"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/flashcard/list"))
-                .andExpect(model().attribute("flashcards", hasSize(greaterThanOrEqualTo(1))))
-                .andExpect(model().attribute("flashcards", hasItem(hasProperty("vocabulary", is("勉強")))));
+                .andExpect(model().attribute("systemDecks", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(model().attribute("systemDecks", hasItem(hasProperty("cards", hasItem(hasProperty("vocabulary", is("勉強")))))));
     }
 
     // ==========================================
@@ -182,7 +182,7 @@ public class LearnerFlashcardFullIntegrationTest {
                         .param("mode", "flashcard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/flashcard/practice"))
-                .andExpect(model().attributeExists("cards", "cardsJson", "stats", "totalCards"))
+                .andExpect(model().attributeExists("cards", "cardsJson", "totalCards"))
                 .andExpect(model().attribute("currentMode", is("flashcard")))
                 .andExpect(model().attribute("totalCards", greaterThanOrEqualTo(1)));
     }

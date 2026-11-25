@@ -1,5 +1,7 @@
 package com.jlpp.modules.exam.reader.impl;
 
+import com.jlpp.common.util.QuestionOptionsCodec;
+import com.jlpp.common.util.QuestionOptionsCodec.ParsedOption;
 import com.jlpp.modules.exam.dto.OptionDto;
 import com.jlpp.modules.exam.dto.QuestionDto;
 import com.jlpp.modules.exam.reader.LearnerQuestionReader;
@@ -54,21 +56,19 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
 
         String sqlWithJunction = """
             SELECT q.id AS q_id, q.category, q.content, q.audio_url, eq.points, q.explanation, eq.order_index, eq.section,
-                   o.id AS opt_id, o.label, o.option_text, o.is_correct
+                   q.options AS options_json, q.answer_key AS answer_key_json
             FROM exam_questions eq
             JOIN questions q ON q.id = eq.question_id
-            LEFT JOIN question_options o ON o.question_id = q.id
             WHERE eq.exam_id = ?
-            ORDER BY eq.order_index ASC, q.id ASC, o.id ASC
+            ORDER BY eq.order_index ASC, q.id ASC
             """;
 
         String fallbackSql = """
             SELECT q.id AS q_id, q.category, q.content, q.audio_url, q.points, q.explanation, q.order_index, NULL AS section,
-                   o.id AS opt_id, o.label, o.option_text, o.is_correct
+                   q.options AS options_json, q.answer_key AS answer_key_json
             FROM questions q
-            LEFT JOIN question_options o ON o.question_id = q.id
             WHERE q.exam_id = ?
-            ORDER BY q.order_index ASC, q.id ASC, o.id ASC
+            ORDER BY q.order_index ASC, q.id ASC
             """;
 
         try {
@@ -89,12 +89,33 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
             Map<Long, QuestionDto> map = new LinkedHashMap<>();
             while (rs.next()) {
                 long qId = rs.getLong("q_id");
-                QuestionDto q = map.computeIfAbsent(qId, id -> {
+                map.computeIfAbsent(qId, id -> {
                     try {
                         String cat = rs.getString("category");
                         String audio = rs.getString("audio_url");
                         String sec = rs.getString("section");
                         String skillGroup = resolveSkillGroup(cat, audio, sec);
+
+                        String optionsJson = rs.getString("options_json");
+                        String answerKeyJson = forEvaluation ? rs.getString("answer_key_json") : null;
+                        List<ParsedOption> parsedOptions = QuestionOptionsCodec.parse(id, optionsJson, answerKeyJson);
+
+                        if (parsedOptions.isEmpty()) {
+                            log.warn("Question {} in exam {} has no valid options in questions.options", id, examId);
+                        } else if (forEvaluation && parsedOptions.stream().noneMatch(ParsedOption::isCorrect)) {
+                            log.warn("Question {} in exam {} has no valid answer_key matching options", id, examId);
+                        }
+
+                        List<OptionDto> optionDtos = new ArrayList<>(parsedOptions.size());
+                        for (ParsedOption po : parsedOptions) {
+                            optionDtos.add(OptionDto.builder()
+                                    .id(po.id())
+                                    .label(po.label())
+                                    .text(po.text())
+                                    .correct(forEvaluation ? po.isCorrect() : null)
+                                    .build());
+                        }
+
                         return QuestionDto.builder()
                                 .id(id)
                                 .points(rs.getObject("points") != null ? rs.getInt("points") : 2)
@@ -106,25 +127,13 @@ public class JdbcLearnerQuestionReader implements LearnerQuestionReader {
                                 .audioUrl(audio)
                                 .explanation(forEvaluation ? rs.getString("explanation") : null)
                                 .orderIndex(rs.getObject("order_index") != null ? rs.getInt("order_index") : null)
-                                .options(new ArrayList<>())
+                                .options(optionDtos)
                                 .build();
                     } catch (Exception ex) {
                         log.error("Error mapping question row: {}", ex.getMessage());
                         return null;
                     }
                 });
-
-                if (q != null) {
-                    long optId = rs.getLong("opt_id");
-                    if (!rs.wasNull()) {
-                        q.getOptions().add(OptionDto.builder()
-                                .id(optId)
-                                .label(rs.getString("label"))
-                                .text(rs.getString("option_text"))
-                                .correct(forEvaluation ? rs.getBoolean("is_correct") : null)
-                                .build());
-                    }
-                }
             }
             return new ArrayList<>(map.values());
         }, examId);

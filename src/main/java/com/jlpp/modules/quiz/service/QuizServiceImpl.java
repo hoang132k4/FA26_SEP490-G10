@@ -1,5 +1,8 @@
 package com.jlpp.modules.quiz.service;
 
+import com.jlpp.common.util.QuestionOptionsCodec;
+import com.jlpp.common.util.QuestionOptionsCodec.OptionInput;
+import com.jlpp.common.util.QuestionOptionsCodec.ParsedOption;
 import com.jlpp.modules.course.entity.Lesson;
 import com.jlpp.modules.course.repository.LessonRepository;
 import com.jlpp.modules.quiz.dto.QuestionOptionDto;
@@ -29,7 +32,6 @@ public class QuizServiceImpl implements QuizService {
 
     private final ExerciseRepository exerciseRepository;
     private final QuizQuestionRepository questionRepository;
-    private final QuestionOptionRepository questionOptionRepository;
     private final ExerciseQuestionRepository exerciseQuestionRepository;
     private final ExerciseResultRepository exerciseResultRepository;
     private final ExerciseResultDetailRepository exerciseResultDetailRepository;
@@ -90,12 +92,7 @@ public class QuizServiceImpl implements QuizService {
         List<Long> qIds = eqs.stream().map(ExerciseQuestion::getQuestionId).collect(Collectors.toList());
         Map<Long, Question> questionMap = questionRepository.findByIdIn(qIds).stream()
                 .collect(Collectors.toMap(Question::getId, q -> q));
-        Map<Long, QuestionBank> qbMap = questionBankRepository.findByQuestionIdIn(qIds).stream()
-                .collect(Collectors.toMap(QuestionBank::getQuestionId, q -> q));
-
-        List<QuestionOption> allOptions = questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(qIds);
-        Map<Long, List<QuestionOption>> optionMap = allOptions.stream()
-                .collect(Collectors.groupingBy(QuestionOption::getQuestionId));
+        Map<Long, QuestionBank> qbMap = loadQuestionBankMap(qIds);
 
         List<QuizQuestionDto> result = new ArrayList<>();
         int order = 1;
@@ -105,29 +102,17 @@ public class QuizServiceImpl implements QuizService {
             QuestionBank qb = qbMap.get(qId);
             if (q == null && qb == null) continue;
 
-            String content = (q != null && q.getContent() != null) ? q.getContent() : (qb != null ? qb.getQuestionText() : "");
-            String explanation = (q != null && q.getExplanation() != null) ? q.getExplanation() : (qb != null ? qb.getExplanation() : "");
-            String category = (q != null && q.getCategory() != null) ? q.getCategory() : (qb != null ? qb.getCategory() : "");
-            String jlptLevel = (q != null && q.getJlptLevel() != null) ? q.getJlptLevel() : (qb != null ? qb.getJlptLevel() : "");
-            String audioUrl = (q != null && q.getAudioUrl() != null) ? q.getAudioUrl() : (qb != null ? qb.getAudioUrl() : null);
-
-            List<QuestionOptionDto> optDtos = optionMap.getOrDefault(qId, Collections.emptyList()).stream()
-                    .map(o -> QuestionOptionDto.builder()
-                            .id(o.getId())
-                            .label(o.getLabel())
-                            .optionText(o.getOptionText())
-                            .isCorrect(o.getIsCorrect())
-                            .build())
-                    .collect(Collectors.toList());
+            ResolvedQuestionMeta meta = resolveQuestionMeta(q, qb);
+            List<QuestionOptionDto> optDtos = resolveOptionDtos(qId, q, "exercise " + exerciseId);
 
             result.add(QuizQuestionDto.builder()
                     .questionId(qId)
                     .orderIndex(order++)
-                    .content(content)
-                    .explanation(explanation)
-                    .category(category)
-                    .jlptLevel(jlptLevel)
-                    .audioUrl(audioUrl)
+                    .content(meta.content())
+                    .explanation(meta.explanation())
+                    .category(meta.category())
+                    .jlptLevel(meta.jlptLevel())
+                    .audioUrl(meta.audioUrl())
                     .options(optDtos)
                     .build());
         }
@@ -146,12 +131,7 @@ public class QuizServiceImpl implements QuizService {
 
         Map<Long, Question> questionMap = questionRepository.findByIdIn(qIds).stream()
                 .collect(Collectors.toMap(Question::getId, q -> q));
-        Map<Long, QuestionBank> qbMap = questionBankRepository.findByQuestionIdIn(qIds).stream()
-                .collect(Collectors.toMap(QuestionBank::getQuestionId, q -> q));
-
-        List<QuestionOption> allOptions = questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(qIds);
-        Map<Long, List<QuestionOption>> optionMap = allOptions.stream()
-                .collect(Collectors.groupingBy(QuestionOption::getQuestionId));
+        Map<Long, QuestionBank> qbMap = loadQuestionBankMap(qIds);
 
         int totalQuestions = eqs.size();
         int correctCount = 0;
@@ -165,44 +145,30 @@ public class QuizServiceImpl implements QuizService {
             QuestionBank qb = qbMap.get(qId);
             if (q == null && qb == null) continue;
 
-            String content = (q != null && q.getContent() != null) ? q.getContent() : (qb != null ? qb.getQuestionText() : "");
-            String explanation = (q != null && q.getExplanation() != null) ? q.getExplanation() : (qb != null ? qb.getExplanation() : "");
-            String category = (q != null && q.getCategory() != null) ? q.getCategory() : (qb != null ? qb.getCategory() : "");
-            String jlptLevel = (q != null && q.getJlptLevel() != null) ? q.getJlptLevel() : (qb != null ? qb.getJlptLevel() : "");
-
-            List<QuestionOption> opts = optionMap.getOrDefault(qId, Collections.emptyList());
+            ResolvedQuestionMeta meta = resolveQuestionMeta(q, qb);
+            List<QuestionOptionDto> optDtos = resolveOptionDtos(qId, q, "submit exercise " + exerciseId);
             String selected = answers != null ? answers.get(qId) : null;
             if (selected != null) selected = selected.trim();
 
-            QuestionOption correctOpt = opts.stream().filter(o -> Boolean.TRUE.equals(o.getIsCorrect())).findFirst().orElse(null);
-            String correctLabel = (correctOpt != null) ? correctOpt.getLabel() : "A";
+            List<QuestionOptionDto> correctOpts = optDtos.stream()
+                    .filter(o -> Boolean.TRUE.equals(o.getIsCorrect()))
+                    .collect(Collectors.toList());
+            String correctLabel = resolveCorrectLabel(correctOpts, qId, "submit exercise " + exerciseId);
 
             boolean isCorrect = false;
-            if (selected != null && correctOpt != null) {
-                // Match either label ("A" vs "A") or option id or label prefix ("1." vs "1.")
-                isCorrect = selected.equalsIgnoreCase(correctOpt.getLabel())
-                        || selected.equalsIgnoreCase(String.valueOf(correctOpt.getId()))
-                        || selected.equalsIgnoreCase(correctOpt.getOptionText());
+            if (selected != null && !selected.isEmpty() && !correctOpts.isEmpty()) {
+                isCorrect = isAnswerMatchingAnyCorrect(selected, correctOpts);
             }
 
             if (isCorrect) correctCount++;
 
-            List<QuestionOptionDto> optDtos = opts.stream()
-                    .map(o -> QuestionOptionDto.builder()
-                            .id(o.getId())
-                            .label(o.getLabel())
-                            .optionText(o.getOptionText())
-                            .isCorrect(o.getIsCorrect())
-                            .build())
-                    .collect(Collectors.toList());
-
             reviews.add(QuizQuestionReviewDto.builder()
                     .questionId(qId)
                     .orderIndex(order++)
-                    .content(content)
-                    .explanation(explanation)
-                    .category(category)
-                    .jlptLevel(jlptLevel)
+                    .content(meta.content())
+                    .explanation(meta.explanation())
+                    .category(meta.category())
+                    .jlptLevel(meta.jlptLevel())
                     .options(optDtos)
                     .userSelectedLabel(selected)
                     .correctLabel(correctLabel)
@@ -286,12 +252,7 @@ public class QuizServiceImpl implements QuizService {
 
         Map<Long, Question> qMap = questionRepository.findByIdIn(qIds).stream()
                 .collect(Collectors.toMap(Question::getId, q -> q));
-        Map<Long, QuestionBank> qbMap = questionBankRepository.findByQuestionIdIn(qIds).stream()
-                .collect(Collectors.toMap(QuestionBank::getQuestionId, q -> q));
-
-        List<QuestionOption> allOpts = questionOptionRepository.findByQuestionIdInOrderByQuestionIdAscLabelAsc(qIds);
-        Map<Long, List<QuestionOption>> optMap = allOpts.stream()
-                .collect(Collectors.groupingBy(QuestionOption::getQuestionId));
+        Map<Long, QuestionBank> qbMap = loadQuestionBankMap(qIds);
 
         List<QuizQuestionReviewDto> reviews = new ArrayList<>();
         int order = 1;
@@ -304,33 +265,24 @@ public class QuizServiceImpl implements QuizService {
 
             if (Boolean.TRUE.equals(d.getIsCorrect())) correctCount++;
 
-            String content = (q != null && q.getContent() != null) ? q.getContent() : (qb != null ? qb.getQuestionText() : "");
-            String explanation = (q != null && q.getExplanation() != null) ? q.getExplanation() : (qb != null ? qb.getExplanation() : "");
-            String category = (q != null && q.getCategory() != null) ? q.getCategory() : (qb != null ? qb.getCategory() : "");
-            String jlptLevel = (q != null && q.getJlptLevel() != null) ? q.getJlptLevel() : (qb != null ? qb.getJlptLevel() : "");
+            ResolvedQuestionMeta meta = resolveQuestionMeta(q, qb);
 
-            List<QuestionOption> opts = optMap.getOrDefault(qId, Collections.emptyList());
-            QuestionOption correctOpt = opts.stream().filter(o -> Boolean.TRUE.equals(o.getIsCorrect())).findFirst().orElse(null);
-
-            List<QuestionOptionDto> optDtos = opts.stream()
-                    .map(o -> QuestionOptionDto.builder()
-                            .id(o.getId())
-                            .label(o.getLabel())
-                            .optionText(o.getOptionText())
-                            .isCorrect(o.getIsCorrect())
-                            .build())
+            List<QuestionOptionDto> optDtos = resolveOptionDtos(qId, q, "result " + resultId);
+            List<QuestionOptionDto> correctOpts = optDtos.stream()
+                    .filter(o -> Boolean.TRUE.equals(o.getIsCorrect()))
                     .collect(Collectors.toList());
+            String correctLabel = resolveCorrectLabel(correctOpts, qId, "result " + resultId);
 
             reviews.add(QuizQuestionReviewDto.builder()
                     .questionId(qId)
                     .orderIndex(order++)
-                    .content(content)
-                    .explanation(explanation)
-                    .category(category)
-                    .jlptLevel(jlptLevel)
+                    .content(meta.content())
+                    .explanation(meta.explanation())
+                    .category(meta.category())
+                    .jlptLevel(meta.jlptLevel())
                     .options(optDtos)
                     .userSelectedLabel(d.getSelectedOption())
-                    .correctLabel(correctOpt != null ? correctOpt.getLabel() : "A")
+                    .correctLabel(correctLabel)
                     .isUserCorrect(Boolean.TRUE.equals(d.getIsCorrect()))
                     .build());
         }
@@ -352,6 +304,66 @@ public class QuizServiceImpl implements QuizService {
                 .submittedDate(result.getSubmittedDate())
                 .questions(reviews)
                 .build();
+    }
+
+    private Map<Long, QuestionBank> loadQuestionBankMap(List<Long> qIds) {
+        return questionBankRepository.findByQuestionIdIn(qIds).stream()
+                .collect(Collectors.toMap(QuestionBank::getQuestionId, q -> q));
+    }
+
+    private ResolvedQuestionMeta resolveQuestionMeta(Question q, QuestionBank qb) {
+        String content = (q != null && q.getContent() != null) ? q.getContent() : (qb != null ? qb.getQuestionText() : "");
+        String explanation = (q != null && q.getExplanation() != null) ? q.getExplanation() : (qb != null ? qb.getExplanation() : "");
+        String category = (q != null && q.getCategory() != null) ? q.getCategory() : (qb != null ? qb.getCategory() : "");
+        String jlptLevel = (q != null && q.getJlptLevel() != null) ? q.getJlptLevel() : (qb != null ? qb.getJlptLevel() : "");
+        String audioUrl = (q != null && q.getAudioUrl() != null) ? q.getAudioUrl() : (qb != null ? qb.getAudioUrl() : null);
+        return new ResolvedQuestionMeta(content, explanation, category, jlptLevel, audioUrl);
+    }
+
+    private record ResolvedQuestionMeta(
+            String content,
+            String explanation,
+            String category,
+            String jlptLevel,
+            String audioUrl) {
+    }
+
+    private List<QuestionOptionDto> resolveOptionDtos(Long qId, Question q, String context) {
+        if (q == null) {
+            log.warn("Question {} missing in questions table during {}; cannot resolve options", qId, context);
+            return Collections.emptyList();
+        }
+        List<ParsedOption> parsed = QuestionOptionsCodec.parse(qId, q.getOptions(), q.getAnswerKey());
+        if (parsed.isEmpty()) {
+            log.warn("Question {} has no valid options in questions.options during {}", qId, context);
+            return Collections.emptyList();
+        }
+        return parsed.stream()
+                .map(po -> QuestionOptionDto.builder()
+                        .id(po.id())
+                        .label(po.label())
+                        .optionText(po.text())
+                        .isCorrect(po.isCorrect())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private String resolveCorrectLabel(List<QuestionOptionDto> correctOpts, Long qId, String context) {
+        if (correctOpts == null || correctOpts.isEmpty()) {
+            log.warn("Question {} has no valid answer_key matching options during {}", qId, context);
+            return null;
+        }
+        return correctOpts.stream()
+                .map(QuestionOptionDto::getLabel)
+                .collect(Collectors.joining(", "));
+    }
+
+    private boolean isAnswerMatchingAnyCorrect(String selected, List<QuestionOptionDto> correctOpts) {
+        return correctOpts.stream().anyMatch(correctOpt ->
+                selected.equalsIgnoreCase(correctOpt.getLabel())
+                        || (correctOpt.getId() != null && selected.equalsIgnoreCase(String.valueOf(correctOpt.getId())))
+                        || (correctOpt.getOptionText() != null && selected.equalsIgnoreCase(correctOpt.getOptionText()))
+        );
     }
 
     @Override
@@ -378,11 +390,21 @@ public class QuizServiceImpl implements QuizService {
             return;
         }
 
-        // Create authentic questions tailored to this lesson
+        // Create authentic questions tailored to this lesson (stored strictly in canonical questions.options + answer_key)
         List<QuestionSeed> seeds = generateSeedsForLesson(lessonId, level, lesson != null ? lesson.getTitle() : "");
         int order = 1;
         for (QuestionSeed seed : seeds) {
-            String correctKey = seed.options.stream().filter(o -> o.isCorrect).map(o -> o.label).findFirst().orElse("A");
+            List<String> correctKeys = seed.options.stream()
+                    .filter(o -> o.isCorrect)
+                    .map(o -> o.label)
+                    .toList();
+            if (correctKeys.isEmpty()) {
+                throw new IllegalStateException("Seed quiz question missing correct option: " + seed.content);
+            }
+            List<OptionInput> optionInputs = seed.options.stream()
+                    .map(o -> new OptionInput(o.label, o.text))
+                    .toList();
+
             Question q = Question.builder()
                     .content(seed.content)
                     .explanation(seed.explanation)
@@ -391,8 +413,8 @@ public class QuizServiceImpl implements QuizService {
                     .questionType("MULTI_CHOICE")
                     .difficulty("MEDIUM")
                     .status("ACTIVE")
-                    .options("[{\"key\": \"A\", \"text\": \"\"}, {\"key\": \"B\", \"text\": \"\"}, {\"key\": \"C\", \"text\": \"\"}, {\"key\": \"D\", \"text\": \"\"}]")
-                    .answerKey("[\"" + correctKey + "\"]")
+                    .options(QuestionOptionsCodec.toOptionsJson(optionInputs))
+                    .answerKey(QuestionOptionsCodec.toAnswerKeyJson(correctKeys))
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
@@ -405,23 +427,11 @@ public class QuizServiceImpl implements QuizService {
                     .category(seed.category)
                     .jlptLevel(level)
                     .difficultyLevel("MEDIUM")
-                    .correctAnswer(correctKey)
+                    .correctAnswer(correctKeys.get(0))
                     .explanation(seed.explanation)
                     .status("ACTIVE")
                     .build();
             questionBankRepository.save(qb);
-
-            for (OptionSeed optSeed : seed.options) {
-                QuestionOption opt = QuestionOption.builder()
-                        .questionId(savedQ.getId())
-                        .label(optSeed.label)
-                        .optionText(optSeed.text)
-                        .isCorrect(optSeed.isCorrect)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .build();
-                questionOptionRepository.save(opt);
-            }
 
             exerciseQuestionRepository.save(new ExerciseQuestion(exercise.getExerciseId(), savedQ.getId(), order++));
         }
