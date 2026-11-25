@@ -1019,6 +1019,21 @@ class ManagerQuestionServiceTest {
         assertRejected(form, "Câu hỏi con #2 chưa đủ cấp độ, kỹ năng hoặc đáp án nên không thể chuyển sang ACTIVE.", true);
     }
 
+    @Test
+    void deleteQuestionWithLearnerResultsIsRejectedWithFriendlyMessage() {
+        Question q = question(1L, "MULTI_CHOICE", "ACTIVE");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(q));
+        when(questionRepository.isUsedAnywhere(1L)).thenReturn(false);
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of());
+        org.mockito.Mockito.doThrow(new org.springframework.dao.DataIntegrityViolationException("exam_result_details_question_id_fkey"))
+                .when(questionRepository).flush();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.delete(1L));
+
+        assertEquals("Câu hỏi đã có kết quả làm bài của học viên nên không thể xóa. Hãy chuyển câu hỏi sang ARCHIVED thay vì xóa.",
+                ex.getMessage());
+    }
+
     // ── edits of questions already used in exams ──
 
     @Test

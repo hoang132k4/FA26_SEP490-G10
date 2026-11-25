@@ -205,6 +205,13 @@ public class ManagerQuestionService {
         }
         questionOptionRepository.deleteByQuestionId(id);
         questionRepository.delete(question);
+        try {
+            questionRepository.flush();
+        } catch (org.springframework.dao.DataIntegrityViolationException exception) {
+            // exam_result_details keeps learner answers and blocks deleting the question (ON DELETE RESTRICT).
+            throw new IllegalArgumentException("Câu hỏi đã có kết quả làm bài của học viên nên không thể xóa. "
+                    + "Hãy chuyển câu hỏi sang ARCHIVED thay vì xóa.");
+        }
     }
 
     @Transactional(readOnly = true)
