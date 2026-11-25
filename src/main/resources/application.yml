@@ -1,5 +1,9 @@
 server:
   port: 8081
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
 
 spring:
   main:
@@ -12,9 +16,17 @@ spring:
       max-file-size: 50MB
       max-request-size: 60MB
 
-  # Thymeleaf configuration
+  # Static Web Resource Caching
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 86400
+          must-revalidate: true
+
+  # Thymeleaf configuration (Cached in-memory for 10-30ms performance)
   thymeleaf:
-    cache: false
+    cache: true
     prefix: classpath:/templates/
     suffix: .html
     mode: HTML
@@ -33,24 +45,27 @@ spring:
 
   # Supabase PostgreSQL Database configuration
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&tcpKeepAlive=true}
     username: ${SPRING_DATASOURCE_USERNAME:postgres.eztcijnvnmcievogjufk}
     password: ${SPRING_DATASOURCE_PASSWORD:Cme85Dpt1b2HwrBQ}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-      idle-timeout: 30000
-      connection-timeout: 30000
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 60000
+      connection-timeout: 10000
+      max-lifetime: 1800000
+      keepalive-time: 30000
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
+    open-in-view: true
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         jdbc:
           lob:
             non_contextual_creation: true
@@ -95,8 +110,10 @@ app:
 # Logging
 logging:
   level:
-    com.jeps: DEBUG
-    org.springframework.web: INFO
+    root: INFO
+    com.jeps: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
 
 ---
 spring:

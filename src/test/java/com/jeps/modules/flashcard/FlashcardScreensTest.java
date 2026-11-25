@@ -97,8 +97,7 @@ public class FlashcardScreensTest {
         mockMvc.perform(get("/flashcards"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/flashcard/list"))
-                .andExpect(model().attributeExists("flashcards", "stats", "lessons"))
-                .andExpect(model().attribute("flashcards", hasItem(hasProperty("vocabulary", is("桜")))))
+                .andExpect(model().attributeExists("systemDecks", "userDecks", "stats"))
                 .andExpect(content().string(containsString("Gói Flashcard Từ Vựng")))
                 .andExpect(content().string(containsString("桜")))
                 .andExpect(content().string(containsString("Hoa anh đào")));

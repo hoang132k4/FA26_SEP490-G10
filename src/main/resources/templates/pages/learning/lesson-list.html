@@ -85,6 +85,13 @@
             </div>
         </div>
 
+        <!-- Flash Alert for Exam Prerequisites -->
+        <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible fade show rounded-3 shadow-sm d-flex align-items-center gap-2 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+            <span th:text="${errorMessage}">Cần hoàn thành các bài học trước đó</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <!-- Filter bar for lessons -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <h4 class="fw-bold mb-0 text-dark">
@@ -128,7 +135,8 @@
 
             <div class="row g-3">
                 <!-- Bài thi giữa kì (Midterm) -->
-                <div class="col-md-6" th:if="${midtermExam != null}">
+                <div class="col-md-6" th:if="${midtermExam != null}"
+                    th:with="isMidtermUnlocked=${unlockedExamIds != null and unlockedExamIds.contains(midtermExam.examId)}">
                     <div
                         class="card p-3 h-100 bg-white text-dark rounded-3 shadow-sm border d-flex flex-column justify-content-between">
                         <div>
@@ -149,16 +157,33 @@
                                         th:text="${midtermExam.passingScore}">50</span>%</span>
                             </div>
                         </div>
-                        <a th:href="@{/exams/{id}/start(id=${midtermExam.examId})}"
-                            class="btn btn-danger w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-pencil-square"></i>
-                            <span>Vào phòng thi giữa kì</span>
-                        </a>
+                        <div>
+                            <a th:if="${isMidtermUnlocked}"
+                                th:href="@{/exams/{id}/start(id=${midtermExam.examId})}"
+                                class="btn btn-danger w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-pencil-square"></i>
+                                <span>Vào phòng thi giữa kì</span>
+                            </a>
+                            <button th:unless="${isMidtermUnlocked}"
+                                type="button"
+                                class="btn btn-secondary w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 opacity-75"
+                                disabled
+                                th:title="${examPrereqMap != null and examPrereqMap.get(midtermExam.examId) != null ? examPrereqMap.get(midtermExam.examId).message : 'Cần hoàn thành các bài học trước đó'}">
+                                <i class="bi bi-lock-fill"></i>
+                                <span>Chưa mở khóa</span>
+                            </button>
+                            <div th:if="${!isMidtermUnlocked and examPrereqMap != null and examPrereqMap.get(midtermExam.examId) != null}"
+                                class="small text-muted mt-2 text-center" style="font-size: 0.78rem;">
+                                <i class="bi bi-info-circle me-1 text-warning"></i>
+                                <span th:text="${examPrereqMap.get(midtermExam.examId).message}">Cần hoàn thành các bài học trước đó</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Bài thi cuối kì (Final) -->
-                <div class="col-md-6" th:if="${finalExam != null}">
+                <div class="col-md-6" th:if="${finalExam != null}"
+                    th:with="isFinalUnlocked=${unlockedExamIds != null and unlockedExamIds.contains(finalExam.examId)}">
                     <div
                         class="card p-3 h-100 bg-white text-dark rounded-3 shadow-sm border d-flex flex-column justify-content-between">
                         <div>
@@ -179,11 +204,27 @@
                                         th:text="${finalExam.passingScore}">60</span>%</span>
                             </div>
                         </div>
-                        <a th:href="@{/exams/{id}/start(id=${finalExam.examId})}"
-                            class="btn btn-danger w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-pencil-square"></i>
-                            <span>Vào phòng thi cuối kì</span>
-                        </a>
+                        <div>
+                            <a th:if="${isFinalUnlocked}"
+                                th:href="@{/exams/{id}/start(id=${finalExam.examId})}"
+                                class="btn btn-danger w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-pencil-square"></i>
+                                <span>Vào phòng thi cuối kì</span>
+                            </a>
+                            <button th:unless="${isFinalUnlocked}"
+                                type="button"
+                                class="btn btn-secondary w-100 fw-bold py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 opacity-75"
+                                disabled
+                                th:title="${examPrereqMap != null and examPrereqMap.get(finalExam.examId) != null ? examPrereqMap.get(finalExam.examId).message : 'Cần hoàn thành các bài học trước đó'}">
+                                <i class="bi bi-lock-fill"></i>
+                                <span>Chưa mở khóa</span>
+                            </button>
+                            <div th:if="${!isFinalUnlocked and examPrereqMap != null and examPrereqMap.get(finalExam.examId) != null}"
+                                class="small text-muted mt-2 text-center" style="font-size: 0.78rem;">
+                                <i class="bi bi-info-circle me-1 text-warning"></i>
+                                <span th:text="${examPrereqMap.get(finalExam.examId).message}">Cần hoàn thành các bài học trước đó</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -216,7 +257,8 @@
                         <div th:each="lesson, itemStat : ${entry.value}"
                             class="list-group-item p-3.5 px-4 d-flex align-items-center justify-content-between gap-3 lesson-row"
                             th:data-type="${lesson.lessonType}"
-                            th:with="isExamRow=${lesson.isExam() or lesson.examId != null or (lesson.title != null and (lesson.title.contains('Bài thi') or lesson.title.contains('kiểm tra')))}">
+                            th:with="isExamRow=${lesson.isExam() or lesson.examId != null or (lesson.title != null and (lesson.title.contains('Bài thi') or lesson.title.contains('kiểm tra')))},
+                                     isExamUnlocked=${isExamRow and unlockedExamIds != null and lesson.examId != null and unlockedExamIds.contains(lesson.examId)}">
 
                             <!-- Left: Status Icon & Title -->
                             <div class="d-flex align-items-center gap-3 flex-grow-1 min-w-0">
@@ -240,16 +282,36 @@
                                 <!-- Lesson Details -->
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                        <a th:href="${lesson.examId != null} ? @{/exams/{id}/start(id=${lesson.examId})} : @{/learning/lessons/{id}(id=${lesson.id})}"
-                                            class="fw-semibold text-decoration-none hover-primary text-truncate d-inline-block"
-                                            th:classappend="${isExamRow} ? 'text-danger fw-bold' : 'text-dark'"
-                                            style="max-width: 580px;" th:text="${lesson.title}">
-                                            Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
-                                        </a>
-                                        <span th:if="${isExamRow}"
-                                            class="badge bg-danger text-white border border-danger-subtle small px-2.5 py-1 fw-bold shadow-sm">
-                                            <i class="bi bi-clipboard2-check me-1"></i>Bài thi đánh giá
-                                        </span>
+                                        <th:block th:if="${isExamRow}">
+                                            <a th:if="${isExamUnlocked}"
+                                                th:href="${lesson.examId != null} ? @{/exams/{id}/start(id=${lesson.examId})} : @{/learning/lessons/{id}(id=${lesson.id})}"
+                                                class="fw-semibold text-decoration-none hover-primary text-truncate d-inline-block text-danger fw-bold"
+                                                style="max-width: 580px;" th:text="${lesson.title}">
+                                                Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
+                                            </a>
+                                            <span th:unless="${isExamUnlocked}"
+                                                class="fw-semibold text-muted text-truncate d-inline-block"
+                                                style="max-width: 580px;" th:text="${lesson.title}"
+                                                th:title="${examPrereqMap != null and examPrereqMap.get(lesson.examId) != null ? examPrereqMap.get(lesson.examId).message : 'Cần hoàn thành các bài học trước đó'}">
+                                                Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
+                                            </span>
+                                            <span th:if="${isExamUnlocked}"
+                                                class="badge bg-danger text-white border border-danger-subtle small px-2.5 py-1 fw-bold shadow-sm">
+                                                <i class="bi bi-clipboard2-check me-1"></i>Bài thi đánh giá
+                                            </span>
+                                            <span th:unless="${isExamUnlocked}"
+                                                class="badge bg-secondary-subtle text-secondary border border-secondary-subtle small px-2.5 py-1"
+                                                th:title="${examPrereqMap != null and examPrereqMap.get(lesson.examId) != null ? examPrereqMap.get(lesson.examId).message : 'Cần hoàn thành các bài học trước đó'}">
+                                                <i class="bi bi-lock-fill me-1"></i>Chưa mở khóa
+                                            </span>
+                                        </th:block>
+                                        <th:block th:unless="${isExamRow}">
+                                            <a th:href="@{/learning/lessons/{id}(id=${lesson.id})}"
+                                                class="fw-semibold text-decoration-none hover-primary text-truncate d-inline-block text-dark"
+                                                style="max-width: 580px;" th:text="${lesson.title}">
+                                                Bài 1: Giới thiệu tổng quan lộ trình JLPT N4
+                                            </a>
+                                        </th:block>
                                         <span
                                             th:if="${!isExamRow && (lesson.isFreePreview != null && lesson.isFreePreview)}"
                                             class="badge bg-info-subtle text-info border border-info-subtle small px-2">Học
@@ -271,12 +333,22 @@
 
                             <!-- Right: Actions -->
                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                <a th:if="${isExamRow}"
-                                    th:href="${lesson.examId != null} ? @{/exams/{id}/start(id=${lesson.examId})} : @{/learning/lessons/{id}(id=${lesson.id})}"
-                                    class="btn btn-sm btn-danger px-3.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5 text-white fw-bold shadow-sm">
-                                    <i class="bi bi-pencil-square"></i>
-                                    <span>Vào phòng thi</span>
-                                </a>
+                                <th:block th:if="${isExamRow}">
+                                    <a th:if="${isExamUnlocked}"
+                                        th:href="${lesson.examId != null} ? @{/exams/{id}/start(id=${lesson.examId})} : @{/learning/lessons/{id}(id=${lesson.id})}"
+                                        class="btn btn-sm btn-danger px-3.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5 text-white fw-bold shadow-sm">
+                                        <i class="bi bi-pencil-square"></i>
+                                        <span>Vào phòng thi</span>
+                                    </a>
+                                    <button th:unless="${isExamUnlocked}"
+                                        type="button"
+                                        class="btn btn-sm btn-secondary px-3.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5 text-white opacity-75"
+                                        disabled
+                                        th:title="${examPrereqMap != null and examPrereqMap.get(lesson.examId) != null ? examPrereqMap.get(lesson.examId).message : 'Cần hoàn thành các bài học trước đó'}">
+                                        <i class="bi bi-lock-fill"></i>
+                                        <span>Chưa mở khóa</span>
+                                    </button>
+                                </th:block>
                                 <a th:unless="${isExamRow}" th:href="@{/learning/lessons/{id}(id=${lesson.id})}"
                                     class="btn btn-sm btn-outline-primary px-3 rounded-pill d-flex align-items-center gap-1.5">
                                     <span>Vào học</span>

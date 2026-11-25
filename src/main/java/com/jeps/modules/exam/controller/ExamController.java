@@ -10,6 +10,10 @@ import com.jeps.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.jeps.modules.exam.dto.ExamPrerequisiteResult;
+import com.jeps.modules.exam.entity.Exam;
+import com.jeps.modules.exam.repository.ExamRepository;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,6 +36,7 @@ public class ExamController {
     private final com.jeps.modules.course.repository.CourseRepository courseRepository;
     private final com.jeps.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
     private final com.jeps.modules.course.service.CourseRecommendationService courseRecommendationService;
+    private final ExamRepository examRepository;
 
     private boolean isAuthenticated(HttpSession session, Principal principal) {
         return principal != null || (session != null && currentUserSession.isAuthenticated(session));
@@ -165,9 +170,21 @@ public class ExamController {
     public String startMilestoneExam(@PathVariable Long id,
             HttpSession session,
             Model model,
-            Principal principal) {
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
         if (!isAuthenticated(session, principal)) {
             return "redirect:/auth/login?continue=/exams/milestone/" + id;
+        }
+
+        Long userId = getAuthenticatedUserId(session, principal);
+        ExamPrerequisiteResult prereq = examService.checkExamPrerequisites(id, userId);
+        if (prereq != null && !prereq.isUnlocked()) {
+            redirectAttributes.addFlashAttribute("errorMessage", prereq.getMessage());
+            Exam exam = examRepository.findById(id).orElse(null);
+            if (exam != null && exam.getCourseId() != null) {
+                return "redirect:/learning/courses/" + exam.getCourseId() + "/lessons";
+            }
+            return "redirect:/courses";
         }
 
         ExamTakeResponse examData = examService.getMilestoneExamForTaking(id);
@@ -205,9 +222,21 @@ public class ExamController {
     public String startExam(@PathVariable Long id,
             HttpSession session,
             Model model,
-            Principal principal) {
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
         if (!isAuthenticated(session, principal)) {
             return "redirect:/auth/login?continue=/exams/" + id + "/start";
+        }
+
+        Long userId = getAuthenticatedUserId(session, principal);
+        ExamPrerequisiteResult prereq = examService.checkExamPrerequisites(id, userId);
+        if (prereq != null && !prereq.isUnlocked()) {
+            redirectAttributes.addFlashAttribute("errorMessage", prereq.getMessage());
+            Exam exam = examRepository.findById(id).orElse(null);
+            if (exam != null && exam.getCourseId() != null) {
+                return "redirect:/learning/courses/" + exam.getCourseId() + "/lessons";
+            }
+            return "redirect:/courses";
         }
 
         ExamTakeResponse examData = examService.getExamForTaking(id);

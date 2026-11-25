@@ -11,17 +11,26 @@ import java.util.List;
 @Repository
 public interface ExamRepository extends JpaRepository<Exam, Long> {
 
-    List<Exam> findByExamTypeIgnoreCase(String examType);
+  List<Exam> findByExamTypeIgnoreCase(String examType);
 
-    List<Exam> findByExamTypeIgnoreCaseAndStatusIgnoreCase(String examType, String status);
+  List<Exam> findByExamTypeIgnoreCaseAndStatusIgnoreCase(String examType, String status);
 
-    List<Exam> findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase(String examType, String jlptLevel);
+  List<Exam> findByExamTypeIgnoreCaseAndJlptLevelIgnoreCase(String examType, String jlptLevel);
 
-    List<Exam> findByExamTypeIgnoreCaseAndJlptLevelIgnoreCaseAndStatusIgnoreCase(String examType, String jlptLevel, String status);
+  List<Exam> findByExamTypeIgnoreCaseAndJlptLevelIgnoreCaseAndStatusIgnoreCase(String examType, String jlptLevel,
+      String status);
 
-    List<Exam> findByCourseId(Long courseId);
+  List<Exam> findByCourseId(Long courseId);
 
-    List<Exam> findByCourseIdAndExamTypeIgnoreCase(Long courseId, String examType);
+  List<Exam> findByCourseIdAndExamTypeIgnoreCase(Long courseId, String examType);
+
+    @Query("""
+            SELECT e FROM Exam e 
+            WHERE (:courseId IS NOT NULL AND e.courseId = :courseId) 
+               OR UPPER(e.examType) = 'MILESTONE'
+            ORDER BY e.examId ASC
+            """)
+    List<Exam> findMilestoneAndCourseExams(@Param("courseId") Long courseId);
 
     @Query("""
             select e from Exam e

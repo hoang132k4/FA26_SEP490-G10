@@ -4,7 +4,6 @@ import com.jeps.modules.course.entity.StudyMaterial;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -13,12 +12,6 @@ public interface StudyMaterialRepository extends JpaRepository<StudyMaterial, Lo
     List<StudyMaterial> findByLessonId(Long lessonId);
 
     List<StudyMaterial> findByLessonIdIn(List<Long> lessonIds);
-
-    List<StudyMaterial> findByJlptLevelOrderByMaterialIdAsc(String jlptLevel);
-
-    List<StudyMaterial> findByJlptLevelAndSkillTypeOrderByMaterialIdAsc(String jlptLevel, String skillType);
-
-    List<StudyMaterial> findByStatusOrderByMaterialIdAsc(String status);
 
     @Query("""
         SELECT m FROM StudyMaterial m

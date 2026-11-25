@@ -9,9 +9,13 @@ import com.jeps.modules.exam.service.ExamService;
 import com.jeps.modules.exam.service.JlptExamStructure;
 import com.jeps.modules.exam.writer.LearnerExamResultWriter;
 import com.jeps.modules.exam.service.AssessmentScoringService;
-import lombok.RequiredArgsConstructor;
+import com.jeps.modules.course.entity.Lesson;
+import com.jeps.modules.course.repository.CourseRegistrationRepository;
+import com.jeps.modules.course.repository.LessonRepository;
+import com.jeps.modules.learningpath.service.LessonProgressService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.NoTransactionException;
@@ -36,6 +40,15 @@ public class ExamServiceImpl implements ExamService {
     private final LearnerExamResultReader resultReader;
     private final AssessmentScoringService scoringService;
 
+    @Autowired(required = false)
+    private CourseRegistrationRepository courseRegistrationRepository;
+
+    @Autowired(required = false)
+    private LessonRepository lessonRepository;
+
+    @Autowired(required = false)
+    private LessonProgressService lessonProgressService;
+
     public ExamServiceImpl(ExamRepository examRepository,
                            LearnerQuestionReader questionReader,
                            LearnerExamResultWriter resultWriter,
@@ -54,6 +67,32 @@ public class ExamServiceImpl implements ExamService {
         this.resultWriter = resultWriter;
         this.resultReader = resultReader;
         this.scoringService = scoringService;
+    }
+
+    public ExamServiceImpl(ExamRepository examRepository,
+                           LearnerQuestionReader questionReader,
+                           LearnerExamResultWriter resultWriter,
+                           LearnerExamResultReader resultReader,
+                           AssessmentScoringService scoringService,
+                           CourseRegistrationRepository courseRegistrationRepository,
+                           LessonRepository lessonRepository,
+                           LessonProgressService lessonProgressService) {
+        this(examRepository, questionReader, resultWriter, resultReader, scoringService);
+        this.courseRegistrationRepository = courseRegistrationRepository;
+        this.lessonRepository = lessonRepository;
+        this.lessonProgressService = lessonProgressService;
+    }
+
+    public void setCourseRegistrationRepository(CourseRegistrationRepository courseRegistrationRepository) {
+        this.courseRegistrationRepository = courseRegistrationRepository;
+    }
+
+    public void setLessonRepository(LessonRepository lessonRepository) {
+        this.lessonRepository = lessonRepository;
+    }
+
+    public void setLessonProgressService(LessonProgressService lessonProgressService) {
+        this.lessonProgressService = lessonProgressService;
     }
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -178,10 +217,12 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional(readOnly = true)
     public List<ExamCardDto> getMilestoneExams(Long courseId) {
-        List<Exam> exams = courseId != null
-                ? examRepository.findByCourseIdAndExamTypeIgnoreCase(courseId, "MILESTONE")
-                : examRepository.findByExamTypeIgnoreCase("MILESTONE");
-
+        List<Exam> exams = examRepository.findMilestoneAndCourseExams(courseId);
+        if (exams == null || exams.isEmpty()) {
+            exams = courseId != null
+                    ? examRepository.findByCourseIdAndExamTypeIgnoreCase(courseId, "MILESTONE")
+                    : examRepository.findByExamTypeIgnoreCase("MILESTONE");
+        }
         if ((exams == null || exams.isEmpty()) && courseId != null) {
             exams = examRepository.findByExamTypeIgnoreCase("MILESTONE");
         }
@@ -263,8 +304,10 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy bài kiểm tra cột mốc"));
 
-        if (!"MILESTONE".equalsIgnoreCase(exam.getExamType())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đề thi này không phải là bài kiểm tra cột mốc.");
+        String type = exam.getExamType() != null ? exam.getExamType().toUpperCase(Locale.ROOT) : "";
+        if (!"MILESTONE".equals(type) && !"MIDTERM".equals(type) && !"FINAL".equals(type)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Đề thi này không phải là bài kiểm tra cột mốc hoặc kỳ thi khóa học.");
         }
 
         long count = questionReader.countQuestionsByExamId(examId);
@@ -872,6 +915,186 @@ public class ExamServiceImpl implements ExamService {
         }
 
         return new SkillAnalysisResult(strongestSkill, weakestSkill);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ExamPrerequisiteResult checkExamPrerequisites(Long examId, Long userId) {
+        if (examId == null) {
+            return ExamPrerequisiteResult.builder()
+                    .unlocked(false)
+                    .totalRequiredLessons(0)
+                    .completedRequiredLessons(0)
+                    .message("Không tìm thấy thông tin bài thi.")
+                    .build();
+        }
+
+        Exam exam = examRepository.findById(examId).orElse(null);
+        if (exam == null) {
+            return ExamPrerequisiteResult.builder()
+                    .unlocked(false)
+                    .totalRequiredLessons(0)
+                    .completedRequiredLessons(0)
+                    .message("Không tìm thấy bài thi với ID: " + examId)
+                    .build();
+        }
+
+        Long courseId = exam.getCourseId();
+        Lesson examLesson = null;
+
+        if (lessonRepository != null) {
+            if (courseId != null) {
+                List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+                for (Lesson l : lessons) {
+                    if (examId.equals(l.getExamId())) {
+                        examLesson = l;
+                        break;
+                    }
+                }
+            } else {
+                List<Lesson> allLessons = lessonRepository.findAll();
+                for (Lesson l : allLessons) {
+                    if (examId.equals(l.getExamId())) {
+                        examLesson = l;
+                        if (l.getCourse() != null) {
+                            courseId = l.getCourse().getId();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        boolean isCourseExam = (courseId != null)
+                || "MIDTERM".equalsIgnoreCase(exam.getExamType())
+                || "FINAL".equalsIgnoreCase(exam.getExamType())
+                || "MILESTONE".equalsIgnoreCase(exam.getExamType())
+                || (examLesson != null);
+
+        if (!isCourseExam || courseId == null) {
+            return ExamPrerequisiteResult.builder()
+                    .unlocked(true)
+                    .totalRequiredLessons(0)
+                    .completedRequiredLessons(0)
+                    .message("Bài thi tự do, không yêu cầu điều kiện bài học.")
+                    .build();
+        }
+
+        if (userId == null) {
+            return ExamPrerequisiteResult.builder()
+                    .unlocked(false)
+                    .totalRequiredLessons(0)
+                    .completedRequiredLessons(0)
+                    .message("Vui lòng đăng nhập để tham gia kỳ thi của khóa học.")
+                    .build();
+        }
+
+        if (courseRegistrationRepository != null
+                && !courseRegistrationRepository.existsByUserIdAndCourseId(userId, courseId)) {
+            return ExamPrerequisiteResult.builder()
+                    .unlocked(false)
+                    .totalRequiredLessons(0)
+                    .completedRequiredLessons(0)
+                    .message("Bạn cần đăng ký khóa học này trước khi làm bài thi.")
+                    .build();
+        }
+
+        List<Lesson> courseLessons = (lessonRepository != null)
+                ? lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId)
+                : Collections.emptyList();
+
+        if (courseLessons.isEmpty()) {
+            return ExamPrerequisiteResult.builder()
+                    .unlocked(true)
+                    .totalRequiredLessons(0)
+                    .completedRequiredLessons(0)
+                    .message("Khóa học chưa có bài học tiên quyết.")
+                    .build();
+        }
+
+        if (examLesson == null) {
+            if ("MIDTERM".equalsIgnoreCase(exam.getExamType())) {
+                examLesson = courseLessons.stream()
+                        .filter(l -> l.isMilestoneExam()
+                                || (l.getTitle() != null && (l.getTitle().toLowerCase().contains("giữa k")
+                                        || l.getTitle().toLowerCase().contains("midterm"))))
+                        .findFirst()
+                        .orElse(null);
+            } else if ("FINAL".equalsIgnoreCase(exam.getExamType())) {
+                examLesson = courseLessons.stream()
+                        .filter(l -> l.isMilestoneExam()
+                                || (l.getTitle() != null && (l.getTitle().toLowerCase().contains("cuối k")
+                                        || l.getTitle().toLowerCase().contains("final"))))
+                        .reduce((first, second) -> second)
+                        .orElse(null);
+            }
+        }
+
+        List<Lesson> requiredLessons = new ArrayList<>();
+        if (examLesson != null) {
+            int targetOrder = examLesson.getOrderIndex() != null ? examLesson.getOrderIndex() : Integer.MAX_VALUE;
+            for (Lesson l : courseLessons) {
+                if (!l.getId().equals(examLesson.getId())) {
+                    int ord = l.getOrderIndex() != null ? l.getOrderIndex() : 0;
+                    if (ord < targetOrder) {
+                        requiredLessons.add(l);
+                    }
+                }
+            }
+        } else {
+            if ("MIDTERM".equalsIgnoreCase(exam.getExamType())) {
+                List<Lesson> nonExamLessons = courseLessons.stream().filter(l -> !l.isExam()).toList();
+                int half = Math.max(1, nonExamLessons.size() / 2);
+                requiredLessons = nonExamLessons.subList(0, half);
+            } else {
+                requiredLessons = courseLessons.stream().filter(l -> !l.isExam()).toList();
+            }
+        }
+
+        int totalRequired = requiredLessons.size();
+        if (totalRequired == 0) {
+            return ExamPrerequisiteResult.builder()
+                    .unlocked(true)
+                    .totalRequiredLessons(0)
+                    .completedRequiredLessons(0)
+                    .message("Đã hoàn thành các bài học điều kiện.")
+                    .build();
+        }
+
+        Set<Long> completedIds = (lessonProgressService != null)
+                ? lessonProgressService.getCompletedLessonIds(userId, courseId)
+                : Collections.emptySet();
+
+        int completedCount = 0;
+        for (Lesson l : requiredLessons) {
+            if (completedIds.contains(l.getId())) {
+                completedCount++;
+            }
+        }
+
+        boolean unlocked = (completedCount >= totalRequired);
+        int remaining = totalRequired - completedCount;
+        String message = unlocked
+                ? "Đã hoàn thành đủ " + totalRequired + " bài học điều kiện. Bạn có thể làm bài thi ngay."
+                : "Cần hoàn thành " + remaining + " bài học trước đó để mở khóa bài thi này (" + completedCount + "/"
+                        + totalRequired + " bài).";
+
+        return ExamPrerequisiteResult.builder()
+                .unlocked(unlocked)
+                .totalRequiredLessons(totalRequired)
+                .completedRequiredLessons(completedCount)
+                .message(message)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "exams", key = "#courseId + '_' + (#examType != null ? #examType.toUpperCase() : 'ALL')")
+    public List<Exam> getCourseExamsByType(Long courseId, String examType) {
+        if (courseId == null || examType == null) {
+            return Collections.emptyList();
+        }
+        return examRepository.findByCourseIdAndExamTypeIgnoreCase(courseId, examType);
     }
 
     private record SkillAnalysisResult(String strongestSkill, String weakestSkill) {}

@@ -69,16 +69,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         if (regOpt.isPresent()) {
             int currentPercent = regOpt.get().getProgressPercent() != null ? regOpt.get().getProgressPercent() : 0;
             int totalLessons = lessonRepository.countByCourseId(courseId);
-            int inferredFromPercent = (totalLessons > 0 && currentPercent > 0)
-                    ? (int) Math.round((currentPercent / 100.0) * totalLessons)
-                    : 0;
-
-            if (dto.getLegacyInferredCount() == null) {
-                int legacyCount = Math.max(0, inferredFromPercent - dto.getLessons().size());
-                dto.setLegacyInferredCount(legacyCount);
-            } else if (dto.getLegacyInferredCount() < inferredFromPercent && dto.getLessons().isEmpty()) {
-                dto.setLegacyInferredCount(inferredFromPercent);
-            }
+            applyLegacyInferredCount(dto, currentPercent, totalLessons);
         }
         return dto;
     }
@@ -166,16 +157,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         int totalLessons = courseLessons.size();
 
         int currentPercent = reg.getProgressPercent() != null ? reg.getProgressPercent() : 0;
-        int inferredFromPercent = (totalLessons > 0 && currentPercent > 0)
-                ? (int) Math.round((currentPercent / 100.0) * totalLessons)
-                : 0;
-
-        if (progressDto.getLegacyInferredCount() == null) {
-            int legacyCount = Math.max(0, inferredFromPercent - progressDto.getLessons().size());
-            progressDto.setLegacyInferredCount(legacyCount);
-        } else if (progressDto.getLegacyInferredCount() < inferredFromPercent && progressDto.getLessons().isEmpty()) {
-            progressDto.setLegacyInferredCount(inferredFromPercent);
-        }
+        applyLegacyInferredCount(progressDto, currentPercent, totalLessons);
 
         // 6. Record verified completion
         String lessonKey = String.valueOf(lessonId);
@@ -287,11 +269,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         }
 
         // Legacy compatibility fallback:
-        int legacyCount = (progressDto.getLegacyInferredCount() != null && progressDto.getLegacyInferredCount() > 0)
-                ? progressDto.getLegacyInferredCount()
-                : (progressDto.getLessons().isEmpty() && registrationProgressPercent > 0 && totalCourseLessons > 0
-                    ? (int) Math.round((registrationProgressPercent / 100.0) * totalCourseLessons)
-                    : (progressDto.getLegacyInferredCount() != null ? progressDto.getLegacyInferredCount() : 0));
+        int legacyCount = resolveLegacyCompletedCount(progressDto, registrationProgressPercent, totalCourseLessons);
 
         if (legacyCount > 0) {
             // Check 1-based sequential position if valid (1 <= lessonOrderIndex <= totalCourseLessons)
@@ -321,16 +299,48 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             return completedIds;
         }
         List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+        if (courseLessons.isEmpty()) {
+            return completedIds;
+        }
+
+        // Fetch progress once outside the loop instead of N times (prevents massive N+1 queries to database)
+        LearningPathProgressDto progressDto = getLessonProgress(userId, courseId);
         Optional<CourseRegistration> regOpt = courseRegistrationRepository.findByUserIdAndCourseId(userId, courseId);
         int progressPercent = regOpt.map(r -> r.getProgressPercent() != null ? r.getProgressPercent() : 0).orElse(0);
 
+        int legacyCount = resolveLegacyCompletedCount(progressDto, progressPercent, courseLessons.size());
+
         for (int i = 0; i < courseLessons.size(); i++) {
             Lesson l = courseLessons.get(i);
-            if (isLessonCompleted(userId, courseId, l.getId(), i + 1, courseLessons.size(), progressPercent)) {
+            boolean isCompleted = progressDto.isLessonCompleted(l.getId())
+                    || (legacyCount > 0 && (i + 1) <= legacyCount);
+            if (isCompleted) {
                 completedIds.add(l.getId());
             }
         }
         return completedIds;
+    }
+
+    private void applyLegacyInferredCount(LearningPathProgressDto dto, int progressPercent, int totalLessons) {
+        int inferredFromPercent = (totalLessons > 0 && progressPercent > 0)
+                ? (int) Math.round((progressPercent / 100.0) * totalLessons)
+                : 0;
+        if (dto.getLegacyInferredCount() == null) {
+            dto.setLegacyInferredCount(Math.max(0, inferredFromPercent - dto.getLessons().size()));
+        } else if (dto.getLegacyInferredCount() < inferredFromPercent && dto.getLessons().isEmpty()) {
+            dto.setLegacyInferredCount(inferredFromPercent);
+        }
+    }
+
+    private int resolveLegacyCompletedCount(LearningPathProgressDto dto, int progressPercent, int totalLessons) {
+        Integer inferred = dto.getLegacyInferredCount();
+        if (inferred != null && inferred > 0) {
+            return inferred;
+        }
+        if (dto.getLessons().isEmpty() && progressPercent > 0 && totalLessons > 0) {
+            return (int) Math.round((progressPercent / 100.0) * totalLessons);
+        }
+        return inferred != null ? inferred : 0;
     }
 
     private LearningPathProgressDto parseProgressDto(String json) {

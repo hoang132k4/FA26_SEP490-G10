@@ -2,8 +2,7 @@ package com.jeps.modules.flashcard.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeps.modules.auth.model.CustomOAuth2User;
-import com.jeps.modules.auth.model.CustomUserDetails;
+import com.jeps.common.util.CurrentUserSession;
 import com.jeps.modules.course.entity.Lesson;
 import com.jeps.modules.course.repository.LessonRepository;
 import com.jeps.modules.flashcard.dto.FlashcardDeckDto;
@@ -15,7 +14,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -41,8 +39,6 @@ public class FlashcardController {
     public String list(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String level,
-            @RequestParam(required = false) Long lessonId,
-            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "system") String tab,
             org.springframework.security.core.Authentication authentication,
             Model model
@@ -50,22 +46,16 @@ public class FlashcardController {
         Long currentUserId = getCurrentUserId(authentication);
         List<FlashcardDeckDto> systemDecks = flashcardService.getSystemFlashcardDecks(keyword, level);
         List<FlashcardDeckDto> userDecks = flashcardService.getUserFlashcardDecks(keyword, level, currentUserId);
-        List<Flashcard> flashcards = flashcardService.getFlashcards(keyword, level, lessonId, status);
         Map<String, Long> stats = flashcardService.getStatistics();
-        List<Lesson> lessons = lessonRepository.findAll();
 
         model.addAttribute("systemDecks", systemDecks);
         model.addAttribute("userDecks", userDecks);
         model.addAttribute("totalSystemDecks", systemDecks.size());
         model.addAttribute("totalUserDecks", userDecks.size());
         model.addAttribute("activeTab", tab != null ? tab : "system");
-        model.addAttribute("flashcards", flashcards);
         model.addAttribute("stats", stats);
-        model.addAttribute("lessons", lessons);
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedLevel", level != null ? level : "ALL");
-        model.addAttribute("selectedLessonId", lessonId);
-        model.addAttribute("selectedStatus", status != null ? status : "ALL");
 
         return "pages/flashcard/list";
     }
@@ -213,7 +203,6 @@ public class FlashcardController {
     ) {
         List<Flashcard> cards = flashcardService.getPracticeFlashcards(level, lessonId, deckName, limit);
         List<Lesson> lessons = lessonRepository.findAll();
-        Map<String, Long> stats = flashcardService.getStatistics();
 
         String cardsJson = "[]";
         try {
@@ -227,8 +216,6 @@ public class FlashcardController {
         model.addAttribute("lessons", lessons);
         model.addAttribute("selectedLevel", level != null ? level : "ALL");
         model.addAttribute("selectedLessonId", lessonId);
-        model.addAttribute("selectedDeckName", deckName);
-        model.addAttribute("stats", stats);
         model.addAttribute("totalCards", cards.size());
         model.addAttribute("currentMode", mode);
 
@@ -445,16 +432,7 @@ public class FlashcardController {
     }
 
     private Long getCurrentUserId(org.springframework.security.core.Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof CustomUserDetails userDetails) {
-            return userDetails.getId();
-        } else if (principal instanceof CustomOAuth2User oauth2User) {
-            return oauth2User.getUser() != null ? oauth2User.getUser().getId() : null;
-        }
-        return null;
+        return CurrentUserSession.resolveAuthenticatedUserId(authentication);
     }
 }
 

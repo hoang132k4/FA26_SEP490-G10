@@ -13,11 +13,9 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
 
     List<Flashcard> findByLessonId(Long lessonId);
 
-    List<Flashcard> findByJlptLevel(String jlptLevel);
-
-    List<Flashcard> findByReviewStatus(String reviewStatus);
-
     List<Flashcard> findByCustomDeckName(String customDeckName);
+
+    List<Flashcard> findByCustomDeckNameIgnoreCase(String customDeckName);
 
     @Query("SELECT f FROM Flashcard f WHERE " +
            "(:keyword IS NULL OR :keyword = '' OR " +
@@ -33,7 +31,6 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
                                      @Param("lessonId") Long lessonId,
                                      @Param("reviewStatus") String reviewStatus);
 
-    long countByReviewStatus(String reviewStatus);
-
-    long countByJlptLevel(String jlptLevel);
+    @Query("SELECT f.reviewStatus, COUNT(f) FROM Flashcard f GROUP BY f.reviewStatus")
+    List<Object[]> countGroupedByReviewStatus();
 }

@@ -69,5 +69,15 @@ public interface ExamService {
      * Lấy chi tiết một lần thi trong lịch sử với kiểm tra quyền sở hữu (IDOR protection).
      */
     ExamResultResponse getHistoricalResult(Long resultId, Long userId);
+
+    /**
+     * Kiểm tra điều kiện tiên quyết để mở khóa bài thi (bài thi giữa kì, cuối kì yêu cầu hoàn thành các bài học trước đó).
+     */
+    com.jeps.modules.exam.dto.ExamPrerequisiteResult checkExamPrerequisites(Long examId, Long userId);
+
+    /**
+     * Lấy danh sách các bài thi của khóa học theo loại (MIDTERM, FINAL, MILESTONE) có cache in-memory.
+     */
+    List<com.jeps.modules.exam.entity.Exam> getCourseExamsByType(Long courseId, String examType);
 }
 

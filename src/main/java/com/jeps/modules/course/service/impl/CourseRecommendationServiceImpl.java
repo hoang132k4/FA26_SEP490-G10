@@ -46,10 +46,21 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
 
         List<RecommendedCourseItem> items = new ArrayList<>();
 
+        // Fetch enrolled course IDs once instead of querying DB in a loop
+        java.util.Set<Long> enrolledCourseIds = new java.util.HashSet<>();
+        if (userId != null) {
+            List<com.jeps.modules.course.entity.CourseRegistration> userRegs = registrationRepository.findByUserIdWithCourse(userId);
+            for (var r : userRegs) {
+                if (r.getCourse() != null) {
+                    enrolledCourseIds.add(r.getCourse().getId());
+                }
+            }
+        }
+
         // 1. Primary Recommendation: Target Level Course
         List<Course> targetCourses = courseRepository.findByLevelAndStatus(targetLevel, "PUBLISHED");
         for (Course c : targetCourses) {
-            boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, c.getId());
+            boolean enrolled = enrolledCourseIds.contains(c.getId());
             items.add(RecommendedCourseItem.builder()
                     .course(c)
                     .matchPercentage(98)
@@ -63,7 +74,7 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         if (!currentLevel.equalsIgnoreCase(targetLevel)) {
             List<Course> currentCourses = courseRepository.findByLevelAndStatus(currentLevel, "PUBLISHED");
             for (Course c : currentCourses) {
-                boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, c.getId());
+                boolean enrolled = enrolledCourseIds.contains(c.getId());
                 items.add(RecommendedCourseItem.builder()
                         .course(c)
                         .matchPercentage(92)
@@ -78,7 +89,7 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
         if (items.isEmpty()) {
             List<Course> all = courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED");
             for (Course c : all) {
-                boolean enrolled = userId != null && registrationRepository.existsByUserIdAndCourseId(userId, c.getId());
+                boolean enrolled = enrolledCourseIds.contains(c.getId());
                 items.add(RecommendedCourseItem.builder()
                         .course(c)
                         .matchPercentage(85)
@@ -95,11 +106,7 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
 
     @Override
     public List<Course> getOtherAvailableCourses(Long userId) {
-        List<Course> all = courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED");
-        if (userId == null) {
-            return all;
-        }
-        return all;
+        return courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED");
     }
 
     @Override
@@ -328,12 +335,17 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
 
     private boolean matchesKeyword(Course c, String keyword) {
         if (keyword == null || keyword.isBlank()) return false;
-        String text = (c.getTitle() + " " + (c.getShortDescription() != null ? c.getShortDescription() : "") + " " + (c.getCoveredSkills() != null ? c.getCoveredSkills() : "")).toLowerCase();
-        return text.contains(keyword);
+        return buildSearchableText(c).contains(keyword);
     }
 
     private boolean matchesPracticeKeyword(Course c) {
-        String text = (c.getTitle() + " " + (c.getShortDescription() != null ? c.getShortDescription() : "") + " " + (c.getCoveredSkills() != null ? c.getCoveredSkills() : "")).toLowerCase();
+        String text = buildSearchableText(c);
         return text.contains("đề") || text.contains("luyện") || text.contains("thực chiến") || text.contains("format");
+    }
+
+    private String buildSearchableText(Course c) {
+        return (c.getTitle() + " "
+                + (c.getShortDescription() != null ? c.getShortDescription() : "") + " "
+                + (c.getCoveredSkills() != null ? c.getCoveredSkills() : "")).toLowerCase();
     }
 }
