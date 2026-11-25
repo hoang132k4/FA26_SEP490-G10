@@ -10,7 +10,7 @@ import com.jeps.modules.manager.courses.dto.CourseOption;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardSetCardForm;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardSetForm;
 import com.jeps.modules.manager.flashcards.service.ManagerFlashcardService;
-import com.jeps.modules.lesson.entity.Lesson;
+import com.jeps.modules.course.entity.Lesson;
 import com.jeps.modules.manager.lessons.dto.LessonDtos.LessonDetail;
 import com.jeps.modules.manager.lessons.dto.LessonDtos.ChapterGroup;
 import com.jeps.modules.manager.lessons.dto.LessonDtos.SkillColumn;
@@ -1342,10 +1342,9 @@ public class ManagerLessonController {
             List<FlashcardLessonOption> lessonOptions = new ArrayList<>();
             for (Lesson l : allLessons) {
                 String t = l.getTitle() != null && !l.getTitle().isBlank() ? l.getTitle().trim()
-                         : l.getLessonTitle() != null && !l.getLessonTitle().isBlank() ? l.getLessonTitle().trim()
-                         : "Bài học #" + l.getLessonId();
-                lessonTitles.put(l.getLessonId(), t);
-                lessonOptions.add(new FlashcardLessonOption(l.getLessonId(), t));
+                         : "Bài học #" + l.getId();
+                lessonTitles.put(l.getId(), t);
+                lessonOptions.add(new FlashcardLessonOption(l.getId(), t));
             }
             model.addAttribute("lessons", lessonOptions);
             model.addAttribute("lessonTitles", lessonTitles);

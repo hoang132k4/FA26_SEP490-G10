@@ -1,6 +1,6 @@
 package com.jeps.modules.manager.flashcards.controller;
 
-import com.jeps.modules.lesson.entity.Lesson;
+import com.jeps.modules.course.entity.Lesson;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardForm;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardSetForm;
 import com.jeps.modules.manager.flashcards.model.ManagerFlashcard;
@@ -204,21 +204,10 @@ public class ManagerFlashcardController {
     }
 
     private LessonOption toLessonOption(Lesson lesson) {
-        String title = firstNonBlank(lesson.getTitle(), lesson.getLessonTitle());
-        if (title == null) {
-            title = "Bài học #" + lesson.getLessonId();
-        }
-        return new LessonOption(lesson.getLessonId(), title);
-    }
-
-    private String firstNonBlank(String first, String second) {
-        if (first != null && !first.isBlank()) {
-            return first.trim();
-        }
-        if (second != null && !second.isBlank()) {
-            return second.trim();
-        }
-        return null;
+        String title = (lesson.getTitle() != null && !lesson.getTitle().isBlank())
+                ? lesson.getTitle().trim()
+                : "Bài học #" + lesson.getId();
+        return new LessonOption(lesson.getId(), title);
     }
 
     private long currentUserId(Principal principal, HttpSession session) {

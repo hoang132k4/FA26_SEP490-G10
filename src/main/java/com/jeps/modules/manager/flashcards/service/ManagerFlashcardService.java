@@ -1,7 +1,7 @@
 package com.jeps.modules.manager.flashcards.service;
 
-import com.jeps.modules.lesson.entity.Lesson;
-import com.jeps.modules.lesson.repository.LessonRepository;
+import com.jeps.modules.course.entity.Lesson;
+import com.jeps.modules.course.repository.LessonRepository;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardForm;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardSetCardForm;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardSetForm;
@@ -33,7 +33,7 @@ public class ManagerFlashcardService {
 
     @Transactional(readOnly = true)
     public List<Lesson> findLessons() {
-        return lessonRepository.findAll(Sort.by(Sort.Direction.ASC, "lessonId"));
+        return lessonRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
     }
 
     @Transactional(readOnly = true)

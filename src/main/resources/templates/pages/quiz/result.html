@@ -69,9 +69,9 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h5 class="fw-bold text-dark mb-0">
-                    <i class="bi bi-card-checklist text-primary me-2"></i>Xem lại đáp án & Giải thích chi tiết
+                    <i class="bi bi-card-checklist text-primary me-2"></i>Xem lại đáp án câu hỏi
                 </h5>
-                <p class="text-muted small mb-0">Xem lại từng câu hỏi, đáp án bạn đã chọn và ghi chú ngữ pháp chuyên sâu.</p>
+                <p class="text-muted small mb-0">Xem lại từng câu hỏi và đối chiếu đáp án bạn đã chọn.</p>
             </div>
             <span class="badge bg-light text-dark border rounded-pill px-3 py-1.5 small">
                 Đúng: <strong class="text-success" th:text="${result.correctCount}">4</strong> / 
@@ -138,24 +138,7 @@
                 </div>
             </div>
 
-            <!-- Sensei's Explanation Box from Database -->
-            <div th:if="${q.explanation != null && !q.explanation.isBlank()}" 
-                 class="rounded-3 p-3.5 mt-3 border" 
-                 style="background: #F0FDF4; border-color: #86EFAC !important;">
-                <div class="d-flex align-items-start gap-2.5">
-                    <div class="rounded-circle p-1.5 bg-success bg-opacity-15 text-success flex-shrink-0">
-                        <i class="bi bi-lightbulb-fill fs-5 text-warning"></i>
-                    </div>
-                    <div>
-                        <strong class="text-success small d-block mb-1 text-uppercase fw-bold" style="letter-spacing: 0.5px;">
-                            <i class="bi bi-mortarboard-fill me-1 text-success"></i>Lời giải & Giải thích từ Giảng viên (Sensei):
-                        </strong>
-                        <p class="text-dark small mb-0 lh-base" style="font-size: 0.95rem;" th:text="${q.explanation}">
-                            Giải thích lý do vì sao đáp án này đúng và lưu ý trong kỳ thi JLPT.
-                        </p>
-                    </div>
-                </div>
-            </div>
+
 
         </div>
 

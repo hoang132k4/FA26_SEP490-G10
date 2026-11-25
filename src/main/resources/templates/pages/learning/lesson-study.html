@@ -10,13 +10,15 @@
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a th:href="@{/learning/dashboard}" class="text-decoration-none">Tổng
                             quan</a></li>
-                    <li class="breadcrumb-item"><a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}"
-                            class="text-decoration-none" th:text="${course.title}">Khóa học</a></li>
+                    <li class="breadcrumb-item"><a
+                            th:href="@{/learning/courses/{id}/lessons(id=${course != null ? course.id : (lesson.course != null ? lesson.course.id : 1)})}"
+                            class="text-decoration-none" th:text="${course != null ? course.title : 'Khóa học'}">Khóa
+                            học</a></li>
                     <li class="breadcrumb-item active" aria-current="page" th:text="${lesson.title}">Bài học</li>
                 </ol>
             </nav>
 
-            <a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}"
+            <a th:href="@{/learning/courses/{id}/lessons(id=${course != null ? course.id : (lesson.course != null ? lesson.course.id : 1)})}"
                 class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5">
                 <i class="bi bi-list-ul"></i>
                 <span>Xem toàn bộ giáo trình</span>
@@ -64,7 +66,7 @@
                             </span>
 
                             <span class="badge px-2.5 py-1" style="background-color: var(--navy-dark); color: white;"
-                                th:text="${course.level}">N4</span>
+                                th:text="${course != null ? course.level : 'JLPT'}">N4</span>
                             <span class="text-muted small"><i class="bi bi-clock me-1"></i><span
                                     th:text="${lesson.durationMinutes != null ? lesson.durationMinutes : 20}">20</span>
                                 phút</span>
@@ -238,7 +240,8 @@
                             <div class="card p-3 rounded-3 bg-white h-100 border-0 shadow-sm text-center">
                                 <i class="bi bi-trophy fs-3 text-success mb-1"></i>
                                 <span class="text-muted small fw-semibold">Cấp độ đánh giá</span>
-                                <span class="fw-bold fs-5 text-dark" th:text="${course.level}">N4</span>
+                                <span class="fw-bold fs-5 text-dark"
+                                    th:text="${course != null ? course.level : 'JLPT'}">N4</span>
                             </div>
                         </div>
                     </div>
@@ -786,7 +789,7 @@
                         <div
                             class="manager-practice-quiz-heading d-flex justify-content-between align-items-center mb-2">
                             <h6 class="fw-bold text-dark mb-0"
-                                th:text="${pq.exercise.title != null ? pq.exercise.title : 'Trắc nghiệm luyện tập'}">Bài
+                                th:text="${pq.exercise.exerciseTitle != null ? pq.exercise.exerciseTitle : 'Trắc nghiệm luyện tập'}">Bài
                                 luyện tập</h6>
                             <span class="badge bg-success-subtle text-success border border-success-subtle"
                                 th:text="|${pq.questions.size()} câu hỏi|">0 câu hỏi</span>
@@ -801,8 +804,8 @@
                                     th:data-correct="${opt.isCorrect != null and opt.isCorrect}"
                                     onclick="selectQuizOption(this)">
                                     <b
-                                        th:text="${oStat.index == 0 ? 'A' : (oStat.index == 1 ? 'B' : (oStat.index == 2 ? 'C' : 'D'))}">A</b>
-                                    <span th:text="${opt.content}">Lựa chọn</span>
+                                        th:text="${opt.label != null ? opt.label : (oStat.index == 0 ? 'A' : (oStat.index == 1 ? 'B' : (oStat.index == 2 ? 'C' : 'D')))}">A</b>
+                                    <span th:text="${opt.optionText}">Lựa chọn</span>
                                     <i class="bi bi-check-circle-fill d-none text-success" aria-label="Đáp án đúng"></i>
                                 </div>
                             </div>
@@ -944,7 +947,7 @@
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge px-2.5 py-1 rounded-pill fw-bold"
                                 style="background-color: var(--navy-dark); color: white;"
-                                th:text="${course.level}">N2</span>
+                                th:text="${course != null ? course.level : 'JLPT'}">N2</span>
                             <span class="text-muted small fw-semibold text-uppercase"
                                 style="letter-spacing: 0.5px; font-size: 0.72rem;">Nội dung khóa học</span>
                         </div>
@@ -953,7 +956,8 @@
                     </div>
 
                     <!-- Course Title -->
-                    <h6 class="fw-bold text-dark mb-3" style="line-height: 1.45;" th:text="${course.title}">
+                    <h6 class="fw-bold text-dark mb-3" style="line-height: 1.45;"
+                        th:text="${course != null ? course.title : 'Khóa học'}">
                         Khóa học Đột Phá JLPT N2 Cao Cấp
                     </h6>
 
@@ -966,17 +970,19 @@
                                 th:text="${registration != null && registration.progressPercent != null ? registration.progressPercent : 0} + '%'">0%</span>
                         </div>
                         <div class="progress" style="height: 6px; border-radius: 4px; background-color: #E2E8F0;">
-                            <div class="progress-bar bg-primary"
-                                role="progressbar"
+                            <div class="progress-bar bg-primary" role="progressbar"
                                 th:aria-valuenow="${registration != null && registration.progressPercent != null ? registration.progressPercent : 0}"
-                                aria-valuemin="0"
-                                aria-valuemax="100"
+                                aria-valuemin="0" aria-valuemax="100"
                                 th:style="'width: ' + (${registration != null && registration.progressPercent != null ? registration.progressPercent : 0}) + '%; border-radius: 4px;'">
                             </div>
                         </div>
                         <div class="mt-1.5 d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
-                            <span>Đã học: <b class="text-dark" th:text="${completedLessonsCount != null ? completedLessonsCount : 0}">0</b>/<span th:text="${totalLessonsCount != null ? totalLessonsCount : 0}">0</span> bài</span>
-                            <span th:text="${registration != null && registration.progressPercent != null && registration.progressPercent >= 100 ? 'Đã hoàn thành' : 'Đang học'}">Đang học</span>
+                            <span>Đã học: <b class="text-dark"
+                                    th:text="${completedLessonsCount != null ? completedLessonsCount : 0}">0</b>/<span
+                                    th:text="${totalLessonsCount != null ? totalLessonsCount : 0}">0</span> bài</span>
+                            <span
+                                th:text="${registration != null && registration.progressPercent != null && registration.progressPercent >= 100 ? 'Đã hoàn thành' : 'Đang học'}">Đang
+                                học</span>
                         </div>
                     </div>
 
@@ -1042,7 +1048,8 @@
                                                     Tên bài học
                                                 </div>
                                                 <div class="d-flex align-items-center justify-content-end gap-2 mt-1">
-                                                    <span th:if="${completedLessonIds != null && completedLessonIds.contains(sLesson.id)}"
+                                                    <span
+                                                        th:if="${completedLessonIds != null && completedLessonIds.contains(sLesson.id)}"
                                                         class="badge bg-success-subtle text-success border border-success-subtle rounded-pill"
                                                         style="font-size: 0.65rem; font-weight: 600;">
                                                         <i class="bi bi-check2 me-0.5"></i>Đã học
@@ -1073,7 +1080,7 @@
 
                     <!-- Bottom Link to Full Syllabus -->
                     <div class="mt-3 pt-2 border-top text-center">
-                        <a th:href="@{/learning/courses/{id}/lessons(id=${course.id})}"
+                        <a th:href="@{/learning/courses/{id}/lessons(id=${course != null ? course.id : (lesson.course != null ? lesson.course.id : 1)})}"
                             class="text-decoration-none text-muted small fw-medium d-inline-flex align-items-center gap-1 hover-primary">
                             <i class="bi bi-list-columns-reverse"></i>
                             <span>Xem toàn bộ giáo trình khóa học</span>

@@ -9,8 +9,6 @@ import java.util.Map;
 
 public interface FlashcardService {
 
-    List<Flashcard> getFlashcards(String keyword, String level, Long lessonId, String reviewStatus);
-
     Flashcard getFlashcardById(Long id);
 
     Flashcard createFlashcard(FlashcardRequest request);
@@ -21,15 +19,11 @@ public interface FlashcardService {
 
     void deleteFlashcard(Long id);
 
-    List<Flashcard> getPracticeFlashcards(String level, Long lessonId, Integer limit);
-
     List<Flashcard> getPracticeFlashcards(String level, Long lessonId, String deckName, Integer limit);
 
     Flashcard updateReviewStatus(Long id, String status);
 
     Map<String, Long> getStatistics();
-
-    List<FlashcardDeckDto> getFlashcardDecks(String keyword, String level);
 
     List<FlashcardDeckDto> getSystemFlashcardDecks(String keyword, String level);
 

@@ -5,8 +5,8 @@ import com.jeps.modules.course.entity.Course;
 import com.jeps.modules.course.entity.CourseRegistration;
 import com.jeps.modules.course.entity.Lesson;
 import com.jeps.modules.course.repository.CourseRegistrationRepository;
-import com.jeps.modules.course.repository.CourseRepository;
 import com.jeps.modules.course.repository.LessonRepository;
+import com.jeps.modules.course.service.CoursePriceCalculator;
 import com.jeps.modules.course.service.CourseService;
 import com.jeps.modules.course.service.PublicCatalogService;
 import com.jeps.modules.exam.entity.Exam;
@@ -37,13 +37,12 @@ public class PublicCourseController {
 
     private final PublicCatalogService catalogService;
     private final CourseService courseService;
-    private final CourseRepository courseRepository;
     private final CourseRegistrationRepository courseRegistrationRepository;
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
     private final CurrentUserSession currentUserSession;
-    private final com.jeps.modules.exam.repository.ExamRepository examRepository;
     private final CoursePriceCalculator priceCalculator;
+    private final com.jeps.modules.exam.service.ExamService examService;
 
     @ModelAttribute("currentRole")
     public String currentRole(HttpSession session) {
@@ -57,25 +56,7 @@ public class PublicCourseController {
     }
 
     private User resolveCurrentUser(Principal principal, HttpSession session) {
-        if (principal != null && principal.getName() != null) {
-            String identifier = principal.getName().trim();
-            Optional<User> userOpt = userRepository.findByEmailIgnoreCase(identifier)
-                    .or(() -> userRepository.findByUsername(identifier));
-            if (userOpt.isPresent()) {
-                return userOpt.get();
-            }
-        }
-        if (session != null) {
-            Long userId = (Long) session.getAttribute("CURRENT_LEARNER_ID");
-            if (userId != null) {
-                return userRepository.findById(userId).orElse(null);
-            }
-            String email = (String) session.getAttribute("CURRENT_USER_EMAIL");
-            if (email != null) {
-                return userRepository.findByEmailIgnoreCase(email).orElse(null);
-            }
-        }
-        return null;
+        return CurrentUserSession.resolveSessionUser(principal, session, userRepository, false);
     }
 
     /**
@@ -193,15 +174,10 @@ public class PublicCourseController {
         Course course = catalogService.findCourse(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Không tìm thấy khóa học"));
         java.math.BigDecimal finalPrice = priceCalculator.calculateFinalPrice(course);
-        List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(id);
+        List<Lesson> lessons = courseService.getCourseLessons(id);
         List<Course> relatedCourses = courseService.getOtherCourses(id, course.getLevel(), 3);
 
-        Map<String, List<Lesson>> groupedLessons = lessons.stream()
-                .collect(Collectors.groupingBy(
-                        l -> (l.getSectionName() != null && !l.getSectionName().isBlank()) ? l.getSectionName() : "Chương 1: Bài học căn bản",
-                        LinkedHashMap::new,
-                        Collectors.toList()
-                ));
+        Map<String, List<Lesson>> groupedLessons = courseService.groupLessonsBySection(lessons);
 
         User currentUser = resolveCurrentUser(principal, session);
         boolean isEnrolled = false;
@@ -211,12 +187,24 @@ public class PublicCourseController {
             isEnrolled = courseRegistrationRepository.existsEligibleByUserIdAndCourseId(currentUser.getId(), id);
             registration = courseRegistrationRepository.findByUserIdAndCourseId(currentUser.getId(), id).orElse(null);
             model.addAttribute("learner", currentUser);
+            model.addAttribute("currentUser", currentUser);
         }
 
-        com.jeps.modules.exam.entity.Exam midtermExam = examRepository
-                .findByCourseIdAndExamTypeIgnoreCase(id, "MIDTERM").stream().findFirst().orElse(null);
-        com.jeps.modules.exam.entity.Exam finalExam = examRepository.findByCourseIdAndExamTypeIgnoreCase(id, "FINAL")
-                .stream().findFirst().orElse(null);
+        com.jeps.modules.exam.entity.Exam midtermExam = examService
+                .getCourseExamsByType(id, "MIDTERM").stream().findFirst().orElse(null);
+        com.jeps.modules.exam.entity.Exam finalExam = examService
+                .getCourseExamsByType(id, "FINAL").stream().findFirst().orElse(null);
+
+        Set<Long> unlockedExamIds = new HashSet<>();
+        Map<Long, com.jeps.modules.exam.dto.ExamPrerequisiteResult> examPrereqMap = new HashMap<>();
+        CourseViewHelper.populateExamPrerequisites(
+                examService,
+                currentUser != null ? currentUser.getId() : null,
+                lessons,
+                midtermExam,
+                finalExam,
+                unlockedExamIds,
+                examPrereqMap);
 
         model.addAttribute("course", course);
         model.addAttribute("finalCoursePrice", finalPrice);
@@ -226,6 +214,8 @@ public class PublicCourseController {
         model.addAttribute("lessonCount", lessons.size());
         model.addAttribute("midtermExam", midtermExam);
         model.addAttribute("finalExam", finalExam);
+        model.addAttribute("unlockedExamIds", unlockedExamIds);
+        model.addAttribute("examPrereqMap", examPrereqMap);
         model.addAttribute("isEnrolled", isEnrolled);
         model.addAttribute("registration", registration);
         model.addAttribute("relatedCourses", relatedCourses);

@@ -69,10 +69,6 @@ public class Lesson extends BaseEntity {
         return isMilestoneExam() || "EXAM".equalsIgnoreCase(lessonType) || examId != null;
     }
 
-    public boolean getIsExam() {
-        return isExam();
-    }
-
     public boolean isMilestoneExam() {
         if ("EXAM".equalsIgnoreCase(lessonType)
                 || "MILESTONE".equalsIgnoreCase(lessonType)
@@ -116,34 +112,6 @@ public class Lesson extends BaseEntity {
         };
     }
 
-    public Long getLessonId() {
-        return getId();
-    }
-
-    public void setLessonId(Long lessonId) {
-        setId(lessonId);
-    }
-
-    public String getLessonTitle() {
-        return title;
-    }
-
-    public void setLessonTitle(String lessonTitle) {
-        this.title = lessonTitle;
-    }
-
-    public Integer getLessonOrder() {
-        return orderIndex;
-    }
-
-    public void syncLessonColumns() {
-        // No-op for backwards compatibility after dropping redundant columns
-    }
-
-    public void setLessonOrder(Integer lessonOrder) {
-        this.orderIndex = lessonOrder;
-    }
-
     public String getTypeDisplayName() {
         if (isMilestoneExam()) return "Kiểm tra Milestone";
         if (lessonType == null) return "Bài học";
@@ -155,5 +123,9 @@ public class Lesson extends BaseEntity {
             case "EXAM", "MILESTONE" -> "Kiểm tra Milestone";
             default -> lessonType;
         };
+    }
+
+    public String getTypeLabel() {
+        return getTypeDisplayName();
     }
 }

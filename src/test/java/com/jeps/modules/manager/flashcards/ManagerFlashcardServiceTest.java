@@ -1,6 +1,6 @@
 package com.jeps.modules.manager.flashcards;
 
-import com.jeps.modules.lesson.repository.LessonRepository;
+import com.jeps.modules.course.repository.LessonRepository;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardSetCardForm;
 import com.jeps.modules.manager.flashcards.dto.ManagerFlashcardSetForm;
 import com.jeps.modules.manager.flashcards.model.ManagerFlashcard;

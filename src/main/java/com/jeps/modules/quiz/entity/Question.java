@@ -68,8 +68,6 @@ public class Question {
         if (updatedAt == null) updatedAt = LocalDateTime.now();
         if (status == null) status = "DRAFT";
         if (questionType == null) questionType = "MULTI_CHOICE";
-        if (options == null) options = "[{\"key\": \"A\", \"text\": \"\"}, {\"key\": \"B\", \"text\": \"\"}, {\"key\": \"C\", \"text\": \"\"}, {\"key\": \"D\", \"text\": \"\"}]";
-        if (answerKey == null) answerKey = "[\"A\"]";
     }
 
     @PreUpdate

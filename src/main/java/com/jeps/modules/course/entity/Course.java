@@ -104,7 +104,6 @@ public class Course {
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
         }
-        syncDualColumns();
     }
 
     @PreUpdate
@@ -112,46 +111,12 @@ public class Course {
         updatedAt = LocalDateTime.now();
     }
 
-    public Course(Long courseId, String courseTitle, String jlptLevel, Double price, String description,
-                  String status, String duration, String thumbnailUrl, Integer lessonCount, Boolean featured) {
-        this.id = courseId;
-        this.title = courseTitle;
-        this.level = jlptLevel;
-        this.price = price;
-        this.shortDescription = description;
-        this.status = status;
-        this.thumbnailUrl = thumbnailUrl;
-        this.lessonCount = lessonCount;
-        this.featured = featured;
-    }
-
-    // Alias methods for compatibility across modules
-    public void syncDualColumns() {
-        // No-op for backwards compatibility after dropping redundant columns
-    }
-
-    public Long getCourseId() {
-        return getId();
-    }
-
-    public void setCourseId(Long courseId) {
-        this.id = courseId;
-    }
-
     public String getCourseTitle() {
         return title;
     }
 
-    public void setCourseTitle(String courseTitle) {
-        this.title = courseTitle;
-    }
-
     public String getJlptLevel() {
         return level;
-    }
-
-    public void setJlptLevel(String jlptLevel) {
-        this.level = jlptLevel;
     }
 
     public String getDescription() {

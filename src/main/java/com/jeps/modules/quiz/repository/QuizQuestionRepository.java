@@ -9,6 +9,4 @@ import java.util.List;
 @Repository
 public interface QuizQuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findByIdIn(List<Long> ids);
-    List<Question> findByJlptLevel(String jlptLevel);
-    List<Question> findByCategory(String category);
 }

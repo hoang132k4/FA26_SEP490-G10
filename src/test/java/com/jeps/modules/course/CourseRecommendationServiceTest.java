@@ -2,6 +2,7 @@ package com.jeps.modules.course;
 
 import com.jeps.modules.course.dto.RecommendedCourseItem;
 import com.jeps.modules.course.entity.Course;
+import com.jeps.modules.course.entity.CourseRegistration;
 import com.jeps.modules.course.repository.CourseRegistrationRepository;
 import com.jeps.modules.course.repository.CourseRepository;
 import com.jeps.modules.course.service.impl.CourseRecommendationServiceImpl;
@@ -74,8 +75,9 @@ class CourseRecommendationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(learner));
         when(courseRepository.findByLevelAndStatus("N4", "PUBLISHED")).thenReturn(List.of(n4Course));
         when(courseRepository.findByLevelAndStatus("N5", "PUBLISHED")).thenReturn(List.of(n5Course));
-        when(registrationRepository.existsEligibleByUserIdAndCourseId(1L, 101L)).thenReturn(false);
-        when(registrationRepository.existsEligibleByUserIdAndCourseId(1L, 100L)).thenReturn(true);
+        when(registrationRepository.findByUserIdWithCourse(1L)).thenReturn(List.of(
+                CourseRegistration.builder().course(n4Course).status(CourseRegistration.STATUS_PENDING_PAYMENT).build(),
+                CourseRegistration.builder().course(n5Course).status(CourseRegistration.STATUS_ACTIVE).build()));
 
         List<RecommendedCourseItem> items = recommendationService.getRecommendationsForLearner(1L);
 
@@ -101,7 +103,7 @@ class CourseRecommendationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(learner));
         when(courseRepository.findByLevelAndStatus(anyString(), anyString())).thenReturn(List.of());
         when(courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED")).thenReturn(List.of(n4Course));
-        when(registrationRepository.existsEligibleByUserIdAndCourseId(1L, 101L)).thenReturn(false);
+        when(registrationRepository.findByUserIdWithCourse(1L)).thenReturn(List.of());
 
         List<RecommendedCourseItem> items = recommendationService.getRecommendationsForLearner(1L);
 
