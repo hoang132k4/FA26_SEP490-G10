@@ -1,9 +1,12 @@
 package com.jeps.modules.auth.security;
 
+import com.jeps.modules.user.entity.User;
+import com.jeps.modules.user.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
@@ -15,12 +18,16 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @Slf4j
 @Component
 public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+
+    @Autowired(required = false)
+    private UserRepository userRepository;
 
     @Override
     public void onAuthenticationFailure(
@@ -32,7 +39,17 @@ public class CustomAuthenticationFailureHandler implements AuthenticationFailure
 
         String redirectUrl = "/auth/login?error=true";
 
-        if (exception instanceof DisabledException || exception instanceof LockedException) {
+        if (exception instanceof DisabledException) {
+            boolean isUnverified = false;
+            String usernameParam = request != null ? request.getParameter("username") : null;
+            if (userRepository != null && usernameParam != null && !usernameParam.isBlank()) {
+                String clean = usernameParam.trim();
+                Optional<User> userOpt = userRepository.findByEmailIgnoreCase(clean)
+                        .or(() -> userRepository.findByUsername(clean));
+                isUnverified = userOpt.map(u -> "UNVERIFIED".equalsIgnoreCase(u.getStatus())).orElse(false);
+            }
+            redirectUrl = isUnverified ? "/auth/login?unverified=true" : "/auth/login?disabled=true";
+        } else if (exception instanceof LockedException) {
             redirectUrl = "/auth/login?disabled=true";
         } else if (exception instanceof OAuth2AuthenticationException oauthEx) {
             OAuth2Error error = oauthEx.getError();

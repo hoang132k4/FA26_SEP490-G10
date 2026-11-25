@@ -1,6 +1,7 @@
 package com.jeps.modules.profile;
 
 import com.jeps.common.constants.RoleEnum;
+import com.jeps.modules.auth.service.EmailService;
 import com.jeps.modules.profile.dto.EditProfileRequest;
 import com.jeps.modules.profile.dto.ProfileResponse;
 import com.jeps.modules.profile.service.impl.ProfileServiceImpl;
@@ -10,16 +11,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,11 +32,14 @@ class ProfileServiceUnitTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private EmailService emailService;
+
     private ProfileServiceImpl profileService;
 
     @BeforeEach
     void setUp() {
-        profileService = new ProfileServiceImpl(userRepository);
+        profileService = new ProfileServiceImpl(userRepository, emailService);
     }
 
     private User createSampleUser() {
@@ -286,7 +292,7 @@ class ProfileServiceUnitTest {
     }
 
     @Test
-    @DisplayName("Normal: updateProfile với email mới chưa tồn tại cập nhật email và số điện thoại thành công")
+    @DisplayName("Normal: updateProfile với email mới chưa tồn tại lưu pendingEmail và gửi email xác nhận")
     void updateProfile_withPhoneAndDifferentEmail_success() {
         User user = createSampleUser();
         when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
@@ -301,9 +307,67 @@ class ProfileServiceUnitTest {
         ProfileResponse res = profileService.updateProfile("learner@jeps.edu.vn", req, null);
 
         assertNotNull(res);
-        assertEquals("newemail@jeps.edu.vn", user.getEmail());
+        assertEquals("learner@jeps.edu.vn", user.getEmail());
+        assertEquals("newemail@jeps.edu.vn", user.getPendingEmail());
+        assertNotNull(user.getEmailVerificationTokenHash());
+        assertNotNull(user.getEmailVerificationTokenExpiry());
+        assertTrue(res.isEmailVerificationSent());
+        assertEquals("newemail@jeps.edu.vn", res.getPendingEmail());
         assertEquals("0987654321", user.getPhone());
         verify(userRepository).save(user);
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendEmailChangeVerificationEmail(eq("newemail@jeps.edu.vn"), eq("Nguyen Van B"), linkCaptor.capture());
+        assertTrue(linkCaptor.getValue().contains("/profile/verify-email?token="));
+    }
+
+    @Test
+    @DisplayName("Normal: verifyEmailChange với token hợp lệ cập nhật email chính thức và xóa pendingEmail")
+    void verifyEmailChange_validToken_updatesEmail() {
+        User user = createSampleUser();
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailIgnoreCase("newemail@jeps.edu.vn")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EditProfileRequest req = EditProfileRequest.builder()
+                .fullName("Nguyen Van Hoc Vien")
+                .email("newemail@jeps.edu.vn")
+                .phone("0912345678")
+                .build();
+        profileService.updateProfile("learner@jeps.edu.vn", req, null);
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendEmailChangeVerificationEmail(eq("newemail@jeps.edu.vn"), anyString(), linkCaptor.capture());
+        String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
+
+        when(userRepository.findByEmailVerificationTokenHash(user.getEmailVerificationTokenHash()))
+                .thenReturn(Optional.of(user));
+
+        ProfileResponse verified = profileService.verifyEmailChange(rawToken);
+
+        assertEquals("newemail@jeps.edu.vn", verified.getEmail());
+        assertEquals("newemail@jeps.edu.vn", user.getEmail());
+        assertNull(user.getPendingEmail());
+        assertNull(user.getEmailVerificationTokenHash());
+        assertNull(user.getEmailVerificationTokenExpiry());
+    }
+
+    @Test
+    @DisplayName("Abnormal: verifyEmailChange với token hết hạn ném ra IllegalArgumentException")
+    void verifyEmailChange_expiredToken_throwsException() {
+        User user = createSampleUser();
+        user.setPendingEmail("newemail@jeps.edu.vn");
+        user.setEmailVerificationTokenHash("dummy-hash");
+        user.setEmailVerificationTokenExpiry(LocalDateTime.now().minusMinutes(5));
+
+        when(userRepository.findByEmailVerificationTokenHash(anyString())).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> profileService.verifyEmailChange("some-raw-token"));
+        assertTrue(ex.getMessage().contains("đã hết hạn"));
+        assertEquals("learner@jeps.edu.vn", user.getEmail());
+        assertNull(user.getPendingEmail());
     }
 
     @Test

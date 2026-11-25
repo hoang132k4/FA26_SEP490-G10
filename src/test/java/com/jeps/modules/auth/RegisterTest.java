@@ -2,14 +2,17 @@ package com.jeps.modules.auth;
 
 import com.jeps.common.constants.RoleEnum;
 import com.jeps.modules.auth.dto.RegisterRequest;
+import com.jeps.modules.auth.service.EmailService;
 import com.jeps.modules.user.entity.User;
 import com.jeps.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -17,6 +20,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -35,6 +41,9 @@ public class RegisterTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @MockBean
+    private EmailService emailService;
 
     @BeforeEach
     void setUp() {
@@ -71,11 +80,34 @@ public class RegisterTest {
         assertThat(saved.getFullName()).isEqualTo("Nguyễn Văn A");
         assertThat(saved.getPhone()).isEqualTo("0987654321");
         assertThat(saved.getRole()).isEqualTo(RoleEnum.LEARNER);
-        assertThat(saved.getStatus()).isEqualTo("ACTIVE");
+        assertThat(saved.getStatus()).isEqualTo("UNVERIFIED");
+        assertThat(saved.getEmailVerificationTokenHash()).isNotBlank();
         assertThat(saved.getUsername()).isNotBlank();
         // Rule: Password Security (BCrypt)
         assertThat(saved.getPassword()).isNotEqualTo("SecurePass123!");
         assertThat(passwordEncoder.matches("SecurePass123!", saved.getPassword())).isTrue();
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendRegistrationVerificationEmail(eq("nguyenvana@example.com"), anyString(), linkCaptor.capture());
+        String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
+
+        // Unverified account cannot login yet
+        mockMvc.perform(post("/auth/login")
+                        .with(csrf())
+                        .param("username", "nguyenvana@example.com")
+                        .param("password", "SecurePass123!"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login?unverified=true"));
+
+        // Verify email link activates account
+        mockMvc.perform(get("/auth/verify-email").param("token", rawToken))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login"))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        User activated = userRepository.findByEmailIgnoreCase("nguyenvana@example.com").orElseThrow();
+        assertThat(activated.getStatus()).isEqualTo("ACTIVE");
+        assertThat(activated.getEmailVerificationTokenHash()).isNull();
     }
 
     @Test

@@ -105,6 +105,7 @@
                                 <div id="edit-fullName" style="display: none;">
                                     <span class="text-primary small fw-semibold d-block mb-1">Chỉnh sửa Họ và tên</span>
                                     <form th:action="@{/profile/edit}" method="post">
+                                        <input type="hidden" name="source" value="view">
                                         <input type="hidden" name="email" th:value="${profile.email}">
                                         <input type="hidden" name="phone" th:value="${profile.phone}">
                                         <div class="input-group input-group-sm mb-1">
@@ -140,10 +141,27 @@
                                         </button>
                                     </div>
                                     <strong class="fs-6 d-block" style="color: #0F172A" th:text="${profile.email}"></strong>
+                                    <div th:if="${profile.pendingEmail != null and !profile.pendingEmail.isBlank()}"
+                                         class="mt-2 p-2 rounded-2 small"
+                                         style="background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;">
+                                        <div class="d-flex align-items-start gap-1">
+                                            <i class="bi bi-envelope-exclamation-fill mt-1"></i>
+                                            <span>
+                                                Đang chờ xác nhận: <strong th:text="${profile.pendingEmail}"></strong>.
+                                                Vui lòng kiểm tra hộp thư mới để xác nhận.
+                                            </span>
+                                        </div>
+                                        <form th:action="@{/profile/cancel-email-change}" method="post" class="mt-2 mb-0">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size: 0.78rem;">
+                                                <i class="bi bi-x-circle me-1"></i>Hủy yêu cầu đổi email
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                                 <div id="edit-email" style="display: none;">
                                     <span class="text-primary small fw-semibold d-block mb-1">Chỉnh sửa Địa chỉ Email</span>
                                     <form th:action="@{/profile/edit}" method="post">
+                                        <input type="hidden" name="source" value="view">
                                         <input type="hidden" name="fullName" th:value="${profile.fullName}">
                                         <input type="hidden" name="phone" th:value="${profile.phone}">
                                         <div class="input-group input-group-sm mb-1">
@@ -175,6 +193,7 @@
                                 <div id="edit-phone" style="display: none;">
                                     <span class="text-primary small fw-semibold d-block mb-1">Chỉnh sửa Số điện thoại</span>
                                     <form th:action="@{/profile/edit}" method="post">
+                                        <input type="hidden" name="source" value="view">
                                         <input type="hidden" name="fullName" th:value="${profile.fullName}">
                                         <input type="hidden" name="email" th:value="${profile.email}">
                                         <div class="input-group input-group-sm mb-1">

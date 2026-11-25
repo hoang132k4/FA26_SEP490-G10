@@ -63,6 +63,15 @@ public class User extends BaseEntity {
     @Column(name = "reset_token_expiry")
     private java.time.LocalDateTime resetTokenExpiry;
 
+    @Column(name = "pending_email", length = 150)
+    private String pendingEmail;
+
+    @Column(name = "email_verification_token_hash", length = 255)
+    private String emailVerificationTokenHash;
+
+    @Column(name = "email_verification_token_expiry")
+    private java.time.LocalDateTime emailVerificationTokenExpiry;
+
     // Alias methods for compatibility across modules
     public Long getUserId() {
         return getId();

@@ -4,6 +4,7 @@ import com.jeps.common.constants.RoleEnum;
 import com.jeps.modules.auth.dto.RegisterRequest;
 import com.jeps.modules.auth.exception.DuplicateEmailException;
 import com.jeps.modules.auth.exception.DuplicatePhoneException;
+import com.jeps.modules.auth.service.EmailService;
 import com.jeps.modules.auth.service.impl.RegisterServiceImpl;
 import com.jeps.modules.user.entity.User;
 import com.jeps.modules.user.repository.UserRepository;
@@ -16,9 +17,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,11 +36,14 @@ class RegisterServiceUnitTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private EmailService emailService;
+
     private RegisterServiceImpl registerService;
 
     @BeforeEach
     void setUp() {
-        registerService = new RegisterServiceImpl(userRepository, passwordEncoder);
+        registerService = new RegisterServiceImpl(userRepository, passwordEncoder, emailService);
     }
 
     private RegisterRequest createValidRequest() {
@@ -66,11 +74,58 @@ class RegisterServiceUnitTest {
         assertEquals("0987654321", result.getPhone());
         assertEquals("encoded_hash_123", result.getPassword());
         assertEquals(RoleEnum.LEARNER, result.getRole());
-        assertEquals("ACTIVE", result.getStatus());
+        assertEquals("UNVERIFIED", result.getStatus());
+        assertNotNull(result.getEmailVerificationTokenHash());
+        assertNotNull(result.getEmailVerificationTokenExpiry());
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertEquals("nguyenvana", captor.getValue().getUsername());
+
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendRegistrationVerificationEmail(eq("nguyenvana@example.com"), eq("Nguyen Van A"), linkCaptor.capture());
+        assertTrue(linkCaptor.getValue().contains("/auth/verify-email?token="));
+    }
+
+    @Test
+    @DisplayName("Normal: Xác nhận email đăng ký với token hợp lệ kích hoạt tài khoản sang ACTIVE")
+    void verifyRegistrationEmail_validToken_activatesAccount() {
+        RegisterRequest request = createValidRequest();
+        when(userRepository.existsByEmailIgnoreCase("nguyenvana@example.com")).thenReturn(false);
+        when(userRepository.existsByPhone("0987654321")).thenReturn(false);
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(passwordEncoder.encode("Password@123")).thenReturn("encoded_hash_123");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User created = registerService.register(request);
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendRegistrationVerificationEmail(eq("nguyenvana@example.com"), anyString(), linkCaptor.capture());
+        String rawToken = linkCaptor.getValue().substring(linkCaptor.getValue().indexOf("token=") + 6);
+
+        when(userRepository.findByEmailVerificationTokenHash(created.getEmailVerificationTokenHash()))
+                .thenReturn(Optional.of(created));
+
+        User activated = registerService.verifyRegistrationEmail(rawToken);
+        assertEquals("ACTIVE", activated.getStatus());
+        assertNull(activated.getEmailVerificationTokenHash());
+        assertNull(activated.getEmailVerificationTokenExpiry());
+    }
+
+    @Test
+    @DisplayName("Abnormal: Xác nhận email đăng ký với token hết hạn ném ra IllegalArgumentException")
+    void verifyRegistrationEmail_expiredToken_throwsException() {
+        User user = User.builder()
+                .email("nguyenvana@example.com")
+                .status("UNVERIFIED")
+                .emailVerificationTokenHash("dummy-hash")
+                .emailVerificationTokenExpiry(LocalDateTime.now().minusMinutes(5))
+                .build();
+        when(userRepository.findByEmailVerificationTokenHash(anyString())).thenReturn(Optional.of(user));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> registerService.verifyRegistrationEmail("expired-token"));
+        assertTrue(ex.getMessage().contains("đã hết hạn"));
+        assertEquals("UNVERIFIED", user.getStatus());
     }
 
     @Test

@@ -95,7 +95,12 @@
                                        maxlength="150">
                             </div>
                             <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-                            <div class="form-text small text-muted">Email là định danh chính để đăng nhập hệ thống và nhận email khôi phục mật khẩu.</div>
+                            <div class="form-text small text-muted">Email là định danh chính để đăng nhập hệ thống và nhận email khôi phục mật khẩu. Nếu bạn thay đổi email, hệ thống sẽ gửi liên kết xác nhận đến địa chỉ email mới trước khi áp dụng.</div>
+                            <div th:if="${profile.pendingEmail != null and !profile.pendingEmail.isBlank()}"
+                                 class="alert alert-warning py-2 px-3 small mt-2 mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-envelope-exclamation-fill"></i>
+                                <span>Đang có yêu cầu đổi sang email <strong th:text="${profile.pendingEmail}"></strong> chờ xác nhận. Vui lòng kiểm tra hộp thư mới.</span>
+                            </div>
                         </div>
 
                         <!-- Số điện thoại -->

@@ -38,6 +38,8 @@ public class AuthController {
             @RequestParam(name = "error", required = false) String error,
             @RequestParam(name = "logout", required = false) String logout,
             @RequestParam(name = "disabled", required = false) String disabled,
+            @RequestParam(name = "unverified", required = false) String unverified,
+            @RequestParam(name = "emailVerified", required = false) String emailVerified,
             Model model) {
 
         if (error != null) {
@@ -60,8 +62,14 @@ public class AuthController {
             // GB-05: Account is disabled or locked
             model.addAttribute("errorMessage", "Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa.");
         }
+        if (unverified != null) {
+            model.addAttribute("errorMessage", "Tài khoản của bạn chưa được xác nhận email. Vui lòng kiểm tra hộp thư và bấm vào liên kết xác nhận để kích hoạt tài khoản.");
+        }
         if (logout != null) {
             model.addAttribute("successMessage", "Bạn đã đăng xuất thành công khỏi hệ thống.");
+        }
+        if (emailVerified != null) {
+            model.addAttribute("successMessage", "Xác nhận địa chỉ email mới thành công! Vui lòng đăng nhập lại bằng địa chỉ email mới của bạn.");
         }
 
         return "pages/auth/login";
@@ -102,7 +110,8 @@ public class AuthController {
         try {
             registerService.register(request);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đăng ký tài khoản thành công! Vui lòng đăng nhập để bắt đầu học tập.");
+                    "Đăng ký tài khoản thành công! Một email xác nhận đã được gửi tới " + request.getEmail().trim()
+                            + ". Vui lòng kiểm tra hộp thư (kể cả mục Spam) và bấm vào liên kết xác nhận để kích hoạt tài khoản trước khi đăng nhập.");
             return "redirect:/auth/login";
         } catch (DuplicateEmailException ex) {
             bindingResult.rejectValue("email", "duplicateEmail", ex.getMessage());
@@ -118,6 +127,25 @@ public class AuthController {
             model.addAttribute("errorMessage", "Đăng ký không thành công do lỗi hệ thống. Vui lòng thử lại sau.");
             return "pages/auth/register";
         }
+    }
+
+    @GetMapping("/verify-email")
+    public String verifyRegistrationEmail(
+            @RequestParam(name = "token", required = false) String token,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            User activated = registerService.verifyRegistrationEmail(token);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Xác nhận email (" + activated.getEmail() + ") thành công! Tài khoản của bạn đã được kích hoạt, vui lòng đăng nhập.");
+        } catch (IllegalArgumentException ex) {
+            log.warn("Registration email verification failed: {}", ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Unexpected error during registration email verification", ex);
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi xác nhận tài khoản. Vui lòng thử lại sau.");
+        }
+        return "redirect:/auth/login";
     }
 
     @GetMapping("/forgot-password")

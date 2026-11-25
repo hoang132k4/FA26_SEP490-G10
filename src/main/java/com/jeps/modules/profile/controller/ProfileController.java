@@ -5,9 +5,12 @@ import com.jeps.modules.auth.service.ChangePasswordService;
 import com.jeps.modules.profile.dto.EditProfileRequest;
 import com.jeps.modules.profile.dto.ProfileResponse;
 import com.jeps.modules.profile.service.ProfileService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -31,13 +34,23 @@ public class ProfileController {
     private final ChangePasswordService changePasswordService;
 
     @GetMapping
-    public String viewProfile(Model model, Principal principal) {
+    public String viewProfile(Model model, Principal principal, HttpServletRequest request) {
         if (principal == null) {
             return "redirect:/auth/login";
         }
-        ProfileResponse profile = profileService.getProfile(principal.getName());
-        model.addAttribute("profile", profile);
-        return "pages/profile/view";
+        try {
+            ProfileResponse profile = profileService.getProfile(principal.getName());
+            model.addAttribute("profile", profile);
+            return "pages/profile/view";
+        } catch (IllegalArgumentException ex) {
+            log.info("Session principal {} is no longer valid (likely after email change). Forcing re-login.", principal.getName());
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            SecurityContextHolder.clearContext();
+            return "redirect:/auth/login?emailVerified=true";
+        }
     }
 
     @GetMapping("/edit")
@@ -59,6 +72,7 @@ public class ProfileController {
             @Valid @ModelAttribute("editProfileRequest") EditProfileRequest request,
             BindingResult bindingResult,
             @RequestParam(value = "avatarFile", required = false) MultipartFile avatarFile,
+            @RequestParam(value = "source", required = false) String source,
             Model model,
             Principal principal,
             RedirectAttributes redirectAttributes) {
@@ -67,24 +81,47 @@ public class ProfileController {
             return "redirect:/auth/login";
         }
 
+        boolean fromViewPage = "view".equalsIgnoreCase(source);
+
         if (bindingResult.hasErrors()) {
+            if (fromViewPage) {
+                String firstError = bindingResult.getAllErrors().isEmpty()
+                        ? "Thông tin nhập vào không hợp lệ."
+                        : bindingResult.getAllErrors().get(0).getDefaultMessage();
+                redirectAttributes.addFlashAttribute("errorMessage", firstError);
+                return "redirect:/profile";
+            }
             ProfileResponse profile = profileService.getProfile(principal.getName());
             model.addAttribute("profile", profile);
             return "pages/profile/edit";
         }
 
         try {
-            profileService.updateProfile(principal.getName(), request, avatarFile);
-            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ cá nhân thành công!");
+            ProfileResponse updated = profileService.updateProfile(principal.getName(), request, avatarFile);
+            if (updated.isEmailVerificationSent()) {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Đã lưu thay đổi hồ sơ! Một email xác nhận đã được gửi tới " + updated.getPendingEmail()
+                                + ". Vui lòng kiểm tra hộp thư và bấm vào liên kết xác nhận để hoàn tất việc đổi email.");
+            } else {
+                redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ cá nhân thành công!");
+            }
             return "redirect:/profile";
         } catch (IllegalArgumentException ex) {
             log.warn("Profile update validation error for user {}: {}", principal.getName(), ex.getMessage());
+            if (fromViewPage) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/profile";
+            }
             model.addAttribute("errorMessage", ex.getMessage());
             ProfileResponse profile = profileService.getProfile(principal.getName());
             model.addAttribute("profile", profile);
             return "pages/profile/edit";
         } catch (Exception ex) {
             log.error("Unexpected error during profile update for user {}", principal.getName(), ex);
+            if (fromViewPage) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi cập nhật hồ sơ. Vui lòng thử lại sau.");
+                return "redirect:/profile";
+            }
             model.addAttribute("errorMessage", "Đã xảy ra lỗi khi cập nhật hồ sơ. Vui lòng thử lại sau.");
             ProfileResponse profile = profileService.getProfile(principal.getName());
             model.addAttribute("profile", profile);
@@ -159,6 +196,50 @@ public class ProfileController {
         } catch (Exception ex) {
             log.error("Unexpected error updating avatar for user: {}", principal.getName(), ex);
             redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi tải ảnh đại diện lên.");
+        }
+        return "redirect:/profile";
+    }
+
+    @GetMapping("/verify-email")
+    public String verifyEmailChange(
+            @RequestParam(value = "token", required = false) String token,
+            HttpServletRequest request,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            profileService.verifyEmailChange(token);
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            SecurityContextHolder.clearContext();
+            return "redirect:/auth/login?emailVerified=true";
+        } catch (IllegalArgumentException ex) {
+            log.warn("Email verification failed: {}", ex.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/auth/login";
+        } catch (Exception ex) {
+            log.error("Unexpected error during email verification", ex);
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi xác nhận email mới. Vui lòng thử lại sau.");
+            return "redirect:/auth/login";
+        }
+    }
+
+    @PostMapping("/cancel-email-change")
+    public String cancelPendingEmailChange(
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+
+        if (principal == null) {
+            return "redirect:/auth/login";
+        }
+
+        try {
+            profileService.cancelPendingEmailChange(principal.getName());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy yêu cầu thay đổi địa chỉ email.");
+        } catch (Exception ex) {
+            log.error("Error cancelling pending email change for user: {}", principal.getName(), ex);
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể hủy yêu cầu thay đổi email. Vui lòng thử lại.");
         }
         return "redirect:/profile";
     }
