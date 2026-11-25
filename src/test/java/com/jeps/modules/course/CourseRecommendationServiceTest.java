@@ -71,11 +71,14 @@ class CourseRecommendationServiceTest {
 
     @Test
     void testGetRecommendationsForLearner_ReturnsRankedCourses() {
+        com.jeps.modules.course.entity.CourseRegistration n5Reg = com.jeps.modules.course.entity.CourseRegistration.builder()
+                .user(learner)
+                .course(n5Course)
+                .build();
         when(userRepository.findById(1L)).thenReturn(Optional.of(learner));
         when(courseRepository.findByLevelAndStatus("N4", "PUBLISHED")).thenReturn(List.of(n4Course));
         when(courseRepository.findByLevelAndStatus("N5", "PUBLISHED")).thenReturn(List.of(n5Course));
-        when(registrationRepository.existsByUserIdAndCourseId(1L, 101L)).thenReturn(false);
-        when(registrationRepository.existsByUserIdAndCourseId(1L, 100L)).thenReturn(true);
+        when(registrationRepository.findByUserIdWithCourse(1L)).thenReturn(List.of(n5Reg));
 
         List<RecommendedCourseItem> items = recommendationService.getRecommendationsForLearner(1L);
 
@@ -101,7 +104,7 @@ class CourseRecommendationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(learner));
         when(courseRepository.findByLevelAndStatus(anyString(), anyString())).thenReturn(List.of());
         when(courseRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED")).thenReturn(List.of(n4Course));
-        when(registrationRepository.existsByUserIdAndCourseId(1L, 101L)).thenReturn(false);
+        when(registrationRepository.findByUserIdWithCourse(1L)).thenReturn(List.of());
 
         List<RecommendedCourseItem> items = recommendationService.getRecommendationsForLearner(1L);
 

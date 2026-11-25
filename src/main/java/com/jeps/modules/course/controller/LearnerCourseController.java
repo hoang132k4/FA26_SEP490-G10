@@ -92,65 +92,9 @@ public class LearnerCourseController {
      * UC: View Learner Dashboard
      */
     @GetMapping("/dashboard")
-    public String learnerDashboard(Principal principal, HttpSession session, Model model) {
-        User learner = getCurrentLearner(principal, session);
-        List<CourseRegistration> registrations = registrationService.getUserRegistrations(learner.getId());
-
-        // Find currently active course
-        CourseRegistration activeRegistration = registrations.stream()
-                .filter(r -> "ACTIVE".equalsIgnoreCase(r.getStatus()))
-                .findFirst()
-                .orElse(registrations.isEmpty() ? null : registrations.get(0));
-
-        Course activeCourse = null;
-        Lesson nextLesson = null;
-        int activeCourseLessonCount = 0;
-        int activeCourseCompletedLessons = 0;
-        List<Lesson> lessons = List.of();
-
-        if (activeRegistration != null) {
-            activeCourse = activeRegistration.getCourse();
-            lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(activeCourse.getId());
-            activeCourseLessonCount = lessons.size();
-            Set<Long> completedIds = lessonProgressService.getCompletedLessonIds(learner.getId(), activeCourse.getId());
-            activeCourseCompletedLessons = computeCompletedCount(completedIds.size(), activeRegistration, activeCourseLessonCount);
-            syncRegistrationProgress(activeRegistration, activeCourseCompletedLessons, activeCourseLessonCount);
-
-            // Next lesson is the first uncompleted lesson
-            nextLesson = null;
-            for (Lesson l : lessons) {
-                if (!completedIds.contains(l.getId())) {
-                    nextLesson = l;
-                    break;
-                }
-            }
-            if (nextLesson == null && !lessons.isEmpty()) {
-                int nextIdx = Math.min(activeCourseCompletedLessons, Math.max(0, activeCourseLessonCount - 1));
-                nextLesson = lessons.get(nextIdx);
-            }
-        }
-
-        long completedCourses = registrations.stream()
-                .filter(r -> "COMPLETED".equalsIgnoreCase(r.getStatus()))
-                .count();
-
-        // Sample lessons for exploration (reuse existing fetched lessons)
-        List<Lesson> exploreLessons = (activeRegistration != null && activeCourse != null)
-                ? lessons.stream().limit(6).toList()
-                : List.of();
-
-        model.addAttribute("learner", learner);
-        model.addAttribute("registrations", registrations);
-        model.addAttribute("activeRegistration", activeRegistration);
-        model.addAttribute("activeCourse", activeCourse);
-        model.addAttribute("nextLesson", nextLesson);
-        model.addAttribute("activeCourseLessonCount", activeCourseLessonCount);
-        model.addAttribute("activeCourseCompletedLessons", activeCourseCompletedLessons);
-        model.addAttribute("completedCourses", completedCourses);
-        model.addAttribute("totalRegisteredCourses", registrations.size());
-        model.addAttribute("exploreLessons", exploreLessons);
-        model.addAttribute("activeMenu", "learner-dashboard");
-        return "pages/learning/dashboard";
+    public String learnerDashboard(Principal principal, HttpSession session) {
+        getCurrentLearner(principal, session);
+        return "redirect:/learning/my-courses";
     }
 
     /**
@@ -499,11 +443,35 @@ public class LearnerCourseController {
     @GetMapping("/courses/recommended")
     public String viewRecommendedCourses(Principal principal, HttpSession session, Model model) {
         User learner = getCurrentLearner(principal, session);
-        List<RecommendedCourseItem> recommendedItems = recommendationService
-                .getRecommendationsForLearner(learner.getId());
+        com.jeps.modules.course.dto.ExamRecommendationDto examRecommendation = null;
+        try {
+            var history = examService.getLearnerExamHistory(learner.getId());
+            if (history != null) {
+                var latestPlacement = history.stream()
+                        .filter(h -> "PLACEMENT_TEST".equalsIgnoreCase(h.getExamType()))
+                        .findFirst()
+                        .orElse(null);
+                if (latestPlacement != null && latestPlacement.getResultId() != null) {
+                    var fullResult = examService.getHistoricalResult(latestPlacement.getResultId(), learner.getId());
+                    if (fullResult != null) {
+                        examRecommendation = recommendationService.getRecommendationsFromExamResult(
+                                fullResult, learner.getId(), learner.getTargetJlptLevel(), "NO", fullResult.getJlptLevel());
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Could not load placement-based recommendation for learner {}: {}", learner.getId(), ex.getMessage());
+        }
+
+        List<RecommendedCourseItem> recommendedItems = (examRecommendation != null
+                && examRecommendation.getAllRecommendations() != null
+                && !examRecommendation.getAllRecommendations().isEmpty())
+                ? examRecommendation.getAllRecommendations()
+                : recommendationService.getRecommendationsForLearner(learner.getId());
         List<Course> otherCourses = recommendationService.getOtherAvailableCourses(learner.getId());
 
         model.addAttribute("learner", learner);
+        model.addAttribute("examRecommendation", examRecommendation);
         model.addAttribute("recommendedItems", recommendedItems);
         model.addAttribute("otherCourses", otherCourses);
         model.addAttribute("levels", List.of("N5", "N4", "N3", "N2", "N1"));
