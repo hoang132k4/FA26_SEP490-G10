@@ -530,6 +530,43 @@ class ManagerExamServiceTest {
     }
 
     @Test
+    void updateKeepsCourseExamTimingAndScaleWhenLevelIsUnchanged() {
+        Exam midterm = new Exam(EXAM_ID, "Giữa kỳ", "MIDTERM", "N5", 35, 5, 50, "DRAFT", null);
+        midterm.setTotalPoints(100);
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(midterm));
+        when(examRepository.save(midterm)).thenReturn(midterm);
+
+        Exam saved = service.update(EXAM_ID, examForm("MIDTERM", "N5", "DRAFT", 5, 0, 0));
+
+        assertEquals(35, saved.getDurationMinutes());
+        assertEquals(50, saved.getPassingScore());
+        assertEquals(100, saved.getTotalPoints());
+        assertEquals(5, saved.getTotalQuestions());
+    }
+
+    @Test
+    void toFormUsesLinkedCountsForExamWithoutSectionCounts() {
+        when(examQuestionRepository.countByExamId(EXAM_ID)).thenReturn(5L);
+        stubLinked("LANGUAGE", 4);
+        stubLinked("READING", 1);
+
+        ManagerExamForm form = service.toForm(exam(EXAM_ID, "PUBLISHED"));
+
+        assertEquals(4, form.getLanguageQuestions());
+        assertEquals(1, form.getReadingQuestions());
+        assertEquals(0, form.getListeningQuestions());
+    }
+
+    @Test
+    void toFormUsesJlptDefaultsForEmptyExamWithoutSectionCounts() {
+        ManagerExamForm form = service.toForm(exam(EXAM_ID, "DRAFT"));
+
+        assertEquals(38, form.getLanguageQuestions());
+        assertEquals(5, form.getReadingQuestions());
+        assertEquals(24, form.getListeningQuestions());
+    }
+
+    @Test
     void examTypesIncludeCourseMidtermAndFinal() {
         assertTrue(service.options().examTypes().containsAll(List.of("MIDTERM", "FINAL")));
     }
