@@ -266,6 +266,20 @@ class QuestionImportServiceTest {
         assertTrue(template.length > 0);
     }
 
+    @Test
+    void templateWriteFailureIsReportedAsIllegalState() {
+        IOException cause = new IOException("disk full");
+        try (var workbooks = org.mockito.Mockito.mockConstruction(XSSFWorkbook.class,
+                org.mockito.Mockito.withSettings().defaultAnswer(org.mockito.Answers.RETURNS_DEEP_STUBS),
+                (workbook, context) -> org.mockito.Mockito.doThrow(cause).when(workbook).write(any()))) {
+
+            IllegalStateException ex = assertThrows(IllegalStateException.class, () -> importService.buildTemplate(false));
+
+            assertEquals("Không tạo được file mẫu.", ex.getMessage());
+            assertEquals(cause, ex.getCause());
+        }
+    }
+
     // ── extra values map ──
 
     @Test

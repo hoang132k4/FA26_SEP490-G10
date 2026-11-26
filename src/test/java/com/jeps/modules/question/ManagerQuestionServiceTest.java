@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1139,6 +1140,253 @@ class ManagerQuestionServiceTest {
         service.update(1L, form);
 
         verify(questionRepository).copyAudioToChildren(1L, "/uploads/new.mp3", "/uploads/old.mp3");
+    }
+
+    @Test
+    void updatingPassageWithSameAudioDoesNotTouchChildren() {
+        Question passage = question(1L, "PASSAGE", "DRAFT");
+        passage.setSkillType("LISTENING");
+        passage.setAudioUrl("/uploads/same.mp3");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.save(passage)).thenReturn(passage);
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setSkillType("LISTENING");
+        form.setStatus("DRAFT");
+        form.setAudioUrl("/uploads/same.mp3");
+
+        service.update(1L, form);
+
+        verify(questionRepository, never()).copyAudioToChildren(anyLong(), anyString(), any());
+    }
+
+    // ── searchAllIds ──
+
+    @Test
+    void searchAllIdsTrimsFiltersAndReplacesNullWithEmpty() {
+        when(questionRepository.searchIdsForManager("kanji", "", "N5", "", "ACTIVE")).thenReturn(List.of(1L, 2L));
+
+        assertEquals(List.of(1L, 2L), service.searchAllIds(" kanji ", null, "N5 ", null, "ACTIVE"));
+    }
+
+    // ── bulk status ──
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    void bulkUpdateStatusRequiresAtLeastOneQuestion(List<Long> ids) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(ids, "DRAFT"));
+
+        assertEquals("Vui lòng chọn ít nhất một câu hỏi.", ex.getMessage());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"PUBLISHED", "active"})
+    void bulkUpdateStatusRejectsUnknownStatus(String status) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(1L), status));
+
+        assertEquals("Trạng thái không hợp lệ.", ex.getMessage());
+        verify(questionRepository, never()).bulkSetStatus(anyList(), anyString());
+    }
+
+    @Test
+    void bulkActivateSkipsQuestionsWithMissingInfoOrAnswers() {
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(1L, 2L, 3L))).thenReturn(List.of(2L));
+        when(questionRepository.findIdsWithMissingAnswers(List.of(1L, 2L, 3L))).thenReturn(List.of(3L));
+        when(questionRepository.findChildIdsByParentIds(List.of(1L, 2L, 3L))).thenReturn(List.of());
+        when(questionRepository.bulkSetStatus(List.of(1L), "ACTIVE")).thenReturn(1);
+
+        ManagerQuestionService.BulkUpdateResult result = service.bulkUpdateStatus(List.of(1L, 2L, 3L), "ACTIVE");
+
+        assertEquals(new ManagerQuestionService.BulkUpdateResult(1, 2), result);
+        verify(questionRepository).bulkSetStatusByParentIds(List.of(1L), "ACTIVE");
+        verify(questionRepository, never()).findParentIdsOfChildren(anyList());
+        verify(questionRepository, never()).findIdsUsedInActiveExams(anyList());
+    }
+
+    @Test
+    void bulkActivateSkipsPassageWhoseChildIsIncomplete() {
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(1L, 2L))).thenReturn(List.of());
+        when(questionRepository.findIdsWithMissingAnswers(List.of(1L, 2L))).thenReturn(List.of());
+        when(questionRepository.findChildIdsByParentIds(List.of(1L, 2L))).thenReturn(List.of(10L, 11L));
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(10L, 11L))).thenReturn(List.of(10L));
+        when(questionRepository.findIdsWithMissingAnswers(List.of(10L, 11L))).thenReturn(List.of(11L));
+        when(questionRepository.findParentIdsOfChildren(List.of(10L, 11L))).thenReturn(Set.of(1L));
+        when(questionRepository.bulkSetStatus(List.of(2L), "ACTIVE")).thenReturn(1);
+
+        assertEquals(new ManagerQuestionService.BulkUpdateResult(1, 1), service.bulkUpdateStatus(List.of(1L, 2L), "ACTIVE"));
+        verify(questionRepository).bulkSetStatusByParentIds(List.of(2L), "ACTIVE");
+    }
+
+    @Test
+    void bulkActivateKeepsPassageWhoseChildrenAreComplete() {
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(1L))).thenReturn(List.of());
+        when(questionRepository.findIdsWithMissingAnswers(List.of(1L))).thenReturn(List.of());
+        when(questionRepository.findChildIdsByParentIds(List.of(1L))).thenReturn(List.of(10L));
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(10L))).thenReturn(List.of());
+        when(questionRepository.findIdsWithMissingAnswers(List.of(10L))).thenReturn(List.of());
+        when(questionRepository.bulkSetStatus(List.of(1L), "ACTIVE")).thenReturn(1);
+
+        assertEquals(new ManagerQuestionService.BulkUpdateResult(1, 0), service.bulkUpdateStatus(List.of(1L), "ACTIVE"));
+        verify(questionRepository, never()).findParentIdsOfChildren(anyList());
+    }
+
+    @Test
+    void bulkActivateFailsWhenNoQuestionQualifies() {
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(1L, 2L))).thenReturn(List.of(1L));
+        when(questionRepository.findIdsWithMissingAnswers(List.of(1L, 2L))).thenReturn(List.of(2L));
+        when(questionRepository.findChildIdsByParentIds(List.of(1L, 2L))).thenReturn(List.of());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(1L, 2L), "ACTIVE"));
+
+        assertEquals("Không có câu hỏi nào đủ điều kiện để chuyển sang ACTIVE (thiếu cấp độ JLPT, kỹ năng hoặc đáp án).",
+                ex.getMessage());
+        verify(questionRepository, never()).bulkSetStatus(anyList(), anyString());
+    }
+
+    @Test
+    void bulkArchiveChecksChildrenTooAndUpdatesWhenNothingIsInActiveUse() {
+        when(questionRepository.findChildIdsByParentIds(List.of(1L, 2L))).thenReturn(List.of(10L));
+        when(questionRepository.findIdsUsedInActiveExams(List.of(1L, 2L, 10L))).thenReturn(List.of());
+        when(questionRepository.findIdsUsedInActiveQuizzes(List.of(1L, 2L, 10L))).thenReturn(List.of());
+        when(questionRepository.bulkSetStatus(List.of(1L, 2L), "ARCHIVED")).thenReturn(2);
+
+        assertEquals(new ManagerQuestionService.BulkUpdateResult(2, 0), service.bulkUpdateStatus(List.of(1L, 2L), "ARCHIVED"));
+        verify(questionRepository).bulkSetStatusByParentIds(List.of(1L, 2L), "ARCHIVED");
+        verify(questionRepository, never()).findIdsWithIncompleteInfo(anyList());
+    }
+
+    @Test
+    void bulkArchiveBlockedWhenChildIsUsedInActiveExam() {
+        when(questionRepository.findChildIdsByParentIds(List.of(1L))).thenReturn(List.of(10L));
+        when(questionRepository.findIdsUsedInActiveExams(List.of(1L, 10L))).thenReturn(List.of(10L));
+        when(questionRepository.findIdsUsedInActiveQuizzes(List.of(1L, 10L))).thenReturn(List.of());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(1L), "ARCHIVED"));
+
+        assertEquals("Câu hỏi #10 đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED.", ex.getMessage());
+        verify(questionRepository, never()).bulkSetStatus(anyList(), anyString());
+    }
+
+    // ── passage status cascades to children ──
+
+    @Test
+    void activatingPassageWithoutChildrenSavesNoChildren() {
+        Question passage = question(1L, "PASSAGE", "DRAFT");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of());
+        when(questionRepository.save(passage)).thenReturn(passage);
+
+        service.update(1L, passageForm("ACTIVE"));
+
+        assertEquals("ACTIVE", passage.getStatus());
+        verify(questionRepository, never()).findIdsWithIncompleteInfo(anyList());
+        verify(questionRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void activatingPassageActivatesItsCompleteChildren() {
+        Question passage = question(1L, "PASSAGE", "DRAFT");
+        Question child = question(2L, "MULTI_CHOICE", "DRAFT");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of(child));
+        when(questionRepository.findIdsWithIncompleteInfo(List.of(2L))).thenReturn(List.of());
+        when(questionRepository.findIdsWithMissingAnswers(List.of(2L))).thenReturn(List.of());
+        when(questionRepository.save(passage)).thenReturn(passage);
+
+        service.update(1L, passageForm("ACTIVE"));
+
+        assertEquals("ACTIVE", child.getStatus());
+        verify(questionRepository).saveAll(List.of(child));
+        verify(questionRepository, never()).findIdsUsedInActiveExams(anyList());
+    }
+
+    @Test
+    void archivingPassageWhoseChildrenAreAlreadyArchivedSkipsActiveUseCheck() {
+        Question passage = question(1L, "PASSAGE", "ACTIVE");
+        Question child = question(2L, "MULTI_CHOICE", "ARCHIVED");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of(child));
+        when(questionRepository.save(passage)).thenReturn(passage);
+
+        service.update(1L, passageForm("ARCHIVED"));
+
+        verify(questionRepository, never()).findIdsUsedInActiveExams(anyList());
+        verify(questionRepository).saveAll(List.of(child));
+    }
+
+    // ── ACTIVE requirements ──
+
+    @Test
+    void activeQuestionRequiresJlptLevel() {
+        assertRejected(choice(f -> { f.setStatus("ACTIVE"); f.setSkillType("VOCABULARY"); }),
+                "Câu hỏi ACTIVE phải có cấp độ JLPT.");
+    }
+
+    @Test
+    void activeQuestionRequiresSkillType() {
+        assertRejected(choice(f -> { f.setStatus("ACTIVE"); f.setJlptLevel("N5"); f.setSkillType(" "); }),
+                "Câu hỏi ACTIVE phải có loại kỹ năng.");
+    }
+
+    @Test
+    void activeListeningPassageWithAudioIsCreated() {
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setJlptLevel("N5");
+        form.setSkillType("LISTENING");
+        form.setStatus("ACTIVE");
+        form.setAudioUrl("/uploads/questions/audio/a.mp3");
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Question saved = service.create(form);
+
+        assertEquals("/uploads/questions/audio/a.mp3", saved.getAudioUrl());
+        verify(questionOptionRepository, never()).findByQuestionIdOrderByLabelAsc(any());
+    }
+
+    // ── child inherits passage audio ──
+
+    @Test
+    void childWithBlankAudioInheritsParentAudio() {
+        Question parent = question(1L, "PASSAGE", "DRAFT");
+        parent.setAudioUrl("/uploads/p.mp3");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(parent));
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Question saved = service.create(choice(f -> { f.setParentId(1L); f.setAudioUrl("  "); }));
+
+        assertEquals("/uploads/p.mp3", saved.getAudioUrl());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"  "})
+    void childKeepsNoAudioWhenParentHasNone(String parentAudio) {
+        Question parent = question(1L, "PASSAGE", "DRAFT");
+        parent.setAudioUrl(parentAudio);
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(parent));
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Question saved = service.create(choice(f -> f.setParentId(1L)));
+
+        assertNull(saved.getAudioUrl());
+    }
+
+    @Test
+    void childKeepsNoAudioWhenParentDisappearsAfterValidation() {
+        when(questionRepository.findById(1L))
+                .thenReturn(Optional.of(question(1L, "PASSAGE", "DRAFT")))
+                .thenReturn(Optional.empty());
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Question saved = service.create(choice(f -> f.setParentId(1L)));
+
+        assertNull(saved.getAudioUrl());
     }
 
     // ── helpers ──

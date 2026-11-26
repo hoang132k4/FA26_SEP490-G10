@@ -440,10 +440,11 @@ public class ManagerQuestionService {
         Map<String, QuestionOption> byLabel = new LinkedHashMap<>();
         for (QuestionOption opt : existing) byLabel.put(opt.getLabel(), opt);
 
-        Set<String> validAnswers = form.getAnswerKeys() != null ? new HashSet<>(form.getAnswerKeys()) : Set.of();
+        // validateDomain has already required options A and B and an answer key for choice questions.
+        Set<String> validAnswers = new HashSet<>(form.getAnswerKeys());
         Map<String, String> formOptions = new LinkedHashMap<>();
-        if (!isBlank(form.getOptionA())) formOptions.put("A", form.getOptionA().trim());
-        if (!isBlank(form.getOptionB())) formOptions.put("B", form.getOptionB().trim());
+        formOptions.put("A", form.getOptionA().trim());
+        formOptions.put("B", form.getOptionB().trim());
         if (!isBlank(form.getOptionC())) formOptions.put("C", form.getOptionC().trim());
         if (!isBlank(form.getOptionD())) formOptions.put("D", form.getOptionD().trim());
 
@@ -461,7 +462,7 @@ public class ManagerQuestionService {
         }
         List<QuestionOption> toDelete = existing.stream().filter(o -> !seen.contains(o.getLabel())).toList();
         if (!toDelete.isEmpty()) questionOptionRepository.deleteAll(toDelete);
-        if (!toSave.isEmpty()) questionOptionRepository.saveAll(toSave);
+        questionOptionRepository.saveAll(toSave);
     }
 
     private String norm(String v) { return v == null ? "" : v.trim(); }
