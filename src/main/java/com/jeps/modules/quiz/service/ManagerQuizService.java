@@ -6,6 +6,7 @@ import com.jeps.modules.question.entity.Question;
 import com.jeps.modules.question.service.QuestionImportService;
 import com.jeps.modules.quiz.dto.*;
 import com.jeps.modules.quiz.repository.ManagerQuizRepository;
+import com.jeps.modules.quiz.repository.ManagerQuizRepository.QuestionCheck;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -17,9 +18,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 @Service
 public class ManagerQuizService {
@@ -34,8 +37,11 @@ public class ManagerQuizService {
     }
 
     @Transactional(readOnly = true)
-    public List<QuizOption> search(String search, String level, String section, String status) {
-        return repository.search(norm(search), norm(level), norm(section), norm(status));
+    public Page<QuizOption> search(String search, String level, String section, String status, int page) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE);
+        String text = norm(search), lvl = norm(level), sec = norm(section), st = norm(status);
+        return new PageImpl<>(repository.search(text, lvl, sec, st, PAGE_SIZE, pageable.getOffset()),
+                pageable, repository.countSearch(text, lvl, sec, st));
     }
 
     @Transactional(readOnly = true)
@@ -145,20 +151,24 @@ public class ManagerQuizService {
         if (form.getQuestionIds() == null || form.getQuestionIds().isEmpty()) {
             throw new IllegalArgumentException("Vui lòng chọn ít nhất một câu hỏi.");
         }
-        for (Long questionId : form.getQuestionIds()) {
-            if (!repository.questionExists(questionId)) {
+        List<Long> ids = new ArrayList<>(new LinkedHashSet<>(form.getQuestionIds()));
+        Map<Long, QuestionCheck> checks = repository.findQuestionChecks(ids);
+        for (Long questionId : ids) {
+            QuestionCheck check = checks.get(questionId);
+            if (check == null) {
                 throw new IllegalArgumentException("Câu hỏi #" + questionId + " không tồn tại.");
             }
-            if (!repository.questionIsActive(questionId)) {
+            if (!"ACTIVE".equals(check.status())) {
                 throw new IllegalArgumentException("Câu hỏi #" + questionId + " chưa được kích hoạt (ACTIVE).");
             }
-            if (repository.questionIsPassage(questionId)) {
+            if ("PASSAGE".equals(check.questionType())) {
                 throw new IllegalArgumentException("Câu hỏi #" + questionId + " là bài đọc/nghe (PASSAGE), quiz chỉ gắn được câu trắc nghiệm.");
             }
-            if (repository.exerciseQuestionExists(quizId, questionId)) {
-                continue;
-            }
-            repository.insertExerciseQuestion(quizId, questionId);
+        }
+        Set<Long> linked = repository.findLinkedQuestionIds(quizId, ids);
+        List<Long> toInsert = ids.stream().filter(id -> !linked.contains(id)).toList();
+        if (!toInsert.isEmpty()) {
+            repository.insertExerciseQuestions(quizId, toInsert);
         }
         repository.syncTotalQuestions(quizId);
     }

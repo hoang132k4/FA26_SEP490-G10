@@ -3,6 +3,7 @@ package com.jeps.modules.exam.entity;
 import com.jeps.modules.question.entity.Question;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.domain.Persistable;
 
 @Getter
 @Setter
@@ -11,7 +12,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "exam_questions")
-public class ExamQuestion {
+public class ExamQuestion implements Persistable<ExamQuestionId> {
 
     @EmbeddedId
     private ExamQuestionId id;
@@ -37,4 +38,22 @@ public class ExamQuestion {
     @Column(nullable = false)
     @Builder.Default
     private Integer points = 1;
+
+    /** The id is assigned, so tell Spring Data a built link is new and skip the SELECT that merge() would run. */
+    @Transient
+    @Builder.Default
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean newEntity = true;
+
+    @Override
+    public boolean isNew() {
+        return newEntity;
+    }
+
+    @PostLoad
+    @PostPersist
+    public void markNotNew() {
+        newEntity = false;
+    }
 }

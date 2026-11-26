@@ -17,6 +17,8 @@ import com.jeps.modules.question.repository.QuestionRepository;
 import com.jeps.modules.question.service.QuestionImportService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import org.hibernate.Session;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,6 +68,16 @@ class ManagerExamServiceTest {
     @InjectMocks
     private ManagerExamService service;
 
+    // Session extends EntityManager, and @InjectMocks would inject any mock-valued field in its place,
+    // so the Session mock is only created after the service has been built.
+    private Session session;
+
+    @BeforeEach
+    void unwrapHibernateSession() {
+        session = mock(Session.class);
+        lenient().when(entityManager.unwrap(Session.class)).thenReturn(session);
+    }
+
     // ── JLPT structure ──
 
     @ParameterizedTest
@@ -88,9 +100,10 @@ class ManagerExamServiceTest {
 
     @Test
     void searchTrimsFiltersAndReplacesNullWithEmpty() {
-        service.search("  đề N5 ", null, " N5 ", null);
+        service.search("  đề N5 ", null, " N5 ", null, -1);
 
-        verify(examRepository).searchForManager("đề N5", "", "N5", "");
+        verify(examRepository).searchForManager("đề N5", "", "N5", "",
+                org.springframework.data.domain.PageRequest.of(0, ManagerExamService.PAGE_SIZE));
     }
 
     @Test
@@ -141,7 +154,9 @@ class ManagerExamServiceTest {
         assertEquals(4, saved.getReadingQuestions());
         assertEquals(6, saved.getListeningQuestions());
         assertEquals(20, saved.getTotalQuestions());
-        assertEquals(180, saved.getTotalPoints());
+        // Placement and course exams are scored out of 100 and passed at 60, not on the JLPT 180-point scale.
+        assertEquals(100, saved.getTotalPoints());
+        assertEquals(60, saved.getPassingScore());
         assertEquals("DRAFT", saved.getStatus());
     }
 
@@ -197,12 +212,12 @@ class ManagerExamServiceTest {
         Exam existing = exam(EXAM_ID, "DRAFT");
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(existing));
         when(examRepository.save(existing)).thenReturn(existing);
-        ManagerExamForm form = examForm("MILESTONE", "N1", "DRAFT", 20, 5, 5);
+        ManagerExamForm form = examForm("JLPT_MOCK", "N1", "DRAFT", 20, 5, 5);
         form.setDescription(" Mô tả ");
 
         Exam saved = service.update(EXAM_ID, form);
 
-        assertEquals("MILESTONE", saved.getExamType());
+        assertEquals("JLPT_MOCK", saved.getExamType());
         assertEquals("N1", saved.getJlptLevel());
         assertEquals(165, saved.getDurationMinutes());
         assertEquals(100, saved.getPassingScore());
@@ -311,11 +326,12 @@ class ManagerExamServiceTest {
     @Test
     void sectionProgressReportsLinkedAgainstRequiredInJlptOrder() {
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(EXAM_ID, "DRAFT", 3, 2, 1)));
-        stubLinked("LANGUAGE", 3);
-        stubLinked("READING", 1);
+        when(examQuestionRepository.countPerSection(EXAM_ID)).thenReturn(List.of(
+                new Object[]{"LANGUAGE", 3L}, new Object[]{"READING", 1L}));
 
         List<SectionProgress> progress = service.sectionProgress(EXAM_ID);
 
+        verify(examQuestionRepository, never()).countByExamIdAndSection(anyLong(), anyString());
         assertEquals(List.of("LANGUAGE", "READING", "LISTENING"), progress.stream().map(SectionProgress::section).toList());
         assertTrue(progress.get(0).complete());
         assertEquals(1, progress.get(1).linked());
@@ -444,6 +460,16 @@ class ManagerExamServiceTest {
         verify(examQuestionRepository, never()).existsById(any());
         verify(examQuestionRepository).saveAll(any());
         verify(examQuestionRepository, never()).save(any());
+        verify(session).setJdbcBatchSize(ManagerExamService.INSERT_BATCH_SIZE);
+    }
+
+    @Test
+    void newLinksAreInsertedWithoutLookupWhileLoadedLinksAreNot() {
+        ExamQuestion link = link(10L, 1);
+        assertTrue(link.isNew());
+
+        link.markNotNew();
+        assertFalse(link.isNew());
     }
 
     @Test
@@ -591,11 +617,12 @@ class ManagerExamServiceTest {
         service.reorderSection(EXAM_ID, "LANGUAGE", List.of(30L, 10L, 20L));
 
         ArgumentCaptor<Object> values = ArgumentCaptor.forClass(Object.class);
-        verify(query, times(18)).setParameter(anyInt(), values.capture());
+        verify(query, times(16)).setParameter(anyInt(), values.capture());
         assertEquals(List.of(
-                6, EXAM_ID, 30L, 7, EXAM_ID, 10L, 8, EXAM_ID, 20L,
-                1, EXAM_ID, 30L, 2, EXAM_ID, 10L, 3, EXAM_ID, 20L), values.getAllValues());
-        verify(query, times(6)).executeUpdate();
+                30L, 6, 10L, 7, 20L, 8, EXAM_ID, "LANGUAGE",
+                30L, 1, 10L, 2, 20L, 3, EXAM_ID, "LANGUAGE"), values.getAllValues());
+        verify(entityManager, times(2)).createNativeQuery(anyString());
+        verify(query, times(2)).executeUpdate();
     }
 
     @ParameterizedTest
@@ -1061,10 +1088,16 @@ class ManagerExamServiceTest {
     }
 
     @Test
-    void countByType_delegatesToRepository() {
-        when(examRepository.countByExamTypeIgnoreCase("JLPT_MOCK")).thenReturn(4L);
+    void countsByTypeReadsEveryTypeInOneQueryAndDefaultsMissingToZero() {
+        when(examRepository.countPerType()).thenReturn(List.of(
+                new Object[]{"JLPT_MOCK", 4L}, new Object[]{"MILESTONE", 2L}));
 
-        assertEquals(4L, service.countByType("JLPT_MOCK"));
+        Map<String, Long> counts = service.countsByType();
+
+        assertEquals(4L, counts.get("JLPT_MOCK"));
+        assertEquals(2L, counts.get("MILESTONE"));
+        assertEquals(0L, counts.getOrDefault("PLACEMENT_TEST", 0L));
+        verify(examRepository, never()).countByExamTypeIgnoreCase(anyString());
     }
 
     @Test

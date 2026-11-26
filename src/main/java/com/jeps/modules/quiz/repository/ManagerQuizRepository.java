@@ -4,43 +4,55 @@ import com.jeps.modules.quiz.dto.ExerciseQuestionRow;
 import com.jeps.modules.quiz.dto.LessonOption;
 import com.jeps.modules.quiz.dto.QuizOption;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public class ManagerQuizRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbc;
 
     public ManagerQuizRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.namedJdbc = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
-    public List<QuizOption> search(String search, String level, String section, String status) {
+    private static final String SEARCH_FROM_WHERE = """
+            FROM exercises e
+            LEFT JOIN lessons l ON l.lesson_id = e.lesson_id
+            LEFT JOIN courses c ON c.course_id = l.course_id
+            WHERE (? = '' OR LOWER(e.exercise_title) LIKE LOWER(?))
+              AND (? = '' OR c.level = ?)
+              AND (? = '' OR l.section_name = ?)
+              AND (? = '' OR UPPER(e.status) = UPPER(?))
+            """;
+
+    public List<QuizOption> search(String search, String level, String section, String status, int limit, long offset) {
         return jdbcTemplate.query("""
                 SELECT e.exercise_id, e.lesson_id, l.title AS lesson_title, e.exercise_title,
                        e.total_questions, e.passing_score, e.status,
-                       COUNT(eq.question_id) AS linked_question_count
-                FROM exercises e
-                LEFT JOIN lessons l ON l.lesson_id = e.lesson_id
-                LEFT JOIN courses c ON c.course_id = l.course_id
-                LEFT JOIN exercise_questions eq ON eq.exercise_id = e.exercise_id
-                WHERE (? = '' OR LOWER(e.exercise_title) LIKE LOWER(?))
-                  AND (? = '' OR c.level = ?)
-                  AND (? = '' OR l.section_name = ?)
-                  AND (? = '' OR UPPER(e.status) = UPPER(?))
-                GROUP BY e.exercise_id, e.lesson_id, l.title, e.exercise_title,
-                         e.total_questions, e.passing_score, e.status
-                ORDER BY e.exercise_id DESC
-                """, (rs, row) -> mapQuiz(rs.getLong("exercise_id"), rs.getLong("lesson_id"),
+                       (SELECT COUNT(*) FROM exercise_questions eq WHERE eq.exercise_id = e.exercise_id) AS linked_question_count
+                """ + SEARCH_FROM_WHERE + " ORDER BY e.exercise_id DESC LIMIT ? OFFSET ?",
+                (rs, row) -> mapQuiz(rs.getLong("exercise_id"), rs.getLong("lesson_id"),
                         rs.getString("lesson_title"), rs.getString("exercise_title"),
                         rs.getInt("total_questions"), rs.getInt("passing_score"),
                         rs.getString("status"), rs.getLong("linked_question_count")),
+                search, "%" + search + "%", level, level, section, section, status, status, limit, offset);
+    }
+
+    public long countSearch(String search, String level, String section, String status) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) " + SEARCH_FROM_WHERE, Long.class,
                 search, "%" + search + "%", level, level, section, section, status, status);
     }
 
@@ -199,17 +211,24 @@ public class ManagerQuizRepository {
                 """, Long.class, jlptLevel, skillType, exerciseId);
     }
 
-    public boolean exerciseQuestionExists(long exerciseId, long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM exercise_questions WHERE exercise_id = ? AND question_id = ?)",
-                Boolean.class, exerciseId, questionId));
+    /** Existing ids already linked to the quiz, checked in one query. */
+    public Set<Long> findLinkedQuestionIds(long exerciseId, Collection<Long> questionIds) {
+        return new HashSet<>(namedJdbc.queryForList(
+                "SELECT question_id FROM exercise_questions WHERE exercise_id = :exerciseId AND question_id IN (:ids)",
+                Map.of("exerciseId", exerciseId, "ids", questionIds), Long.class));
     }
 
-    public void insertExerciseQuestion(long exerciseId, long questionId) {
-        jdbcTemplate.update("""
-                INSERT INTO exercise_questions (exercise_id, question_id, question_order)
-                SELECT ?, ?, COALESCE(MAX(question_order), 0) + 1 FROM exercise_questions WHERE exercise_id = ?
-                """, exerciseId, questionId, exerciseId);
+    /** Appends the questions after the quiz's current last order in one JDBC batch. */
+    public void insertExerciseQuestions(long exerciseId, List<Long> questionIds) {
+        int maxOrder = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(MAX(question_order), 0) FROM exercise_questions WHERE exercise_id = ?",
+                Integer.class, exerciseId);
+        List<Object[]> rows = new ArrayList<>();
+        for (Long questionId : questionIds) {
+            rows.add(new Object[]{exerciseId, questionId, ++maxOrder});
+        }
+        jdbcTemplate.batchUpdate(
+                "INSERT INTO exercise_questions (exercise_id, question_id, question_order) VALUES (?, ?, ?)", rows);
     }
 
     public int deleteExerciseQuestion(long exerciseId, long questionId) {
@@ -217,21 +236,17 @@ public class ManagerQuizRepository {
                 exerciseId, questionId);
     }
 
-    public boolean questionIsActive(long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ? AND status = 'ACTIVE')",
-                Boolean.class, questionId));
-    }
+    public record QuestionCheck(long id, String status, String questionType) {}
 
-    public boolean questionIsPassage(long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ? AND question_type = 'PASSAGE')",
-                Boolean.class, questionId));
-    }
-
-    public boolean questionExists(long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ?)", Boolean.class, questionId));
+    /** Status and type of every requested question that exists, keyed by id. */
+    public Map<Long, QuestionCheck> findQuestionChecks(Collection<Long> questionIds) {
+        Map<Long, QuestionCheck> result = new HashMap<>();
+        namedJdbc.query("SELECT id, status, question_type FROM questions WHERE id IN (:ids)",
+                Map.of("ids", questionIds), rs -> {
+                    long id = rs.getLong("id");
+                    result.put(id, new QuestionCheck(id, rs.getString("status"), rs.getString("question_type")));
+                });
+        return result;
     }
 
     private QuizOption mapQuiz(long id, long lessonId, String lessonTitle, String title,

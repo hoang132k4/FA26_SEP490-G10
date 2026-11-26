@@ -4,6 +4,7 @@ import com.jeps.modules.question.entity.Question;
 import com.jeps.modules.question.repository.QuestionRepository;
 import com.jeps.modules.quiz.dto.ExerciseQuestionRow;
 import com.jeps.modules.quiz.dto.LessonOption;
+import com.jeps.modules.quiz.service.ManagerQuizService;
 import com.jeps.support.QuestionExcel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,7 @@ class ManagerQuizIntegrationTest {
 
     private static final String MARK = "IT-QUIZ ";
     private static final long LESSON_ID = 900_001L;
+    private static final long SEED_COURSE_ID = 900_100L;
 
     @Autowired private MockMvc mockMvc;
     @Autowired private QuestionRepository questionRepository;
@@ -61,8 +63,10 @@ class ManagerQuizIntegrationTest {
 
     @BeforeEach
     void seedLesson() {
-        jdbc.update("INSERT INTO lessons (lesson_id, title, section_name, order_index) VALUES (?, ?, ?, 1)",
-                LESSON_ID, MARK + "Bài 1", MARK + "Chương 1");
+        // Every lesson belongs to a course (lessons.course_id is NOT NULL).
+        saveCourse(SEED_COURSE_ID, "Khoá mẫu", "N5");
+        jdbc.update("INSERT INTO lessons (lesson_id, course_id, title, section_name, order_index) VALUES (?, ?, ?, ?, 1)",
+                LESSON_ID, SEED_COURSE_ID, MARK + "Bài 1", MARK + "Chương 1");
     }
 
     @Test
@@ -78,10 +82,29 @@ class ManagerQuizIntegrationTest {
         mockMvc.perform(get("/manager/quizzes").param("section", MARK + "Chương 1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/manager/quiz/list"))
-                .andExpect(model().attribute("quizzes", hasSize(1)));
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content", hasSize(1))));
         mockMvc.perform(get("/manager/quizzes").param("level", "N1").param("section", MARK + "Chương 1"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("quizzes", hasSize(0)));
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content", hasSize(0))));
+    }
+
+    @Test
+    void listIsPaginatedAndKeepsFiltersInPageLinks() throws Exception {
+        // exercises.lesson_id is unique, so each quiz gets its own lesson.
+        for (int n = 1; n <= ManagerQuizService.PAGE_SIZE + 1; n++) {
+            long lessonId = 910_000L + n;
+            saveLesson(lessonId, SEED_COURSE_ID, MARK + "Chương trang");
+            jdbc.update("INSERT INTO exercises (lesson_id, exercise_title, total_questions, passing_score, status) VALUES (?, ?, 0, 60, 'DRAFT')",
+                    lessonId, MARK + "Quiz trang " + n);
+        }
+
+        mockMvc.perform(get("/manager/quizzes").param("search", MARK + "Quiz trang"))
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content",
+                        hasSize(ManagerQuizService.PAGE_SIZE))))
+                .andExpect(model().attribute("pageUrl", containsString("search=")))
+                .andExpect(content().string(containsString("page=1")));
+        mockMvc.perform(get("/manager/quizzes").param("search", MARK + "Quiz trang").param("page", "1"))
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content", hasSize(1))));
     }
 
     @Test
@@ -105,14 +128,13 @@ class ManagerQuizIntegrationTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void lessonPickerAndSectionFilterHandleMissingSectionCourseAndLevel() throws Exception {
+    void lessonPickerAndSectionFilterHandleMissingSectionAndLevel() throws Exception {
         saveCourse(900_101L, "Khoá N5", "N5");
         saveCourse(900_102L, "Khoá chưa gán cấp", "");
         saveLesson(900_011L, 900_101L, "Chương A");
         saveLesson(900_012L, 900_101L, null);
         saveLesson(900_013L, 900_101L, "   ");
         saveLesson(900_014L, 900_102L, null);
-        saveLesson(900_015L, null, null);
 
         var levelSections = (Map<String, List<String>>) mockMvc.perform(get("/manager/quizzes"))
                 .andReturn().getModelAndView().getModel().get("levelSections");
@@ -124,7 +146,6 @@ class ManagerQuizIntegrationTest {
         assertEquals(List.of(900_011L), lessonIds(lessonGroups, "N5 · Chương A"));
         assertEquals(List.of(900_012L, 900_013L), lessonIds(lessonGroups, "N5 · " + MARK + "Khoá N5"));
         assertEquals(List.of(900_014L), lessonIds(lessonGroups, MARK + "Khoá chưa gán cấp"));
-        assertTrue(lessonIds(lessonGroups, "Khác").contains(900_015L));
     }
 
     @Test

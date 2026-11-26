@@ -17,6 +17,8 @@ import com.jeps.modules.question.repository.QuestionRepository;
 import com.jeps.modules.question.service.QuestionImportService;
 import com.jeps.modules.question.service.QuestionPicker;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import org.hibernate.Session;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -73,8 +75,9 @@ public class ManagerExamService {
     // ── Exam CRUD ──
 
     @Transactional(readOnly = true)
-    public List<Exam> search(String search, String examType, String jlptLevel, String status) {
-        return examRepository.searchForManager(norm(search), norm(examType), norm(jlptLevel), norm(status));
+    public Page<Exam> search(String search, String examType, String jlptLevel, String status, int page) {
+        return examRepository.searchForManager(norm(search), norm(examType), norm(jlptLevel), norm(status),
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE));
     }
 
     @Transactional(readOnly = true)
@@ -186,9 +189,14 @@ public class ManagerExamService {
                 Arrays.stream(ExamStatusEnum.values()).map(Enum::name).toList());
     }
 
+    /** Number of exams per upper-cased exam type, read in one query. */
     @Transactional(readOnly = true)
-    public long countByType(String examType) {
-        return examRepository.countByExamTypeIgnoreCase(examType);
+    public Map<String, Long> countsByType() {
+        Map<String, Long> counts = new HashMap<>();
+        for (Object[] row : examRepository.countPerType()) {
+            counts.put((String) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
     }
 
     public ManagerExamForm newForm() {
@@ -227,11 +235,19 @@ public class ManagerExamService {
 
     @Transactional(readOnly = true)
     public List<SectionProgress> sectionProgress(long examId) {
-        Exam exam = findById(examId);
+        return sectionProgress(findById(examId));
+    }
+
+    /** Linked counts of all sections come from one grouped query. */
+    @Transactional(readOnly = true)
+    public List<SectionProgress> sectionProgress(Exam exam) {
+        Map<String, Long> linked = new HashMap<>();
+        for (Object[] row : examQuestionRepository.countPerSection(exam.getExamId())) {
+            linked.put((String) row[0], ((Number) row[1]).longValue());
+        }
         return SECTIONS.stream()
                 .map(section -> new SectionProgress(section, SECTION_LABELS.get(section),
-                        examQuestionRepository.countByExamIdAndSection(examId, section),
-                        requiredQuestions(exam, section)))
+                        linked.getOrDefault(section, 0L), requiredQuestions(exam, section)))
                 .toList();
     }
 
@@ -256,6 +272,9 @@ public class ManagerExamService {
     }
 
     public static final int PAGE_SIZE = 20;
+
+    /** A full JLPT exam has at most 107 questions; batching sends their inserts in a few round trips. */
+    public static final int INSERT_BATCH_SIZE = 50;
 
     @Transactional(readOnly = true)
     public Page<Question> findAvailableQuestions(long examId, String jlptLevel, String skillType, int page) {
@@ -323,7 +342,7 @@ public class ManagerExamService {
                         .points(1)
                         .build());
             }
-            examQuestionRepository.saveAll(links);
+            saveLinks(links);
         }
     }
 
@@ -340,17 +359,26 @@ public class ManagerExamService {
             throw new IllegalArgumentException("Danh sách câu hỏi của phần này đã thay đổi. Hãy tải lại trang rồi kéo thả lại.");
         }
         // Two passes so no intermediate row breaks CHECK(order_index > 0) or UNIQUE(exam_id, section, order_index):
-        // first park every row above the current max, then write the final 1..n.
+        // first park every row above the current max, then write the final 1..n. Each pass is one statement.
         int offset = current.stream().mapToInt(ExamQuestion::getOrderIndex).max().orElse(0);
-        String sql = "UPDATE exam_questions SET order_index = ? WHERE exam_id = ? AND question_id = ?";
+        writeSectionOrder(examId, section, orderedQuestionIds, offset);
+        writeSectionOrder(examId, section, orderedQuestionIds, 0);
+    }
+
+    /** The ids were checked to be exactly the section's questions, so the CASE covers every updated row. */
+    private void writeSectionOrder(long examId, String section, List<Long> orderedQuestionIds, int offset) {
+        StringBuilder sql = new StringBuilder("UPDATE exam_questions SET order_index = CASE question_id");
+        for (int i = 0; i < orderedQuestionIds.size(); i++) sql.append(" WHEN ? THEN CAST(? AS INTEGER)");
+        sql.append(" END WHERE exam_id = ? AND section = ?");
+        Query query = entityManager.createNativeQuery(sql.toString());
+        int position = 1;
         for (int i = 0; i < orderedQuestionIds.size(); i++) {
-            entityManager.createNativeQuery(sql).setParameter(1, offset + i + 1).setParameter(2, examId)
-                    .setParameter(3, orderedQuestionIds.get(i)).executeUpdate();
+            query.setParameter(position++, orderedQuestionIds.get(i));
+            query.setParameter(position++, offset + i + 1);
         }
-        for (int i = 0; i < orderedQuestionIds.size(); i++) {
-            entityManager.createNativeQuery(sql).setParameter(1, i + 1).setParameter(2, examId)
-                    .setParameter(3, orderedQuestionIds.get(i)).executeUpdate();
-        }
+        query.setParameter(position++, examId);
+        query.setParameter(position, section);
+        query.executeUpdate();
     }
 
     /** Preview: chọn câu ngẫu nhiên nhưng chưa lưu. */
@@ -416,9 +444,14 @@ public class ManagerExamService {
                         .points(1)
                         .build());
             }
-            examQuestionRepository.saveAll(links);
+            saveLinks(links);
         });
         return preview.totalAdded();
+    }
+
+    private void saveLinks(List<ExamQuestion> links) {
+        entityManager.unwrap(Session.class).setJdbcBatchSize(INSERT_BATCH_SIZE);
+        examQuestionRepository.saveAll(links);
     }
 
     private static final String STALE_PREVIEW =

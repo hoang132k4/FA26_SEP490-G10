@@ -38,14 +38,17 @@ public class ManagerQuizController {
     public String list(@RequestParam(defaultValue = "") String search,
                        @RequestParam(defaultValue = "") String level,
                        @RequestParam(defaultValue = "") String section,
-                       @RequestParam(defaultValue = "") String status, Model model) {
-        model.addAttribute("quizzes", managerQuizService.search(search, level, section, status));
+                       @RequestParam(defaultValue = "") String status,
+                       @RequestParam(defaultValue = "0") int page, Model model) {
+        model.addAttribute("quizzes", managerQuizService.search(search, level, section, status, page));
+        model.addAttribute("pageUrl", PageLinks.of("/manager/quizzes", "search", search, "level", level,
+                "section", section, "status", status));
         model.addAttribute("search", search);
         model.addAttribute("level", level);
         model.addAttribute("section", section);
         model.addAttribute("levelSections", managerQuizService.levelSections());
         model.addAttribute("status", status);
-        addOptions(model);
+        model.addAttribute("statuses", managerQuizService.statuses());
         model.addAttribute("quizCount", managerQuizService.count());
         return "pages/manager/quiz/list";
     }

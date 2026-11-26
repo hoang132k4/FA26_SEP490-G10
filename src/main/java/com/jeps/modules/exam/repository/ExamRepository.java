@@ -1,5 +1,8 @@
 package com.jeps.modules.exam.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.jeps.modules.exam.entity.Exam;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -40,10 +43,14 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
               and (:status = '' or upper(e.status) = upper(:status))
             order by e.examId desc
             """)
-    List<Exam> searchForManager(@Param("search") String search,
+    Page<Exam> searchForManager(@Param("search") String search,
                                 @Param("examType") String examType,
                                 @Param("jlptLevel") String jlptLevel,
-                                @Param("status") String status);
+                                @Param("status") String status,
+                                Pageable pageable);
+
+    @Query("select upper(e.examType), count(e) from Exam e group by upper(e.examType)")
+    List<Object[]> countPerType();
 
     long countByExamTypeIgnoreCase(String examType);
 }
