@@ -100,9 +100,10 @@ class ManagerExamServiceTest {
 
     @Test
     void searchTrimsFiltersAndReplacesNullWithEmpty() {
-        service.search("  đề N5 ", null, " N5 ", null);
+        service.search("  đề N5 ", null, " N5 ", null, -1);
 
-        verify(examRepository).searchForManager("đề N5", "", "N5", "");
+        verify(examRepository).searchForManager("đề N5", "", "N5", "",
+                org.springframework.data.domain.PageRequest.of(0, ManagerExamService.PAGE_SIZE));
     }
 
     @Test
@@ -325,11 +326,12 @@ class ManagerExamServiceTest {
     @Test
     void sectionProgressReportsLinkedAgainstRequiredInJlptOrder() {
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(EXAM_ID, "DRAFT", 3, 2, 1)));
-        stubLinked("LANGUAGE", 3);
-        stubLinked("READING", 1);
+        when(examQuestionRepository.countPerSection(EXAM_ID)).thenReturn(List.of(
+                new Object[]{"LANGUAGE", 3L}, new Object[]{"READING", 1L}));
 
         List<SectionProgress> progress = service.sectionProgress(EXAM_ID);
 
+        verify(examQuestionRepository, never()).countByExamIdAndSection(anyLong(), anyString());
         assertEquals(List.of("LANGUAGE", "READING", "LISTENING"), progress.stream().map(SectionProgress::section).toList());
         assertTrue(progress.get(0).complete());
         assertEquals(1, progress.get(1).linked());
@@ -1086,10 +1088,16 @@ class ManagerExamServiceTest {
     }
 
     @Test
-    void countByType_delegatesToRepository() {
-        when(examRepository.countByExamTypeIgnoreCase("JLPT_MOCK")).thenReturn(4L);
+    void countsByTypeReadsEveryTypeInOneQueryAndDefaultsMissingToZero() {
+        when(examRepository.countPerType()).thenReturn(List.of(
+                new Object[]{"JLPT_MOCK", 4L}, new Object[]{"MILESTONE", 2L}));
 
-        assertEquals(4L, service.countByType("JLPT_MOCK"));
+        Map<String, Long> counts = service.countsByType();
+
+        assertEquals(4L, counts.get("JLPT_MOCK"));
+        assertEquals(2L, counts.get("MILESTONE"));
+        assertEquals(0L, counts.getOrDefault("PLACEMENT_TEST", 0L));
+        verify(examRepository, never()).countByExamTypeIgnoreCase(anyString());
     }
 
     @Test

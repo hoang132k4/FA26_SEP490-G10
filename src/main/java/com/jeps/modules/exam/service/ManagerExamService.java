@@ -75,8 +75,9 @@ public class ManagerExamService {
     // ── Exam CRUD ──
 
     @Transactional(readOnly = true)
-    public List<Exam> search(String search, String examType, String jlptLevel, String status) {
-        return examRepository.searchForManager(norm(search), norm(examType), norm(jlptLevel), norm(status));
+    public Page<Exam> search(String search, String examType, String jlptLevel, String status, int page) {
+        return examRepository.searchForManager(norm(search), norm(examType), norm(jlptLevel), norm(status),
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE));
     }
 
     @Transactional(readOnly = true)
@@ -188,9 +189,14 @@ public class ManagerExamService {
                 Arrays.stream(ExamStatusEnum.values()).map(Enum::name).toList());
     }
 
+    /** Number of exams per upper-cased exam type, read in one query. */
     @Transactional(readOnly = true)
-    public long countByType(String examType) {
-        return examRepository.countByExamTypeIgnoreCase(examType);
+    public Map<String, Long> countsByType() {
+        Map<String, Long> counts = new HashMap<>();
+        for (Object[] row : examRepository.countPerType()) {
+            counts.put((String) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
     }
 
     public ManagerExamForm newForm() {
@@ -229,11 +235,19 @@ public class ManagerExamService {
 
     @Transactional(readOnly = true)
     public List<SectionProgress> sectionProgress(long examId) {
-        Exam exam = findById(examId);
+        return sectionProgress(findById(examId));
+    }
+
+    /** Linked counts of all sections come from one grouped query. */
+    @Transactional(readOnly = true)
+    public List<SectionProgress> sectionProgress(Exam exam) {
+        Map<String, Long> linked = new HashMap<>();
+        for (Object[] row : examQuestionRepository.countPerSection(exam.getExamId())) {
+            linked.put((String) row[0], ((Number) row[1]).longValue());
+        }
         return SECTIONS.stream()
                 .map(section -> new SectionProgress(section, SECTION_LABELS.get(section),
-                        examQuestionRepository.countByExamIdAndSection(examId, section),
-                        requiredQuestions(exam, section)))
+                        linked.getOrDefault(section, 0L), requiredQuestions(exam, section)))
                 .toList();
     }
 

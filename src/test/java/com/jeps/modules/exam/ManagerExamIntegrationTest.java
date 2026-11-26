@@ -1,5 +1,6 @@
 package com.jeps.modules.exam;
 
+import com.jeps.modules.exam.service.ManagerExamService;
 import com.jeps.modules.exam.entity.Exam;
 import com.jeps.modules.exam.repository.ExamRepository;
 import com.jeps.modules.question.entity.Question;
@@ -80,9 +81,24 @@ class ManagerExamIntegrationTest {
         mockMvc.perform(get("/manager/exams").param("search", MARK + "Đề thi thử").param("jlptLevel", "N5"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/manager/exam/list"))
-                .andExpect(model().attribute("exams", hasSize(1)))
-                .andExpect(model().attribute("exams", org.hamcrest.Matchers.contains(
-                        org.hamcrest.Matchers.hasProperty("examId", org.hamcrest.Matchers.is(mock.getExamId())))));
+                .andExpect(model().attribute("exams", org.hamcrest.Matchers.hasProperty("content", org.hamcrest.Matchers.contains(
+                        org.hamcrest.Matchers.hasProperty("examId", org.hamcrest.Matchers.is(mock.getExamId()))))))
+                .andExpect(model().attribute("placementCount", org.hamcrest.Matchers.greaterThanOrEqualTo(1L)));
+    }
+
+    @Test
+    void listIsPaginatedAndKeepsFiltersInPageLinks() throws Exception {
+        for (int n = 1; n <= ManagerExamService.PAGE_SIZE + 1; n++) {
+            saveExam("Đề phân trang " + n, "JLPT_MOCK", "N5", "DRAFT", 10, 5, 5);
+        }
+
+        mockMvc.perform(get("/manager/exams").param("search", MARK + "Đề phân trang"))
+                .andExpect(model().attribute("exams", org.hamcrest.Matchers.hasProperty("content",
+                        hasSize(ManagerExamService.PAGE_SIZE))))
+                .andExpect(model().attribute("pageUrl", containsString("search=")))
+                .andExpect(content().string(containsString("page=1")));
+        mockMvc.perform(get("/manager/exams").param("search", MARK + "Đề phân trang").param("page", "1"))
+                .andExpect(model().attribute("exams", org.hamcrest.Matchers.hasProperty("content", hasSize(1))));
     }
 
     // ── Create / update ──
