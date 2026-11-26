@@ -55,6 +55,51 @@ class ManagerQuestionControllerTest {
         when(managerQuestionService.options()).thenReturn(OPTIONS);
     }
 
+    // ── select all / bulk status ──
+
+    @Test
+    void allIds_returnsIdsMatchingFilters() throws Exception {
+        when(managerQuestionService.searchAllIds("kanji", "", "N5", "", "DRAFT")).thenReturn(List.of(3L, 4L));
+
+        mockMvc.perform(get("/manager/questions/all-ids").param("search", "kanji").param("jlptLevel", "N5").param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[3,4]"));
+    }
+
+    @Test
+    void bulkStatus_allUpdated_redirectsToList() throws Exception {
+        when(managerQuestionService.bulkUpdateStatus(List.of(1L, 2L), "ACTIVE"))
+                .thenReturn(new ManagerQuestionService.BulkUpdateResult(2, 0));
+
+        mockMvc.perform(post("/manager/questions/bulk-status").with(csrf()).param("ids", "1", "2").param("status", "ACTIVE"))
+                .andExpect(redirectedUrl("/manager/questions"))
+                .andExpect(flash().attribute("questionSuccess", "Đã cập nhật trạng thái 2 câu hỏi sang ACTIVE."));
+    }
+
+    @Test
+    void bulkStatus_someSkipped_mentionsSkippedAndReturnsToManagerPage() throws Exception {
+        when(managerQuestionService.bulkUpdateStatus(List.of(1L, 2L, 3L), "ACTIVE"))
+                .thenReturn(new ManagerQuestionService.BulkUpdateResult(1, 2));
+
+        mockMvc.perform(post("/manager/questions/bulk-status").with(csrf()).param("ids", "1", "2", "3")
+                        .param("status", "ACTIVE").param("returnTo", "/manager/questions?page=2"))
+                .andExpect(redirectedUrl("/manager/questions?page=2"))
+                .andExpect(flash().attribute("questionSuccess",
+                        "Đã cập nhật trạng thái 1 câu hỏi sang ACTIVE. Bỏ qua 2 câu chưa đủ điều kiện."));
+    }
+
+    @Test
+    void bulkStatus_rejected_showsErrorAndIgnoresOutsideReturnTo() throws Exception {
+        when(managerQuestionService.bulkUpdateStatus(List.of(1L), "ARCHIVED"))
+                .thenThrow(new IllegalArgumentException("Câu hỏi #1 đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED."));
+
+        mockMvc.perform(post("/manager/questions/bulk-status").with(csrf()).param("ids", "1")
+                        .param("status", "ARCHIVED").param("returnTo", "https://example.com/manager/"))
+                .andExpect(redirectedUrl("/manager/questions"))
+                .andExpect(flash().attribute("questionError",
+                        "Câu hỏi #1 đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED."));
+    }
+
     @Test
     void createPage_unknownParent_redirectsWithError() throws Exception {
         when(managerQuestionService.findById(999L)).thenThrow(new IllegalArgumentException("Không tìm thấy câu hỏi."));
