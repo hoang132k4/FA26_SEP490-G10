@@ -156,11 +156,25 @@ public class ExamController {
         }
 
         ExamTakeResponse examData = examService.getPlacementExamForTaking(assignedLevel);
+        recordExamStartTime(session, model, examData);
         model.addAttribute("exam", examData);
         model.addAttribute("activeMenu", "placement");
         model.addAttribute("pageTitle", "Làm bài kiểm tra đầu vào (Placement Test "
                 + (assignedLevel != null ? assignedLevel : "") + ") - JEPS");
         return "pages/exam/take-exam";
+    }
+
+    private void recordExamStartTime(HttpSession session, Model model, ExamTakeResponse examData) {
+        long startTimeMs = System.currentTimeMillis();
+        if (session != null && examData != null && examData.getExamId() != null) {
+            session.setAttribute("EXAM_START_TIME_" + examData.getExamId(), startTimeMs);
+            if (examData.getDurationMinutes() != null && examData.getDurationMinutes() > 0) {
+                session.setAttribute("EXAM_DURATION_SECONDS_" + examData.getExamId(), examData.getDurationMinutes() * 60);
+            }
+        }
+        if (model != null) {
+            model.addAttribute("examStartTimeMs", startTimeMs);
+        }
     }
 
     /**
@@ -188,6 +202,7 @@ public class ExamController {
         }
 
         ExamTakeResponse examData = examService.getMilestoneExamForTaking(id);
+        recordExamStartTime(session, model, examData);
         model.addAttribute("exam", examData);
         model.addAttribute("activeMenu", "exams");
         model.addAttribute("pageTitle", "Kiểm tra cột mốc khóa học - JEPS");
@@ -240,6 +255,7 @@ public class ExamController {
         }
 
         ExamTakeResponse examData = examService.getExamForTaking(id);
+        recordExamStartTime(session, model, examData);
         model.addAttribute("exam", examData);
         model.addAttribute("activeMenu", "exams");
         return "pages/exam/take-exam";
@@ -259,8 +275,52 @@ public class ExamController {
             return "redirect:/auth/login";
         }
 
+        int effectiveTimeSpent = (timeSpentSeconds != null && timeSpentSeconds >= 0) ? timeSpentSeconds : 0;
+        boolean autoSubmittedOnTimeout = allParams != null && "true".equalsIgnoreCase(allParams.get("autoSubmitted"));
+
+        if (session != null) {
+            Object startObj = session.getAttribute("EXAM_START_TIME_" + id);
+            Object durObj = session.getAttribute("EXAM_DURATION_SECONDS_" + id);
+            session.removeAttribute("EXAM_START_TIME_" + id);
+            session.removeAttribute("EXAM_DURATION_SECONDS_" + id);
+
+            Integer maxDurationSeconds = (durObj instanceof Integer d && d > 0) ? d : null;
+            if (maxDurationSeconds == null && examRepository != null) {
+                Exam examEntity = examRepository.findById(id).orElse(null);
+                if (examEntity != null && examEntity.getDurationMinutes() != null && examEntity.getDurationMinutes() > 0) {
+                    maxDurationSeconds = examEntity.getDurationMinutes() * 60;
+                }
+            }
+
+            if (startObj instanceof Long startTimeMs) {
+                int serverElapsed = (int) Math.max(0L, (System.currentTimeMillis() - startTimeMs) / 1000L);
+                if (effectiveTimeSpent <= 0 || serverElapsed > effectiveTimeSpent) {
+                    effectiveTimeSpent = serverElapsed;
+                }
+            }
+
+            if (maxDurationSeconds != null && effectiveTimeSpent >= maxDurationSeconds) {
+                effectiveTimeSpent = maxDurationSeconds;
+                autoSubmittedOnTimeout = true;
+            }
+        }
+
         Long userId = getAuthenticatedUserId(session, principal);
-        ExamResultResponse result = examService.evaluateAndSaveSubmission(id, userId, allParams, timeSpentSeconds);
+        Map<String, String> submissionParams = allParams != null ? new java.util.HashMap<>(allParams) : new java.util.HashMap<>();
+        if (session != null) {
+            Object activeCourseId = session.getAttribute("ACTIVE_MILESTONE_COURSE_ID");
+            Object activeLessonId = session.getAttribute("ACTIVE_MILESTONE_LESSON_ID");
+            if (activeCourseId != null) {
+                submissionParams.put("activeMilestoneCourseId", String.valueOf(activeCourseId));
+            }
+            if (activeLessonId != null) {
+                submissionParams.put("activeMilestoneLessonId", String.valueOf(activeLessonId));
+            }
+        }
+        ExamResultResponse result = examService.evaluateAndSaveSubmission(id, userId, submissionParams, effectiveTimeSpent);
+        if (autoSubmittedOnTimeout && result != null) {
+            log.info("Exam {} for user {} was auto-submitted/locked upon timeout ({}s)", id, userId, effectiveTimeSpent);
+        }
         session.setAttribute("EXAM_RESULT_" + id, result);
 
         if (result.getResultId() != null) {

@@ -371,6 +371,56 @@ class ProfileServiceUnitTest {
     }
 
     @Test
+    @DisplayName("Abnormal: updateProfile với email đang chờ xác nhận của tài khoản khác ném ra IllegalArgumentException")
+    void updateProfile_duplicatePendingEmailOfOtherUser_throwsException() {
+        User user = createSampleUser();
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailIgnoreCase("claimed@jeps.edu.vn")).thenReturn(false);
+        when(userRepository.existsByPendingEmailIgnoreCaseAndIdNot("claimed@jeps.edu.vn", 10L)).thenReturn(true);
+
+        EditProfileRequest req = EditProfileRequest.builder()
+                .fullName("Nguyen Van A")
+                .email("claimed@jeps.edu.vn")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> profileService.updateProfile("learner@jeps.edu.vn", req, null));
+        verify(userRepository, never()).save(any());
+        verify(emailService, never()).sendEmailChangeVerificationEmail(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Normal: cancelPendingEmailChange xóa pendingEmail và token xác nhận")
+    void cancelPendingEmailChange_clearsPendingFields() {
+        User user = createSampleUser();
+        user.setPendingEmail("pending@jeps.edu.vn");
+        user.setEmailVerificationTokenHash("hash");
+        user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusMinutes(10));
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ProfileResponse res = profileService.cancelPendingEmailChange("learner@jeps.edu.vn");
+
+        assertNull(res.getPendingEmail());
+        assertNull(user.getPendingEmail());
+        assertNull(user.getEmailVerificationTokenHash());
+        assertNull(user.getEmailVerificationTokenExpiry());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Boundary: getProfile ẩn pendingEmail nếu token xác nhận đã hết hạn")
+    void getProfile_expiredPendingEmail_returnsNullPendingEmail() {
+        User user = createSampleUser();
+        user.setPendingEmail("expired@jeps.edu.vn");
+        user.setEmailVerificationTokenExpiry(LocalDateTime.now().minusMinutes(1));
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+
+        ProfileResponse res = profileService.getProfile("learner@jeps.edu.vn");
+
+        assertNull(res.getPendingEmail());
+    }
+
+    @Test
     @DisplayName("Boundary: updateProfile với số điện thoại null được gán chuỗi rỗng")
     void updateProfile_withNullPhone_setsEmptyPhone() {
         User user = createSampleUser();

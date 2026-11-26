@@ -134,6 +134,7 @@ public class FlashcardController {
         FlashcardRequest request = FlashcardRequest.builder()
                 .flashcardId(flashcard.getFlashcardId())
                 .lessonId(flashcard.getLessonId())
+                .customDeckName(flashcard.getCustomDeckName())
                 .vocabulary(flashcard.getVocabulary())
                 .reading(flashcard.getReading())
                 .meaning(flashcard.getMeaning())

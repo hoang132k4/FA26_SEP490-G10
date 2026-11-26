@@ -13,9 +13,13 @@ import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 
 @Slf4j
@@ -23,6 +27,7 @@ import java.util.Collection;
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+    private final RequestCache requestCache = new HttpSessionRequestCache();
 
     @Override
     public void onAuthenticationSuccess(
@@ -43,11 +48,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             }
         }
 
-        String targetUrl = determineTargetUrl(authentication);
-        String continuePath = resolveContinuePath(request);
-        if (continuePath != null && hasLearnerRole(authentication)) {
-            targetUrl = continuePath;
-        }
+        String targetUrl = resolveContinueTargetUrl(request, response, authentication);
         log.info("User '{}' authenticated successfully, redirecting to: {}", authentication.getName(), targetUrl);
 
         if (response.isCommitted()) {
@@ -58,24 +59,65 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         redirectStrategy.sendRedirect(request, response, targetUrl);
     }
 
-    private String resolveContinuePath(HttpServletRequest request) {
+    protected String resolveContinueTargetUrl(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication) {
+
+        String continuePath = AuthRedirectTarget.validate(request.getParameter("continue"));
         HttpSession session = request.getSession(false);
-        String target = AuthRedirectTarget.validate(request.getParameter("continue"));
-        if (target == null && session != null) {
-            Object storedTarget = session.getAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
-            if (storedTarget instanceof String storedPath) {
-                target = AuthRedirectTarget.validate(storedPath);
-            }
-        }
         if (session != null) {
+            Object storedPath = session.getAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+            if (continuePath == null && storedPath instanceof String path) {
+                continuePath = AuthRedirectTarget.validate(path);
+            }
             session.removeAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
         }
-        return target;
+
+        if (hasLearnerRole(authentication)) {
+            if (continuePath != null) {
+                requestCache.removeRequest(request, response);
+                return continuePath;
+            }
+            SavedRequest savedRequest = requestCache.getRequest(request, response);
+            if (savedRequest != null) {
+                String redirectUrl = savedRequest.getRedirectUrl();
+                requestCache.removeRequest(request, response);
+                String relativeSaved = extractSafeRelativePath(redirectUrl);
+                String safeSavedPath = AuthRedirectTarget.validate(relativeSaved);
+                if (safeSavedPath != null) {
+                    return safeSavedPath;
+                }
+            }
+        }
+
+        return determineTargetUrl(authentication);
     }
 
     private boolean hasLearnerRole(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_LEARNER".equals(authority.getAuthority()));
+    }
+
+    private String extractSafeRelativePath(String fullOrRelativeUrl) {
+        if (fullOrRelativeUrl == null || fullOrRelativeUrl.isBlank()) {
+            return null;
+        }
+        String trimmed = fullOrRelativeUrl.trim();
+        if (trimmed.startsWith("/")) {
+            return trimmed;
+        }
+        try {
+            URI uri = URI.create(trimmed);
+            String path = uri.getRawPath();
+            if (path == null || path.isBlank()) {
+                return null;
+            }
+            String query = uri.getRawQuery();
+            return (query != null && !query.isBlank()) ? path + "?" + query : path;
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     protected String determineTargetUrl(Authentication authentication) {

@@ -7,13 +7,13 @@ import com.jeps.modules.auth.dto.ResetPasswordRequest;
 import com.jeps.modules.auth.dto.RegisterRequest;
 import com.jeps.modules.auth.exception.DuplicateEmailException;
 import com.jeps.modules.auth.exception.DuplicatePhoneException;
+import com.jeps.modules.auth.security.AuthRedirectTarget;
 import com.jeps.modules.user.entity.User;
 import com.jeps.modules.auth.service.ChangePasswordService;
 import com.jeps.modules.auth.service.PasswordResetService;
 import com.jeps.modules.auth.service.RegisterService;
-import com.jeps.modules.auth.security.AuthRedirectTarget;
-import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -374,16 +374,26 @@ public class AuthController {
     }
 
     private String rememberContinuePath(String requestedPath, HttpSession session) {
+        String validatedRequestedPath = AuthRedirectTarget.validate(requestedPath);
         if (requestedPath != null) {
-            String validatedPath = AuthRedirectTarget.validate(requestedPath);
-            if (validatedPath == null) {
-                session.removeAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
-            } else {
-                session.setAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE, validatedPath);
+            if (session != null) {
+                if (validatedRequestedPath == null) {
+                    session.removeAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+                } else {
+                    session.setAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE, validatedRequestedPath);
+                }
             }
+            return validatedRequestedPath;
+        }
+        if (session == null) {
+            return null;
         }
         Object storedPath = session.getAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
-        return storedPath instanceof String path ? AuthRedirectTarget.validate(path) : null;
+        String validatedStoredPath = storedPath instanceof String path ? AuthRedirectTarget.validate(path) : null;
+        if (storedPath != null && validatedStoredPath == null) {
+            session.removeAttribute(AuthRedirectTarget.SESSION_ATTRIBUTE);
+        }
+        return validatedStoredPath;
     }
 
     private String redirectAfterAuthentication(HttpSession session) {

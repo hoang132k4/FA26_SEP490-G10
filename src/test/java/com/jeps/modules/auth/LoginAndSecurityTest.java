@@ -260,10 +260,11 @@ public class LoginAndSecurityTest {
 
     @Test
     @WithMockUser(username = "learner@jeps.edu.vn", roles = {"LEARNER"})
-    @DisplayName("RB-01: Learner accesses Learner Dashboard - Allowed (200)")
+    @DisplayName("RB-01: Learner dashboard redirects to the course list")
     void testRB01_LearnerAccessLearnerDashboard() throws Exception {
         mockMvc.perform(get("/learning/dashboard"))
-                .andExpect(status().isOk());
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning/my-courses"));
     }
 
     @Test

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
@@ -209,22 +210,82 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
                     .build());
         }
 
-        // Tier 2: Skill-gap Course (khắc phục kỹ năng yếu nhất)
-        Course skillGapCourse = findSkillGapCourse(allPublished, primaryRecommendedLevel, assignedLevel, weakestSkill, addedCourseIds);
-        if (skillGapCourse != null) {
-            addedCourseIds.add(skillGapCourse.getId());
-            boolean enrolled = userId != null
-                    && registrationRepository.existsEligibleByUserIdAndCourseId(userId, skillGapCourse.getId());
-            recommendations.add(RecommendedCourseItem.builder()
-                    .course(skillGapCourse)
-                    .matchPercentage(88)
-                    .matchReason("Tập trung bồi dưỡng chuyên sâu kỹ năng " + weakestSkill + " để không bị điểm liệt và cân bằng năng lực.")
-                    .tag("Khắc phục điểm yếu")
-                    .isEnrolled(enrolled)
-                    .build());
+        // Tier 2: Skill-gap Courses (chuyên sâu theo từng kỹ năng yếu thực tế từ bài đánh giá đầu vào)
+        List<ExamResultResponse.SkillScoreDto> assessedSkills = new ArrayList<>();
+        if (examResult.getCanonicalSkills() != null && !examResult.getCanonicalSkills().isEmpty()) {
+            assessedSkills.addAll(examResult.getCanonicalSkills());
+        } else if (examResult.getSkillBreakdown() != null) {
+            assessedSkills.addAll(examResult.getSkillBreakdown());
         }
 
-        // Tier 3: Practice / Exam-prep Course (Luyện đề thực chiến)
+        List<ExamResultResponse.SkillScoreDto> weakSkills = assessedSkills.stream()
+                .filter(s -> s.getTotalQuestions() > 0 && !"NOT_ASSESSED".equalsIgnoreCase(s.getStatus()))
+                .filter(s -> Boolean.TRUE.equals(s.getBelowMinimum()) || (s.getPercentage() != null && s.getPercentage().doubleValue() < 65.0))
+                .sorted(Comparator.comparing(s -> s.getPercentage() != null ? s.getPercentage().doubleValue() : 100.0))
+                .toList();
+
+        int skillRecAdded = 0;
+        for (var ws : weakSkills) {
+            if (skillRecAdded >= 2) break;
+            String sLabel = ws.getSkillName() != null && !ws.getSkillName().isBlank() ? ws.getSkillName() : ws.getSkillGroup();
+            Course gapCourse = findSkillGapCourse(allPublished, primaryRecommendedLevel, assignedLevel, sLabel, addedCourseIds);
+            if (gapCourse != null) {
+                addedCourseIds.add(gapCourse.getId());
+                boolean enrolled = userId != null
+                        && registrationRepository.existsEligibleByUserIdAndCourseId(userId, gapCourse.getId());
+                String pctText = ws.getPercentage() != null ? ws.getPercentage().intValue() + "%" : "thấp";
+                recommendations.add(RecommendedCourseItem.builder()
+                        .course(gapCourse)
+                        .matchPercentage(89 - skillRecAdded * 2)
+                        .matchReason("Kỹ năng " + sLabel + " trong bài đầu vào chỉ đạt " + pctText + ". Khóa chuyên sâu này giúp bù đắp trực tiếp lỗ hổng trước khi học lên cao.")
+                        .tag("Chuyên sâu " + sLabel)
+                        .isEnrolled(enrolled)
+                        .build());
+                skillRecAdded++;
+            }
+        }
+        if (skillRecAdded == 0) {
+            Course skillGapCourse = findSkillGapCourse(allPublished, primaryRecommendedLevel, assignedLevel, weakestSkill, addedCourseIds);
+            if (skillGapCourse != null) {
+                addedCourseIds.add(skillGapCourse.getId());
+                boolean enrolled = userId != null
+                        && registrationRepository.existsEligibleByUserIdAndCourseId(userId, skillGapCourse.getId());
+                recommendations.add(RecommendedCourseItem.builder()
+                        .course(skillGapCourse)
+                        .matchPercentage(88)
+                        .matchReason("Tập trung bồi dưỡng chuyên sâu kỹ năng " + weakestSkill + " để không bị điểm liệt và cân bằng năng lực.")
+                        .tag("Khắc phục điểm yếu")
+                        .isEnrolled(enrolled)
+                        .build());
+            }
+        }
+
+        // Tier 3: Progression (từ cơ bản tới nâng cao) hoặc Luyện đề thực chiến
+        if (percentage >= 80) {
+            String nextLvl = switch (targetLevel) {
+                case "N5" -> "N4";
+                case "N4" -> "N3";
+                case "N3" -> "N2";
+                case "N2" -> "N1";
+                default -> null;
+            };
+            if (nextLvl != null) {
+                Course nextStepCourse = findBestCourseForLevel(allPublished, nextLvl, addedCourseIds);
+                if (nextStepCourse != null) {
+                    addedCourseIds.add(nextStepCourse.getId());
+                    boolean enrolled = userId != null
+                            && registrationRepository.existsEligibleByUserIdAndCourseId(userId, nextStepCourse.getId());
+                    recommendations.add(RecommendedCourseItem.builder()
+                            .course(nextStepCourse)
+                            .matchPercentage(87)
+                            .matchReason("Bạn đạt kết quả xuất sắc (" + percentage + "%). Sau khi hoàn thành " + targetLevel + ", đây là bước nâng cao tiếp theo lên " + nextLvl + ".")
+                            .tag("Lộ trình nâng cao")
+                            .isEnrolled(enrolled)
+                            .build());
+                }
+            }
+        }
+
         Course practiceCourse = findPracticeCourse(allPublished, primaryRecommendedLevel, targetLevel, addedCourseIds);
         if (practiceCourse != null) {
             addedCourseIds.add(practiceCourse.getId());
@@ -288,6 +349,9 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
                 .filter(c -> level.equalsIgnoreCase(c.getLevel()))
                 .filter(c -> excludeIds == null || !excludeIds.contains(c.getId()))
                 .sorted((a, b) -> {
+                    boolean aComp = buildSearchableText(a).contains("toàn diện");
+                    boolean bComp = buildSearchableText(b).contains("toàn diện");
+                    if (aComp != bComp) return aComp ? -1 : 1;
                     boolean aFeatured = Boolean.TRUE.equals(a.getFeatured());
                     boolean bFeatured = Boolean.TRUE.equals(b.getFeatured());
                     if (aFeatured != bFeatured) return aFeatured ? -1 : 1;
@@ -300,22 +364,24 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
     private Course findSkillGapCourse(List<Course> courses, String primaryLevel, String fallbackLevel, String weakestSkill, List<Long> excludeIds) {
         if (courses == null || weakestSkill == null) return null;
         String wLower = weakestSkill.toLowerCase();
-        String keyword = "";
-        if (wLower.contains("từ vựng") || wLower.contains("vocab") || wLower.contains("kanji") || wLower.contains("chữ hán") || wLower.contains("hán tự")) {
-            keyword = "từ vựng";
+        List<String> keywords = new ArrayList<>();
+        if (wLower.contains("kanji") || wLower.contains("hán tự") || wLower.contains("chữ hán")) {
+            keywords.add("hán tự");
+            keywords.add("kanji");
+        } else if (wLower.contains("từ vựng") || wLower.contains("vocab")) {
+            keywords.add("từ vựng");
         } else if (wLower.contains("ngữ pháp") || wLower.contains("grammar")) {
-            keyword = "ngữ pháp";
+            keywords.add("ngữ pháp");
         } else if (wLower.contains("đọc") || wLower.contains("reading")) {
-            keyword = "đọc hiểu";
+            keywords.add("đọc");
         } else if (wLower.contains("nghe") || wLower.contains("listening")) {
-            keyword = "nghe hiểu";
+            keywords.add("nghe");
         }
 
-        final String finalKeyword = keyword;
         Course matched = courses.stream()
                 .filter(c -> primaryLevel.equalsIgnoreCase(c.getLevel()))
                 .filter(c -> excludeIds == null || !excludeIds.contains(c.getId()))
-                .filter(c -> matchesKeyword(c, finalKeyword))
+                .filter(c -> keywords.stream().anyMatch(kw -> matchesKeyword(c, kw)))
                 .findFirst()
                 .orElse(null);
 
@@ -323,7 +389,7 @@ public class CourseRecommendationServiceImpl implements CourseRecommendationServ
             matched = courses.stream()
                     .filter(c -> fallbackLevel.equalsIgnoreCase(c.getLevel()))
                     .filter(c -> excludeIds == null || !excludeIds.contains(c.getId()))
-                    .filter(c -> matchesKeyword(c, finalKeyword))
+                    .filter(c -> keywords.stream().anyMatch(kw -> matchesKeyword(c, kw)))
                     .findFirst()
                     .orElse(null);
         }

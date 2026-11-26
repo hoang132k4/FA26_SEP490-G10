@@ -197,6 +197,13 @@
                             <i class="bi bi-diagram-3 me-1"></i>Lộ trình học
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 px-xl-3 fw-medium text-dark text-nowrap" 
+                           th:classappend="${curActive == 'recommended'} ? 'active fw-bold text-primary' : ''" 
+                           th:href="@{/learning/courses/recommended}">
+                            <i class="bi bi-stars text-warning me-1"></i>Gợi ý khóa học
+                        </a>
+                    </li>
                 </ul>
 
                 <!-- Right Side Actions: Auth / Profile -->
@@ -284,8 +291,8 @@
 
                                 <!-- Footer -->
                                 <div class="p-2.5 text-center bg-light border-top">
-                                    <a th:href="@{/learning/dashboard}" class="small text-decoration-none fw-semibold text-primary">
-                                        Xem tiến trình học tập tại Dashboard <i class="bi bi-arrow-right small"></i>
+                                    <a th:href="@{/learning/my-courses}" class="small text-decoration-none fw-semibold text-primary">
+                                        Xem khóa học của tôi <i class="bi bi-arrow-right small"></i>
                                     </a>
                                 </div>
                             </div>
@@ -330,11 +337,11 @@
                                     <div class="small text-muted text-truncate" style="font-size: 0.82rem;"
                                          th:text="${currentUser != null and currentUser.email != null ? currentUser.email : 'learner@jeps.edu.vn'}">learner@jeps.edu.vn</div>
                                 </li>
-                                <li>
+                                <li th:if="${currentUser != null and currentUser.role != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'MANAGER')}">
                                     <a class="dropdown-item py-2 px-3 d-flex align-items-center gap-2 fw-medium text-dark"
-                                       th:href="@{${currentUser != null and currentUser.role != null and currentUser.role.name() == 'ADMIN' ? '/admin/dashboard' : (currentUser != null and currentUser.role != null and currentUser.role.name() == 'MANAGER' ? '/manager/dashboard' : '/learning/dashboard')}}">
+                                       th:href="@{${currentUser.role.name() == 'ADMIN' ? '/admin/dashboard' : '/manager/dashboard'}}">
                                         <i class="bi bi-speedometer2 text-primary fs-6" style="width: 20px;"></i>
-                                        <span>Tổng quan học tập</span>
+                                        <span>Trang quản trị</span>
                                     </a>
                                 </li>
                                 <li>

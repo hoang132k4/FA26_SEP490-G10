@@ -13,12 +13,24 @@
                         <i class="bi bi-stars text-warning"></i> AI Personalization Engine
                     </div>
                     <h2 class="display-6 fw-bold text-white mb-2">Khóa học Đề xuất theo Năng lực của bạn</h2>
-                    <p class="lead mb-0 text-white-50" style="font-size: 1.05rem;">
-                        Dựa trên kết quả đánh giá năng lực hiện tại (<strong class="text-white" th:text="${learner.currentJlptLevel}">N5</strong>) 
+                    <p class="lead mb-2 text-white-50" style="font-size: 1.05rem;" th:if="${examRecommendation == null}">
+                        Dựa trên trình độ hiện tại (<strong class="text-white" th:text="${learner.currentJlptLevel}">N5</strong>) 
                         và mục tiêu (<strong class="text-white" th:text="${learner.targetJlptLevel}">N4</strong>), hệ thống đã lựa chọn lộ trình tối ưu nhất dành riêng cho bạn.
                     </p>
+                    <div th:if="${examRecommendation != null}" class="mt-2 p-3 rounded-4" style="background: rgba(255,255,255,0.12);">
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <span class="badge bg-light text-dark rounded-pill px-3 py-1">Điểm đầu vào: <strong th:text="${examRecommendation.percentage + '%'}">75%</strong></span>
+                            <span class="badge bg-light text-dark rounded-pill px-3 py-1">Đánh giá: <strong th:text="${examRecommendation.currentAssessedLevel}">N5</strong> → Mục tiêu: <strong th:text="${examRecommendation.targetLevel}">N4</strong></span>
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1">Cần bù đắp: <strong th:text="${examRecommendation.weakestSkill}">Ngữ pháp</strong></span>
+                        </div>
+                        <div class="fw-semibold text-white" th:text="${examRecommendation.evaluationTitle}">Đánh giá năng lực</div>
+                        <p class="small text-white-50 mb-0" th:text="${examRecommendation.evaluationSummary}">Tóm tắt đánh giá</p>
+                    </div>
                 </div>
-                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0 d-flex flex-column gap-2 align-items-lg-end">
+                    <a th:if="${examRecommendation == null}" th:href="@{/exams/placement}" class="btn btn-warning text-dark fw-semibold px-4 py-2 rounded-pill">
+                        <i class="bi bi-card-checklist me-1"></i> Làm bài đánh giá đầu vào
+                    </a>
                     <a th:href="@{/learning/courses}" class="btn btn-outline-light px-4 py-2 rounded-pill">
                         <i class="bi bi-grid me-1"></i> Xem toàn bộ khóa học
                     </a>

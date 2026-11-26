@@ -158,8 +158,8 @@
                         </div>
                     </div>
 
-                    <!-- Ghi chú quy đổi chuẩn JLPT -->
-                    <div class="small text-muted fst-italic mb-3" style="font-size: 0.78rem; line-height: 1.4;">
+                    <!-- Ghi chú quy đổi chuẩn JLPT (chỉ hiện cho đề thi thử JLPT) -->
+                    <div th:if="${result.examType == 'JLPT_MOCK'}" class="small text-muted fst-italic mb-3" style="font-size: 0.78rem; line-height: 1.4;">
                         <i class="bi bi-info-circle me-1 text-primary"></i> 
                         Điểm số được quy đổi xấp xỉ tuyến tính theo chuẩn JLPT thang 180 điểm (kỳ thi JLPT chính thức sử dụng thang chuẩn hóa IRT không công bố công thức).
                     </div>
@@ -377,6 +377,12 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div class="text-end mt-3">
+                <a th:href="@{/learning/courses/recommended}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">
+                    <i class="bi bi-stars me-1 text-warning"></i> Xem trang Gợi ý Khóa học &amp; Lộ trình chi tiết <i class="bi bi-arrow-right ms-1"></i>
+                </a>
             </div>
 
         </div>

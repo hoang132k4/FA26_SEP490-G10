@@ -418,13 +418,12 @@ public class LearnerCourseUnitTest {
     }
 
     @Test
-    @DisplayName("Kiểm tra Dashboard học viên (/learning/dashboard)")
+    @DisplayName("Kiểm tra điều hướng Dashboard học viên (/learning/dashboard -> /learning/my-courses)")
     @WithMockUser(username = "learner_utc_course@jeps.edu.vn", roles = {"LEARNER"})
     void test_learnerDashboard() throws Exception {
         mockMvc.perform(get("/learning/dashboard"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("pages/learning/dashboard"))
-                .andExpect(model().attributeExists("learner"));
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/learning/my-courses"));
     }
 
     @Test

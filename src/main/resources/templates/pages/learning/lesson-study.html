@@ -774,8 +774,7 @@
                     <div th:if="${lesson.description == null or lesson.description.isBlank()}"
                         class="text-center py-4 text-muted">
                         <i class="bi bi-journal-text fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                        <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng theo dõi tài
-                            liệu đính kèm bên dưới hoặc chuyển sang bài tiếp theo.</p>
+                        <p class="small mb-0">Bài học này hiện chưa có nội dung văn bản chi tiết. Vui lòng làm bài luyện tập hoặc chuyển sang bài tiếp theo.</p>
                     </div>
                 </div>
 
@@ -789,7 +788,8 @@
                         <div
                             class="manager-practice-quiz-heading d-flex justify-content-between align-items-center mb-2">
                             <h6 class="fw-bold text-dark mb-0"
-                                th:text="${pq.exercise.exerciseTitle != null ? pq.exercise.exerciseTitle : 'Trắc nghiệm luyện tập'}">Bài
+                                th:text="${pq.exercise.exerciseTitle != null ? pq.exercise.exerciseTitle : 'Trắc nghiệm luyện tập'}">
+                                Bài
                                 luyện tập</h6>
                             <span class="badge bg-success-subtle text-success border border-success-subtle"
                                 th:text="|${pq.questions.size()} câu hỏi|">0 câu hỏi</span>
@@ -847,45 +847,6 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                <!-- 9. ATTACHED STUDY MATERIALS CHO BÀI HỌC -->
-                <div th:if="${!lesson.isExam() and exam == null and attachedMaterials != null && !attachedMaterials.isEmpty()}"
-                    class="card p-4 kotoba-card mb-4 bg-white shadow-sm border">
-                    <h5 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-paperclip me-1 text-primary"></i>Tài liệu &amp; Audio đính kèm bài học này
-                    </h5>
-                    <div class="row g-3">
-                        <div class="col-md-6" th:each="mat : ${attachedMaterials}">
-                            <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <i th:class="'bi ' + ${mat.typeIcon} + ' fs-4'"></i>
-                                    <span class="badge" th:classappend="'bg-' + ${mat.skillBadgeColor}"
-                                        th:text="${mat.skillDisplayName}">Ngữ pháp</span>
-                                    <span class="badge bg-white text-muted border small"
-                                        th:text="${mat.formattedTypeBadge}">PDF</span>
-                                </div>
-                                <h6 class="fw-bold text-dark mb-1 small text-truncate" th:text="${mat.materialTitle}">
-                                    Tên tài liệu</h6>
-                                <p class="text-muted small mb-3 flex-grow-1" style="font-size: 0.78rem;"
-                                    th:text="${mat.description}">Mô tả</p>
-
-                                <!-- Audio Player if audio -->
-                                <div th:if="${mat.materialType == 'AUDIO' && mat.audioUrl != null}" class="mb-2">
-                                    <audio controls class="w-100" style="height: 32px;">
-                                        <source th:src="${mat.audioUrl}" type="audio/mpeg">
-                                    </audio>
-                                </div>
-
-                                <div class="mt-auto text-end">
-                                    <a th:if="${mat.fileUrl != null}" th:href="${mat.fileUrl}" target="_blank"
-                                        class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 small">
-                                        <i class="bi bi-download me-1"></i>Tải tài liệu
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 

@@ -10,7 +10,7 @@
         <section th:if="${isAuthenticated}" class="card kotoba-card p-4 p-md-5 mb-5 border-0 shadow-sm"
                  style="background: linear-gradient(135deg, #173B57 0%, #244F70 100%); color: #FFFFFF; border-radius: 20px;">
             <div class="row align-items-center mb-4">
-                <div class="col-lg-8">
+                <div class="col-12">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <span class="badge px-3 py-1 rounded-pill" style="background-color: var(--sakura-accent); color: white; font-weight: 700;">
                             <i class="bi bi-person-check-fill me-1"></i> Không gian học tập cá nhân
@@ -23,11 +23,6 @@
                         Xin chào, <span th:text="${currentUserFullName != null and !currentUserFullName.isBlank() ? currentUserFullName : 'Học viên'}">Học viên</span>! 🌸
                     </h1>
                     <p class="text-white-50 mb-0">Hôm nay bạn muốn học nội dung gì? Chọn nhanh các mục học tập bên dưới để bắt đầu ngay.</p>
-                </div>
-                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                    <a th:href="@{/learning/dashboard}" class="btn btn-light rounded-pill px-4 py-2 fw-semibold shadow-sm">
-                        <i class="bi bi-speedometer2 text-primary me-1"></i> Xem Dashboard đầy đủ
-                    </a>
                 </div>
             </div>
 

@@ -110,6 +110,149 @@ public class ExamServiceImpl implements ExamService {
 
     private final Map<String, SubmissionRecord> recentSubmissions = new ConcurrentHashMap<>();
 
+    private boolean isMilestoneOrCourseExamType(String examType) {
+        if (examType == null) {
+            return false;
+        }
+        String t = examType.trim().toUpperCase(Locale.ROOT);
+        return "MILESTONE".equals(t) || "MIDTERM".equals(t) || "FINAL".equals(t);
+    }
+
+    private int resolveMilestonePassingThresholdScore(Exam exam, int totalPossibleScore) {
+        Integer custom = exam != null ? exam.getPassingScore() : null;
+        if (totalPossibleScore == 100) {
+            if (custom == null || custom <= 0) {
+                return 60;
+            }
+            if (custom <= 100) {
+                return custom;
+            }
+            // Nếu đề do Manager tạo bị gán passing_score theo thang 180 của JLPT
+            return (int) Math.round(custom * 100.0 / JlptExamStructure.TOTAL_SCORE);
+        }
+        if (scoringService != null) {
+            return scoringService.resolveMilestonePassingThreshold(totalPossibleScore, custom);
+        }
+        if (custom == null || custom <= 0) {
+            return (int) Math.ceil((totalPossibleScore * 60.0) / 100.0);
+        }
+        if (custom <= totalPossibleScore) {
+            return custom;
+        }
+        if (custom <= 100) {
+            return (int) Math.ceil((totalPossibleScore * custom) / 100.0);
+        }
+        return totalPossibleScore;
+    }
+
+    private void autoCompleteMilestoneLessonsOnPass(Exam exam, Long userId, Map<String, String> formParams) {
+        if (exam == null || userId == null || lessonProgressService == null) {
+            return;
+        }
+        Long courseId = exam.getCourseId();
+        Long explicitLessonId = null;
+        if (formParams != null) {
+            try {
+                String cStr = formParams.get("activeMilestoneCourseId");
+                if (courseId == null && cStr != null && !cStr.isBlank()) {
+                    courseId = Long.parseLong(cStr.trim());
+                }
+                String lStr = formParams.get("activeMilestoneLessonId");
+                if (lStr != null && !lStr.isBlank()) {
+                    explicitLessonId = Long.parseLong(lStr.trim());
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        List<Lesson> matchedLessons = new ArrayList<>();
+        if (lessonRepository != null) {
+            if (courseId != null) {
+                List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+                for (Lesson l : courseLessons) {
+                    if (exam.getExamId() != null && exam.getExamId().equals(l.getExamId())) {
+                        matchedLessons.add(l);
+                    }
+                }
+                if (matchedLessons.isEmpty() && explicitLessonId != null) {
+                    for (Lesson l : courseLessons) {
+                        if (explicitLessonId.equals(l.getId())) {
+                            matchedLessons.add(l);
+                            break;
+                        }
+                    }
+                }
+                if (matchedLessons.isEmpty()) {
+                    String type = exam.getExamType() != null ? exam.getExamType().toUpperCase(Locale.ROOT) : "";
+                    if ("MIDTERM".equals(type) || "MILESTONE".equals(type)) {
+                        courseLessons.stream()
+                                .filter(Lesson::isMilestoneExam)
+                                .findFirst()
+                                .ifPresent(matchedLessons::add);
+                    } else if ("FINAL".equals(type)) {
+                        courseLessons.stream()
+                                .filter(Lesson::isMilestoneExam)
+                                .reduce((first, second) -> second)
+                                .ifPresent(matchedLessons::add);
+                    }
+                }
+            } else {
+                List<Lesson> allLessons = lessonRepository.findAll();
+                for (Lesson l : allLessons) {
+                    if (exam.getExamId() != null && exam.getExamId().equals(l.getExamId())) {
+                        matchedLessons.add(l);
+                        if (courseId == null && l.getCourse() != null) {
+                            courseId = l.getCourse().getId();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (explicitLessonId != null && courseId != null && matchedLessons.isEmpty()) {
+            try {
+                lessonProgressService.markLessonCompleted(userId, courseId, explicitLessonId);
+                log.info("Auto-marked milestone lesson {} in course {} completed for user {} after passing exam {}",
+                        explicitLessonId, courseId, userId, exam.getExamId());
+            } catch (Exception e) {
+                log.warn("Could not auto-mark explicit milestone lesson completed: {}", e.getMessage());
+            }
+            return;
+        }
+
+        for (Lesson lesson : matchedLessons) {
+            Long targetCourseId = courseId != null ? courseId : (lesson.getCourse() != null ? lesson.getCourse().getId() : null);
+            if (targetCourseId != null && lesson.getId() != null) {
+                try {
+                    lessonProgressService.markLessonCompleted(userId, targetCourseId, lesson.getId());
+                    log.info("Auto-marked milestone lesson {} in course {} completed for user {} after passing exam {}",
+                            lesson.getId(), targetCourseId, userId, exam.getExamId());
+                } catch (Exception e) {
+                    log.warn("Could not auto-mark milestone lesson {} completed: {}", lesson.getId(), e.getMessage());
+                }
+            }
+        }
+    }
+
+    private boolean isPublishedExam(Exam exam) {
+        if (exam == null) {
+            return false;
+        }
+        String s = exam.getStatus();
+        if (s == null || s.isBlank()) {
+            return true;
+        }
+        String normalized = s.trim().toUpperCase(Locale.ROOT);
+        return "PUBLISHED".equals(normalized) || "ACTIVE".equals(normalized);
+    }
+
+    private void ensureExamPublishedForLearner(Exam exam) {
+        if (!isPublishedExam(exam)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Đề thi này chưa được xuất bản hoặc đã ngừng hoạt động.");
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<ExamCardDto> getLearnerExams(String jlptLevel) {
@@ -122,6 +265,9 @@ public class ExamServiceImpl implements ExamService {
 
         List<ExamCardDto> result = new ArrayList<>();
         for (Exam exam : exams) {
+            if (!isPublishedExam(exam)) {
+                continue;
+            }
             long count = questionReader.countQuestionsByExamId(exam.getExamId());
             result.add(ExamCardDto.builder()
                     .examId(exam.getExamId())
@@ -144,12 +290,19 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đề thi JLPT"));
 
+        ensureExamPublishedForLearner(exam);
+
         List<QuestionDto> questions = questionReader.findQuestionsForTaking(examId);
 
         List<QuestionDto> vocabGrammar = new ArrayList<>();
         List<QuestionDto> reading = new ArrayList<>();
         List<QuestionDto> listening = new ArrayList<>();
-        int totalPoints = 180; // thang JLPT cố định
+        boolean isCourseMilestone = isMilestoneOrCourseExamType(exam.getExamType());
+        boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(exam.getExamType());
+        int totalPoints = (isCourseMilestone || isPlacement)
+                ? (exam.getTotalPoints() != null && exam.getTotalPoints() > 0 && exam.getTotalPoints() != JlptExamStructure.TOTAL_SCORE
+                        ? exam.getTotalPoints() : 100)
+                : 180; // thang 180 chỉ áp dụng cho JLPT_MOCK; thang 100 cho Placement, Milestone, Midterm, Final
 
         for (QuestionDto q : questions) {
             String skillGroup = q.getSkillGroup() != null ? q.getSkillGroup() : "VOCAB_GRAMMAR";
@@ -196,14 +349,22 @@ public class ExamServiceImpl implements ExamService {
         Exam selected = null;
         if (assignedLevel != null && !assignedLevel.trim().isEmpty()) {
             for (Exam e : list) {
-                if (assignedLevel.equalsIgnoreCase(e.getJlptLevel())) {
+                if (isPublishedExam(e) && assignedLevel.equalsIgnoreCase(e.getJlptLevel())) {
                     selected = e;
                     break;
                 }
             }
         }
         if (selected == null) {
-            selected = list.get(0);
+            for (Exam e : list) {
+                if (isPublishedExam(e)) {
+                    selected = e;
+                    break;
+                }
+            }
+        }
+        if (selected == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hiện chưa có bài đánh giá đầu vào nào đang mở trong hệ thống.");
         }
 
         long count = questionReader.countQuestionsByExamId(selected.getExamId());
@@ -232,6 +393,9 @@ public class ExamServiceImpl implements ExamService {
 
         List<ExamCardDto> result = new ArrayList<>();
         for (Exam exam : exams) {
+            if (!isPublishedExam(exam)) {
+                continue;
+            }
             long count = questionReader.countQuestionsByExamId(exam.getExamId());
             result.add(ExamCardDto.builder()
                     .examId(exam.getExamId())
@@ -375,105 +539,136 @@ public class ExamServiceImpl implements ExamService {
             q.setIsUserCorrect(isCorrect);
         }
 
-        JlptExamStructure jlpt = JlptExamStructure.of(exam.getJlptLevel());
-
-        // Xây nhóm chấm
-        record Group(String name, int max, String... skills) {
-            int correct(Map<String, Integer> correctMap) {
-                int sum = 0;
-                for (String s : skills) sum += correctMap.getOrDefault(s, 0);
-                return sum;
-            }
-            int total(Map<String, Integer> totalMap) {
-                int sum = 0;
-                for (String s : skills) sum += totalMap.getOrDefault(s, 0);
-                return sum;
-            }
-        }
-
-        List<Group> groups = jlpt.languageReadingCombined()
-            ? List.of(new Group("Ngôn ngữ + Đọc hiểu", 120, "VOCAB_GRAMMAR", "READING"),
-                      new Group("Nghe hiểu", 60, "LISTENING"))
-            : List.of(new Group("Kiến thức ngôn ngữ", 60, "VOCAB_GRAMMAR"),
-                      new Group("Đọc hiểu", 60, "READING"),
-                      new Group("Nghe hiểu", 60, "LISTENING"));
-
-        // Bỏ nhóm không có câu nào (đề milestone thiếu phần)
-        List<Group> present = groups.stream().filter(g -> g.total(totalMap) > 0).toList();
-        int presentMax = present.stream().mapToInt(Group::max).sum();
-        if (presentMax == 0) {
-            presentMax = JlptExamStructure.TOTAL_SCORE;
-        }
+        boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(exam.getExamType());
+        boolean isMilestone = isMilestoneOrCourseExamType(exam.getExamType());
+        boolean hasJlptLevel = exam.getJlptLevel() != null && !exam.getJlptLevel().trim().isEmpty();
 
         int score = 0;
+        int totalPossibleScore = 180;
+        BigDecimal percentage;
         boolean allAboveMin = true;
         List<ExamResultResponse.SkillScoreDto> breakdown = new ArrayList<>();
         String failedMinSection = null;
         int failedMinEarned = 0;
         int failedMinRequired = 0;
 
-        for (Group g : present) {
-            int max = g.max() * JlptExamStructure.TOTAL_SCORE / presentMax;  // chia lại nếu thiếu nhóm
-            int earned = g.total(totalMap) > 0
-                    ? (int) Math.round(g.correct(correctMap) * (double) max / g.total(totalMap))
+        if (isMilestone) {
+            // Đề Milestone / Midterm / Final của khóa học: chấm theo tỷ lệ % (thang 100), KHÔNG áp dụng thang 180 hay điểm liệt 19/60 của JLPT
+            totalPossibleScore = 100;
+            int totalQuestionsCount = questions.size();
+            percentage = totalQuestionsCount > 0
+                    ? BigDecimal.valueOf(correctCount * 100.0 / totalQuestionsCount).setScale(1, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO.setScale(1, RoundingMode.HALF_UP);
+            score = totalQuestionsCount > 0
+                    ? (int) Math.round(correctCount * 100.0 / totalQuestionsCount)
                     : 0;
-            int min = (int) Math.ceil(max * JlptExamStructure.SECTION_MIN_SCORE / 60.0);
-            score += earned;
-            if (earned < min) {
-                allAboveMin = false;
-                if (failedMinSection == null) {
-                    failedMinSection = g.name();
-                    failedMinEarned = earned;
-                    failedMinRequired = min;
+
+            if (scoringService != null) {
+                breakdown = scoringService.calculateSkillBreakdown(questions, false);
+            }
+        } else if (isPlacement) {
+            // Đề PLACEMENT_TEST: chấm theo thang 100 (%) khi có jlptLevel, hoặc giữ điểm thô nếu là đề diagnostic không có jlptLevel
+            if (scoringService != null) {
+                breakdown = scoringService.calculateSkillBreakdown(questions, false);
+            }
+            if (!hasJlptLevel) {
+                int rawScore = 0;
+                int rawTotal = 0;
+                for (QuestionDto q : questions) {
+                    int pts = q.getPoints() != null ? q.getPoints() : 2;
+                    rawTotal += pts;
+                    if (Boolean.TRUE.equals(q.getIsUserCorrect())) {
+                        rawScore += pts;
+                    }
+                }
+                score = rawScore;
+                totalPossibleScore = rawTotal > 0 ? rawTotal : 100;
+                percentage = BigDecimal.valueOf(rawTotal > 0 ? rawScore * 100.0 / rawTotal : 0)
+                        .setScale(1, RoundingMode.HALF_UP);
+            } else {
+                totalPossibleScore = 100;
+                int totalQuestionsCount = questions.size();
+                percentage = totalQuestionsCount > 0
+                        ? BigDecimal.valueOf(correctCount * 100.0 / totalQuestionsCount).setScale(1, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO.setScale(1, RoundingMode.HALF_UP);
+                score = totalQuestionsCount > 0
+                        ? (int) Math.round(correctCount * 100.0 / totalQuestionsCount)
+                        : 0;
+            }
+        } else {
+            JlptExamStructure jlpt = JlptExamStructure.of(exam.getJlptLevel());
+
+            // Xây nhóm chấm chuẩn JLPT 180 điểm
+            record Group(String name, int max, String... skills) {
+                int correct(Map<String, Integer> correctMap) {
+                    int sum = 0;
+                    for (String s : skills) sum += correctMap.getOrDefault(s, 0);
+                    return sum;
+                }
+                int total(Map<String, Integer> totalMap) {
+                    int sum = 0;
+                    for (String s : skills) sum += totalMap.getOrDefault(s, 0);
+                    return sum;
                 }
             }
 
-            BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0)
-                    .setScale(1, RoundingMode.HALF_UP);
+            List<Group> groups = jlpt.languageReadingCombined()
+                ? List.of(new Group("Ngôn ngữ + Đọc hiểu", 120, "VOCAB_GRAMMAR", "READING"),
+                          new Group("Nghe hiểu", 60, "LISTENING"))
+                : List.of(new Group("Kiến thức ngôn ngữ", 60, "VOCAB_GRAMMAR"),
+                          new Group("Đọc hiểu", 60, "READING"),
+                          new Group("Nghe hiểu", 60, "LISTENING"));
 
-            boolean belowMin = (earned < min);
-            breakdown.add(ExamResultResponse.SkillScoreDto.builder()
-                    .skillGroup(String.join("+", g.skills()))
-                    .skillName(g.name())
-                    .earnedPoints(earned)
-                    .totalPoints(max)
-                    .scaledScore(earned)
-                    .scaledMaxScore(max)
-                    .minRequired(min)
-                    .belowMinimum(belowMin)
-                    .correctCount(g.correct(correctMap))
-                    .totalQuestions(g.total(totalMap))
-                    .percentage(pct)
-                    .build());
-        }
-
-        int totalPossibleScore = 180;  // Mặc định thang JLPT chuẩn là 180
-        BigDecimal percentage = BigDecimal.valueOf(score * 100.0 / 180).setScale(1, RoundingMode.HALF_UP);
-
-        boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(exam.getExamType());
-        boolean isMilestone = "MILESTONE".equalsIgnoreCase(exam.getExamType());
-        boolean hasJlptLevel = exam.getJlptLevel() != null && !exam.getJlptLevel().trim().isEmpty();
-
-        // Đề PLACEMENT_TEST nếu không gắn jlptLevel thì giữ nguyên điểm thô (diagnostic)
-        if (isPlacement && !hasJlptLevel) {
-            int rawScore = 0;
-            int rawTotal = 0;
-            for (QuestionDto q : questions) {
-                int pts = q.getPoints() != null ? q.getPoints() : 2;
-                rawTotal += pts;
-                if (Boolean.TRUE.equals(q.getIsUserCorrect())) {
-                    rawScore += pts;
-                }
+            List<Group> present = groups.stream().filter(g -> g.total(totalMap) > 0).toList();
+            int presentMax = present.stream().mapToInt(Group::max).sum();
+            if (presentMax == 0) {
+                presentMax = JlptExamStructure.TOTAL_SCORE;
             }
-            score = rawScore;
-            totalPossibleScore = rawTotal > 0 ? rawTotal : 100;
-            percentage = BigDecimal.valueOf(rawTotal > 0 ? rawScore * 100.0 / rawTotal : 0)
-                    .setScale(1, RoundingMode.HALF_UP);
+
+            for (Group g : present) {
+                int max = g.max() * JlptExamStructure.TOTAL_SCORE / presentMax;
+                int earned = g.total(totalMap) > 0
+                        ? (int) Math.round(g.correct(correctMap) * (double) max / g.total(totalMap))
+                        : 0;
+                int min = (int) Math.ceil(max * JlptExamStructure.SECTION_MIN_SCORE / 60.0);
+                score += earned;
+                if (earned < min) {
+                    allAboveMin = false;
+                    if (failedMinSection == null) {
+                        failedMinSection = g.name();
+                        failedMinEarned = earned;
+                        failedMinRequired = min;
+                    }
+                }
+
+                BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0)
+                        .setScale(1, RoundingMode.HALF_UP);
+
+                boolean belowMin = (earned < min);
+                breakdown.add(ExamResultResponse.SkillScoreDto.builder()
+                        .skillGroup(String.join("+", g.skills()))
+                        .skillName(g.name())
+                        .earnedPoints(earned)
+                        .totalPoints(max)
+                        .scaledScore(earned)
+                        .scaledMaxScore(max)
+                        .minRequired(min)
+                        .belowMinimum(belowMin)
+                        .correctCount(g.correct(correctMap))
+                        .totalQuestions(g.total(totalMap))
+                        .percentage(pct)
+                        .build());
+            }
+
+            percentage = BigDecimal.valueOf(score * 100.0 / 180).setScale(1, RoundingMode.HALF_UP);
         }
 
-        int defaultPassing = defaultPassingScore(exam.getJlptLevel(), isMilestone);
-        int passingScore = exam.getPassingScore() != null ? exam.getPassingScore() : defaultPassing;
-        boolean passed = isPlacement || (score >= passingScore && allAboveMin);
+        int passingScore = isMilestone
+                ? resolveMilestonePassingThresholdScore(exam, totalPossibleScore)
+                : (exam.getPassingScore() != null ? exam.getPassingScore() : defaultPassingScore(exam.getJlptLevel(), false));
+        boolean passed = isPlacement || (isMilestone
+                ? (questions.size() > 0 && score >= passingScore)
+                : (score >= passingScore && allAboveMin));
 
         // strongestSkill / weakestSkill: phân tích chính xác theo tỷ lệ % và các kỹ năng thực tế của bài thi
         SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown, questions);
@@ -557,6 +752,12 @@ public class ExamServiceImpl implements ExamService {
                 resultWriter.saveExamResultDetails(resultId, result.getQuestions());
                 result.setStatusNotice("Kết quả bài thi và chi tiết từng câu hỏi đã được lưu trữ vĩnh viễn vào hệ thống Supabase (Mã kết quả: #" + resultId + ").");
 
+                // D2 (UC Take Milestone Exam): Khi đạt (PASSED), tự động đánh dấu bài học milestone là hoàn thành và mở khóa bài tiếp theo
+                if (isPassed && isMilestoneOrCourseExamType(result.getExamType())) {
+                    Exam examEntity = examRepository.findById(examId).orElse(null);
+                    autoCompleteMilestoneLessonsOnPass(examEntity, userId, formParams);
+                }
+
                 if (dedupKey != null) {
                     long now = System.currentTimeMillis();
                     recentSubmissions.put(dedupKey, new SubmissionRecord(now, result));
@@ -606,7 +807,9 @@ public class ExamServiceImpl implements ExamService {
                 List<QuestionDto> questions = questionReader.findQuestionsForEvaluation(res.getExamId());
                 Map<Long, String> selectedAnswers = resultReader.findSelectedOptionsByResultId(resultId);
 
-                res.setTotalPossibleScore(180);
+                boolean isMilestone = isMilestoneOrCourseExamType(res.getExamType());
+                boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(res.getExamType());
+                res.setTotalPossibleScore((isMilestone || isPlacement) ? 100 : 180);
                 int correctCount = 0;
                 int incorrectCount = 0;
                 int unansweredCount = 0;
@@ -677,30 +880,36 @@ public class ExamServiceImpl implements ExamService {
                 int failedMinEarned = 0;
                 int failedMinRequired = 0;
 
-                for (Group g : present) {
-                    int max = g.max() * JlptExamStructure.TOTAL_SCORE / presentMax;
-                    int minScore = (int) Math.ceil(max * (double) JlptExamStructure.SECTION_MIN_SCORE / 60.0);
-                    int earned = g.total(totalMap) > 0 ? (int) Math.round(g.correct(correctMap) * (double) max / g.total(totalMap)) : 0;
-                    if (earned < minScore && failedMinSection == null) {
-                        failedMinSection = g.name();
-                        failedMinEarned = earned;
-                        failedMinRequired = minScore;
+                if (isMilestone || isPlacement) {
+                    if (scoringService != null) {
+                        breakdown = scoringService.calculateSkillBreakdown(questions, false);
                     }
-                    BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0).setScale(1, RoundingMode.HALF_UP);
-                    boolean belowMin = (earned < minScore);
-                    breakdown.add(ExamResultResponse.SkillScoreDto.builder()
-                            .skillGroup(String.join("+", g.skills()))
-                            .skillName(g.name())
-                            .earnedPoints(earned)
-                            .totalPoints(max)
-                            .scaledScore(earned)
-                            .scaledMaxScore(max)
-                            .minRequired(minScore)
-                            .belowMinimum(belowMin)
-                            .correctCount(g.correct(correctMap))
-                            .totalQuestions(g.total(totalMap))
-                            .percentage(pct)
-                            .build());
+                } else {
+                    for (Group g : present) {
+                        int max = g.max() * JlptExamStructure.TOTAL_SCORE / presentMax;
+                        int minScore = (int) Math.ceil(max * (double) JlptExamStructure.SECTION_MIN_SCORE / 60.0);
+                        int earned = g.total(totalMap) > 0 ? (int) Math.round(g.correct(correctMap) * (double) max / g.total(totalMap)) : 0;
+                        if (earned < minScore && failedMinSection == null) {
+                            failedMinSection = g.name();
+                            failedMinEarned = earned;
+                            failedMinRequired = minScore;
+                        }
+                        BigDecimal pct = BigDecimal.valueOf(max > 0 ? earned * 100.0 / max : 0).setScale(1, RoundingMode.HALF_UP);
+                        boolean belowMin = (earned < minScore);
+                        breakdown.add(ExamResultResponse.SkillScoreDto.builder()
+                                .skillGroup(String.join("+", g.skills()))
+                                .skillName(g.name())
+                                .earnedPoints(earned)
+                                .totalPoints(max)
+                                .scaledScore(earned)
+                                .scaledMaxScore(max)
+                                .minRequired(minScore)
+                                .belowMinimum(belowMin)
+                                .correctCount(g.correct(correctMap))
+                                .totalQuestions(g.total(totalMap))
+                                .percentage(pct)
+                                .build());
+                    }
                 }
 
                 SkillAnalysisResult skillAnalysis = analyzeSkills(breakdown, questions);
@@ -710,7 +919,6 @@ public class ExamServiceImpl implements ExamService {
                 int histScore = res.getScore() != null ? res.getScore() : 0;
                 BigDecimal histPct = res.getPercentage() != null ? res.getPercentage() : BigDecimal.ZERO;
                 boolean histPassed = Boolean.TRUE.equals(res.getPassed());
-                boolean isMilestone = "MILESTONE".equalsIgnoreCase(res.getExamType());
                 int histPassingScore = res.getPassingScore() != null
                         ? res.getPassingScore()
                         : defaultPassingScore(res.getJlptLevel(), isMilestone);
