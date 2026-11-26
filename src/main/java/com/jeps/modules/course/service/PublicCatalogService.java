@@ -62,13 +62,24 @@ public class PublicCatalogService {
 
     @Cacheable(value = "exams", key = "'jlpt_mock_all'")
     public List<Exam> getJlptMockExams() {
-        return examRepository.findByExamTypeIgnoreCase("JLPT_MOCK");
+        return examRepository.findByExamTypeIgnoreCase("JLPT_MOCK").stream()
+                .filter(this::isExamPublic)
+                .toList();
     }
 
     @Cacheable(value = "exams", key = "'jlpt_mock_' + #id")
     public Optional<Exam> findJlptMockExam(Long id) {
         return examRepository.findById(id)
-                .filter(exam -> "JLPT_MOCK".equalsIgnoreCase(exam.getExamType()));
+                .filter(exam -> "JLPT_MOCK".equalsIgnoreCase(exam.getExamType()))
+                .filter(this::isExamPublic);
+    }
+
+    private boolean isExamPublic(Exam exam) {
+        if (exam == null || exam.getStatus() == null) {
+            return false;
+        }
+        String s = exam.getStatus().trim().toUpperCase(Locale.ROOT);
+        return "PUBLISHED".equals(s) || "ACTIVE".equals(s);
     }
 
     private boolean contains(String value, String keyword) {

@@ -20,6 +20,17 @@
             </a>
         </div>
 
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${errorMessage}">Đã có lỗi xảy ra.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${warningMessage}" class="alert alert-warning alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-circle-fill me-2"></i>
+            <span th:text="${warningMessage}">Cảnh báo.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <!-- Main Enrollment Row -->
         <div class="row g-4 justify-content-center">
 
@@ -170,14 +181,14 @@
                     <div class="d-flex flex-column gap-2 mb-3 pb-3 border-bottom" style="border-color: #F1EDE4 !important;">
                         <div class="d-flex justify-content-between small text-muted">
                             <span>Học phí niêm yết:</span>
-                            <span th:if="${course.discountPrice != null && course.discountPrice > 0}"
+                            <span th:if="${course.price != null && course.discountPrice != null && course.discountPrice > 0}"
                                   class="text-decoration-line-through"
                                   th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">299,000 đ</span>
                             <span th:if="${course.discountPrice == null || course.discountPrice == 0}"
-                                  th:text="${course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">299,000 đ</span>
+                                  th:text="${course.price != null and course.price > 0 ? #numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">299,000 đ</span>
                         </div>
 
-                        <div class="d-flex justify-content-between small text-success" th:if="${course.discountPrice != null && course.discountPrice > 0}">
+                        <div class="d-flex justify-content-between small text-success" th:if="${course.price != null && course.discountPrice != null && course.discountPrice > 0}">
                             <span><i class="bi bi-tag-fill me-1"></i> Ưu đãi giảm giá:</span>
                             <span th:text="${'- ' + #numbers.formatDecimal(course.price - course.discountPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">- 100,000 đ</span>
                         </div>

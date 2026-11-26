@@ -60,6 +60,7 @@ public class CourseRegistrationServiceTest {
         testCourse = Course.builder()
                 .title("JLPT N5 Toan dien")
                 .level("N5")
+                .status("PUBLISHED")
                 .price(299000.0)
                 .enrollmentCount(10)
                 .build();
@@ -214,6 +215,18 @@ public class CourseRegistrationServiceTest {
     }
 
     @Test
+    void freeCourseAccessDoesNotAutoEnrollUnpublishedCourses() {
+        testCourse.setPrice(0.0);
+        testCourse.setStatus("DRAFT");
+        when(userRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(testUser));
+        when(courseRepository.findById(100L)).thenReturn(Optional.of(testCourse));
+        when(registrationRepository.findByUserIdAndCourseId(10L, 100L)).thenReturn(Optional.empty());
+
+        assertThat(registrationService.ensureFreeRegistrationForAccess(10L, 100L)).isEmpty();
+        verify(registrationRepository, never()).save(any());
+    }
+
+    @Test
     void completesTheExactPendingRegistrationOnlyOnce() {
         CourseRegistration pending = CourseRegistration.builder()
                 .user(testUser)
@@ -236,5 +249,25 @@ public class CourseRegistrationServiceTest {
         assertThat(pending.getStatus()).isEqualTo(CourseRegistration.STATUS_ACTIVE);
         assertThat(pending.getPaidAmount()).isEqualTo(299000.0);
         verify(courseRepository, times(1)).save(testCourse);
+    }
+
+    @Test
+    @DisplayName("UC-19: Register for Course - Reject DRAFT or ARCHIVED course")
+    void testRegisterCourseNotPublishedThrows() {
+        testCourse.setStatus("DRAFT");
+        CourseRegistrationRequest req = CourseRegistrationRequest.builder()
+                .courseId(100L)
+                .fullName("Nguyen Van A")
+                .email("learner@jeps.edu.vn")
+                .build();
+
+        when(userRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(testUser));
+        when(courseRepository.findById(100L)).thenReturn(Optional.of(testCourse));
+
+        assertThatThrownBy(() -> registrationService.registerCourse(10L, req))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("chưa được xuất bản hoặc đã lưu trữ");
+
+        verify(registrationRepository, never()).save(any());
     }
 }

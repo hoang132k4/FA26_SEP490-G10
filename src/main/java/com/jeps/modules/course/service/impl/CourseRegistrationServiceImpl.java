@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -42,10 +43,14 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
 
         User user = lockUser(userId);
         Course course = findCourse(request.getCourseId());
+        if (!isPublicCourse(course)) {
+            throw new IllegalStateException("Khóa học này hiện chưa được xuất bản hoặc đã lưu trữ, không thể đăng ký.");
+        }
         BigDecimal amount = priceCalculator.calculateFinalPrice(course);
         if (amount.signum() != 0) {
             throw new IllegalStateException("Khóa học có phí cần được thanh toán trước khi kích hoạt.");
         }
+
         if (registrationRepository.existsByUserIdAndCourseId(userId, course.getId())) {
             throw new IllegalStateException("Bạn đã đăng ký khóa học này trước đó. Vui lòng vào trang học tập để tiếp tục.");
         }
@@ -150,6 +155,9 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
         if (existing != null) {
             return isAccessEligible(existing.getStatus()) ? Optional.of(existing) : Optional.empty();
         }
+        if (!isPublicCourse(course)) {
+            return Optional.empty();
+        }
         if (!priceCalculator.isFree(course)) {
             return Optional.empty();
         }
@@ -250,5 +258,10 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
     private boolean isAccessEligible(String status) {
         return CourseRegistration.STATUS_ACTIVE.equalsIgnoreCase(status)
                 || CourseRegistration.STATUS_COMPLETED.equalsIgnoreCase(status);
+    }
+
+    private boolean isPublicCourse(Course course) {
+        String status = course.getStatus() != null ? course.getStatus().trim().toUpperCase(Locale.ROOT) : "";
+        return "PUBLISHED".equals(status) || "ACTIVE".equals(status) || "PUBLIC".equals(status);
     }
 }

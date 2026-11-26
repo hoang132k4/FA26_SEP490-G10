@@ -162,24 +162,32 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Long> getStatistics() {
+        return getStatistics(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStatistics(Long currentUserId) {
         Map<String, Long> stats = new HashMap<>();
         long newCount = 0;
         long reviewingCount = 0;
         long masteredCount = 0;
         long total = 0;
 
-        List<Object[]> grouped = flashcardRepository.countGroupedByReviewStatus();
-        for (Object[] row : grouped) {
-            String st = (String) row[0];
-            Long cnt = (Long) row[1];
-            if (cnt == null) cnt = 0L;
-            total += cnt;
-            if ("NEW".equalsIgnoreCase(st)) {
-                newCount += cnt;
+        List<Flashcard> visibleCards = flashcardRepository.findAll().stream()
+                .filter(c -> (!Boolean.TRUE.equals(c.getIsCustom()) && c.getCreatorId() == null)
+                        || (currentUserId != null && currentUserId.equals(c.getCreatorId())))
+                .toList();
+
+        for (Flashcard c : visibleCards) {
+            total++;
+            String st = c.getReviewStatus();
+            if ("MASTERED".equalsIgnoreCase(st)) {
+                masteredCount++;
             } else if ("REVIEWING".equalsIgnoreCase(st)) {
-                reviewingCount += cnt;
-            } else if ("MASTERED".equalsIgnoreCase(st)) {
-                masteredCount += cnt;
+                reviewingCount++;
+            } else {
+                newCount++;
             }
         }
 
@@ -418,7 +426,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Override
     @Transactional(readOnly = true)
     public List<Flashcard> getDeckCards(String deckName, Long creatorId) {
-        return findCustomDeckCards(deckName, creatorId, true, true).stream()
+        return findCustomDeckCards(deckName, creatorId, false, true).stream()
                 .sorted(Comparator.comparing(Flashcard::getFlashcardId, Comparator.nullsLast(Comparator.naturalOrder())))
                 .collect(Collectors.toList());
     }
@@ -434,7 +442,7 @@ public class FlashcardServiceImpl implements FlashcardService {
             for (Long delId : deletedCardIds) {
                 if (delId != null) {
                     flashcardRepository.findById(delId).ifPresent(c -> {
-                        if (creatorId == null || c.getCreatorId() == null || creatorId.equals(c.getCreatorId())) {
+                        if (creatorId == null || (c.getCreatorId() != null && creatorId.equals(c.getCreatorId()))) {
                             flashcardRepository.delete(c);
                         }
                     });
@@ -458,7 +466,7 @@ public class FlashcardServiceImpl implements FlashcardService {
                 if (req.getFlashcardId() != null) {
                     // Update existing card
                     Flashcard existing = flashcardRepository.findById(req.getFlashcardId()).orElse(null);
-                    if (existing != null && (creatorId == null || existing.getCreatorId() == null || creatorId.equals(existing.getCreatorId()))) {
+                    if (existing != null && (creatorId == null || (existing.getCreatorId() != null && creatorId.equals(existing.getCreatorId())))) {
                         existing.setVocabulary(vocab);
                         existing.setReading(reading);
                         existing.setMeaning(meaning);
@@ -496,7 +504,7 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         // 3. If deck name changed, update any remaining cards under oldDeckName
         if (oldDeckName != null && !oldDeckName.equalsIgnoreCase(finalDeckName)) {
-            List<Flashcard> remaining = findCustomDeckCards(oldDeckName, creatorId, true, true);
+            List<Flashcard> remaining = findCustomDeckCards(oldDeckName, creatorId, false, true);
             for (Flashcard c : remaining) {
                 c.setCustomDeckName(finalDeckName);
                 c.setJlptLevel(finalLevel);
@@ -511,7 +519,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Override
     @Transactional
     public int deleteDeck(String deckName, Long creatorId) {
-        List<Flashcard> deckCards = findCustomDeckCards(deckName, creatorId, true, true);
+        List<Flashcard> deckCards = findCustomDeckCards(deckName, creatorId, false, true);
         if (!deckCards.isEmpty()) {
             flashcardRepository.deleteAll(deckCards);
         }
