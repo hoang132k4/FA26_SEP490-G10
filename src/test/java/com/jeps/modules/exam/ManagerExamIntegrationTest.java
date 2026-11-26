@@ -229,6 +229,70 @@ class ManagerExamIntegrationTest {
                 .andExpect(content().string(containsString("Đọc hiểu: 1/1")));
     }
 
+    // ── Bulk status ──
+
+    @Test
+    void bulkStatusPublishesExamsWhoseSectionsAreFilled() throws Exception {
+        Exam first = saveExam("Đề hàng loạt 1", "JLPT_MOCK", "N5", "DRAFT", 1, 0, 0);
+        Exam second = saveExam("Đề hàng loạt 2", "JLPT_MOCK", "N5", "DRAFT", 0, 1, 0);
+        mockMvc.perform(addQuestions(first, saveQuestion("ACTIVE", "VOCABULARY")));
+        mockMvc.perform(addQuestions(second, saveQuestion("ACTIVE", "READING")));
+
+        mockMvc.perform(post("/manager/exams/bulk-status").with(csrf())
+                        .param("ids", first.getExamId().toString(), second.getExamId().toString())
+                        .param("status", "PUBLISHED"))
+                .andExpect(redirectedUrl("/manager/exams"))
+                .andExpect(flash().attribute("examSuccess", "Đã cập nhật trạng thái 2 đề thi sang PUBLISHED."));
+
+        assertEquals("PUBLISHED", statusOf(first));
+        assertEquals("PUBLISHED", statusOf(second));
+    }
+
+    @Test
+    void bulkStatusKeepsExamWithIncompleteSectionsInDraft() throws Exception {
+        Exam exam = saveExam("Đề hàng loạt thiếu câu", "JLPT_MOCK", "N5", "DRAFT", 2, 0, 0);
+        mockMvc.perform(addQuestions(exam, saveQuestion("ACTIVE", "VOCABULARY")));
+
+        mockMvc.perform(post("/manager/exams/bulk-status").with(csrf())
+                        .param("ids", exam.getExamId().toString())
+                        .param("status", "PUBLISHED"))
+                .andExpect(redirectedUrl("/manager/exams"))
+                .andExpect(flash().attribute("examError", "Đề thi #" + exam.getExamId()
+                        + ": số câu chưa khớp cấu trúc. Không thể chuyển sang PUBLISHED."));
+
+        assertEquals("DRAFT", statusOf(exam));
+    }
+
+    @Test
+    void bulkStatusRejectsPublishingExamWithArchivedQuestion() throws Exception {
+        Exam exam = saveExam("Đề hàng loạt có câu lưu trữ", "JLPT_MOCK", "N5", "DRAFT", 1, 0, 0);
+        Question question = saveQuestion("ACTIVE");
+        mockMvc.perform(addQuestions(exam, question));
+        jdbc.update("UPDATE questions SET status = 'ARCHIVED' WHERE id = ?", question.getId());
+
+        mockMvc.perform(post("/manager/exams/bulk-status").with(csrf())
+                        .param("ids", exam.getExamId().toString())
+                        .param("status", "ACTIVE"))
+                .andExpect(redirectedUrl("/manager/exams"))
+                .andExpect(flash().attribute("examError", "Đề thi #" + exam.getExamId()
+                        + " còn câu hỏi không ACTIVE. Không thể chuyển sang ACTIVE."));
+
+        assertEquals("DRAFT", statusOf(exam));
+    }
+
+    @Test
+    void bulkStatusArchivesPublishedExamWithoutStructureCheck() throws Exception {
+        Exam exam = saveExam("Đề hàng loạt lưu trữ", "JLPT_MOCK", "N5", "PUBLISHED", 5, 0, 0);
+
+        mockMvc.perform(post("/manager/exams/bulk-status").with(csrf())
+                        .param("ids", exam.getExamId().toString())
+                        .param("status", "ARCHIVED"))
+                .andExpect(redirectedUrl("/manager/exams"))
+                .andExpect(flash().attribute("examSuccess", "Đã cập nhật trạng thái 1 đề thi sang ARCHIVED."));
+
+        assertEquals("ARCHIVED", statusOf(exam));
+    }
+
     // ── Exam questions ──
 
     @Test
