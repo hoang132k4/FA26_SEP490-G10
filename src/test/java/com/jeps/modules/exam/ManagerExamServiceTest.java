@@ -1149,6 +1149,188 @@ class ManagerExamServiceTest {
         return q;
     }
 
+    // ── course exams use a 100-point scale ──
+
+    @ParameterizedTest
+    @ValueSource(strings = {"MILESTONE", "MIDTERM", "FINAL"})
+    void createCourseExamIsScoredOutOf100AndPassedAt60(String type) {
+        when(examRepository.save(any(Exam.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Exam saved = service.create(examForm(type, "N5", "DRAFT", 5, 0, 0));
+
+        assertEquals(100, saved.getTotalPoints());
+        assertEquals(60, saved.getPassingScore());
+        assertEquals(90, saved.getDurationMinutes());
+    }
+
+    @Test
+    void updateMilestoneResetsJlptScaleAndFillsMissingDuration() {
+        Exam milestone = new Exam(EXAM_ID, "Cột mốc", "MILESTONE", "N5", null, 5, 120, "DRAFT", null);
+        milestone.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(milestone));
+        when(examRepository.save(milestone)).thenReturn(milestone);
+
+        Exam saved = service.update(EXAM_ID, examForm("MILESTONE", "N5", "DRAFT", 5, 0, 0));
+
+        assertEquals(90, saved.getDurationMinutes());
+        assertEquals(100, saved.getTotalPoints());
+        assertEquals(60, saved.getPassingScore());
+    }
+
+    @Test
+    void updateFinalFillsMissingScale() {
+        Exam finalExam = new Exam(EXAM_ID, "Cuối kỳ", "FINAL", "N5", 40, 5, null, "DRAFT", null);
+        finalExam.setTotalPoints(null); // legacy row without a scale
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(finalExam));
+        when(examRepository.save(finalExam)).thenReturn(finalExam);
+
+        Exam saved = service.update(EXAM_ID, examForm("FINAL", "N5", "DRAFT", 5, 0, 0));
+
+        assertEquals(40, saved.getDurationMinutes());
+        assertEquals(100, saved.getTotalPoints());
+        assertEquals(60, saved.getPassingScore());
+    }
+
+    @Test
+    void updatePlacementKeepsItsOwnScale() {
+        Exam placement = new Exam(EXAM_ID, "Đầu vào", "PLACEMENT_TEST", "N5", 30, 5, 70, "DRAFT", null);
+        placement.setTotalPoints(100);
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(placement));
+        when(examRepository.save(placement)).thenReturn(placement);
+
+        Exam saved = service.update(EXAM_ID, examForm("PLACEMENT_TEST", "N5", "DRAFT", 5, 0, 0));
+
+        assertEquals(100, saved.getTotalPoints());
+        assertEquals(70, saved.getPassingScore());
+    }
+
+    @Test
+    void updateMockExamFillsMissingJlptScaleWithoutLevelChange() {
+        Exam mock = new Exam(EXAM_ID, "Thi thử", "JLPT_MOCK", "N5", 90, 67, null, "DRAFT", null);
+        mock.setTotalPoints(null); // legacy row without a scale
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(mock));
+        when(examRepository.save(mock)).thenReturn(mock);
+
+        Exam saved = service.update(EXAM_ID, examForm("JLPT_MOCK", "N5", "DRAFT"));
+
+        assertEquals(JlptExamStructure.TOTAL_SCORE, saved.getTotalPoints());
+        assertEquals(80, saved.getPassingScore());
+        verify(examQuestionRepository, never()).countByExamId(anyLong());
+    }
+
+    @Test
+    void toFormUsesStoredCountsWhenOnlyReadingIsStored() {
+        Exam exam = exam(EXAM_ID, "DRAFT");
+        exam.setReadingQuestions(4);
+
+        ManagerExamForm form = service.toForm(exam);
+
+        assertEquals(38, form.getLanguageQuestions());
+        assertEquals(4, form.getReadingQuestions());
+        assertEquals(24, form.getListeningQuestions());
+        verify(examQuestionRepository, never()).countByExamId(anyLong());
+    }
+
+    @Test
+    void toFormUsesStoredCountsWhenOnlyListeningIsStored() {
+        Exam exam = exam(EXAM_ID, "DRAFT");
+        exam.setListeningQuestions(10);
+
+        ManagerExamForm form = service.toForm(exam);
+
+        assertEquals(10, form.getListeningQuestions());
+        verify(examQuestionRepository, never()).countByExamId(anyLong());
+    }
+
+    // ── bulk status ──
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    void bulkUpdateStatusRequiresAtLeastOneExam(List<Long> ids) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(ids, "DRAFT"));
+
+        assertEquals("Vui lòng chọn ít nhất một đề thi.", ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "PENDING", "draft"})
+    void bulkUpdateStatusRejectsUnknownStatus(String status) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(EXAM_ID), status));
+
+        assertEquals("Trạng thái không hợp lệ.", ex.getMessage());
+        verify(examRepository, never()).findAllById(any());
+    }
+
+    @Test
+    void bulkUpdateStatusFailsWhenAnExamIsMissing() {
+        when(examRepository.findAllById(List.of(EXAM_ID, 99L))).thenReturn(List.of(exam(EXAM_ID, "DRAFT")));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(EXAM_ID, 99L), "ARCHIVED"));
+
+        assertEquals("Một số đề thi không tồn tại.", ex.getMessage());
+        verify(examRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void bulkUpdateToDraftSkipsExamsAlreadyInDraftWithoutStructureChecks() {
+        Exam draft = exam(1L, "DRAFT");
+        Exam published = exam(2L, "PUBLISHED");
+        when(examRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(draft, published));
+
+        assertEquals(1, service.bulkUpdateStatus(List.of(1L, 2L), "DRAFT"));
+
+        assertEquals("DRAFT", published.getStatus());
+        verify(examRepository).saveAll(List.of(draft, published));
+        verify(examQuestionRepository, never()).countByExamIdAndSection(anyLong(), anyString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PUBLISHED", "ACTIVE"})
+    void bulkPublishSucceedsWhenEverySectionMatchesAndQuestionsAreActive(String status) {
+        Exam exam = exam(EXAM_ID, "DRAFT", 2, 1, 1);
+        when(examRepository.findAllById(List.of(EXAM_ID))).thenReturn(List.of(exam));
+        stubLinked("LANGUAGE", 2);
+        stubLinked("READING", 1);
+        stubLinked("LISTENING", 1);
+        when(examQuestionRepository.findInactiveQuestionIds(EXAM_ID)).thenReturn(List.of());
+
+        assertEquals(1, service.bulkUpdateStatus(List.of(EXAM_ID), status));
+        assertEquals(status, exam.getStatus());
+    }
+
+    @Test
+    void bulkPublishRejectsExamWhoseSectionDoesNotMatch() {
+        Exam exam = exam(EXAM_ID, "DRAFT", 2, 1, 1);
+        when(examRepository.findAllById(List.of(EXAM_ID))).thenReturn(List.of(exam));
+        stubLinked("LANGUAGE", 1);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(EXAM_ID), "PUBLISHED"));
+
+        assertEquals("Đề thi #" + EXAM_ID + ": số câu chưa khớp cấu trúc. Không thể chuyển sang PUBLISHED.", ex.getMessage());
+        assertEquals("DRAFT", exam.getStatus());
+        verify(examRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void bulkPublishRejectsExamWithInactiveQuestions() {
+        Exam exam = exam(EXAM_ID, "DRAFT", 2, 1, 1);
+        when(examRepository.findAllById(List.of(EXAM_ID))).thenReturn(List.of(exam));
+        stubLinked("LANGUAGE", 2);
+        stubLinked("READING", 1);
+        stubLinked("LISTENING", 1);
+        when(examQuestionRepository.findInactiveQuestionIds(EXAM_ID)).thenReturn(List.of(5L));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(EXAM_ID), "ACTIVE"));
+
+        assertEquals("Đề thi #" + EXAM_ID + " còn câu hỏi không ACTIVE. Không thể chuyển sang ACTIVE.", ex.getMessage());
+        verify(examRepository, never()).saveAll(any());
+    }
+
     // ── helpers ──
 
     private void stubExamExists() {
