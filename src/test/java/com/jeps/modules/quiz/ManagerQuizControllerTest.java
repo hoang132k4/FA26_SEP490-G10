@@ -1,6 +1,5 @@
 package com.jeps.modules.quiz;
 
-import com.jeps.modules.question.dto.QuestionImportException;
 import com.jeps.modules.quiz.dto.ExerciseQuestionRow;
 import com.jeps.modules.quiz.dto.LessonOption;
 import com.jeps.modules.quiz.dto.ManagerQuizForm;
@@ -14,7 +13,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import com.jeps.common.util.UserMessages;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,7 +28,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -329,57 +326,6 @@ class ManagerQuizControllerTest {
                 .when(managerQuizService).removeQuestionFromQuiz(1L, 10L);
 
         mockMvc.perform(post("/manager/quizzes/1/questions/10/remove").with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/manager/quizzes/1/questions"))
-                .andExpect(flash().attributeExists("quizError"));
-    }
-
-    // ── IMPORT TEMPLATE ──
-
-    @Test
-    void importTemplate_returnsExcelFile() throws Exception {
-        when(managerQuizService.importTemplate()).thenReturn(new byte[]{1, 2, 3});
-
-        mockMvc.perform(get("/manager/quizzes/import/template"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=\"mau-import-quiz.xlsx\""));
-    }
-
-    // ── IMPORT QUESTIONS ──
-
-    @Test
-    void importQuestions_success_redirects() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "q.xlsx",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
-        when(managerQuizService.importQuestions(eq(1L), any())).thenReturn(5);
-
-        mockMvc.perform(multipart("/manager/quizzes/1/import").file(file).with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/manager/quizzes/1/questions"))
-                .andExpect(flash().attributeExists("quizSuccess"));
-    }
-
-    @Test
-    void importQuestions_importException_showsErrors() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "q.xlsx",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
-        when(managerQuizService.importQuestions(eq(1L), any()))
-                .thenThrow(new QuestionImportException(List.of("Dòng 2: thiếu content")));
-
-        mockMvc.perform(multipart("/manager/quizzes/1/import").file(file).with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/manager/quizzes/1/questions"))
-                .andExpect(flash().attributeExists("quizError", "importErrors"));
-    }
-
-    @Test
-    void importQuestions_illegalArg_showsError() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "q.xlsx",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
-        when(managerQuizService.importQuestions(eq(1L), any()))
-                .thenThrow(new IllegalArgumentException("Quiz không tồn tại."));
-
-        mockMvc.perform(multipart("/manager/quizzes/1/import").file(file).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/manager/quizzes/1/questions"))
                 .andExpect(flash().attributeExists("quizError"));

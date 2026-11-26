@@ -12,12 +12,7 @@
         <a class="btn btn-outline-secondary" th:href="@{/manager/quizzes}">Quay lại danh sách</a>
     </div>
 
-    <div class="alert alert-danger" th:if="${quizError}">
-        <span th:text="${quizError}"></span>
-        <ul class="mb-0 mt-2" th:if="${importErrors != null}">
-            <li th:each="err : ${importErrors}" th:text="${err}"></li>
-        </ul>
-    </div>
+    <div class="alert alert-danger" th:if="${quizError}" th:text="${quizError}"></div>
     <div class="alert alert-success" th:if="${quizSuccess}" th:text="${quizSuccess}"></div>
 
     <!-- Câu hỏi đã gắn vào quiz -->
@@ -72,18 +67,6 @@
             <div class="col-md-2"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-magic me-1"></i>Tự động chọn</button></div>
         </form>
         <small class="text-muted d-block mt-2">Nhập số câu cho từng kỹ năng (0 = bỏ qua). Hệ thống lấy ngẫu nhiên câu hỏi ACTIVE đúng cấp độ trong ngân hàng, không trùng câu đã có trong quiz. Nếu một kỹ năng không đủ câu thì không câu nào được thêm.</small>
-    </div>
-
-    <!-- Import câu hỏi từ Excel -->
-    <div class="kotoba-card p-4 mb-4">
-        <h5 class="fw-bold mb-3" style="color:var(--navy-dark);">Import câu hỏi từ Excel</h5>
-        <form class="row g-2 align-items-center" method="post" enctype="multipart/form-data"
-              th:action="@{/manager/quizzes/{id}/import(id=${quiz.id()})}">
-            <div class="col-md-6"><input class="form-control" type="file" name="file" accept=".xlsx" required></div>
-            <div class="col-md-3"><button class="btn btn-success w-100" type="submit"><i class="bi bi-upload me-1"></i>Import vào quiz</button></div>
-            <div class="col-md-3"><a class="btn btn-outline-secondary w-100" th:href="@{/manager/quizzes/import/template}"><i class="bi bi-download me-1"></i>Tải file mẫu</a></div>
-        </form>
-        <small class="text-muted d-block mt-2">Câu hỏi được lưu vào ngân hàng với trạng thái ACTIVE và gắn luôn vào quiz. Bài đọc/nghe (dòng PASSAGE và các câu con) chỉ được lưu vào ngân hàng, không gắn vào quiz.</small>
     </div>
 
     <!-- Thêm câu hỏi từ ngân hàng -->

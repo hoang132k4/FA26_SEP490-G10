@@ -1,8 +1,5 @@
 package com.jeps.modules.quiz;
 
-import com.jeps.modules.question.dto.QuestionImportException;
-import com.jeps.modules.question.entity.Question;
-import com.jeps.modules.question.service.QuestionImportService;
 import com.jeps.modules.quiz.dto.ExerciseQuestionForm;
 import com.jeps.modules.quiz.dto.ExerciseQuestionRow;
 import com.jeps.modules.quiz.dto.ManagerQuizForm;
@@ -19,7 +16,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +44,6 @@ class ManagerQuizServiceTest {
     private static final long LESSON_ID = 12L;
 
     @Mock private ManagerQuizRepository repository;
-    @Mock private QuestionImportService questionImportService;
 
     @InjectMocks
     private ManagerQuizService service;
@@ -383,54 +378,6 @@ class ManagerQuizServiceTest {
                 () -> service.removeQuestionFromQuiz(QUIZ_ID, 1L));
 
         assertEquals("Câu hỏi này không nằm trong quiz.", ex.getMessage());
-    }
-
-    // ── import ──
-
-    @Test
-    void importLinksOnlyTopLevelChoiceQuestions() {
-        stubQuizExists();
-        Question passage = question(1L, "PASSAGE", null);
-        Question child = question(2L, "MULTI_CHOICE", 1L);
-        Question choice = question(3L, "MULTI_CHOICE", null);
-        Question multi = question(4L, "MULTI_CHOICE", null);
-        when(questionImportService.importFile(any(), eq("ACTIVE"))).thenReturn(List.of(
-                row(2, passage), row(3, child), row(4, choice), row(5, multi)));
-        stubActiveQuestions(3L, 4L);
-
-        int linked = service.importQuestions(QUIZ_ID, excelFile());
-
-        assertEquals(2, linked);
-        verify(repository).insertExerciseQuestions(QUIZ_ID, List.of(3L, 4L));
-        verify(repository).syncTotalQuestions(QUIZ_ID);
-    }
-
-    @Test
-    void importFailsWhenFileHasNoChoiceQuestions() {
-        stubQuizExists();
-        when(questionImportService.importFile(any(), eq("ACTIVE")))
-                .thenReturn(List.of(row(2, question(1L, "PASSAGE", null))));
-
-        QuestionImportException ex = assertThrows(QuestionImportException.class,
-                () -> service.importQuestions(QUIZ_ID, excelFile()));
-
-        assertEquals(List.of("File không có câu hỏi trắc nghiệm nào để gắn vào quiz."), ex.getErrors());
-    }
-
-    @Test
-    void importThrowsBeforeParsingWhenQuizMissing() {
-        when(repository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> service.importQuestions(999L, excelFile()));
-        verify(questionImportService, never()).importFile(any(), any());
-    }
-
-    @Test
-    void importTemplateExcludesExamColumns() {
-        byte[] template = {9};
-        when(questionImportService.buildTemplate(false)).thenReturn(template);
-
-        assertEquals(template, service.importTemplate());
     }
 
     // ── generate ──
@@ -869,19 +816,5 @@ class ManagerQuizServiceTest {
 
     private static QuizOption quiz(String status) {
         return new QuizOption(QUIZ_ID, LESSON_ID, "Bài 1", "Quiz bài 1", 10, 70, status, 0);
-    }
-
-    private static Question question(long id, String type, Long parentId) {
-        Question q = Question.builder().content("Câu " + id).questionType(type).parentId(parentId).status("ACTIVE").build();
-        q.setId(id);
-        return q;
-    }
-
-    private static QuestionImportService.ImportedRow row(int rowNumber, Question q) {
-        return new QuestionImportService.ImportedRow(rowNumber, q, Map.of());
-    }
-
-    private static MockMultipartFile excelFile() {
-        return new MockMultipartFile("file", "questions.xlsx", null, new byte[]{1});
     }
 }
