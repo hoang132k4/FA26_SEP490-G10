@@ -54,6 +54,7 @@ class ManagerQuizIntegrationTest {
 
     private static final String MARK = "IT-QUIZ ";
     private static final long LESSON_ID = 900_001L;
+    private static final long SEED_COURSE_ID = 900_100L;
 
     @Autowired private MockMvc mockMvc;
     @Autowired private QuestionRepository questionRepository;
@@ -61,8 +62,10 @@ class ManagerQuizIntegrationTest {
 
     @BeforeEach
     void seedLesson() {
-        jdbc.update("INSERT INTO lessons (lesson_id, title, section_name, order_index) VALUES (?, ?, ?, 1)",
-                LESSON_ID, MARK + "Bài 1", MARK + "Chương 1");
+        // Every lesson belongs to a course (lessons.course_id is NOT NULL).
+        saveCourse(SEED_COURSE_ID, "Khoá mẫu", "N5");
+        jdbc.update("INSERT INTO lessons (lesson_id, course_id, title, section_name, order_index) VALUES (?, ?, ?, ?, 1)",
+                LESSON_ID, SEED_COURSE_ID, MARK + "Bài 1", MARK + "Chương 1");
     }
 
     @Test
@@ -105,14 +108,13 @@ class ManagerQuizIntegrationTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void lessonPickerAndSectionFilterHandleMissingSectionCourseAndLevel() throws Exception {
+    void lessonPickerAndSectionFilterHandleMissingSectionAndLevel() throws Exception {
         saveCourse(900_101L, "Khoá N5", "N5");
         saveCourse(900_102L, "Khoá chưa gán cấp", "");
         saveLesson(900_011L, 900_101L, "Chương A");
         saveLesson(900_012L, 900_101L, null);
         saveLesson(900_013L, 900_101L, "   ");
         saveLesson(900_014L, 900_102L, null);
-        saveLesson(900_015L, null, null);
 
         var levelSections = (Map<String, List<String>>) mockMvc.perform(get("/manager/quizzes"))
                 .andReturn().getModelAndView().getModel().get("levelSections");
@@ -124,7 +126,6 @@ class ManagerQuizIntegrationTest {
         assertEquals(List.of(900_011L), lessonIds(lessonGroups, "N5 · Chương A"));
         assertEquals(List.of(900_012L, 900_013L), lessonIds(lessonGroups, "N5 · " + MARK + "Khoá N5"));
         assertEquals(List.of(900_014L), lessonIds(lessonGroups, MARK + "Khoá chưa gán cấp"));
-        assertTrue(lessonIds(lessonGroups, "Khác").contains(900_015L));
     }
 
     @Test
