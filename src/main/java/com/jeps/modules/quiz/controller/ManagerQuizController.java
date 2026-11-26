@@ -1,8 +1,6 @@
 package com.jeps.modules.quiz.controller;
 
 import com.jeps.common.constants.SkillTypeEnum;
-import com.jeps.modules.question.controller.ManagerQuestionController;
-import com.jeps.modules.question.dto.QuestionImportException;
 import com.jeps.modules.quiz.dto.ExerciseQuestionForm;
 import com.jeps.modules.quiz.dto.ManagerQuizForm;
 import com.jeps.modules.quiz.dto.QuizGenerateForm;
@@ -11,7 +9,6 @@ import jakarta.validation.Valid;
 import com.jeps.common.util.PageLinks;
 import com.jeps.common.util.UserMessages;
 import org.springframework.dao.DataAccessException;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -21,7 +18,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -184,26 +180,6 @@ public class ManagerQuizController {
         try {
             managerQuizService.removeQuestionFromQuiz(id, questionId);
             redirectAttributes.addFlashAttribute("quizSuccess", "Đã gỡ câu hỏi khỏi quiz.");
-        } catch (IllegalArgumentException | DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("quizError", UserMessages.of(exception));
-        }
-        return "redirect:/manager/quizzes/" + id + "/questions";
-    }
-
-    @GetMapping("/import/template")
-    public ResponseEntity<byte[]> importTemplate() {
-        return ManagerQuestionController.excelResponse(managerQuizService.importTemplate(), "mau-import-quiz.xlsx");
-    }
-
-    @PostMapping("/{id}/import")
-    public String importQuestions(@PathVariable long id, @RequestParam("file") MultipartFile file,
-                                  RedirectAttributes redirectAttributes) {
-        try {
-            int count = managerQuizService.importQuestions(id, file);
-            redirectAttributes.addFlashAttribute("quizSuccess", "Đã import và gắn " + count + " câu hỏi vào quiz.");
-        } catch (QuestionImportException exception) {
-            redirectAttributes.addFlashAttribute("quizError", "Import thất bại, chưa có dữ liệu nào được lưu. Sửa các lỗi sau rồi thử lại:");
-            redirectAttributes.addFlashAttribute("importErrors", exception.getErrors());
         } catch (IllegalArgumentException | DataAccessException exception) {
             redirectAttributes.addFlashAttribute("quizError", UserMessages.of(exception));
         }
