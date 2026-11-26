@@ -401,7 +401,87 @@ class ManagerQuestionIntegrationTest {
                 .andExpect(flash().attribute("questionError", "Không tìm thấy câu hỏi."));
     }
 
+    @Test
+    void bulkActivateUpdatesCompleteQuestionsAndSkipsIncompleteOnes() throws Exception {
+        Question complete = saveComplete(saveChoice("Bulk đủ thông tin", "DRAFT"));
+        Question missingLevel = saveChoice("Bulk thiếu cấp độ", "DRAFT");
+
+        mockMvc.perform(post("/manager/questions/bulk-status").with(csrf())
+                        .param("ids", complete.getId().toString(), missingLevel.getId().toString())
+                        .param("status", "ACTIVE")
+                        .param("returnTo", "/manager/questions?page=1"))
+                .andExpect(redirectedUrl("/manager/questions?page=1"))
+                .andExpect(flash().attribute("questionSuccess",
+                        "Đã cập nhật trạng thái 1 câu hỏi sang ACTIVE. Bỏ qua 1 câu chưa đủ điều kiện."));
+
+        assertEquals("ACTIVE", statusOf(complete));
+        assertEquals("DRAFT", statusOf(missingLevel));
+    }
+
+    @Test
+    void bulkActivatePassageAlsoActivatesItsChildren() throws Exception {
+        Question passage = savePassage("Bulk đoạn văn");
+        passage.setStatus("DRAFT");
+        passage.setJlptLevel("N5");
+        passage.setSkillType("READING");
+        questionRepository.save(passage);
+        Question child = saveChoice("Bulk câu con", "DRAFT");
+        child.setParentId(passage.getId());
+        saveComplete(child);
+
+        mockMvc.perform(post("/manager/questions/bulk-status").with(csrf())
+                        .param("ids", passage.getId().toString())
+                        .param("status", "ACTIVE"))
+                .andExpect(redirectedUrl("/manager/questions"))
+                .andExpect(flash().attribute("questionSuccess", "Đã cập nhật trạng thái 1 câu hỏi sang ACTIVE."));
+
+        assertEquals("ACTIVE", statusOf(passage));
+        assertEquals("ACTIVE", statusOf(child));
+    }
+
+    @Test
+    void bulkArchiveIsBlockedWhenAChildIsUsedInPublishedExam() throws Exception {
+        Question passage = savePassage("Bulk đoạn văn đang dùng");
+        Question child = saveChoice("Bulk câu con đang dùng", "ACTIVE");
+        child.setParentId(passage.getId());
+        questionRepository.save(child);
+        linkToExam(child, "PUBLISHED");
+
+        mockMvc.perform(post("/manager/questions/bulk-status").with(csrf())
+                        .param("ids", passage.getId().toString())
+                        .param("status", "ARCHIVED")
+                        .param("returnTo", "https://example.com/manager/questions"))
+                .andExpect(redirectedUrl("/manager/questions"))
+                .andExpect(flash().attribute("questionError", "Câu hỏi #" + child.getId()
+                        + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang ARCHIVED."));
+
+        assertEquals("ACTIVE", statusOf(passage));
+        assertEquals("ACTIVE", statusOf(child));
+    }
+
+    @Test
+    void allIdsReturnsEveryMatchingTopLevelQuestionAcrossPages() throws Exception {
+        Question passage = savePassage("Chọn tất cả đoạn văn");
+        for (int i = 0; i < 21; i++) saveChoice("Chọn tất cả " + i, "DRAFT");
+        Question child = saveChoice("Chọn tất cả câu con", "DRAFT");
+        child.setParentId(passage.getId());
+        questionRepository.save(child);
+        entityManager.flush();
+
+        mockMvc.perform(get("/manager/questions/all-ids").param("search", MARK + "Chọn tất cả").param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$", hasSize(21)))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$",
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(child.getId().intValue()))));
+    }
+
     // ── helpers ──
+
+    private Question saveComplete(Question q) {
+        q.setJlptLevel("N5");
+        q.setSkillType("VOCABULARY");
+        return questionRepository.save(q);
+    }
 
     private Question saveChoice(String content, String status) {
         return questionRepository.save(Question.builder()
