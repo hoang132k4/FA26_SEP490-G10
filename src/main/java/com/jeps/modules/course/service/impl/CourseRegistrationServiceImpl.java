@@ -38,6 +38,11 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
         Course course = courseRepository.findById(request.getCourseId())
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy khóa học với mã ID: " + request.getCourseId()));
 
+        String courseStatus = course.getStatus() != null ? course.getStatus().trim().toUpperCase() : "";
+        if (!"PUBLISHED".equals(courseStatus) && !"ACTIVE".equals(courseStatus) && !"PUBLIC".equals(courseStatus)) {
+            throw new IllegalStateException("Khóa học này hiện chưa được xuất bản hoặc đã lưu trữ, không thể đăng ký.");
+        }
+
         if (registrationRepository.existsByUserIdAndCourseId(userId, course.getId())) {
             throw new IllegalStateException("Bạn đã đăng ký khóa học này trước đó. Vui lòng vào trang học tập để tiếp tục.");
         }

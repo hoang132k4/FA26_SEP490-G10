@@ -107,4 +107,24 @@ public class CourseRegistrationServiceTest {
 
         verify(registrationRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("UC-19: Register for Course - Reject DRAFT or ARCHIVED course")
+    void testRegisterCourseNotPublishedThrows() {
+        testCourse.setStatus("DRAFT");
+        CourseRegistrationRequest req = CourseRegistrationRequest.builder()
+                .courseId(100L)
+                .fullName("Nguyen Van A")
+                .email("learner@jeps.edu.vn")
+                .build();
+
+        when(userRepository.findById(10L)).thenReturn(Optional.of(testUser));
+        when(courseRepository.findById(100L)).thenReturn(Optional.of(testCourse));
+
+        assertThatThrownBy(() -> registrationService.registerCourse(10L, req))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("chưa được xuất bản hoặc đã lưu trữ");
+
+        verify(registrationRepository, never()).save(any());
+    }
 }

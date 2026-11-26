@@ -31,18 +31,52 @@ public class QuizController {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jeps.modules.course.repository.CourseRegistrationRepository courseRegistrationRepository;
+
     private Long resolveUserId(CustomUserDetails userDetails, Principal principal, HttpSession session) {
         return CurrentUserSession.resolveUserId(userDetails, principal, session, userRepository);
+    }
+
+    private boolean canAccessLessonQuiz(Long userId, Lesson lesson) {
+        if (lesson == null || lesson.getCourse() == null || courseRegistrationRepository == null) {
+            return true;
+        }
+        if ("INACTIVE".equalsIgnoreCase(lesson.getStatus())) {
+            return false;
+        }
+        if (lesson.isFreePreview()) {
+            return true;
+        }
+        return userId != null && courseRegistrationRepository.existsByUserIdAndCourseId(userId, lesson.getCourse().getId());
     }
 
     @GetMapping("/do")
     public String doQuiz(
             @RequestParam(required = false) Long lessonId,
             @RequestParam(required = false) Long exerciseId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            Principal principal,
+            HttpSession session,
             Model model
     ) {
         if (lessonId == null && exerciseId == null) {
             return "redirect:/learning/dashboard";
+        }
+
+        Long userId = resolveUserId(userDetails, principal, session);
+        if (userId == null) {
+            String target = exerciseId != null ? "/quiz/do?exerciseId=" + exerciseId : "/quiz/do?lessonId=" + lessonId;
+            return "redirect:/auth/login?continue=" + target;
+        }
+
+        if (lessonId != null) {
+            Lesson requestedLesson = lessonRepository.findById(lessonId).orElse(null);
+            if (requestedLesson != null && !canAccessLessonQuiz(userId, requestedLesson)) {
+                return requestedLesson.getCourse() != null
+                        ? "redirect:/courses/" + requestedLesson.getCourse().getId()
+                        : "redirect:/learning/dashboard";
+            }
         }
 
         Exercise exercise;
@@ -52,8 +86,14 @@ public class QuizController {
             exercise = quizService.getOrCreateExerciseForLesson(lessonId);
         }
 
-        List<QuizQuestionDto> questions = quizService.getQuestionsForExercise(exercise.getExerciseId());
         Lesson lesson = (exercise.getLessonId() != null) ? lessonRepository.findById(exercise.getLessonId()).orElse(null) : null;
+        if (lesson != null && !canAccessLessonQuiz(userId, lesson)) {
+            return lesson.getCourse() != null
+                    ? "redirect:/courses/" + lesson.getCourse().getId()
+                    : "redirect:/learning/dashboard";
+        }
+
+        List<QuizQuestionDto> questions = quizService.getQuestionsForExercise(exercise.getExerciseId());
         Course course = (lesson != null) ? lesson.getCourse() : null;
 
         model.addAttribute("exercise", exercise);
@@ -80,6 +120,17 @@ public class QuizController {
         Long userId = resolveUserId(userDetails, principal, session);
         if (userId == null) {
             return "redirect:/auth/login?continue=/quiz/do?exerciseId=" + exerciseId;
+        }
+
+        if (courseRegistrationRepository != null) {
+            Exercise ex = quizService.getExercise(exerciseId);
+            if (ex != null && ex.getLessonId() != null) {
+                Lesson lesson = lessonRepository.findById(ex.getLessonId()).orElse(null);
+                if (lesson != null && !canAccessLessonQuiz(userId, lesson)) {
+                    throw new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.FORBIDDEN, "Bạn cần đăng ký khóa học để nộp bài tập này.");
+                }
+            }
         }
 
         // Parse answers from inputs named: "answer_{questionId}"

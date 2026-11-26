@@ -46,7 +46,7 @@ public class FlashcardController {
         Long currentUserId = getCurrentUserId(authentication);
         List<FlashcardDeckDto> systemDecks = flashcardService.getSystemFlashcardDecks(keyword, level);
         List<FlashcardDeckDto> userDecks = flashcardService.getUserFlashcardDecks(keyword, level, currentUserId);
-        Map<String, Long> stats = flashcardService.getStatistics();
+        Map<String, Long> stats = flashcardService.getStatistics(currentUserId);
 
         model.addAttribute("systemDecks", systemDecks);
         model.addAttribute("userDecks", userDecks);
@@ -125,12 +125,28 @@ public class FlashcardController {
         return "redirect:/flashcards?tab=user";
     }
 
+    private Flashcard requireOwnedCustomFlashcard(Long id, org.springframework.security.core.Authentication authentication) {
+        Long currentUserId = getCurrentUserId(authentication);
+        if (currentUserId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "Vui lòng đăng nhập để thực hiện thao tác này.");
+        }
+        Flashcard flashcard = flashcardService.getFlashcardById(id);
+        if (flashcard.getCreatorId() == null || !currentUserId.equals(flashcard.getCreatorId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Bạn không có quyền chỉnh sửa hoặc xóa thẻ Flashcard này.");
+        }
+        return flashcard;
+    }
+
     /**
      * 4. Update Flashcard - View Form
      */
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
-        Flashcard flashcard = flashcardService.getFlashcardById(id);
+    public String editForm(@PathVariable Long id,
+                           org.springframework.security.core.Authentication authentication,
+                           Model model) {
+        Flashcard flashcard = requireOwnedCustomFlashcard(id, authentication);
         FlashcardRequest request = FlashcardRequest.builder()
                 .flashcardId(flashcard.getFlashcardId())
                 .lessonId(flashcard.getLessonId())
@@ -161,9 +177,11 @@ public class FlashcardController {
             @PathVariable Long id,
             @Valid @ModelAttribute("flashcardRequest") FlashcardRequest request,
             BindingResult bindingResult,
+            org.springframework.security.core.Authentication authentication,
             Model model,
             RedirectAttributes redirectAttributes
     ) {
+        requireOwnedCustomFlashcard(id, authentication);
         if (bindingResult.hasErrors()) {
             model.addAttribute("flashcardId", id);
             model.addAttribute("lessons", lessonRepository.findAll());
@@ -181,8 +199,10 @@ public class FlashcardController {
      * Delete Flashcard
      */
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        Flashcard flashcard = flashcardService.getFlashcardById(id);
+    public String delete(@PathVariable Long id,
+                         org.springframework.security.core.Authentication authentication,
+                         RedirectAttributes redirectAttributes) {
+        Flashcard flashcard = requireOwnedCustomFlashcard(id, authentication);
         String vocab = flashcard.getVocabulary();
         flashcardService.deleteFlashcard(id);
         redirectAttributes.addFlashAttribute("successMessage",

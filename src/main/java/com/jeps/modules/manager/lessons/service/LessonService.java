@@ -6,6 +6,7 @@ import com.jeps.modules.manager.courses.service.CourseService;
 import com.jeps.modules.manager.lessons.dto.LessonDtos.LessonInput;
 import com.jeps.modules.manager.lessons.dto.LessonDtos.LessonRow;
 import com.jeps.modules.manager.lessons.repository.LessonRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,6 +89,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public long create(long courseId, LessonInput rawInput) {
         LessonInput input = validate(rawInput, false);
         courseService.findCourse(courseId)
@@ -120,6 +122,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public long createOther(long courseId, LessonInput rawInput) {
         LessonInput input = validate(rawInput, true);
         courseService.findCourse(courseId)
@@ -150,6 +153,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public void update(long lessonId, LessonInput rawInput) {
         LessonRow existing = requireLesson(lessonId);
         LessonInput input = validate(rawInput, false);
@@ -176,6 +180,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public void updateOther(long lessonId, LessonInput rawInput) {
         LessonRow existing = requireLesson(lessonId);
         if (SkillTypeEnum.fromParam(existing.skillValue()) != null) {
@@ -193,6 +198,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public void delete(long lessonId) {
         LessonRow existing = requireLesson(lessonId);
         if (hasLearnersStudied(lessonId)) {
@@ -203,6 +209,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public void renameSection(long courseId, String oldName, String newName) {
         courseService.findCourse(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
@@ -210,6 +217,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public void deleteSection(long courseId, String sectionName) {
         courseService.findCourse(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
@@ -221,6 +229,7 @@ public class LessonService {
      * automatically, so a duplicate can be reviewed before it reaches learners.
      */
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public long duplicate(long lessonId) {
         LessonRow source = requireLesson(lessonId);
         String skill = resolveSkillValue(source.skillValue());
@@ -245,6 +254,7 @@ public class LessonService {
     }
 
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public LessonStatusEnum changeStatus(long lessonId, LessonStatusEnum requestedStatus) {
         LessonRow existing = requireLesson(lessonId);
         LessonStatusEnum nextStatus = requestedStatus == null
@@ -259,6 +269,7 @@ public class LessonService {
      * inside its specific chapter and skill column. Returns {@code false} when it cannot move.
      */
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public boolean moveInColumn(long lessonId, int direction, String chapter, String columnSkillValues) {
         LessonRow existing = requireLesson(lessonId);
         long courseId = existing.courseId();

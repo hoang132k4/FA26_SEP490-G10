@@ -1,9 +1,11 @@
 package com.jeps.modules.manager.course;
 
+import com.jeps.common.constants.LessonStatusEnum;
 import com.jeps.modules.manager.courses.dto.CourseOption;
 import com.jeps.modules.manager.courses.repository.CourseRepository;
 import com.jeps.modules.manager.courses.service.CourseService;
 import com.jeps.modules.manager.lessons.dto.LessonDtos.LessonInput;
+import com.jeps.modules.manager.lessons.dto.LessonDtos.LessonRow;
 import com.jeps.modules.manager.lessons.repository.LessonRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -173,6 +175,9 @@ class CourseServiceTest {
     @DisplayName("UT_MC_10: transitionCourseStatus should update status when valid and different")
     void testTransitionCourseStatusSuccess() {
         when(courseRepository.findStatusById(10L)).thenReturn(Optional.of("DRAFT"));
+        when(lessonRepository.findByCourse(10L)).thenReturn(List.of(
+                new LessonRow(1L, 10L, 1, "Bài 1", "", "", "Chương 1", 20, false, LessonStatusEnum.ACTIVE, "GRAMMAR")
+        ));
         when(courseRepository.transitionStatus(10L, "PUBLISHED")).thenReturn(1);
 
         courseService.transitionCourseStatus(10L, "PUBLISHED");
@@ -186,6 +191,21 @@ class CourseServiceTest {
         when(courseRepository.findStatusById(10L)).thenReturn(Optional.of("PUBLISHED"));
 
         courseService.transitionCourseStatus(10L, "ACTIVE"); // ACTIVE normalizes to PUBLISHED
+
+        verify(courseRepository, never()).transitionStatus(anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("UT_MC_12: transitionCourseStatus to PUBLISHED should fail when course has no active lesson")
+    void testTransitionCourseStatusToPublishedWithoutActiveLesson() {
+        when(courseRepository.findStatusById(10L)).thenReturn(Optional.of("DRAFT"));
+        when(lessonRepository.findByCourse(10L)).thenReturn(List.of(
+                new LessonRow(1L, 10L, 1, "Bài ẩn", "", "", "Chương 1", 20, false, LessonStatusEnum.INACTIVE, "GRAMMAR")
+        ));
+
+        assertThatThrownBy(() -> courseService.transitionCourseStatus(10L, "PUBLISHED"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ít nhất 1 bài học");
 
         verify(courseRepository, never()).transitionStatus(anyLong(), anyString());
     }

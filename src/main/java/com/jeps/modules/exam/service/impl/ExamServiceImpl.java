@@ -110,6 +110,14 @@ public class ExamServiceImpl implements ExamService {
 
     private final Map<String, SubmissionRecord> recentSubmissions = new ConcurrentHashMap<>();
 
+    private boolean isPublishedExamStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return false;
+        }
+        String normalized = status.trim().toUpperCase(Locale.ROOT);
+        return "PUBLISHED".equals(normalized) || "ACTIVE".equals(normalized);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<ExamCardDto> getLearnerExams(String jlptLevel) {
@@ -122,6 +130,9 @@ public class ExamServiceImpl implements ExamService {
 
         List<ExamCardDto> result = new ArrayList<>();
         for (Exam exam : exams) {
+            if (!isPublishedExamStatus(exam.getStatus())) {
+                continue;
+            }
             long count = questionReader.countQuestionsByExamId(exam.getExamId());
             result.add(ExamCardDto.builder()
                     .examId(exam.getExamId())
@@ -143,6 +154,10 @@ public class ExamServiceImpl implements ExamService {
     public ExamTakeResponse getExamForTaking(Long examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đề thi JLPT"));
+        if (!isPublishedExamStatus(exam.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Đề thi này hiện chưa được xuất bản hoặc đã lưu trữ.");
+        }
 
         List<QuestionDto> questions = questionReader.findQuestionsForTaking(examId);
 
@@ -232,6 +247,9 @@ public class ExamServiceImpl implements ExamService {
 
         List<ExamCardDto> result = new ArrayList<>();
         for (Exam exam : exams) {
+            if (!isPublishedExamStatus(exam.getStatus())) {
+                continue;
+            }
             long count = questionReader.countQuestionsByExamId(exam.getExamId());
             result.add(ExamCardDto.builder()
                     .examId(exam.getExamId())

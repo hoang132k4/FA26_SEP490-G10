@@ -89,7 +89,12 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         if (regOpt.isEmpty()) {
             User user = (userRepository != null) ? userRepository.findById(userId).orElse(null) : null;
             Course enrolledCourse = (courseRepository != null) ? courseRepository.findById(courseId).orElse(null) : null;
-            if (user != null && enrolledCourse != null) {
+            boolean isPublicFree = enrolledCourse != null
+                    && ("PUBLISHED".equalsIgnoreCase(enrolledCourse.getStatus())
+                        || "ACTIVE".equalsIgnoreCase(enrolledCourse.getStatus())
+                        || "PUBLIC".equalsIgnoreCase(enrolledCourse.getStatus()))
+                    && (enrolledCourse.getPrice() == null || enrolledCourse.getPrice() <= 0.0);
+            if (user != null && isPublicFree) {
                 CourseRegistration newReg = CourseRegistration.builder()
                         .user(user)
                         .course(enrolledCourse)

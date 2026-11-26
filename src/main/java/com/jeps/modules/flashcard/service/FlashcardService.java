@@ -25,6 +25,10 @@ public interface FlashcardService {
 
     Map<String, Long> getStatistics();
 
+    default Map<String, Long> getStatistics(Long currentUserId) {
+        return getStatistics();
+    }
+
     List<FlashcardDeckDto> getSystemFlashcardDecks(String keyword, String level);
 
     List<FlashcardDeckDto> getUserFlashcardDecks(String keyword, String level, Long currentUserId);

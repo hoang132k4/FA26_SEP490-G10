@@ -131,7 +131,9 @@ public class LearnerCourseController {
         }
 
         Course course = courseService.getCourseById(targetCourseId);
-        List<Lesson> lessons = courseService.getCourseLessons(targetCourseId);
+        List<Lesson> lessons = courseService.getCourseLessons(targetCourseId).stream()
+                .filter(l -> !"INACTIVE".equalsIgnoreCase(l.getStatus()))
+                .toList();
 
         // Group lessons by Chapter / Section
         Map<String, List<Lesson>> groupedLessons = courseService.groupLessonsBySection(lessons);
@@ -207,7 +209,29 @@ public class LearnerCourseController {
             filterCourse = courseService.getCourseById(courseId);
             materials = studyMaterialService.getMaterialsByCourseId(courseId);
         } else {
-            materials = studyMaterialService.searchMaterials(level, skill, type, keyword);
+            List<StudyMaterial> searched = studyMaterialService.searchMaterials(level, skill, type, keyword);
+            Set<Long> matLessonIds = searched.stream()
+                    .map(StudyMaterial::getLessonId)
+                    .filter(Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            Map<Long, Lesson> matLessonMap = matLessonIds.isEmpty()
+                    ? Collections.emptyMap()
+                    : lessonRepository.findAllById(matLessonIds).stream()
+                            .collect(java.util.stream.Collectors.toMap(Lesson::getId, l -> l, (a, b) -> a));
+            Set<Long> enrolledIds = registrationService.getUserRegistrations(learner.getId()).stream()
+                    .map(r -> r.getCourse() != null ? r.getCourse().getId() : null)
+                    .filter(Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            materials = searched.stream()
+                    .filter(m -> {
+                        if (m.getLessonId() == null) return true;
+                        Lesson l = matLessonMap.get(m.getLessonId());
+                        if (l == null || "INACTIVE".equalsIgnoreCase(l.getStatus())) return false;
+                        Course c = l.getCourse();
+                        if (c == null || !isCoursePublicStatus(c)) return false;
+                        return l.isFreePreview() || enrolledIds.contains(c.getId());
+                    })
+                    .toList();
         }
 
         long audioCount = materials.stream().filter(m -> "AUDIO".equalsIgnoreCase(m.getMaterialType())).count();
@@ -252,19 +276,29 @@ public class LearnerCourseController {
         if (course == null && lesson.getCourse() != null) {
             course = lesson.getCourse();
         }
+        if (course == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bài học chưa được gắn với khóa học hợp lệ.");
+            return "redirect:/learning/my-courses";
+        }
+        if ("INACTIVE".equalsIgnoreCase(lesson.getStatus())) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bài học này hiện đang tạm ẩn.");
+            return "redirect:/learning/courses/" + course.getId() + "/lessons";
+        }
 
         // Chặn quyền truy cập bài học nếu học viên chưa đăng ký khóa học (ngoại trừ bài học cho phép học thử)
-        boolean isEnrolled = (course != null) && registrationService.isUserEnrolled(learner.getId(), course.getId());
+        boolean isEnrolled = registrationService.isUserEnrolled(learner.getId(), course.getId());
         if (!isEnrolled) {
             boolean isFree = lesson.isFreePreview();
             if (!isFree) {
                 redirectAttributes.addFlashAttribute("errorMessage",
                         "Bạn chưa đăng ký khóa học này. Vui lòng đăng ký khóa học để truy cập bài học!");
-                return "redirect:/courses/" + (course != null ? course.getId() : 1);
+                return "redirect:/courses/" + course.getId();
             }
         }
 
-        List<Lesson> courseLessons = courseService.getCourseLessons(course.getId());
+        List<Lesson> courseLessons = courseService.getCourseLessons(course.getId()).stream()
+                .filter(l -> !"INACTIVE".equalsIgnoreCase(l.getStatus()))
+                .toList();
         Map<String, List<Lesson>> groupedLessons = courseService.groupLessonsBySection(courseLessons);
 
         // Find prev and next lesson
@@ -479,6 +513,14 @@ public class LearnerCourseController {
         return "pages/learning/recommended-courses";
     }
 
+    private boolean isCoursePublicStatus(Course course) {
+        if (course == null || course.getStatus() == null) {
+            return false;
+        }
+        String status = course.getStatus().trim().toUpperCase(Locale.ROOT);
+        return "PUBLISHED".equals(status) || "ACTIVE".equals(status) || "PUBLIC".equals(status);
+    }
+
     /**
      * UC-19: Register for Course Screen
      */
@@ -491,7 +533,19 @@ public class LearnerCourseController {
             RedirectAttributes redirectAttributes) {
 
         User learner = getCurrentLearner(principal, session);
-        Course course = courseService.getCourseById(id);
+        Course course;
+        try {
+            course = courseService.getCourseById(id);
+        } catch (NoSuchElementException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy khóa học yêu cầu.");
+            return "redirect:/courses";
+        }
+
+        if (!isCoursePublicStatus(course)) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Khóa học này hiện chưa được xuất bản hoặc đã lưu trữ, không thể đăng ký.");
+            return "redirect:/courses";
+        }
 
         if (registrationService.isUserEnrolled(learner.getId(), course.getId())) {
             redirectAttributes.addFlashAttribute("warningMessage",
@@ -500,12 +554,13 @@ public class LearnerCourseController {
         }
 
         if (!model.containsAttribute("registrationRequest")) {
+            double price = course.getPrice() != null ? course.getPrice() : 0.0;
             CourseRegistrationRequest request = CourseRegistrationRequest.builder()
                     .courseId(course.getId())
                     .fullName(learner.getFullName())
                     .email(learner.getEmail())
                     .phone(learner.getPhone())
-                    .paymentMethod(course.getPrice() == 0 ? "FREE" : "VNPAY")
+                    .paymentMethod(price == 0.0 ? "FREE" : "VNPAY")
                     .termsAccepted(true)
                     .build();
             model.addAttribute("registrationRequest", request);
@@ -549,7 +604,7 @@ public class LearnerCourseController {
             return "redirect:/courses/" + id;
         } catch (IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("warningMessage", ex.getMessage());
-            return "redirect:/courses/" + id;
+            return isCoursePublicStatus(course) ? "redirect:/courses/" + id : "redirect:/courses";
         } catch (Exception ex) {
             log.error("Failed to register course ID: {} for user ID: {}", id, learner.getId(), ex);
             model.addAttribute("errorMessage",

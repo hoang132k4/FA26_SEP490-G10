@@ -1524,5 +1524,33 @@ public class ExamServiceTest {
         assertEquals(2, result.getTotalRequiredLessons());
         assertEquals(2, result.getCompletedRequiredLessons());
     }
+
+    @Test
+    @DisplayName("getLearnerExams - Filters out DRAFT and ARCHIVED exams")
+    void testGetLearnerExams_FiltersNonPublished() {
+        Exam draftExam = new Exam(100L, "Draft Mock", "JLPT_MOCK", "N4", 50, 0, 35, "DRAFT", "Draft");
+        Exam archivedExam = new Exam(101L, "Archived Mock", "JLPT_MOCK", "N4", 50, 0, 35, "ARCHIVED", "Archived");
+        Exam publishedExam = new Exam(102L, "Published Mock", "JLPT_MOCK", "N4", 50, 0, 35, "PUBLISHED", "Published");
+
+        when(examRepository.findByExamTypeIgnoreCase("JLPT_MOCK"))
+                .thenReturn(List.of(draftExam, archivedExam, publishedExam));
+        when(questionReader.countQuestionsByExamId(102L)).thenReturn(10L);
+
+        List<ExamCardDto> cards = examService.getLearnerExams("ALL");
+
+        assertEquals(1, cards.size());
+        assertEquals(102L, cards.get(0).getExamId());
+    }
+
+    @Test
+    @DisplayName("getExamForTaking - Throws 403 FORBIDDEN for DRAFT or ARCHIVED exam")
+    void testGetExamForTaking_RejectsDraftOrArchived() {
+        Exam draftExam = new Exam(200L, "Draft Mock", "JLPT_MOCK", "N4", 50, 0, 35, "DRAFT", "Draft");
+        when(examRepository.findById(200L)).thenReturn(Optional.of(draftExam));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> examService.getExamForTaking(200L));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
 }
 

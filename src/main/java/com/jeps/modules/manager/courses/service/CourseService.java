@@ -6,6 +6,7 @@ import com.jeps.modules.manager.courses.repository.CourseRepository;
 import com.jeps.modules.manager.lessons.dto.LessonDtos.LessonInput;
 import com.jeps.modules.manager.lessons.repository.LessonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,7 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(value = {"courses", "courseDetails", "lessons"}, allEntries = true)
     public long createCourse(String title, String code, String level, Double price, Double discountPrice,
                              String shortDescription, String description, String thumbnailUrl, String objectives,
                              String prerequisites, String targetAudience) {
@@ -84,6 +86,7 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(value = {"courses", "courseDetails", "lessons"}, allEntries = true)
     public void updateCourse(long courseId, String title, String code, String level, Double price, Double discountPrice,
                              String shortDescription, String description, String thumbnailUrl, String objectives,
                              String prerequisites, String targetAudience) {
@@ -94,6 +97,7 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(value = {"courses", "courseDetails", "lessons"}, allEntries = true)
     public void transitionCourseStatus(long courseId, String requestedStatus) {
         String targetStatus = normalizeStatus(requestedStatus);
         if (!VALID_STATUSES.contains(targetStatus)) {
@@ -103,6 +107,16 @@ public class CourseService {
         String currentStatus = courseRepository.findStatusById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khóa học cần chuyển trạng thái."));
         if (targetStatus.equals(normalizeStatus(currentStatus))) return;
+
+        if ("PUBLISHED".equals(targetStatus) && lessonRepository != null) {
+            long activeLessonCount = lessonRepository.findByCourse(courseId).stream()
+                    .filter(lesson -> lesson.status() == LessonStatusEnum.ACTIVE)
+                    .count();
+            if (activeLessonCount == 0) {
+                throw new IllegalArgumentException(
+                        "Không thể xuất bản khóa học khi chưa có ít nhất 1 bài học đang hoạt động.");
+            }
+        }
 
         if (courseRepository.transitionStatus(courseId, targetStatus) == 0) {
             throw new IllegalArgumentException("Không tìm thấy khóa học cần chuyển trạng thái.");
