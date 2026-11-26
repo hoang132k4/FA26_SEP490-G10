@@ -17,6 +17,8 @@ import com.jeps.modules.question.repository.QuestionRepository;
 import com.jeps.modules.question.service.QuestionImportService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import org.hibernate.Session;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,6 +67,16 @@ class ManagerExamServiceTest {
 
     @InjectMocks
     private ManagerExamService service;
+
+    // Session extends EntityManager, and @InjectMocks would inject any mock-valued field in its place,
+    // so the Session mock is only created after the service has been built.
+    private Session session;
+
+    @BeforeEach
+    void unwrapHibernateSession() {
+        session = mock(Session.class);
+        lenient().when(entityManager.unwrap(Session.class)).thenReturn(session);
+    }
 
     // ── JLPT structure ──
 
@@ -444,6 +456,16 @@ class ManagerExamServiceTest {
         verify(examQuestionRepository, never()).existsById(any());
         verify(examQuestionRepository).saveAll(any());
         verify(examQuestionRepository, never()).save(any());
+        verify(session).setJdbcBatchSize(ManagerExamService.INSERT_BATCH_SIZE);
+    }
+
+    @Test
+    void newLinksAreInsertedWithoutLookupWhileLoadedLinksAreNot() {
+        ExamQuestion link = link(10L, 1);
+        assertTrue(link.isNew());
+
+        link.markNotNew();
+        assertFalse(link.isNew());
     }
 
     @Test
@@ -591,11 +613,12 @@ class ManagerExamServiceTest {
         service.reorderSection(EXAM_ID, "LANGUAGE", List.of(30L, 10L, 20L));
 
         ArgumentCaptor<Object> values = ArgumentCaptor.forClass(Object.class);
-        verify(query, times(18)).setParameter(anyInt(), values.capture());
+        verify(query, times(16)).setParameter(anyInt(), values.capture());
         assertEquals(List.of(
-                6, EXAM_ID, 30L, 7, EXAM_ID, 10L, 8, EXAM_ID, 20L,
-                1, EXAM_ID, 30L, 2, EXAM_ID, 10L, 3, EXAM_ID, 20L), values.getAllValues());
-        verify(query, times(6)).executeUpdate();
+                30L, 6, 10L, 7, 20L, 8, EXAM_ID, "LANGUAGE",
+                30L, 1, 10L, 2, 20L, 3, EXAM_ID, "LANGUAGE"), values.getAllValues());
+        verify(entityManager, times(2)).createNativeQuery(anyString());
+        verify(query, times(2)).executeUpdate();
     }
 
     @ParameterizedTest
