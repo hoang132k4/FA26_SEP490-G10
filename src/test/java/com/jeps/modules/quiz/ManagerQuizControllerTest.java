@@ -25,6 +25,8 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -57,7 +59,9 @@ class ManagerQuizControllerTest {
         mockMvc.perform(get("/manager/quizzes"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/manager/quiz/list"))
-                .andExpect(model().attributeExists("quizzes", "levelSections", "lessonGroups", "statuses", "quizCount"));
+                .andExpect(model().attributeExists("quizzes", "levelSections", "statuses", "quizCount"))
+                .andExpect(model().attributeDoesNotExist("lessonGroups"));
+        verify(managerQuizService, never()).lessonGroups();
     }
 
     @Test

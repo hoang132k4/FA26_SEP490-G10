@@ -9,6 +9,7 @@ import com.jeps.modules.quiz.dto.ManagerQuizForm;
 import com.jeps.modules.quiz.dto.QuizGenerateForm;
 import com.jeps.modules.quiz.dto.QuizOption;
 import com.jeps.modules.quiz.repository.ManagerQuizRepository;
+import com.jeps.modules.quiz.repository.ManagerQuizRepository.QuestionCheck;
 import com.jeps.modules.quiz.service.ManagerQuizService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,9 +21,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,7 +37,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -255,24 +259,33 @@ class ManagerQuizServiceTest {
     @Test
     void addQuestionsInsertsEachNewActiveQuestion() {
         stubQuizExists();
-        stubActiveQuestion(1L);
-        stubActiveQuestion(2L);
+        stubActiveQuestions(1L, 2L);
 
         service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L, 2L)));
 
-        verify(repository).insertExerciseQuestion(QUIZ_ID, 1L);
-        verify(repository).insertExerciseQuestion(QUIZ_ID, 2L);
+        verify(repository).insertExerciseQuestions(QUIZ_ID, List.of(1L, 2L));
+    }
+
+    @Test
+    void addQuestionsChecksAllQuestionsInOneLookupAndDropsDuplicates() {
+        stubQuizExists();
+        stubActiveQuestions(1L, 2L);
+
+        service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L, 2L, 1L)));
+
+        verify(repository).findQuestionChecks(List.of(1L, 2L));
+        verify(repository).insertExerciseQuestions(QUIZ_ID, List.of(1L, 2L));
     }
 
     @Test
     void addQuestionsSkipsQuestionsAlreadyInQuiz() {
         stubQuizExists();
-        stubActiveQuestion(1L);
-        when(repository.exerciseQuestionExists(QUIZ_ID, 1L)).thenReturn(true);
+        stubActiveQuestions(1L);
+        when(repository.findLinkedQuestionIds(eq(QUIZ_ID), any())).thenReturn(Set.of(1L));
 
         service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L)));
 
-        verify(repository, never()).insertExerciseQuestion(anyLong(), anyLong());
+        verify(repository, never()).insertExerciseQuestions(anyLong(), any());
     }
 
     @ParameterizedTest
@@ -289,39 +302,37 @@ class ManagerQuizServiceTest {
     @Test
     void addQuestionsRejectsMissingQuestion() {
         stubQuizExists();
-        when(repository.questionExists(99L)).thenReturn(false);
+        when(repository.findQuestionChecks(any())).thenReturn(Map.of());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(99L))));
 
         assertEquals("Câu hỏi #99 không tồn tại.", ex.getMessage());
-        verify(repository, never()).insertExerciseQuestion(anyLong(), anyLong());
+        verify(repository, never()).insertExerciseQuestions(anyLong(), any());
     }
 
     @Test
     void addQuestionsRejectsInactiveQuestion() {
         stubQuizExists();
-        when(repository.questionExists(1L)).thenReturn(true);
-        when(repository.questionIsActive(1L)).thenReturn(false);
+        stubQuestions(new QuestionCheck(1L, "ARCHIVED", "MULTI_CHOICE"));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L))));
 
         assertEquals("Câu hỏi #1 chưa được kích hoạt (ACTIVE).", ex.getMessage());
-        verify(repository, never()).insertExerciseQuestion(anyLong(), anyLong());
+        verify(repository, never()).insertExerciseQuestions(anyLong(), any());
     }
 
     @Test
     void addQuestionsRejectsPassage() {
         stubQuizExists();
-        stubActiveQuestion(1L);
-        when(repository.questionIsPassage(1L)).thenReturn(true);
+        stubQuestions(new QuestionCheck(1L, "ACTIVE", "PASSAGE"));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L))));
 
         assertEquals("Câu hỏi #1 là bài đọc/nghe (PASSAGE), quiz chỉ gắn được câu trắc nghiệm.", ex.getMessage());
-        verify(repository, never()).insertExerciseQuestion(anyLong(), anyLong());
+        verify(repository, never()).insertExerciseQuestions(anyLong(), any());
     }
 
     @Test
@@ -384,17 +395,13 @@ class ManagerQuizServiceTest {
         Question multi = question(4L, "MULTI_CHOICE", null);
         when(questionImportService.importFile(any(), eq("ACTIVE"))).thenReturn(List.of(
                 row(2, passage), row(3, child), row(4, choice), row(5, multi)));
-        stubActiveQuestion(3L);
-        stubActiveQuestion(4L);
+        stubActiveQuestions(3L, 4L);
 
         int linked = service.importQuestions(QUIZ_ID, excelFile());
 
         assertEquals(2, linked);
-        verify(repository).insertExerciseQuestion(QUIZ_ID, 3L);
-        verify(repository).insertExerciseQuestion(QUIZ_ID, 4L);
+        verify(repository).insertExerciseQuestions(QUIZ_ID, List.of(3L, 4L));
         verify(repository).syncTotalQuestions(QUIZ_ID);
-        verify(repository, never()).insertExerciseQuestion(QUIZ_ID, 1L);
-        verify(repository, never()).insertExerciseQuestion(QUIZ_ID, 2L);
     }
 
     @Test
@@ -493,8 +500,7 @@ class ManagerQuizServiceTest {
         stubQuizExists();
         when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "VOCABULARY"))
                 .thenReturn(List.of(1L, 2L, 3L, 4L, 5L));
-        lenient().when(repository.questionExists(anyLong())).thenReturn(true);
-        lenient().when(repository.questionIsActive(anyLong())).thenReturn(true);
+        stubAllQuestionsActive();
 
         QuizGenerateForm form = new QuizGenerateForm();
         form.setJlptLevel("N5");
@@ -657,7 +663,7 @@ class ManagerQuizServiceTest {
     @Test
     void addQuestionsSyncsTotalQuestionsAfterInsert() {
         stubQuizExists();
-        stubActiveQuestion(1L);
+        stubActiveQuestions(1L);
 
         service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L)));
 
@@ -667,14 +673,12 @@ class ManagerQuizServiceTest {
     @Test
     void addQuestionsPartiallyExisting_onlyInsertsNew() {
         stubQuizExists();
-        stubActiveQuestion(1L);
-        stubActiveQuestion(2L);
-        when(repository.exerciseQuestionExists(QUIZ_ID, 1L)).thenReturn(true);
+        stubActiveQuestions(1L, 2L);
+        when(repository.findLinkedQuestionIds(eq(QUIZ_ID), any())).thenReturn(Set.of(1L));
 
         service.addQuestionsToQuiz(QUIZ_ID, questionForm(List.of(1L, 2L)));
 
-        verify(repository, never()).insertExerciseQuestion(QUIZ_ID, 1L);
-        verify(repository).insertExerciseQuestion(QUIZ_ID, 2L);
+        verify(repository).insertExerciseQuestions(QUIZ_ID, List.of(2L));
     }
 
     // ── generate additional ──
@@ -698,8 +702,7 @@ class ManagerQuizServiceTest {
                 .thenReturn(List.of(1L, 2L, 3L, 4L, 5L));
         when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "GRAMMAR"))
                 .thenReturn(List.of(10L, 11L, 12L, 13L, 14L));
-        lenient().when(repository.questionExists(anyLong())).thenReturn(true);
-        lenient().when(repository.questionIsActive(anyLong())).thenReturn(true);
+        stubAllQuestionsActive();
 
         QuizGenerateForm form = new QuizGenerateForm();
         form.setJlptLevel("N5");
@@ -715,8 +718,7 @@ class ManagerQuizServiceTest {
         stubQuizExists();
         when(repository.findGeneratableQuestionIds(QUIZ_ID, "N5", "VOCABULARY"))
                 .thenReturn(List.of(1L, 2L, 3L));
-        lenient().when(repository.questionExists(anyLong())).thenReturn(true);
-        lenient().when(repository.questionIsActive(anyLong())).thenReturn(true);
+        stubAllQuestionsActive();
 
         QuizGenerateForm form = new QuizGenerateForm();
         form.setJlptLevel("N5");
@@ -814,9 +816,22 @@ class ManagerQuizServiceTest {
         when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("DRAFT")));
     }
 
-    private void stubActiveQuestion(long id) {
-        when(repository.questionExists(id)).thenReturn(true);
-        when(repository.questionIsActive(id)).thenReturn(true);
+    private void stubActiveQuestions(Long... ids) {
+        stubQuestions(Arrays.stream(ids).map(id -> new QuestionCheck(id, "ACTIVE", "MULTI_CHOICE"))
+                .toArray(QuestionCheck[]::new));
+    }
+
+    private void stubQuestions(QuestionCheck... checks) {
+        when(repository.findQuestionChecks(any())).thenReturn(
+                Arrays.stream(checks).collect(Collectors.toMap(QuestionCheck::id, c -> c)));
+    }
+
+    /** Generate picks ids at random, so answer every lookup with ACTIVE choice questions. */
+    private void stubAllQuestionsActive() {
+        when(repository.findQuestionChecks(any())).thenAnswer(inv -> {
+            Collection<Long> ids = inv.getArgument(0);
+            return ids.stream().collect(Collectors.toMap(id -> id, id -> new QuestionCheck(id, "ACTIVE", "MULTI_CHOICE")));
+        });
     }
 
     private void verifyNoInsert() {

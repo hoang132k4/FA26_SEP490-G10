@@ -45,7 +45,7 @@ public class ManagerQuizController {
         model.addAttribute("section", section);
         model.addAttribute("levelSections", managerQuizService.levelSections());
         model.addAttribute("status", status);
-        addOptions(model);
+        model.addAttribute("statuses", managerQuizService.statuses());
         model.addAttribute("quizCount", managerQuizService.count());
         return "pages/manager/quiz/list";
     }
