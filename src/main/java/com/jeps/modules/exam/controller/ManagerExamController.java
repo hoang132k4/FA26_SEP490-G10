@@ -42,16 +42,20 @@ public class ManagerExamController {
                        @RequestParam(defaultValue = "") String examType,
                        @RequestParam(defaultValue = "") String jlptLevel,
                        @RequestParam(defaultValue = "") String status,
+                       @RequestParam(defaultValue = "0") int page,
                        Model model) {
-        model.addAttribute("exams", managerExamService.search(search, examType, jlptLevel, status));
+        model.addAttribute("exams", managerExamService.search(search, examType, jlptLevel, status, page));
+        model.addAttribute("pageUrl", PageLinks.of("/manager/exams", "search", search, "examType", examType,
+                "jlptLevel", jlptLevel, "status", status));
         model.addAttribute("search", search);
         model.addAttribute("examType", examType);
         model.addAttribute("jlptLevel", jlptLevel);
         model.addAttribute("status", status);
         model.addAttribute("options", managerExamService.options());
-        model.addAttribute("placementCount", managerExamService.countByType("PLACEMENT_TEST"));
-        model.addAttribute("mockCount", managerExamService.countByType("JLPT_MOCK"));
-        model.addAttribute("milestoneCount", managerExamService.countByType("MILESTONE"));
+        var counts = managerExamService.countsByType();
+        model.addAttribute("placementCount", counts.getOrDefault("PLACEMENT_TEST", 0L));
+        model.addAttribute("mockCount", counts.getOrDefault("JLPT_MOCK", 0L));
+        model.addAttribute("milestoneCount", counts.getOrDefault("MILESTONE", 0L));
         return "pages/manager/exam/list";
     }
 
@@ -128,7 +132,7 @@ public class ManagerExamController {
             model.addAttribute("pageUrl", PageLinks.of("/manager/exams/" + examId + "/questions",
                     "skillType", skillType));
             model.addAttribute("addForm", new ExamQuestionForm());
-            model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
+            model.addAttribute("sectionProgress", managerExamService.sectionProgress(exam));
             model.addAttribute("jlptLevels", Arrays.stream(JlptLevelEnum.values()).map(Enum::name).toList());
             model.addAttribute("skillTypes", SkillTypeEnum.questionSkillNames());
             model.addAttribute("filterJlptLevel", jlptLevel);
@@ -163,7 +167,7 @@ public class ManagerExamController {
             model.addAttribute("exam", exam);
             model.addAttribute("preview", preview);
             model.addAttribute("sectionLabels", JlptExamStructure.SECTION_LABELS);
-            model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
+            model.addAttribute("sectionProgress", managerExamService.sectionProgress(exam));
             return "pages/manager/exam/generate-preview";
         } catch (IllegalArgumentException | DataAccessException exception) {
             redirectAttributes.addFlashAttribute("examError", UserMessages.of(exception));
@@ -186,7 +190,7 @@ public class ManagerExamController {
             model.addAttribute("exam", exam);
             model.addAttribute("preview", updated);
             model.addAttribute("sectionLabels", JlptExamStructure.SECTION_LABELS);
-            model.addAttribute("sectionProgress", managerExamService.sectionProgress(examId));
+            model.addAttribute("sectionProgress", managerExamService.sectionProgress(exam));
             model.addAttribute("examSuccess", "Đã chọn lại phần " + JlptExamStructure.SECTION_LABELS.get(section) + ".");
             return "pages/manager/exam/generate-preview";
         } catch (IllegalArgumentException | DataAccessException exception) {

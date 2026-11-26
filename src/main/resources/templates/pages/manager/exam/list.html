@@ -44,10 +44,11 @@
                         </div>
                     </td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(exams)}"><td colspan="8" class="text-center text-muted py-5">Không tìm thấy đề thi.</td></tr>
+                <tr th:if="${exams.isEmpty()}"><td colspan="8" class="text-center text-muted py-5">Không tìm thấy đề thi.</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
+    <div th:replace="~{fragments/components/pagination :: pagination(${exams}, ${pageUrl})}"></div>
 </div>
 </div>
