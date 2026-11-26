@@ -153,7 +153,9 @@ class ManagerExamServiceTest {
         assertEquals(4, saved.getReadingQuestions());
         assertEquals(6, saved.getListeningQuestions());
         assertEquals(20, saved.getTotalQuestions());
-        assertEquals(180, saved.getTotalPoints());
+        // Placement and course exams are scored out of 100 and passed at 60, not on the JLPT 180-point scale.
+        assertEquals(100, saved.getTotalPoints());
+        assertEquals(60, saved.getPassingScore());
         assertEquals("DRAFT", saved.getStatus());
     }
 
@@ -209,12 +211,12 @@ class ManagerExamServiceTest {
         Exam existing = exam(EXAM_ID, "DRAFT");
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(existing));
         when(examRepository.save(existing)).thenReturn(existing);
-        ManagerExamForm form = examForm("MILESTONE", "N1", "DRAFT", 20, 5, 5);
+        ManagerExamForm form = examForm("JLPT_MOCK", "N1", "DRAFT", 20, 5, 5);
         form.setDescription(" Mô tả ");
 
         Exam saved = service.update(EXAM_ID, form);
 
-        assertEquals("MILESTONE", saved.getExamType());
+        assertEquals("JLPT_MOCK", saved.getExamType());
         assertEquals("N1", saved.getJlptLevel());
         assertEquals(165, saved.getDurationMinutes());
         assertEquals(100, saved.getPassingScore());
