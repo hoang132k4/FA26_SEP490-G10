@@ -1020,6 +1020,44 @@ class ManagerQuestionServiceTest {
     }
 
     @Test
+    void archivingPassageChecksAllChildrenInOneQueryAndNamesTheUsedChild() {
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(question(1L, "PASSAGE", "ACTIVE")));
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of(
+                question(2L, "MULTI_CHOICE", "ACTIVE"), question(3L, "MULTI_CHOICE", "ACTIVE")));
+        when(questionRepository.findIdsUsedInActiveExams(List.of(2L, 3L))).thenReturn(List.of(3L));
+
+        assertRejected(passageForm("ARCHIVED"), "Câu hỏi con #3 đang được sử dụng trong đề thi/quiz đang hoạt động. "
+                + "Không thể chuyển sang ARCHIVED.", true);
+        verify(questionRepository, never()).countActiveExamUsages(2L);
+        verify(questionRepository, never()).countActiveQuizUsages(3L);
+    }
+
+    @Test
+    void archivingPassageArchivesChildrenWhenNoneIsInActiveUse() {
+        Question passage = question(1L, "PASSAGE", "ACTIVE");
+        Question child = question(2L, "MULTI_CHOICE", "ACTIVE");
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(passage));
+        when(questionRepository.findByParentIdOrderById(1L)).thenReturn(List.of(child));
+        when(questionRepository.save(any(Question.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.update(1L, passageForm("ARCHIVED"));
+
+        assertEquals("ARCHIVED", child.getStatus());
+        verify(questionRepository).findIdsUsedInActiveQuizzes(List.of(2L));
+        verify(questionRepository).saveAll(List.of(child));
+    }
+
+    private static ManagerQuestionForm passageForm(String status) {
+        ManagerQuestionForm form = new ManagerQuestionForm();
+        form.setQuestionType("PASSAGE");
+        form.setContent("Đoạn văn");
+        form.setJlptLevel("N5");
+        form.setSkillType("READING");
+        form.setStatus(status);
+        return form;
+    }
+
+    @Test
     void deleteQuestionWithLearnerResultsIsRejectedWithFriendlyMessage() {
         Question q = question(1L, "MULTI_CHOICE", "ACTIVE");
         when(questionRepository.findById(1L)).thenReturn(Optional.of(q));
