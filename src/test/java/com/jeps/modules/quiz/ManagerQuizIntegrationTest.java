@@ -473,6 +473,31 @@ class ManagerQuizIntegrationTest {
                 .andExpect(flash().attribute("quizError", "Hãy nhập số câu cho ít nhất một kỹ năng."));
     }
 
+    @Test
+    void bulkStatusPublishesQuizzesThatAreReady() throws Exception {
+        long quizId = saveQuiz("Quiz publish hàng loạt", "DRAFT", 0);
+        mockMvc.perform(addQuestions(quizId, saveQuestion("ACTIVE")));
+
+        mockMvc.perform(post("/manager/quizzes/bulk-status").with(csrf())
+                        .param("ids", String.valueOf(quizId)).param("status", "PUBLISHED"))
+                .andExpect(redirectedUrl("/manager/quizzes"))
+                .andExpect(flash().attribute("quizSuccess", "Đã cập nhật trạng thái 1 quiz sang PUBLISHED."));
+
+        assertEquals("PUBLISHED", statusOf(quizId));
+    }
+
+    @Test
+    void bulkStatusRejectsPublishingQuizWithoutQuestions() throws Exception {
+        long empty = saveQuiz("Quiz rỗng hàng loạt", "DRAFT", 0);
+
+        mockMvc.perform(post("/manager/quizzes/bulk-status").with(csrf())
+                        .param("ids", String.valueOf(empty)).param("status", "PUBLISHED"))
+                .andExpect(redirectedUrl("/manager/quizzes"))
+                .andExpect(flash().attribute("quizError", "Quiz #" + empty + " chưa có câu hỏi. Không thể chuyển sang PUBLISHED."));
+
+        assertEquals("DRAFT", statusOf(empty));
+    }
+
     // ── helpers ──
 
     private void saveCourse(long id, String title, String jlptLevel) {
