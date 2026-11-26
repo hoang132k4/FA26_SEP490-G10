@@ -50,7 +50,7 @@ class ManagerQuizControllerTest {
 
     @Test
     void list_returnsViewWithModelAttributes() throws Exception {
-        when(managerQuizService.search(anyString(), anyString(), anyString(), anyString())).thenReturn(List.of(QUIZ));
+        when(managerQuizService.search(anyString(), anyString(), anyString(), anyString(), anyInt())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(QUIZ)));
         when(managerQuizService.levelSections()).thenReturn(Map.of("N4", List.of("Chương 1")));
         when(managerQuizService.lessonGroups()).thenReturn(Map.of("Nhóm A", List.of(new LessonOption(1L, "Bài 1", "Nhóm A"))));
         when(managerQuizService.statuses()).thenReturn(List.of("DRAFT", "PUBLISHED", "ARCHIVED"));
@@ -66,7 +66,7 @@ class ManagerQuizControllerTest {
 
     @Test
     void list_passesFilterParamsToService() throws Exception {
-        when(managerQuizService.search("abc", "N3", "Chương 1", "DRAFT")).thenReturn(Collections.emptyList());
+        when(managerQuizService.search(eq("abc"), eq("N3"), eq("Chương 1"), eq("DRAFT"), anyInt())).thenReturn(new org.springframework.data.domain.PageImpl<>(Collections.emptyList()));
         when(managerQuizService.levelSections()).thenReturn(Collections.emptyMap());
         when(managerQuizService.lessonGroups()).thenReturn(Collections.emptyMap());
         when(managerQuizService.statuses()).thenReturn(Collections.emptyList());

@@ -4,6 +4,7 @@ import com.jeps.modules.question.entity.Question;
 import com.jeps.modules.question.repository.QuestionRepository;
 import com.jeps.modules.quiz.dto.ExerciseQuestionRow;
 import com.jeps.modules.quiz.dto.LessonOption;
+import com.jeps.modules.quiz.service.ManagerQuizService;
 import com.jeps.support.QuestionExcel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,10 +82,29 @@ class ManagerQuizIntegrationTest {
         mockMvc.perform(get("/manager/quizzes").param("section", MARK + "Chương 1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/manager/quiz/list"))
-                .andExpect(model().attribute("quizzes", hasSize(1)));
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content", hasSize(1))));
         mockMvc.perform(get("/manager/quizzes").param("level", "N1").param("section", MARK + "Chương 1"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("quizzes", hasSize(0)));
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content", hasSize(0))));
+    }
+
+    @Test
+    void listIsPaginatedAndKeepsFiltersInPageLinks() throws Exception {
+        // exercises.lesson_id is unique, so each quiz gets its own lesson.
+        for (int n = 1; n <= ManagerQuizService.PAGE_SIZE + 1; n++) {
+            long lessonId = 910_000L + n;
+            saveLesson(lessonId, SEED_COURSE_ID, MARK + "Chương trang");
+            jdbc.update("INSERT INTO exercises (lesson_id, exercise_title, total_questions, passing_score, status) VALUES (?, ?, 0, 60, 'DRAFT')",
+                    lessonId, MARK + "Quiz trang " + n);
+        }
+
+        mockMvc.perform(get("/manager/quizzes").param("search", MARK + "Quiz trang"))
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content",
+                        hasSize(ManagerQuizService.PAGE_SIZE))))
+                .andExpect(model().attribute("pageUrl", containsString("search=")))
+                .andExpect(content().string(containsString("page=1")));
+        mockMvc.perform(get("/manager/quizzes").param("search", MARK + "Quiz trang").param("page", "1"))
+                .andExpect(model().attribute("quizzes", org.hamcrest.Matchers.hasProperty("content", hasSize(1))));
     }
 
     @Test

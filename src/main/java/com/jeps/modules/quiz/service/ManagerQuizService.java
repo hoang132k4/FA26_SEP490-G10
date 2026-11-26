@@ -37,8 +37,11 @@ public class ManagerQuizService {
     }
 
     @Transactional(readOnly = true)
-    public List<QuizOption> search(String search, String level, String section, String status) {
-        return repository.search(norm(search), norm(level), norm(section), norm(status));
+    public Page<QuizOption> search(String search, String level, String section, String status, int page) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE);
+        String text = norm(search), lvl = norm(level), sec = norm(section), st = norm(status);
+        return new PageImpl<>(repository.search(text, lvl, sec, st, PAGE_SIZE, pageable.getOffset()),
+                pageable, repository.countSearch(text, lvl, sec, st));
     }
 
     @Transactional(readOnly = true)
