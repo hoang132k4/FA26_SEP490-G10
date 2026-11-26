@@ -116,13 +116,13 @@ public class ManagerExamService {
         if (levelChanged && examQuestionRepository.countByExamId(examId) > 0) {
             throw new IllegalArgumentException("Không thể đổi cấp độ khi đề thi đã có câu hỏi. Hãy gỡ hết câu hỏi trước.");
         }
-        // Course exams keep their own duration and 100-point scale; only a new level resets them to the JLPT standard.
+        // Duration always follows the level's configured structure; course exams keep their 100-point scale.
         JlptExamStructure jlpt = JlptExamStructure.of(form.getJlptLevel());
         boolean isMilestone = "MILESTONE".equalsIgnoreCase(form.getExamType())
                 || "MIDTERM".equalsIgnoreCase(form.getExamType())
                 || "FINAL".equalsIgnoreCase(form.getExamType());
         boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(form.getExamType());
-        if (levelChanged || exam.getDurationMinutes() == null) exam.setDurationMinutes(jlpt.durationMinutes());
+        exam.setDurationMinutes(jlpt.durationMinutes());
         if (isMilestone || isPlacement) {
             if (exam.getTotalPoints() == null || exam.getTotalPoints() == JlptExamStructure.TOTAL_SCORE) {
                 exam.setTotalPoints(100);
