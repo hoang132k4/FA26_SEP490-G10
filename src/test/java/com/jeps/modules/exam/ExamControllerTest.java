@@ -62,6 +62,9 @@ public class ExamControllerTest {
     @MockBean
     private com.jeps.modules.course.service.CourseRecommendationService courseRecommendationService;
 
+    @MockBean
+    private com.jeps.modules.exam.repository.ExamRepository examRepository;
+
     @BeforeEach
     void setUp() {
         User user = User.builder()
