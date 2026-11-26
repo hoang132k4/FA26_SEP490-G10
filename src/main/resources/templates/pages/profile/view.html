@@ -264,8 +264,8 @@
 
         </div>
 
-        <!-- Inline Edit Toggle Script (PLACED INSIDE #mainContent TO EXECUTE IN BROWSER) -->
-        <script>
+        <!-- Inline Edit Toggle & Auto-detect Email Verification Script -->
+        <script th:inline="javascript">
             function toggleEdit(field, isEditing) {
                 var displayEl = document.getElementById('display-' + field);
                 var editEl = document.getElementById('edit-' + field);
@@ -284,6 +284,43 @@
                     editEl.style.setProperty('display', 'none', 'important');
                 }
             }
+
+            // Auto-polling and window focus listener when an email change is pending
+            /*<![CDATA[*/
+            var hasPendingEmail = /*[[${profile.pendingEmail != null and !profile.pendingEmail.isBlank()}]]*/ false;
+            if (hasPendingEmail) {
+                function checkVerificationStatus() {
+                    fetch('/profile/api/email-status', { credentials: 'same-origin' })
+                        .then(function(res) {
+                            if (res.status === 401) {
+                                window.location.href = '/auth/login?emailVerified=true';
+                                return null;
+                            }
+                            return res.json();
+                        })
+                        .then(function(data) {
+                            if (!data) return;
+                            if (data.status === 'VERIFIED_LOGOUT_REQUIRED' || data.hasPendingEmail === false) {
+                                window.location.href = '/auth/login?emailVerified=true';
+                            }
+                        })
+                        .catch(function(err) {
+                            console.debug('Email status check skipped:', err);
+                        });
+                }
+
+                // Poll every 4 seconds in background
+                var pollTimer = setInterval(checkVerificationStatus, 4000);
+
+                // Instantly re-check when user switches back to this tab
+                window.addEventListener('focus', checkVerificationStatus);
+                document.addEventListener('visibilitychange', function() {
+                    if (document.visibilityState === 'visible') {
+                        checkVerificationStatus();
+                    }
+                });
+            }
+            /*]]>*/
         </script>
     </div>
 </div>

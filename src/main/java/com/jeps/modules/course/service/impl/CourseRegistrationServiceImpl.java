@@ -29,6 +29,9 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.jeps.modules.learningpath.repository.LearningPathRepository learningPathRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jeps.modules.order.repository.OrderRepository orderRepository;
+
     @Override
     @Transactional
     public CourseRegistration registerCourse(Long userId, CourseRegistrationRequest request) {
@@ -59,6 +62,38 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
                 .build();
 
         CourseRegistration saved = registrationRepository.save(registration);
+
+        // Auto-create corresponding Order & OrderItem so it appears in Order History
+        try {
+            if (orderRepository != null) {
+                java.math.BigDecimal price = java.math.BigDecimal.valueOf(amount != null ? amount : 0.0);
+                String orderNumber = "ORD-" + System.currentTimeMillis() + "-" + String.format("%04d", (int)(Math.random() * 10000));
+                com.jeps.modules.order.entity.Order order = com.jeps.modules.order.entity.Order.builder()
+                        .orderNumber(orderNumber)
+                        .user(user)
+                        .totalAmount(price)
+                        .orderStatus(com.jeps.modules.order.entity.OrderStatus.COMPLETED)
+                        .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "FREE")
+                        .paymentStatus("PAID")
+                        .transactionReference("TXN-" + System.currentTimeMillis())
+                        .build();
+
+                com.jeps.modules.order.entity.OrderItem orderItem = com.jeps.modules.order.entity.OrderItem.builder()
+                        .order(order)
+                        .courseId(course.getId())
+                        .itemName(course.getTitle())
+                        .price(price)
+                        .quantity(1)
+                        .subtotal(price)
+                        .build();
+
+                order.addItem(orderItem);
+                orderRepository.save(order);
+                log.info("Auto-created Order {} for user ID: {} upon course registration ID: {}", orderNumber, user.getId(), course.getId());
+            }
+        } catch (Exception ex) {
+            log.warn("Could not create Order record for course registration: {}", ex.getMessage());
+        }
 
         // Update enrollment count on course
         course.setEnrollmentCount((course.getEnrollmentCount() != null ? course.getEnrollmentCount() : 0) + 1);

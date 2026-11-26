@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,10 +21,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -222,6 +226,29 @@ public class ProfileController {
             log.error("Unexpected error during email verification", ex);
             redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi xác nhận email mới. Vui lòng thử lại sau.");
             return "redirect:/auth/login";
+        }
+    }
+
+    @GetMapping("/api/email-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> checkEmailVerificationStatus(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("status", "UNAUTHENTICATED"));
+        }
+        try {
+            ProfileResponse profile = profileService.getProfile(principal.getName());
+            boolean hasPending = profile.getPendingEmail() != null && !profile.getPendingEmail().isBlank();
+            return ResponseEntity.ok(Map.of(
+                    "status", "OK",
+                    "hasPendingEmail", hasPending,
+                    "email", profile.getEmail()
+            ));
+        } catch (IllegalArgumentException ex) {
+            // Principal name is old email that was just updated upon verification
+            return ResponseEntity.ok(Map.of(
+                    "status", "VERIFIED_LOGOUT_REQUIRED",
+                    "hasPendingEmail", false
+            ));
         }
     }
 
