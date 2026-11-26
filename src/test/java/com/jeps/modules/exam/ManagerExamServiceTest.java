@@ -556,7 +556,7 @@ class ManagerExamServiceTest {
     }
 
     @Test
-    void updateKeepsCourseExamTimingAndScaleWhenLevelIsUnchanged() {
+    void updateKeepsCourseExamScaleButUsesConfiguredDuration() {
         Exam midterm = new Exam(EXAM_ID, "Giữa kỳ", "MIDTERM", "N5", 35, 5, 50, "DRAFT", null);
         midterm.setTotalPoints(100);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(midterm));
@@ -564,7 +564,7 @@ class ManagerExamServiceTest {
 
         Exam saved = service.update(EXAM_ID, examForm("MIDTERM", "N5", "DRAFT", 5, 0, 0));
 
-        assertEquals(35, saved.getDurationMinutes());
+        assertEquals(90, saved.getDurationMinutes());
         assertEquals(50, saved.getPassingScore());
         assertEquals(100, saved.getTotalPoints());
         assertEquals(5, saved.getTotalQuestions());
@@ -1186,7 +1186,7 @@ class ManagerExamServiceTest {
 
         Exam saved = service.update(EXAM_ID, examForm("FINAL", "N5", "DRAFT", 5, 0, 0));
 
-        assertEquals(40, saved.getDurationMinutes());
+        assertEquals(90, saved.getDurationMinutes());
         assertEquals(100, saved.getTotalPoints());
         assertEquals(60, saved.getPassingScore());
     }

@@ -717,7 +717,7 @@ class ManagerExamIntegrationTest {
     }
 
     @Test
-    void savingPublishedCourseExamKeepsItsTimingScaleAndQuestionCount() throws Exception {
+    void savingPublishedCourseExamKeepsScaleAndQuestionCountButUsesConfiguredDuration() throws Exception {
         Exam course = examRepository.save(new Exam(null, MARK + "Giữa kỳ khoá học", "MIDTERM", "N5", 35, 2, 50, "DRAFT", null));
         course.setTotalPoints(100);
         examRepository.save(course);
@@ -743,7 +743,7 @@ class ManagerExamIntegrationTest {
         entityManager.flush();
         Map<String, Object> row = jdbc.queryForMap(
                 "SELECT duration_minutes, passing_score, total_points, total_questions FROM exams WHERE exam_id = ?", course.getExamId());
-        assertEquals(35, ((Number) row.get("DURATION_MINUTES")).intValue());
+        assertEquals(90, ((Number) row.get("DURATION_MINUTES")).intValue());
         assertEquals(50, ((Number) row.get("PASSING_SCORE")).intValue());
         assertEquals(100, ((Number) row.get("TOTAL_POINTS")).intValue());
         assertEquals(2, ((Number) row.get("TOTAL_QUESTIONS")).intValue());
