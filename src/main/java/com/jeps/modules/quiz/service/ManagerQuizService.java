@@ -1,9 +1,6 @@
 package com.jeps.modules.quiz.service;
 
 import com.jeps.common.constants.*;
-import com.jeps.modules.question.dto.QuestionImportException;
-import com.jeps.modules.question.entity.Question;
-import com.jeps.modules.question.service.QuestionImportService;
 import com.jeps.modules.quiz.dto.*;
 import com.jeps.modules.quiz.repository.ManagerQuizRepository;
 import com.jeps.modules.quiz.repository.ManagerQuizRepository.QuestionCheck;
@@ -12,7 +9,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,12 +24,10 @@ import java.util.Set;
 public class ManagerQuizService {
 
     private final ManagerQuizRepository repository;
-    private final QuestionImportService questionImportService;
     private final Random random = new Random();
 
-    public ManagerQuizService(ManagerQuizRepository repository, QuestionImportService questionImportService) {
+    public ManagerQuizService(ManagerQuizRepository repository) {
         this.repository = repository;
-        this.questionImportService = questionImportService;
     }
 
     @Transactional(readOnly = true)
@@ -206,27 +200,6 @@ public class ManagerQuizService {
         addForm.setQuestionIds(picked);
         addQuestionsToQuiz(quizId, addForm);
         return picked.size();
-    }
-
-    @Transactional
-    public int importQuestions(long quizId, MultipartFile file) {
-        findById(quizId);
-        List<Long> ids = questionImportService.importFile(file, "ACTIVE").stream()
-                .map(QuestionImportService.ImportedRow::question)
-                .filter(q -> !"PASSAGE".equals(q.getQuestionType()) && q.getParentId() == null)
-                .map(Question::getId)
-                .toList();
-        if (ids.isEmpty()) {
-            throw new QuestionImportException(List.of("File không có câu hỏi trắc nghiệm nào để gắn vào quiz."));
-        }
-        ExerciseQuestionForm form = new ExerciseQuestionForm();
-        form.setQuestionIds(ids);
-        addQuestionsToQuiz(quizId, form);
-        return ids.size();
-    }
-
-    public byte[] importTemplate() {
-        return questionImportService.buildTemplate(false);
     }
 
     @Transactional

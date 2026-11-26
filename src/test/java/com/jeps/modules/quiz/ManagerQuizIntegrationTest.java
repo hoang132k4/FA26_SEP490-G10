@@ -5,7 +5,6 @@ import com.jeps.modules.question.repository.QuestionRepository;
 import com.jeps.modules.quiz.dto.ExerciseQuestionRow;
 import com.jeps.modules.quiz.dto.LessonOption;
 import com.jeps.modules.quiz.service.ManagerQuizService;
-import com.jeps.support.QuestionExcel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -418,40 +415,6 @@ class ManagerQuizIntegrationTest {
 
         assertEquals(0L, linkCount(quizId));
         assertEquals(0, totalQuestionsOf(quizId));
-    }
-
-    @Test
-    void importTemplateIsDownloadedAsExcelFile() throws Exception {
-        mockMvc.perform(get("/manager/quizzes/import/template"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", containsString(".xlsx")));
-    }
-
-    @Test
-    void importCreatesActiveQuestionsAndLinksOnlyChoiceQuestions() throws Exception {
-        long quizId = saveQuiz("Quiz import", "DRAFT", 5);
-        var file = QuestionExcel.xlsx(
-                List.of("group", "question_type", "content", "jlpt_level", "skill_type", "option_a", "option_b", "answer", "status"),
-                List.of(
-                        List.of("", "MULTI_CHOICE", MARK + "Câu import", "N5", "VOCABULARY", "A", "B", "A", "DRAFT"),
-                        List.of("1", "PASSAGE", MARK + "Đoạn import", "N5", "READING", "", "", "", ""),
-                        List.of("1", "MULTI_CHOICE", MARK + "Câu con import", "N5", "READING", "A", "B", "B", "")));
-
-        mockMvc.perform(multipart("/manager/quizzes/{id}/import", quizId).file(file).with(csrf()))
-                .andExpect(flash().attribute("quizSuccess", "Đã import và gắn 1 câu hỏi vào quiz."));
-
-        assertEquals(1L, linkCount(quizId));
-        assertEquals(3L, jdbc.queryForObject(
-                "SELECT COUNT(*) FROM questions WHERE content LIKE ? AND status = 'ACTIVE'", Long.class, MARK + "%"));
-    }
-
-    @Test
-    void importEmptyFileShowsError() throws Exception {
-        long quizId = saveQuiz("Quiz file rỗng", "DRAFT", 5);
-        var empty = new org.springframework.mock.web.MockMultipartFile("file", "questions.xlsx", null, new byte[0]);
-
-        mockMvc.perform(multipart("/manager/quizzes/{id}/import", quizId).file(empty).with(csrf()))
-                .andExpect(flash().attribute("importErrors", List.of("Vui lòng chọn file Excel (.xlsx).")));
     }
 
     // ── Auto generate ──
