@@ -43,6 +43,31 @@ class ManagerQuizControllerTest {
 
     private static final QuizOption QUIZ = new QuizOption(1L, 100L, "Bài 1", "Quiz Test", 5, 60, "DRAFT", 3);
 
+    // ── BULK STATUS ──
+
+    @Test
+    void bulkStatus_success_redirectsWithCount() throws Exception {
+        when(managerQuizService.bulkUpdateStatus(List.of(1L, 2L), "PUBLISHED")).thenReturn(2);
+
+        mockMvc.perform(post("/manager/quizzes/bulk-status").with(csrf())
+                        .param("ids", "1", "2").param("status", "PUBLISHED"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/quizzes"))
+                .andExpect(flash().attribute("quizSuccess", "Đã cập nhật trạng thái 2 quiz sang PUBLISHED."));
+    }
+
+    @Test
+    void bulkStatus_rejected_redirectsWithError() throws Exception {
+        when(managerQuizService.bulkUpdateStatus(List.of(1L), "PUBLISHED"))
+                .thenThrow(new IllegalArgumentException("Quiz #1 chưa có câu hỏi. Không thể chuyển sang PUBLISHED."));
+
+        mockMvc.perform(post("/manager/quizzes/bulk-status").with(csrf())
+                        .param("ids", "1").param("status", "PUBLISHED"))
+                .andExpect(redirectedUrl("/manager/quizzes"))
+                .andExpect(flash().attribute("quizError", "Quiz #1 chưa có câu hỏi. Không thể chuyển sang PUBLISHED."))
+                .andExpect(flash().attributeCount(1));
+    }
+
     // ── LIST ──
 
     @Test

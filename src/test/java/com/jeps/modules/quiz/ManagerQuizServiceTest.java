@@ -773,6 +773,89 @@ class ManagerQuizServiceTest {
 
     // ── helpers ──
 
+    // ── bulk status ──
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void bulkUpdateStatusRequiresAtLeastOneQuiz(List<Long> ids) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(ids, "DRAFT"));
+
+        assertEquals("Vui lòng chọn ít nhất một quiz.", ex.getMessage());
+        verify(repository, never()).updateStatus(anyLong(), anyString());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"ARCHIVED", "draft"})
+    void bulkUpdateStatusRejectsUnknownStatus(String status) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(QUIZ_ID), status));
+
+        assertEquals("Trạng thái không hợp lệ.", ex.getMessage());
+        verify(repository, never()).findById(anyLong());
+    }
+
+    @Test
+    void bulkUpdateStatusSkipsQuizzesAlreadyInTargetStatus() {
+        when(repository.findById(1L)).thenReturn(Optional.of(quiz(1L, "DRAFT")));
+        when(repository.findById(2L)).thenReturn(Optional.of(quiz(2L, "PUBLISHED")));
+
+        int updated = service.bulkUpdateStatus(List.of(1L, 2L), "DRAFT");
+
+        assertEquals(1, updated);
+        verify(repository).updateStatus(2L, "DRAFT");
+        verify(repository, never()).updateStatus(1L, "DRAFT");
+        verify(repository, never()).countExerciseQuestions(anyLong());
+    }
+
+    @Test
+    void bulkPublishUpdatesQuizzesWithOnlyActiveQuestions() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("DRAFT")));
+        when(repository.countExerciseQuestions(QUIZ_ID)).thenReturn(3L);
+        when(repository.findInactiveQuestionIds(QUIZ_ID)).thenReturn(List.of());
+
+        assertEquals(1, service.bulkUpdateStatus(List.of(QUIZ_ID), "PUBLISHED"));
+        verify(repository).updateStatus(QUIZ_ID, "PUBLISHED");
+    }
+
+    @Test
+    void bulkPublishRejectsQuizWithoutQuestions() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("DRAFT")));
+        when(repository.countExerciseQuestions(QUIZ_ID)).thenReturn(0L);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(QUIZ_ID), "PUBLISHED"));
+
+        assertEquals("Quiz #" + QUIZ_ID + " chưa có câu hỏi. Không thể chuyển sang PUBLISHED.", ex.getMessage());
+        verify(repository, never()).updateStatus(anyLong(), anyString());
+    }
+
+    @Test
+    void bulkPublishRejectsQuizWithInactiveQuestions() {
+        when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("DRAFT")));
+        when(repository.countExerciseQuestions(QUIZ_ID)).thenReturn(2L);
+        when(repository.findInactiveQuestionIds(QUIZ_ID)).thenReturn(List.of(7L));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.bulkUpdateStatus(List.of(QUIZ_ID), "PUBLISHED"));
+
+        assertEquals("Quiz #" + QUIZ_ID + " còn câu hỏi không ACTIVE. Không thể chuyển sang PUBLISHED.", ex.getMessage());
+        verify(repository, never()).updateStatus(anyLong(), anyString());
+    }
+
+    @Test
+    void bulkUpdateStatusFailsWhenAQuizIsMissing() {
+        when(repository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> service.bulkUpdateStatus(List.of(999L), "DRAFT"));
+        verify(repository, never()).updateStatus(anyLong(), anyString());
+    }
+
+    private static QuizOption quiz(long id, String status) {
+        return new QuizOption(id, LESSON_ID, "Bài 1", "Quiz " + id, 3, 70, status, 0);
+    }
+
     private void stubQuizExists() {
         when(repository.findById(QUIZ_ID)).thenReturn(Optional.of(quiz("DRAFT")));
     }
