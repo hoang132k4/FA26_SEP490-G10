@@ -8,9 +8,11 @@ import com.jeps.modules.auth.dto.RegisterRequest;
 import com.jeps.modules.auth.exception.DuplicateEmailException;
 import com.jeps.modules.auth.exception.DuplicatePhoneException;
 import com.jeps.modules.user.entity.User;
+import com.jeps.modules.auth.security.CustomAuthenticationSuccessHandler;
 import com.jeps.modules.auth.service.ChangePasswordService;
 import com.jeps.modules.auth.service.PasswordResetService;
 import com.jeps.modules.auth.service.RegisterService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +42,22 @@ public class AuthController {
             @RequestParam(name = "disabled", required = false) String disabled,
             @RequestParam(name = "unverified", required = false) String unverified,
             @RequestParam(name = "emailVerified", required = false) String emailVerified,
+            @RequestParam(name = "continue", required = false) String continueUrl,
+            HttpSession session,
             Model model) {
+
+        if (CustomAuthenticationSuccessHandler.isSafeRelativeUrl(continueUrl)) {
+            String safeContinue = continueUrl.trim();
+            model.addAttribute("continueUrl", safeContinue);
+            if (session != null) {
+                session.setAttribute(CustomAuthenticationSuccessHandler.LOGIN_CONTINUE_URL_SESSION_KEY, safeContinue);
+            }
+        } else if (session != null) {
+            Object existingContinue = session.getAttribute(CustomAuthenticationSuccessHandler.LOGIN_CONTINUE_URL_SESSION_KEY);
+            if (existingContinue instanceof String s && CustomAuthenticationSuccessHandler.isSafeRelativeUrl(s)) {
+                model.addAttribute("continueUrl", s.trim());
+            }
+        }
 
         if (error != null) {
             if ("email_conflict".equalsIgnoreCase(error)) {

@@ -241,6 +241,33 @@ public class ExamServiceTest {
     }
 
     @Test
+    @DisplayName("D6: getLearnerExams chỉ trả về đề thi PUBLISHED/ACTIVE, bỏ qua đề DRAFT và ARCHIVED")
+    void testGetLearnerExams_ExcludesDraftAndArchived() {
+        Exam draftExam = new Exam(81L, "Draft Mock", "JLPT_MOCK", "N4", 50, 10, 80, "DRAFT", "Draft");
+        Exam archivedExam = new Exam(82L, "Archived Mock", "JLPT_MOCK", "N4", 50, 10, 80, "ARCHIVED", "Archived");
+        Exam publishedExam = new Exam(83L, "Published Mock", "JLPT_MOCK", "N4", 50, 10, 80, "PUBLISHED", "Published");
+        when(examRepository.findByExamTypeIgnoreCase("JLPT_MOCK"))
+                .thenReturn(List.of(draftExam, archivedExam, publishedExam));
+        when(questionReader.countQuestionsByExamId(83L)).thenReturn(10L);
+
+        List<ExamCardDto> cards = examService.getLearnerExams("ALL");
+
+        assertEquals(1, cards.size());
+        assertEquals(83L, cards.get(0).getExamId());
+    }
+
+    @Test
+    @DisplayName("D6: getExamForTaking chặn học viên vào thi đề DRAFT hoặc ARCHIVED (403 FORBIDDEN)")
+    void testGetExamForTaking_DraftOrArchived_ThrowsForbidden() {
+        Exam draftExam = new Exam(81L, "Draft Mock", "JLPT_MOCK", "N4", 50, 10, 80, "DRAFT", "Draft");
+        when(examRepository.findById(81L)).thenReturn(Optional.of(draftExam));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> examService.getExamForTaking(81L));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
     @DisplayName("getExamForTaking - Đề thi chưa có câu hỏi trả về totalQuestions = 0")
     void testGetExamForTaking_EmptyQuestions() {
         when(examRepository.findById(9L)).thenReturn(Optional.of(mockExamN3));
@@ -751,9 +778,9 @@ public class ExamServiceTest {
     }
 
     @Test
-    @DisplayName("Test 4: N3 thiếu phần Nghe (milestone) - Language 10/10 (90), Reading 5/10 (45) -> 135/180 ĐỖ")
+    @DisplayName("Test 4: Đề Milestone N3 chấm theo thang 100 (%) và đạt ngưỡng passingScore, tự động đánh dấu bài milestone hoàn thành")
     void testJlpt180_Test4_N3_Milestone_MissingListening() {
-        Exam milestoneN3 = new Exam(504L, "Milestone N3 Course", "MILESTONE", "N3", 90, 20, 95, "ACTIVE", "Milestone N3");
+        Exam milestoneN3 = new Exam(504L, "Milestone N3 Course", "MILESTONE", "N3", 90, 20, 60, "ACTIVE", "Milestone N3", 2L);
         List<QuestionDto> questions = buildMockQuestions(10, 10, 5, 10, 0, 0);
         Map<String, String> answers = buildAllAnswers(questions);
 
@@ -762,17 +789,36 @@ public class ExamServiceTest {
 
         ExamResultResponse result = examService.evaluateSubmission(504L, answers, 2400);
 
-        // Present max = 60 + 60 = 120. New max each = 60*180/120 = 90.
-        // Language: 10/10 -> 90. Reading: 5/10 -> 45. Sàn mỗi nhóm = ceil(90*19/60) = 29.
-        // Total = 135 >= 95 -> ĐỖ
-        assertEquals(135, result.getScore());
-        assertEquals(180, result.getTotalPossibleScore());
+        // 15/20 câu đúng -> 75% (75/100 điểm) >= ngưỡng 60 -> ĐỖ (không tính theo thang 180 JLPT)
+        assertEquals(75, result.getScore());
+        assertEquals(100, result.getTotalPossibleScore());
+        assertEquals(new BigDecimal("75.0"), result.getPercentage());
+        assertEquals(60, result.getPassingScore());
         assertTrue(result.getPassed());
-        assertEquals(2, result.getSkillBreakdown().size());
-        assertEquals(90, result.getSkillBreakdown().get(0).getTotalPoints());
-        assertEquals(90, result.getSkillBreakdown().get(0).getEarnedPoints());
-        assertEquals(90, result.getSkillBreakdown().get(1).getTotalPoints());
-        assertEquals(45, result.getSkillBreakdown().get(1).getEarnedPoints());
+    }
+
+    @Test
+    @DisplayName("D2: Khi đạt bài Milestone (PASSED), evaluateAndSaveSubmission tự động gọi markLessonCompleted để mở khóa bài sau")
+    void testMilestonePass_AutoMarksLessonCompleted() {
+        Exam milestoneExam = new Exam(508L, "Milestone N4", "MILESTONE", "N4", 60, 20, 60, "ACTIVE", "Milestone N4", 2L);
+        List<QuestionDto> questions = buildMockQuestions(8, 10, 0, 0, 0, 0);
+        Map<String, String> answers = buildAllAnswers(questions);
+
+        Course course = Course.builder().id(2L).title("JLPT N4").build();
+        Lesson milestoneLesson = createLesson(201L, course, "Bài kiểm tra cột mốc", 2, "EXAM", 508L);
+
+        when(examRepository.findById(508L)).thenReturn(Optional.of(milestoneExam));
+        when(questionReader.findQuestionsForEvaluation(508L)).thenReturn(questions);
+        when(resultWriter.saveExamResultSummary(eq(1L), eq(508L), eq(80), any(), eq(true), eq("PASSED"), eq(600)))
+                .thenReturn(888L);
+        when(lessonRepository.findByCourseIdOrderByOrderIndexAsc(2L)).thenReturn(List.of(milestoneLesson));
+
+        ExamResultResponse res = examService.evaluateAndSaveSubmission(508L, 1L, answers, 600);
+
+        assertTrue(res.getPassed());
+        assertEquals(80, res.getScore());
+        assertEquals(100, res.getTotalPossibleScore());
+        verify(lessonProgressService, times(1)).markLessonCompleted(1L, 2L, 201L);
     }
 
     @Test

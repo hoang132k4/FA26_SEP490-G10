@@ -15,6 +15,8 @@
         </div>
 
         <form th:action="@{/auth/login}" method="post">
+            <input type="hidden" name="continue" th:if="${continueUrl != null or param.continue != null}"
+                   th:value="${continueUrl != null ? continueUrl : param.continue}" />
             <div class="mb-3">
                 <label class="form-label small fw-semibold" style="color: var(--text-primary)">Email hoặc Tên đăng nhập</label>
                 <div class="input-group">
