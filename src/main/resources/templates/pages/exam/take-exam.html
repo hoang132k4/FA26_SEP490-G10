@@ -67,7 +67,9 @@
                     <i class="bi bi-stopwatch-fill fs-2 text-warning"></i>
                     <div>
                         <div class="small text-white-50">Thời gian còn lại</div>
-                        <div class="fs-3 fw-bold text-white font-monospace" id="examTimerDisplay" th:data-duration="${exam.durationMinutes * 60}">--:--</div>
+                        <div class="fs-3 fw-bold text-white font-monospace" id="examTimerDisplay"
+                             th:data-duration="${(exam.durationMinutes != null and exam.durationMinutes > 0 ? exam.durationMinutes : 50) * 60}"
+                             th:data-start-time="${examStartTimeMs != null ? examStartTimeMs : 0}">--:--</div>
                     </div>
                 </div>
             </div>
@@ -122,6 +124,11 @@
             <div class="col-lg-8 col-xl-9">
                 <form id="examForm" th:action="@{/exams/{id}/submit(id=${exam.examId})}" method="post">
                     <input type="hidden" name="timeSpentSeconds" id="timeSpentSeconds" value="0" />
+                    <input type="hidden" name="autoSubmitted" id="autoSubmitted" value="false" />
+                    <div id="timeoutAutoSubmitBanner" class="alert alert-warning d-none align-items-center gap-2 fw-semibold shadow-sm mb-3" role="alert">
+                        <span class="spinner-border spinner-border-sm text-warning" role="status" aria-hidden="true"></span>
+                        <span>Hết giờ làm bài! Hệ thống đã khóa bài thi và đang tự động nộp bài của bạn...</span>
+                    </div>
 
                     <!-- Questions List rendered from database -->
                     <div id="questionsContainer">
@@ -223,8 +230,13 @@
                 const examId = /*[[${exam.examId}]]*/ 0;
                 const storageKey = 'jeps_exam_' + examId + '_answers';
                 const timerStorageKey = 'jeps_exam_' + examId + '_time_left';
+                const deadlineStorageKey = 'jeps_exam_' + examId + '_deadline_ms';
+                const startTokenKey = 'jeps_exam_' + examId + '_start_token';
                 const form = document.getElementById('examForm');
                 const timeSpentInput = document.getElementById('timeSpentSeconds');
+                const autoSubmittedInput = document.getElementById('autoSubmitted');
+                const timeoutBanner = document.getElementById('timeoutAutoSubmitBanner');
+                const questionsContainer = document.getElementById('questionsContainer');
                 const timerEl = document.getElementById('examTimerDisplay');
                 const answeredBadge = document.getElementById('answeredCountBadge');
                 const progressBar = document.getElementById('examProgressBar');
@@ -236,42 +248,92 @@
                 let secondsPassed = 0;
                 let isSubmitted = false;
 
-                // 1. Countdown Timer with SessionStorage Persistence
-                const originalDuration = parseInt(timerEl.getAttribute('data-duration')) || 3000;
-                let savedTimeLeft = sessionStorage.getItem(timerStorageKey);
-                let timeLeft = savedTimeLeft !== null ? parseInt(savedTimeLeft) : originalDuration;
+                // 1. Wall-Clock Countdown Timer with Auto-Lock & Non-Blocking Auto-Submit (BF-02 / GB-25)
+                const originalDuration = (timerEl ? parseInt(timerEl.getAttribute('data-duration'), 10) : 0) || 3000;
+                const serverStartToken = timerEl ? (timerEl.getAttribute('data-start-time') || '0') : '0';
 
-                const timerInterval = setInterval(() => {
-                    secondsPassed++;
-                    if (timeSpentInput) timeSpentInput.value = secondsPassed;
+                // Reset stale storage when starting a fresh exam attempt
+                if (serverStartToken !== '0' && sessionStorage.getItem(startTokenKey) !== serverStartToken) {
+                    sessionStorage.setItem(startTokenKey, serverStartToken);
+                    sessionStorage.removeItem(deadlineStorageKey);
+                    sessionStorage.removeItem(timerStorageKey);
+                    localStorage.removeItem(storageKey);
+                }
 
-                    timeLeft--;
-                    sessionStorage.setItem(timerStorageKey, timeLeft);
+                let deadlineMs = parseInt(sessionStorage.getItem(deadlineStorageKey), 10);
+                if (!deadlineMs || isNaN(deadlineMs)) {
+                    const savedTimeLeft = sessionStorage.getItem(timerStorageKey);
+                    const initialSec = (savedTimeLeft !== null && !isNaN(parseInt(savedTimeLeft, 10)) && parseInt(savedTimeLeft, 10) > 0)
+                        ? parseInt(savedTimeLeft, 10)
+                        : originalDuration;
+                    deadlineMs = Date.now() + initialSec * 1000;
+                    sessionStorage.setItem(deadlineStorageKey, String(deadlineMs));
+                }
 
-                    const minutes = Math.floor(Math.max(0, timeLeft) / 60);
-                    const seconds = Math.max(0, timeLeft) % 60;
+                function formatTimer(sec) {
+                    const safe = Math.max(0, sec);
+                    const minutes = Math.floor(safe / 60);
+                    const seconds = safe % 60;
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+
+                function lockAndAutoSubmitExam() {
+                    if (isSubmitted) return;
+                    isSubmitted = true;
+
+                    if (timeSpentInput) timeSpentInput.value = String(originalDuration);
+                    if (autoSubmittedInput) autoSubmittedInput.value = 'true';
+
+                    // Lock exam UI without setting input.disabled (disabled inputs are omitted from POST form data)
+                    if (questionsContainer) {
+                        questionsContainer.style.pointerEvents = 'none';
+                        questionsContainer.style.opacity = '0.65';
+                    }
+                    if (confirmSubmitBtn) {
+                        confirmSubmitBtn.disabled = true;
+                    }
+                    if (timeoutBanner) {
+                        timeoutBanner.classList.remove('d-none');
+                        timeoutBanner.classList.add('d-flex');
+                    }
+
+                    localStorage.removeItem(storageKey);
+                    sessionStorage.removeItem(timerStorageKey);
+                    sessionStorage.removeItem(deadlineStorageKey);
+                    sessionStorage.removeItem(startTokenKey);
+
+                    if (form) {
+                        HTMLFormElement.prototype.submit.call(form);
+                    }
+                }
+
+                function tickTimer() {
+                    const remainingMs = deadlineMs - Date.now();
+                    const timeLeft = Math.max(0, Math.ceil(remainingMs / 1000));
+                    secondsPassed = Math.min(originalDuration, Math.max(0, originalDuration - timeLeft));
+
+                    if (timeSpentInput) timeSpentInput.value = String(secondsPassed);
+                    sessionStorage.setItem(timerStorageKey, String(timeLeft));
+
                     if (timerEl) {
-                        timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        timerEl.textContent = formatTimer(timeLeft);
+                        if (timeLeft <= 60) {
+                            timerEl.classList.remove('text-white');
+                            timerEl.classList.add('text-warning');
+                        }
                     }
 
                     if (timeLeft <= 0) {
                         clearInterval(timerInterval);
-                        if (!isSubmitted) {
-                            isSubmitted = true;
-                            alert('Hết giờ làm bài! Hệ thống tự động nộp bài thi của bạn.');
-                            localStorage.removeItem(storageKey);
-                            sessionStorage.removeItem(timerStorageKey);
-                            if (form) form.submit();
-                        }
+                        lockAndAutoSubmitExam();
                     }
-                }, 1000);
-
-                // Initial timer display
-                const initMin = Math.floor(Math.max(0, timeLeft) / 60);
-                const initSec = Math.max(0, timeLeft) % 60;
-                if (timerEl) {
-                    timerEl.textContent = `${initMin.toString().padStart(2, '0')}:${initSec.toString().padStart(2, '0')}`;
                 }
+
+                const timerInterval = setInterval(tickTimer, 500);
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) tickTimer();
+                });
+                tickTimer();
 
                 // 2. Restore Answers from LocalStorage
                 try {
@@ -367,7 +429,9 @@
                         confirmSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang chấm điểm...';
                         localStorage.removeItem(storageKey);
                         sessionStorage.removeItem(timerStorageKey);
-                        if (form) form.submit();
+                        sessionStorage.removeItem(deadlineStorageKey);
+                        sessionStorage.removeItem(startTokenKey);
+                        if (form) HTMLFormElement.prototype.submit.call(form);
                     });
                 }
 

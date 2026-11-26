@@ -89,10 +89,16 @@ public class ManagerExamService {
         validateSectionCounts(form);
         validatePublishReady(null, form);
         JlptExamStructure jlpt = JlptExamStructure.of(form.getJlptLevel());
+        boolean isMilestone = "MILESTONE".equalsIgnoreCase(form.getExamType())
+                || "MIDTERM".equalsIgnoreCase(form.getExamType())
+                || "FINAL".equalsIgnoreCase(form.getExamType());
+        boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(form.getExamType());
+        int passingScore = (isMilestone || isPlacement) ? 60 : jlpt.passingScore();
+        int totalPoints = (isMilestone || isPlacement) ? 100 : JlptExamStructure.TOTAL_SCORE;
         Exam exam = new Exam(null, clean(form.getExamTitle()), form.getExamType(), form.getJlptLevel(),
-                jlpt.durationMinutes(), totalQuestions(form), jlpt.passingScore(),
+                jlpt.durationMinutes(), totalQuestions(form), passingScore,
                 form.getStatus(), optional(form.getDescription()));
-        exam.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
+        exam.setTotalPoints(totalPoints);
         applySectionCounts(exam, form);
         return examRepository.save(exam);
     }
@@ -109,9 +115,22 @@ public class ManagerExamService {
         }
         // Course exams keep their own duration and 100-point scale; only a new level resets them to the JLPT standard.
         JlptExamStructure jlpt = JlptExamStructure.of(form.getJlptLevel());
+        boolean isMilestone = "MILESTONE".equalsIgnoreCase(form.getExamType())
+                || "MIDTERM".equalsIgnoreCase(form.getExamType())
+                || "FINAL".equalsIgnoreCase(form.getExamType());
+        boolean isPlacement = "PLACEMENT_TEST".equalsIgnoreCase(form.getExamType());
         if (levelChanged || exam.getDurationMinutes() == null) exam.setDurationMinutes(jlpt.durationMinutes());
-        if (levelChanged || exam.getTotalPoints() == null) exam.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
-        if (levelChanged || exam.getPassingScore() == null) exam.setPassingScore(jlpt.passingScore());
+        if (isMilestone || isPlacement) {
+            if (exam.getTotalPoints() == null || exam.getTotalPoints() == JlptExamStructure.TOTAL_SCORE) {
+                exam.setTotalPoints(100);
+            }
+            if (exam.getPassingScore() == null || exam.getPassingScore() > 100) {
+                exam.setPassingScore(60);
+            }
+        } else {
+            if (levelChanged || exam.getTotalPoints() == null) exam.setTotalPoints(JlptExamStructure.TOTAL_SCORE);
+            if (levelChanged || exam.getPassingScore() == null) exam.setPassingScore(jlpt.passingScore());
+        }
         exam.setExamTitle(clean(form.getExamTitle()));
         exam.setExamType(form.getExamType());
         exam.setJlptLevel(form.getJlptLevel());
