@@ -291,19 +291,17 @@ public class ManagerQuestionService {
                         + " chưa đủ cấp độ, kỹ năng hoặc đáp án nên không thể chuyển sang ACTIVE.");
             }
         }
-        for (Question child : children) {
-            if (!child.getStatus().equals(newStatus)) {
-                if (!"ACTIVE".equals(newStatus)) {
-                    long activeExams = questionRepository.countActiveExamUsages(child.getId());
-                    long activeQuizzes = questionRepository.countActiveQuizUsages(child.getId());
-                    if (activeExams > 0 || activeQuizzes > 0) {
-                        throw new IllegalArgumentException("Câu hỏi con #" + child.getId()
-                                + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang " + newStatus + ".");
-                    }
-                }
-                child.setStatus(newStatus);
-            }
+        List<Question> changing = children.stream().filter(child -> !child.getStatus().equals(newStatus)).toList();
+        if (!"ACTIVE".equals(newStatus) && !changing.isEmpty()) {
+            List<Long> changingIds = changing.stream().map(Question::getId).toList();
+            Set<Long> inActiveUse = new HashSet<>(questionRepository.findIdsUsedInActiveExams(changingIds));
+            inActiveUse.addAll(questionRepository.findIdsUsedInActiveQuizzes(changingIds));
+            changingIds.stream().filter(inActiveUse::contains).findFirst().ifPresent(id -> {
+                throw new IllegalArgumentException("Câu hỏi con #" + id
+                        + " đang được sử dụng trong đề thi/quiz đang hoạt động. Không thể chuyển sang " + newStatus + ".");
+            });
         }
+        changing.forEach(child -> child.setStatus(newStatus));
         if (!children.isEmpty()) {
             questionRepository.saveAll(children);
         }
