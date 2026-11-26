@@ -163,7 +163,7 @@
                             </button>
                         </div>
                     </form>
-                    <script>
+                    <script th:inline="javascript">
                         function previewAvatar(input) {
                             if (input.files && input.files[0]) {
                                 const reader = new FileReader();
@@ -174,6 +174,40 @@
                                 reader.readAsDataURL(input.files[0]);
                             }
                         }
+
+                        // Auto-polling and window focus listener when an email change is pending
+                        /*<![CDATA[*/
+                        var hasPendingEmail = /*[[${profile.pendingEmail != null and !profile.pendingEmail.isBlank()}]]*/ false;
+                        if (hasPendingEmail) {
+                            function checkVerificationStatus() {
+                                fetch('/profile/api/email-status', { credentials: 'same-origin' })
+                                    .then(function(res) {
+                                        if (res.status === 401) {
+                                            window.location.href = '/auth/login?emailVerified=true';
+                                            return null;
+                                        }
+                                        return res.json();
+                                    })
+                                    .then(function(data) {
+                                        if (!data) return;
+                                        if (data.status === 'VERIFIED_LOGOUT_REQUIRED' || data.hasPendingEmail === false) {
+                                            window.location.href = '/auth/login?emailVerified=true';
+                                        }
+                                    })
+                                    .catch(function(err) {
+                                        console.debug('Email status check skipped:', err);
+                                    });
+                            }
+
+                            setInterval(checkVerificationStatus, 4000);
+                            window.addEventListener('focus', checkVerificationStatus);
+                            document.addEventListener('visibilitychange', function() {
+                                if (document.visibilityState === 'visible') {
+                                    checkVerificationStatus();
+                                }
+                            });
+                        }
+                        /*]]>*/
                     </script>
                 </div>
             </div>

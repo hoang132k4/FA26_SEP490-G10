@@ -34,6 +34,9 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.jeps.modules.learningpath.repository.LearningPathRepository learningPathRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jeps.modules.order.repository.OrderRepository orderRepository;
+
     @Override
     @Transactional
     public CourseRegistration registerCourse(Long userId, CourseRegistrationRequest request) {
@@ -138,6 +141,7 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
         CourseRegistration saved = registrationRepository.save(registration);
         incrementEnrollmentCount(registration.getCourse());
         onRegistrationActivated(registration.getUser(), registration.getCourse());
+        createOrderForRegistration(registration.getUser(), registration.getCourse(), paidAmount.doubleValue(), paymentMethod);
         return saved;
     }
 
@@ -212,6 +216,7 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
         if (CourseRegistration.STATUS_ACTIVE.equals(status)) {
             incrementEnrollmentCount(course);
             onRegistrationActivated(user, course);
+            createOrderForRegistration(user, course, paidAmount, paymentMethod);
         }
         return saved;
     }
@@ -252,6 +257,39 @@ public class CourseRegistrationServiceImpl implements CourseRegistrationService 
         if (course.getLevel() != null && !course.getLevel().isBlank()) {
             user.setTargetJlptLevel(course.getLevel());
             userRepository.save(user);
+        }
+    }
+
+    private void createOrderForRegistration(User user, Course course, double paidAmount, String paymentMethod) {
+        try {
+            if (orderRepository != null && user != null && course != null) {
+                java.math.BigDecimal price = java.math.BigDecimal.valueOf(paidAmount);
+                String orderNumber = "ORD-" + System.currentTimeMillis() + "-" + String.format("%04d", (int)(Math.random() * 10000));
+                com.jeps.modules.order.entity.Order order = com.jeps.modules.order.entity.Order.builder()
+                        .orderNumber(orderNumber)
+                        .user(user)
+                        .totalAmount(price)
+                        .orderStatus(com.jeps.modules.order.entity.OrderStatus.COMPLETED)
+                        .paymentMethod(paymentMethod != null ? paymentMethod : "FREE")
+                        .paymentStatus("PAID")
+                        .transactionReference("TXN-" + System.currentTimeMillis())
+                        .build();
+
+                com.jeps.modules.order.entity.OrderItem orderItem = com.jeps.modules.order.entity.OrderItem.builder()
+                        .order(order)
+                        .courseId(course.getId())
+                        .itemName(course.getTitle())
+                        .price(price)
+                        .quantity(1)
+                        .subtotal(price)
+                        .build();
+
+                order.addItem(orderItem);
+                orderRepository.save(order);
+                log.info("Auto-created Order {} for user ID: {} upon course registration ID: {}", orderNumber, user.getId(), course.getId());
+            }
+        } catch (Exception ex) {
+            log.warn("Could not create Order record for course registration: {}", ex.getMessage());
         }
     }
 

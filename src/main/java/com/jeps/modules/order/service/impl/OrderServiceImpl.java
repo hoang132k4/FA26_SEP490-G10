@@ -32,13 +32,17 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.jeps.modules.course.repository.CourseRegistrationRepository registrationRepository;
+
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<OrderHistoryItemResponse> getOrderHistory(String userIdentifier, String statusFilter) {
         User user = findUserByIdentifier(userIdentifier);
+        syncOrdersFromRegistrations(user);
 
         OrderStatus status = OrderStatus.fromString(statusFilter);
         List<Order> orders;
@@ -87,6 +91,69 @@ public class OrderServiceImpl implements OrderService {
                 });
 
         return mapToDetailResponse(order);
+    }
+
+    private void syncOrdersFromRegistrations(User user) {
+        if (registrationRepository == null || user == null) {
+            return;
+        }
+        try {
+            var registrations = registrationRepository.findByUserIdWithCourse(user.getId());
+            if (registrations == null || registrations.isEmpty()) {
+                return;
+            }
+
+            var existingOrders = orderRepository.findByUserIdOrderByCreatedAtDescIdDesc(user.getId());
+            java.util.Set<Long> orderedCourseIds = new java.util.HashSet<>();
+            if (existingOrders != null) {
+                for (Order o : existingOrders) {
+                    if (o.getItems() != null) {
+                        for (OrderItem item : o.getItems()) {
+                            if (item.getCourseId() != null) {
+                                orderedCourseIds.add(item.getCourseId());
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (var reg : registrations) {
+                if (reg.getCourse() != null && !orderedCourseIds.contains(reg.getCourse().getId())) {
+                    java.math.BigDecimal amount = java.math.BigDecimal.valueOf(reg.getPaidAmount() != null ? reg.getPaidAmount() : 0.0);
+                    String orderNumber = "ORD-" + (reg.getRegisteredAt() != null ? reg.getRegisteredAt().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : "2026")
+                            + "-" + reg.getId() + String.format("%03d", (int)(Math.random() * 900 + 100));
+
+                    Order order = Order.builder()
+                            .orderNumber(orderNumber)
+                            .user(user)
+                            .totalAmount(amount)
+                            .orderStatus(OrderStatus.COMPLETED)
+                            .paymentMethod(reg.getPaymentMethod() != null ? reg.getPaymentMethod() : "FREE")
+                            .paymentStatus("PAID")
+                            .transactionReference("TXN-" + reg.getId())
+                            .build();
+
+                    OrderItem item = OrderItem.builder()
+                            .order(order)
+                            .courseId(reg.getCourse().getId())
+                            .itemName(reg.getCourse().getTitle())
+                            .price(amount)
+                            .quantity(1)
+                            .subtotal(amount)
+                            .build();
+
+                    order.addItem(item);
+                    if (reg.getRegisteredAt() != null) {
+                        order.setCreatedAt(reg.getRegisteredAt());
+                    }
+                    orderRepository.save(order);
+                    orderedCourseIds.add(reg.getCourse().getId());
+                    log.info("Synced missing order {} for user {} and registered course {}", orderNumber, user.getId(), reg.getCourse().getId());
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Could not sync orders from course registrations: {}", ex.getMessage());
+        }
     }
 
     private User findUserByIdentifier(String identifier) {
