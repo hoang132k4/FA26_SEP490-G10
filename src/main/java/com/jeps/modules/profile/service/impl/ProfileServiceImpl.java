@@ -86,6 +86,13 @@ public class ProfileServiceImpl implements ProfileService {
                 ? request.getPhone().trim()
                 : null;
 
+        // Check if phone number changed and is already used by another account
+        if (trimmedPhone != null && !trimmedPhone.equals(user.getPhone())) {
+            if (userRepository.existsByPhone(trimmedPhone)) {
+                throw new IllegalArgumentException("Số điện thoại này đã được sử dụng bởi một tài khoản khác.");
+            }
+        }
+
         // Check if email changed and if new email is already taken
         boolean emailVerificationSent = false;
         String rawVerificationToken = null;

@@ -178,6 +178,25 @@ class ProfileServiceUnitTest {
     }
 
     @Test
+    @DisplayName("Abnormal: Cập nhật số điện thoại trùng với người dùng khác ném ra IllegalArgumentException (Screen 6)")
+    void updateProfile_duplicatePhone_throwsException() {
+        User user = createSampleUser();
+        when(userRepository.findByEmailIgnoreCase("learner@jeps.edu.vn")).thenReturn(Optional.of(user));
+        when(userRepository.existsByPhone("0999888777")).thenReturn(true);
+
+        EditProfileRequest req = EditProfileRequest.builder()
+                .fullName("Nguyen Van A")
+                .email("learner@jeps.edu.vn")
+                .phone("0999888777")
+                .build();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> profileService.updateProfile("learner@jeps.edu.vn", req, null));
+        assertEquals("Số điện thoại này đã được sử dụng bởi một tài khoản khác.", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("Normal: Cập nhật thông tin với đầy đủ trường hợp lệ (Screen 6)")
     void updateProfile_validFields_success() {
         User user = createSampleUser();
