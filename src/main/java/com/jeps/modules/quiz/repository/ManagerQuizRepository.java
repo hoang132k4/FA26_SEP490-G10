@@ -4,21 +4,28 @@ import com.jeps.modules.quiz.dto.ExerciseQuestionRow;
 import com.jeps.modules.quiz.dto.LessonOption;
 import com.jeps.modules.quiz.dto.QuizOption;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public class ManagerQuizRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbc;
 
     public ManagerQuizRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.namedJdbc = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
     public List<QuizOption> search(String search, String level, String section, String status) {
@@ -199,17 +206,24 @@ public class ManagerQuizRepository {
                 """, Long.class, jlptLevel, skillType, exerciseId);
     }
 
-    public boolean exerciseQuestionExists(long exerciseId, long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM exercise_questions WHERE exercise_id = ? AND question_id = ?)",
-                Boolean.class, exerciseId, questionId));
+    /** Existing ids already linked to the quiz, checked in one query. */
+    public Set<Long> findLinkedQuestionIds(long exerciseId, Collection<Long> questionIds) {
+        return new HashSet<>(namedJdbc.queryForList(
+                "SELECT question_id FROM exercise_questions WHERE exercise_id = :exerciseId AND question_id IN (:ids)",
+                Map.of("exerciseId", exerciseId, "ids", questionIds), Long.class));
     }
 
-    public void insertExerciseQuestion(long exerciseId, long questionId) {
-        jdbcTemplate.update("""
-                INSERT INTO exercise_questions (exercise_id, question_id, question_order)
-                SELECT ?, ?, COALESCE(MAX(question_order), 0) + 1 FROM exercise_questions WHERE exercise_id = ?
-                """, exerciseId, questionId, exerciseId);
+    /** Appends the questions after the quiz's current last order in one JDBC batch. */
+    public void insertExerciseQuestions(long exerciseId, List<Long> questionIds) {
+        int maxOrder = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(MAX(question_order), 0) FROM exercise_questions WHERE exercise_id = ?",
+                Integer.class, exerciseId);
+        List<Object[]> rows = new ArrayList<>();
+        for (Long questionId : questionIds) {
+            rows.add(new Object[]{exerciseId, questionId, ++maxOrder});
+        }
+        jdbcTemplate.batchUpdate(
+                "INSERT INTO exercise_questions (exercise_id, question_id, question_order) VALUES (?, ?, ?)", rows);
     }
 
     public int deleteExerciseQuestion(long exerciseId, long questionId) {
@@ -217,21 +231,17 @@ public class ManagerQuizRepository {
                 exerciseId, questionId);
     }
 
-    public boolean questionIsActive(long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ? AND status = 'ACTIVE')",
-                Boolean.class, questionId));
-    }
+    public record QuestionCheck(long id, String status, String questionType) {}
 
-    public boolean questionIsPassage(long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ? AND question_type = 'PASSAGE')",
-                Boolean.class, questionId));
-    }
-
-    public boolean questionExists(long questionId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM questions WHERE id = ?)", Boolean.class, questionId));
+    /** Status and type of every requested question that exists, keyed by id. */
+    public Map<Long, QuestionCheck> findQuestionChecks(Collection<Long> questionIds) {
+        Map<Long, QuestionCheck> result = new HashMap<>();
+        namedJdbc.query("SELECT id, status, question_type FROM questions WHERE id IN (:ids)",
+                Map.of("ids", questionIds), rs -> {
+                    long id = rs.getLong("id");
+                    result.put(id, new QuestionCheck(id, rs.getString("status"), rs.getString("question_type")));
+                });
+        return result;
     }
 
     private QuizOption mapQuiz(long id, long lessonId, String lessonTitle, String title,
