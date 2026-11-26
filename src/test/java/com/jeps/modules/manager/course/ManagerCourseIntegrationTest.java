@@ -1,5 +1,7 @@
 package com.jeps.modules.manager.course;
 
+import com.jeps.modules.admin.entity.AdminSystemLog;
+import com.jeps.modules.admin.repository.AdminSystemLogRepository;
 import com.jeps.modules.manager.courses.dto.CourseOption;
 import com.jeps.modules.manager.courses.service.CourseService;
 import org.junit.jupiter.api.DisplayName;
@@ -17,12 +19,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
@@ -39,6 +43,9 @@ class ManagerCourseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private AdminSystemLogRepository systemLogRepository;
 
     @MockBean
     private CourseService courseService;
@@ -139,6 +146,67 @@ class ManagerCourseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("pages/manager/course/manager-courses"))
                 .andExpect(model().attributeExists("courseErrors"));
+    }
+
+    @Test
+    @DisplayName("Successful manager course creation is persisted and visible in admin system logs")
+    @WithMockUser(username = "manager@jeps.edu.vn", roles = "MANAGER")
+    void successfulManagerMutationIsLoggedAndVisibleToAdmin() throws Exception {
+        when(courseService.isTitleInUse("Audit Course", null)).thenReturn(false);
+        when(courseService.isCodeInUse("AUD-01", null)).thenReturn(false);
+        when(courseService.isTitleInUse("Edited Audit Course", 42L)).thenReturn(false);
+        when(courseService.isCodeInUse("AUD-02", 42L)).thenReturn(false);
+
+        mockMvc.perform(post("/manager/courses")
+                        .with(csrf())
+                        .param("name", "Audit Course")
+                        .param("code", "AUD-01")
+                        .param("level", "N5")
+                        .param("price", "1000"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/courses"));
+
+        mockMvc.perform(post("/manager/courses/42")
+                        .with(csrf())
+                        .param("name", "Edited Audit Course")
+                        .param("code", "AUD-02")
+                        .param("level", "N5")
+                        .param("price", "1000"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manager/courses"));
+
+        List<AdminSystemLog> managerLogs = systemLogRepository.findAll().stream()
+                .filter(log -> "MANAGER".equals(log.getLogType()))
+                .filter(log -> log.getDetails() != null
+                        && (log.getDetails().contains("Audit Course")
+                        || log.getDetails().contains("Edited Audit Course")))
+                .toList();
+        assertThat(managerLogs)
+                .extracting(AdminSystemLog::getActionPerformed)
+                .contains("MANAGER_CREATE", "MANAGER_UPDATE");
+        assertThat(managerLogs.stream()
+                .filter(log -> "MANAGER_CREATE".equals(log.getActionPerformed()))
+                .findFirst()
+                .orElseThrow()
+                .getDetails())
+                .contains("tạo mới khóa học", "Audit Course", "AUD-01")
+                .doesNotContain("POST", "HTTP");
+        assertThat(managerLogs.stream()
+                .filter(log -> "MANAGER_UPDATE".equals(log.getActionPerformed()))
+                .findFirst()
+                .orElseThrow()
+                .getDetails())
+                .contains("cập nhật khóa học #42", "Edited Audit Course", "AUD-02")
+                .doesNotContain("POST", "HTTP");
+
+        mockMvc.perform(get("/admin/logs").with(user("admin@jeps.edu.vn").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Manager tạo mới")))
+                .andExpect(content().string(containsString("Manager cập nhật")))
+                .andExpect(content().string(containsString("Audit Course")))
+                .andExpect(content().string(containsString("Edited Audit Course")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("POST"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("HTTP"))));
     }
 
     @Test

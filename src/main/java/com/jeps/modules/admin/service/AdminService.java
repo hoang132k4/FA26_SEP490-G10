@@ -26,6 +26,8 @@ public class AdminService {
 
     private static final String ACTIVE_STATUS = "ACTIVE";
     private static final String INACTIVE_STATUS = "INACTIVE";
+    private static final String PAYMENT_TEST_USERNAME_PATTERN = "payment-%";
+    private static final String PAYMENT_TEST_EMAIL_PATTERN = "payment-%@example.test";
 
     private final AdminUserRepository userRepository;
     private final AdminSystemLogRepository systemLogRepository;
@@ -60,6 +62,13 @@ public class AdminService {
 
         Specification<AdminUser> specification = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.not(criteriaBuilder.and(
+                    criteriaBuilder.like(
+                            criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("username"), "")),
+                            PAYMENT_TEST_USERNAME_PATTERN),
+                    criteriaBuilder.like(
+                            criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("email"), "")),
+                            PAYMENT_TEST_EMAIL_PATTERN))));
             if (normalizedRole != null) {
                 predicates.add(criteriaBuilder.equal(
                         criteriaBuilder.upper(root.get("role")), normalizedRole.toUpperCase(Locale.ROOT)));

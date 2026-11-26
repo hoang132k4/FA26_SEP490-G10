@@ -593,10 +593,8 @@ public class LearnerCourseController {
             return "redirect:/courses/" + id;
         }
 
-        if (existingRegistration != null) {
-            if (CourseRegistration.STATUS_PENDING_PAYMENT.equalsIgnoreCase(existingRegistration.getStatus())) {
-                return "redirect:/checkout/" + id + "?registrationId=" + existingRegistration.getId();
-            }
+        if (existingRegistration != null
+                && !CourseRegistration.STATUS_PENDING_PAYMENT.equalsIgnoreCase(existingRegistration.getStatus())) {
             redirectAttributes.addFlashAttribute("warningMessage",
                     "Đăng ký khóa học hiện không thể tiếp tục. Vui lòng liên hệ hỗ trợ.");
             return "redirect:/courses/" + id;

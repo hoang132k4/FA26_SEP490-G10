@@ -7,7 +7,7 @@
         <section class="mb-4">
             <span class="text-uppercase fw-bold small" style="letter-spacing: .08em; color: var(--steel-blue);">Quản trị hệ thống</span>
             <h1 class="h3 fw-bold mt-1 mb-1">Nhật ký hệ thống</h1>
-            <p class="text-muted mb-0">Theo dõi các hoạt động được ghi nhận trong hệ thống.</p>
+            <p class="text-muted mb-0">Theo dõi hoạt động hệ thống, bao gồm các thao tác CRUD của Manager.</p>
         </section>
 
         <section class="card kotoba-card p-4">
@@ -27,7 +27,12 @@
                     <tr th:each="log : ${logs.content}">
                         <td class="text-nowrap" th:text="${log.timestamp != null ? #temporals.format(log.timestamp, 'dd/MM/yyyy HH:mm:ss') : '—'}">—</td>
                         <td><span class="badge text-bg-light" th:text="${log.logType}">ADMIN</span></td>
-                        <td th:text="${log.actionPerformed}">USER_UPDATED</td>
+                        <td th:switch="${log.actionPerformed}">
+                            <span th:case="'MANAGER_CREATE'">Manager tạo mới</span>
+                            <span th:case="'MANAGER_UPDATE'">Manager cập nhật</span>
+                            <span th:case="'MANAGER_DELETE'">Manager xóa</span>
+                            <span th:case="*" th:text="${log.actionPerformed}">USER_UPDATED</span>
+                        </td>
                         <td th:text="${log.userId != null ? log.userId : '—'}">—</td>
                         <td th:text="${log.ipAddress != null ? log.ipAddress : '—'}">—</td>
                         <td th:text="${log.details != null ? log.details : '—'}">—</td>

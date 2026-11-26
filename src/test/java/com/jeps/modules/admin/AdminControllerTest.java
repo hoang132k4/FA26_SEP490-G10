@@ -1,6 +1,7 @@
 package com.jeps.modules.admin;
 
 import com.jeps.modules.admin.entity.AdminUser;
+import com.jeps.modules.admin.entity.AdminSystemLog;
 import com.jeps.modules.admin.repository.AdminSystemLogRepository;
 import com.jeps.modules.admin.repository.AdminUserRepository;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -113,6 +116,75 @@ class AdminControllerTest {
         assertThat(userRepository.findById(target.getUserId()).orElseThrow().getEmail())
                 .isEqualTo("target@example.com");
         assertThat(systemLogRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void managerCrudActivityIsVisibleInReadOnlySystemLogs() throws Exception {
+        AdminUser manager = createUser(91004L, "manager-audit-user", "manager-audit@example.com");
+        manager.setRole("MANAGER");
+        userRepository.save(manager);
+
+        AdminSystemLog log = new AdminSystemLog();
+        log.setUserId(manager.getUserId());
+        log.setLogType("MANAGER");
+        log.setActionPerformed("MANAGER_CREATE");
+        log.setIpAddress("127.0.0.1");
+        log.setTimestamp(Instant.parse("2025-01-01T10:00:00Z"));
+        log.setDetails("POST /manager/courses (HTTP 302)");
+        systemLogRepository.save(log);
+
+        mockMvc.perform(get("/admin/logs"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/admin/user/logs"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("MANAGER")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Manager tạo mới")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/manager/courses")));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void userManagementShowsOnlyAccountsAndNotPaymentOrManagerLogs() throws Exception {
+        AdminUser user = userRepository.save(createUser(91005L, "regular-user", "regular@example.com"));
+        AdminUser paymentTest = createUser(91006L, "payment-test-123", "payment-test-123@example.test");
+        paymentTest.setFullName("Payment Test");
+        userRepository.save(paymentTest);
+        AdminUser invoiceTest = createUser(
+                91007L, "payment-invoice-123", "payment-invoice-123@example.test");
+        invoiceTest.setFullName("Other Learner");
+        userRepository.save(invoiceTest);
+        userRepository.save(createUser(91008L, "payment-customer", "payment-customer@example.com"));
+
+        AdminSystemLog paymentLog = new AdminSystemLog();
+        paymentLog.setLogType("PAYMENT");
+        paymentLog.setActionPerformed("PAYMENT_TEST");
+        paymentLog.setTimestamp(Instant.parse("2025-01-01T10:00:00Z"));
+        paymentLog.setDetails("payment test record");
+        systemLogRepository.save(paymentLog);
+
+        AdminSystemLog managerLog = new AdminSystemLog();
+        managerLog.setUserId(user.getUserId());
+        managerLog.setLogType("MANAGER");
+        managerLog.setActionPerformed("MANAGER_CREATE");
+        managerLog.setTimestamp(Instant.parse("2025-01-01T10:01:00Z"));
+        managerLog.setDetails("POST /manager/courses (HTTP 302)");
+        systemLogRepository.save(managerLog);
+
+        mockMvc.perform(get("/admin/users"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/admin/user/list"))
+                .andExpect(model().attributeExists("users"))
+                .andExpect(model().attributeDoesNotExist("logs"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("regular-user")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("payment-customer@example.com")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("payment-test-123@example.test"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("payment-invoice-123@example.test"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("payment test record"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("/manager/courses"))));
     }
 
     private AdminUser createUser(Long userId, String username, String email) {

@@ -66,8 +66,10 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -514,6 +516,33 @@ class PaymentServiceIdempotencyTest {
                         .with(user(user.getEmail()).roles("LEARNER")))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/courses/" + course.getId()));
+    }
+
+    @Test
+    void checkoutCreatesPaymentOnlyAfterExplicitConfirmation() throws Exception {
+        CourseRegistration registration = courseRegistrationService.createPendingRegistration(user.getId(),
+                CourseRegistrationRequest.builder()
+                        .courseId(course.getId())
+                        .paymentMethod("SEPAY")
+                        .build());
+
+        mockMvc.perform(get("/checkout/{courseId}", course.getId())
+                        .param("registrationId", registration.getId().toString())
+                        .with(user(user.getEmail()).roles("LEARNER")))
+                .andExpect(status().isOk());
+
+        assertTrue(paymentRepository.findByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
+                user.getId(), course.getId(), "PENDING").isEmpty());
+
+        mockMvc.perform(post("/checkout/{courseId}", course.getId())
+                        .with(user(user.getEmail()).roles("LEARNER"))
+                        .with(csrf())
+                        .param("registrationId", registration.getId().toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/payment/*"));
+
+        assertEquals(1, paymentRepository.findByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
+                user.getId(), course.getId(), "PENDING").size());
     }
 
     @Test

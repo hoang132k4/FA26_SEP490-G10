@@ -8,6 +8,7 @@ import com.jeps.modules.course.entity.Lesson;
 import com.jeps.modules.course.repository.CourseRegistrationRepository;
 import com.jeps.modules.course.repository.CourseRepository;
 import com.jeps.modules.course.repository.LessonRepository;
+import com.jeps.modules.payment.repository.PaymentRepository;
 import com.jeps.modules.user.entity.User;
 import com.jeps.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,9 @@ public class LearnerCourseFullIntegrationTest {
 
     @Autowired
     private CourseRegistrationRepository registrationRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -321,6 +325,59 @@ public class LearnerCourseFullIntegrationTest {
     }
 
     @Test
+    @DisplayName("Register Course GET: Đăng ký chờ thanh toán vẫn hiển thị màn hình xác nhận")
+    @WithMockUser(username = "learner_full_test@jeps.edu.vn", roles = {"LEARNER"})
+    void testRegisterCoursePage_PendingPayment_DisplaysConfirmationForm() throws Exception {
+        CourseRegistration pendingRegistration = registrationRepository.saveAndFlush(CourseRegistration.builder()
+                .user(learner)
+                .course(paidCourse)
+                .status(CourseRegistration.STATUS_PENDING_PAYMENT)
+                .paymentMethod("SEPAY")
+                .paidAmount(0.0)
+                .build());
+
+        mockMvc.perform(get("/learning/courses/{id}/register", paidCourse.getId()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("pages/learning/register-course"))
+                .andExpect(model().attributeExists("learner", "course", "registrationRequest"));
+
+        assertEquals(pendingRegistration.getId(), registrationRepository
+                .findByUserIdAndCourseId(learner.getId(), paidCourse.getId()).orElseThrow().getId());
+        assertTrue(paymentRepository.findByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
+                learner.getId(), paidCourse.getId(), "PENDING").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Register Course POST: Xác nhận tiếp tục đăng ký chờ thanh toán mà không tạo trùng")
+    @WithMockUser(username = "learner_full_test@jeps.edu.vn", roles = {"LEARNER"})
+    void testHandleRegisterCourse_ExistingPendingRegistration_ReusesRegistration() throws Exception {
+        CourseRegistration pendingRegistration = registrationRepository.saveAndFlush(CourseRegistration.builder()
+                .user(learner)
+                .course(paidCourse)
+                .status(CourseRegistration.STATUS_PENDING_PAYMENT)
+                .paymentMethod("SEPAY")
+                .paidAmount(0.0)
+                .build());
+
+        mockMvc.perform(post("/learning/courses/{id}/register", paidCourse.getId())
+                        .with(csrf())
+                        .param("courseId", paidCourse.getId().toString())
+                        .param("fullName", learner.getFullName())
+                        .param("email", learner.getEmail())
+                        .param("phone", learner.getPhone())
+                        .param("paymentMethod", "SEPAY")
+                        .param("termsAccepted", "true"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/checkout/" + paidCourse.getId()
+                        + "?registrationId=" + pendingRegistration.getId()));
+
+        assertEquals(pendingRegistration.getId(), registrationRepository
+                .findByUserIdAndCourseId(learner.getId(), paidCourse.getId()).orElseThrow().getId());
+        assertTrue(paymentRepository.findByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
+                learner.getId(), paidCourse.getId(), "PENDING").isEmpty());
+    }
+
+    @Test
     @DisplayName("Register Course POST: Paid course creates a pending registration and opens checkout")
     @WithMockUser(username = "learner_full_test@jeps.edu.vn", roles = {"LEARNER"})
     void testHandleRegisterCourse_Success() throws Exception {
@@ -339,6 +396,8 @@ public class LearnerCourseFullIntegrationTest {
                 .findByUserIdAndCourseId(learner.getId(), paidCourse.getId()).orElseThrow();
         assertEquals(CourseRegistration.STATUS_PENDING_PAYMENT, registration.getStatus());
         assertFalse(registrationRepository.existsEligibleByUserIdAndCourseId(learner.getId(), paidCourse.getId()));
+        assertTrue(paymentRepository.findByUser_IdAndCourse_IdAndStatusOrderByCreatedAtDesc(
+                learner.getId(), paidCourse.getId(), "PENDING").isEmpty());
     }
 
     @Test
