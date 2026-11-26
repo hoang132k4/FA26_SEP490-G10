@@ -28,26 +28,31 @@ public class ManagerQuizRepository {
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
-    public List<QuizOption> search(String search, String level, String section, String status) {
+    private static final String SEARCH_FROM_WHERE = """
+            FROM exercises e
+            LEFT JOIN lessons l ON l.lesson_id = e.lesson_id
+            LEFT JOIN courses c ON c.course_id = l.course_id
+            WHERE (? = '' OR LOWER(e.exercise_title) LIKE LOWER(?))
+              AND (? = '' OR c.level = ?)
+              AND (? = '' OR l.section_name = ?)
+              AND (? = '' OR UPPER(e.status) = UPPER(?))
+            """;
+
+    public List<QuizOption> search(String search, String level, String section, String status, int limit, long offset) {
         return jdbcTemplate.query("""
                 SELECT e.exercise_id, e.lesson_id, l.title AS lesson_title, e.exercise_title,
                        e.total_questions, e.passing_score, e.status,
-                       COUNT(eq.question_id) AS linked_question_count
-                FROM exercises e
-                LEFT JOIN lessons l ON l.lesson_id = e.lesson_id
-                LEFT JOIN courses c ON c.course_id = l.course_id
-                LEFT JOIN exercise_questions eq ON eq.exercise_id = e.exercise_id
-                WHERE (? = '' OR LOWER(e.exercise_title) LIKE LOWER(?))
-                  AND (? = '' OR c.level = ?)
-                  AND (? = '' OR l.section_name = ?)
-                  AND (? = '' OR UPPER(e.status) = UPPER(?))
-                GROUP BY e.exercise_id, e.lesson_id, l.title, e.exercise_title,
-                         e.total_questions, e.passing_score, e.status
-                ORDER BY e.exercise_id DESC
-                """, (rs, row) -> mapQuiz(rs.getLong("exercise_id"), rs.getLong("lesson_id"),
+                       (SELECT COUNT(*) FROM exercise_questions eq WHERE eq.exercise_id = e.exercise_id) AS linked_question_count
+                """ + SEARCH_FROM_WHERE + " ORDER BY e.exercise_id DESC LIMIT ? OFFSET ?",
+                (rs, row) -> mapQuiz(rs.getLong("exercise_id"), rs.getLong("lesson_id"),
                         rs.getString("lesson_title"), rs.getString("exercise_title"),
                         rs.getInt("total_questions"), rs.getInt("passing_score"),
                         rs.getString("status"), rs.getLong("linked_question_count")),
+                search, "%" + search + "%", level, level, section, section, status, status, limit, offset);
+    }
+
+    public long countSearch(String search, String level, String section, String status) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) " + SEARCH_FROM_WHERE, Long.class,
                 search, "%" + search + "%", level, level, section, section, status, status);
     }
 

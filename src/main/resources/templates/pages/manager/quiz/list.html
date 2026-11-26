@@ -106,13 +106,14 @@
                         </div>
                     </td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(quizzes)}">
+                <tr th:if="${quizzes.isEmpty()}">
                     <td colspan="7" class="text-center text-muted py-5">Không tìm thấy quiz.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
+    <div th:replace="~{fragments/components/pagination :: pagination(${quizzes}, ${pageUrl})}"></div>
 
     <style>
         .level-filter .dropend-hover { position: relative; }

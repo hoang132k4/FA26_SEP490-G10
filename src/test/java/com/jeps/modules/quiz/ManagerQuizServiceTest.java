@@ -57,9 +57,10 @@ class ManagerQuizServiceTest {
 
     @Test
     void searchTrimsTextAndReplacesNullWithEmpty() {
-        service.search("  Quiz 1 ", " N5 ", null, null);
+        service.search("  Quiz 1 ", " N5 ", null, null, 0);
 
-        verify(repository).search("Quiz 1", "N5", "", "");
+        verify(repository).search("Quiz 1", "N5", "", "", ManagerQuizService.PAGE_SIZE, 0);
+        verify(repository).countSearch("Quiz 1", "N5", "", "");
     }
 
     @Test
@@ -545,16 +546,16 @@ class ManagerQuizServiceTest {
 
     @Test
     void searchPassesAllNonNullValuesThrough() {
-        service.search("keyword", "N3", "READING", "DRAFT");
+        service.search("keyword", "N3", "READING", "DRAFT", 0);
 
-        verify(repository).search("keyword", "N3", "READING", "DRAFT");
+        verify(repository).search("keyword", "N3", "READING", "DRAFT", ManagerQuizService.PAGE_SIZE, 0);
     }
 
     @Test
     void searchAllNulls_sendsEmptyStrings() {
-        service.search(null, null, null, null);
+        service.search(null, null, null, null, 0);
 
-        verify(repository).search("", "", "", "");
+        verify(repository).search("", "", "", "", ManagerQuizService.PAGE_SIZE, 0);
     }
 
     // ── lessonGroups ──
@@ -770,8 +771,21 @@ class ManagerQuizServiceTest {
 
     @Test
     void search_emptyStrings_sendsEmpty() {
-        service.search("", "", "", "");
-        verify(repository).search("", "", "", "");
+        service.search("", "", "", "", 0);
+        verify(repository).search("", "", "", "", ManagerQuizService.PAGE_SIZE, 0);
+    }
+
+    @Test
+    void searchReturnsRequestedPageWithTotal() {
+        when(repository.search("", "", "", "", ManagerQuizService.PAGE_SIZE, ManagerQuizService.PAGE_SIZE))
+                .thenReturn(List.of(quiz("DRAFT")));
+        when(repository.countSearch("", "", "", "")).thenReturn(21L);
+
+        var page = service.search(null, null, null, null, 1);
+
+        assertEquals(1, page.getNumber());
+        assertEquals(21, page.getTotalElements());
+        assertEquals(1, page.getContent().size());
     }
 
     @Test
