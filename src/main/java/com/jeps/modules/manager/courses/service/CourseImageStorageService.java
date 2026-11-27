@@ -17,9 +17,7 @@ public class CourseImageStorageService {
     private static final long MAX_IMAGE_SIZE = 5L * 1024 * 1024;
     private static final Map<String, String> IMAGE_EXTENSIONS = Map.of(
             "image/jpeg", ".jpg",
-            "image/png", ".png",
-            "image/webp", ".webp",
-            "image/gif", ".gif");
+            "image/png", ".png");
 
     private final Path uploadDirectory;
 
@@ -55,7 +53,7 @@ public class CourseImageStorageService {
         String normalizedType = contentType == null ? "" : contentType.trim().toLowerCase(Locale.ROOT);
         String extension = IMAGE_EXTENSIONS.get(normalizedType);
         if (extension == null) {
-            throw new IllegalArgumentException("Chỉ chấp nhận ảnh PNG, JPG, WEBP hoặc GIF.");
+            throw new IllegalArgumentException("Chỉ chấp nhận ảnh PNG, JPG hoặc JPEG.");
         }
         byte[] header = file.getBytes();
         boolean validSignature = switch (normalizedType) {
@@ -64,10 +62,6 @@ public class CourseImageStorageService {
                     && header[6] == 0x1a && header[7] == 0x0a;
             case "image/jpeg" -> header.length >= 3 && (header[0] & 0xff) == 0xff && (header[1] & 0xff) == 0xd8
                     && (header[2] & 0xff) == 0xff;
-            case "image/gif" -> header.length >= 6 && new String(header, 0, 6, java.nio.charset.StandardCharsets.US_ASCII)
-                    .matches("GIF8[79]a");
-            case "image/webp" -> header.length >= 12 && new String(header, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("RIFF")
-                    && new String(header, 8, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("WEBP");
             default -> false;
         };
         if (!validSignature) throw new IllegalArgumentException("Nội dung file không khớp với định dạng ảnh đã chọn.");

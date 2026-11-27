@@ -49,8 +49,38 @@ public class LearningPathController {
         if (!response.isHasPath()) {
             model.addAttribute("emptyMessage", response.getEmptyStateMessage());
         }
+        addCurrentWeekDates(model, response);
 
         return "pages/learning-path/view";
+    }
+
+    /**
+     * Ngày cụ thể (dd/MM/yyyy) của từng thứ trong tuần hiện tại (Thứ 2 → Chủ nhật),
+     * key là tên DayOfWeek (MONDAY..SUNDAY) để khớp với path.studyDays.
+     * Đồng thời đánh dấu các ngày trong tuần rơi vào khoảng báo nghỉ của học viên.
+     */
+    private void addCurrentWeekDates(Model model, LearningPathResponse response) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        java.util.List<LeaveRecordDto> leaveRecords = response != null && response.getLeaveRecords() != null
+                ? response.getLeaveRecords()
+                : java.util.List.of();
+
+        java.util.Map<String, String> weekDates = new java.util.LinkedHashMap<>();
+        java.util.Set<String> leaveDays = new java.util.HashSet<>();
+        for (int i = 0; i < 7; i++) {
+            java.time.LocalDate date = monday.plusDays(i);
+            String dayKey = date.getDayOfWeek().name();
+            weekDates.put(dayKey, date.format(formatter));
+            boolean onLeave = leaveRecords.stream().anyMatch(r -> r != null
+                    && r.getStartDate() != null && r.getEndDate() != null
+                    && !date.isBefore(r.getStartDate()) && !date.isAfter(r.getEndDate()));
+            if (onLeave) leaveDays.add(dayKey);
+        }
+        model.addAttribute("currentWeekDates", weekDates);
+        model.addAttribute("currentWeekLeaveDays", leaveDays);
+        model.addAttribute("todayDayOfWeek", today.getDayOfWeek().name());
     }
 
     /**

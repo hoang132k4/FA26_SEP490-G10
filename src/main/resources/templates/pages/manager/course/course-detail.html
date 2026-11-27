@@ -53,14 +53,9 @@
                             <tr th:each="field : ${courseFields}">
                                 <th class="ps-4 py-3 text-nowrap" style="width:30%;" th:text="${field.label}">Tên trường</th>
                                 <td class="pe-4 py-3" style="white-space:pre-wrap;overflow-wrap:anywhere;">
-                                    <span th:if="${field.rating}" class="d-inline-flex align-items-center gap-1" th:attr="aria-label=${'Đánh giá ' + field.displayValue}">
-                                        <i th:each="star : ${#numbers.sequence(1, 5)}"
-                                           class="bi" th:classappend="${star <= field.ratingValue ? ' bi-star-fill text-warning' : ' bi-star text-muted'}" aria-hidden="true"></i>
-                                        <span class="ms-1" th:text="${field.displayValue}">0/5</span>
-                                    </span>
                                     <span th:if="${field.status}" class="badge rounded-pill"
                                           th:classappend="${field.statusClass}" th:text="${field.displayValue}">Published</span>
-                                    <span th:unless="${field.rating or field.status}" th:text="${field.displayValue}">Giá trị</span>
+                                    <span th:unless="${field.status}" th:text="${field.displayValue}">Giá trị</span>
                                 </td>
                             </tr>
                         </tbody>

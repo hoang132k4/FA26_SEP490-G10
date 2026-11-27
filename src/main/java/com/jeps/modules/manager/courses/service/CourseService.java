@@ -66,21 +66,20 @@ public class CourseService {
         long courseId = courseRepository.insert(title, code, level, "DRAFT", price, discountPrice,
                 shortDescription, description, thumbnailUrl, objectives, prerequisites, targetAudience);
         if (lessonRepository != null) {
-            try {
-                LessonInput milestoneLesson = new LessonInput(
-                        "Bài thi giữa kì: Đánh giá năng lực giai đoạn 1",
-                        "Kiểm tra & Đánh giá định kỳ",
-                        "Bài kiểm tra cột mốc định kỳ bắt buộc để đánh giá năng lực học viên.",
-                        "Hoàn thành bài kiểm tra cột mốc để đánh giá mức độ tiếp thu kiến thức và mở khóa giai đoạn tiếp theo.",
-                        "EXAM",
-                        LessonStatusEnum.ACTIVE.name(),
-                        1,
-                        35,
-                        false
-                );
-                lessonRepository.insert(courseId, milestoneLesson, 1);
-            } catch (Exception ignored) {
-            }
+            // Không nuốt exception: trên PostgreSQL một câu SQL lỗi sẽ abort cả transaction,
+            // nên để lỗi lan ra để khóa học và bài cột mốc cùng rollback, controller báo lỗi rõ ràng.
+            LessonInput milestoneLesson = new LessonInput(
+                    "Bài thi giữa kì: Đánh giá năng lực giai đoạn 1",
+                    "Kiểm tra & Đánh giá định kỳ",
+                    "Bài kiểm tra cột mốc định kỳ bắt buộc để đánh giá năng lực học viên.",
+                    "Hoàn thành bài kiểm tra cột mốc để đánh giá mức độ tiếp thu kiến thức và mở khóa giai đoạn tiếp theo.",
+                    "EXAM",
+                    LessonStatusEnum.ACTIVE.name(),
+                    1,
+                    35,
+                    false
+            );
+            lessonRepository.insert(courseId, milestoneLesson, 1);
         }
         return courseId;
     }

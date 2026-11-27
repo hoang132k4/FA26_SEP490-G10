@@ -2948,3 +2948,18 @@ textarea.lesson-field {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+
+/* ==================== LESSON FORM VALIDATION ==================== */
+.lesson-field.is-invalid {
+  border-color: #dc3545 !important;
+  background-color: #fff5f5 !important;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25) !important;
+}
+
+.lesson-modal-alert, .lesson-client-alert {
+  border-left: 4px solid #dc3545;
+  background-color: #fff5f5;
+  color: #b02a37;
+  font-weight: 500;
+  border-radius: 6px;
+}

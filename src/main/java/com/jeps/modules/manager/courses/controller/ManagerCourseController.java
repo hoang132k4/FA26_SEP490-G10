@@ -80,8 +80,8 @@ public class ManagerCourseController {
             form.put("code", getCourseValue(course, "code", "course_code"));
             form.put("level", getCourseValue(course, "jlpt_level", "level"));
             form.put("status", normalizedCourseStatus(String.valueOf(getCourseValue(course, "status"))));
-            form.put("price", getCourseValue(course, "price", "course_price"));
-            form.put("discountPrice", getCourseValue(course, "discount_price", "course_discount_price"));
+            form.put("price", formatPriceForForm(getCourseValue(course, "price", "course_price")));
+            form.put("discountPrice", formatPriceForForm(getCourseValue(course, "discount_price", "course_discount_price")));
             form.put("shortDescription", getCourseValue(course, "short_description", "course_description"));
             form.put("description", getCourseValue(course, "full_description", "description"));
             form.put("thumbnailUrl", getCourseValue(course, "thumbnail_url", "course_thumbnail", "thumbnail"));
@@ -232,18 +232,17 @@ public class ManagerCourseController {
                 Map.entry("target_audience", "Đối tượng học viên"), Map.entry("prerequisites", "Điều kiện tiên quyết"),
                 Map.entry("status", "Trạng thái"), Map.entry("is_featured", "Khóa học nổi bật"),
                 Map.entry("featured", "Khóa học nổi bật"), Map.entry("enrollment_count", "Số lượt đăng ký"),
-                Map.entry("rating", "Đánh giá"), Map.entry("created_at", "Ngày tạo"),
+                Map.entry("created_at", "Ngày tạo"),
                 Map.entry("created_date", "Ngày tạo"), Map.entry("updated_at", "Ngày cập nhật"),
                 Map.entry("published_at", "Ngày xuất bản"), Map.entry("published_date", "Ngày xuất bản"));
         NumberFormat moneyFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"));
         Set<String> hiddenFields = Set.of("thumbnail_url", "id", "title", "course_title", "created_at",
-                "created_date", "is_featured", "featured", "slug");
+                "created_date", "is_featured", "featured", "slug", "rating");
         return course.entrySet().stream().filter(entry -> !hiddenFields.contains(entry.getKey().toLowerCase(Locale.ROOT)))
                 .map(entry -> {
             String key = entry.getKey(); Object value = entry.getValue();
             Map<String, Object> field = new LinkedHashMap<>();
             field.put("label", labels.getOrDefault(key.toLowerCase(Locale.ROOT), key));
-            field.put("rating", "rating".equalsIgnoreCase(key));
             field.put("status", "status".equalsIgnoreCase(key));
             if ("status".equalsIgnoreCase(key)) {
                 String status = value == null ? "" : value.toString();
@@ -252,9 +251,6 @@ public class ManagerCourseController {
                 field.put("statusClass", "PUBLISHED".equalsIgnoreCase(normalizedStatus) || "published".equalsIgnoreCase(normalizedStatus)
                         ? "bg-success"
                         : "ARCHIVED".equalsIgnoreCase(normalizedStatus) ? "bg-secondary" : "bg-warning text-dark");
-            } else if ("rating".equalsIgnoreCase(key) && value instanceof Number number) {
-                field.put("ratingValue", Math.max(0, Math.min(5, number.doubleValue())));
-                field.put("displayValue", number.doubleValue() + "/5");
             } else if (("price".equalsIgnoreCase(key) || "discount_price".equalsIgnoreCase(key)) && value instanceof Number number) {
                 field.put("displayValue", moneyFormat.format(number.doubleValue()) + " VND");
             } else {
@@ -285,13 +281,23 @@ public class ManagerCourseController {
 
         Double basePrice = parsePriceField(price, "price", true, errors);
         Double promotionalPrice = parsePriceField(discountPrice, "discountPrice", false, errors);
-        if (basePrice != null && promotionalPrice != null && promotionalPrice > basePrice) {
-            errors.put("discountPrice", "Giá ưu đãi không được cao hơn giá gốc.");
+        if (promotionalPrice != null) {
+            if (promotionalPrice <= 0) {
+                errors.put("discountPrice", "Giá ưu đãi phải lớn hơn 0 nếu có.");
+            } else if (basePrice != null && promotionalPrice >= basePrice) {
+                errors.put("discountPrice", "Giá ưu đãi không được cao hơn hoặc bằng giá gốc.");
+            }
         }
 
-        checkMaxLength(shortDescription, 500, "shortDescription", "Mô tả ngắn", errors);
+        String cleanShortDesc = shortDescription == null ? "" : shortDescription.trim();
+        if (cleanShortDesc.isEmpty()) errors.put("shortDescription", "Vui lòng nhập mô tả ngắn.");
+        else if (cleanShortDesc.length() > 500) errors.put("shortDescription", "Mô tả ngắn tối đa 500 ký tự.");
+
+        String cleanObjectives = objectives == null ? "" : objectives.trim();
+        if (cleanObjectives.isEmpty()) errors.put("objectives", "Vui lòng nhập mục tiêu khóa học.");
+        else if (cleanObjectives.length() > 5000) errors.put("objectives", "Mục tiêu khóa học tối đa 5000 ký tự.");
+
         checkMaxLength(description, 2000, "description", "Mô tả chi tiết", errors);
-        checkMaxLength(objectives, 5000, "objectives", "Mục tiêu khóa học", errors);
         checkMaxLength(prerequisites, 2000, "prerequisites", "Điều kiện tiên quyết", errors);
         checkMaxLength(targetAudience, 2000, "targetAudience", "Đối tượng học viên", errors);
 
@@ -315,14 +321,19 @@ public class ManagerCourseController {
             return null;
         }
         try {
-            double parsed = Double.parseDouble(value);
-            if (!Double.isFinite(parsed) || parsed < 0) {
-                errors.put(field, "Giá phải là số từ 0 trở lên.");
+            // Giá lưu trong DB là Double nên form sửa điền sẵn dạng "500000.0": chấp nhận phần thập phân bằng 0.
+            java.math.BigDecimal parsed = new java.math.BigDecimal(value);
+            if (parsed.signum() < 0) {
+                errors.put(field, "Giá phải là số nguyên từ 0 trở lên.");
                 return null;
             }
-            return parsed;
-        } catch (NumberFormatException exception) {
-            errors.put(field, "Vui lòng nhập một giá trị số hợp lệ.");
+            if (parsed.stripTrailingZeros().scale() > 0) {
+                errors.put(field, "Vui lòng nhập một số nguyên hợp lệ.");
+                return null;
+            }
+            return (double) parsed.longValueExact();
+        } catch (NumberFormatException | ArithmeticException exception) {
+            errors.put(field, "Vui lòng nhập một số nguyên hợp lệ.");
             return null;
         }
     }
@@ -406,7 +417,7 @@ public class ManagerCourseController {
             publicUrl = ("http".equalsIgnoreCase(parsed.getScheme()) || "https".equalsIgnoreCase(parsed.getScheme()))
                     && parsed.getHost() != null && parsed.getUserInfo() == null;
         } catch (IllegalArgumentException ignored) { }
-        boolean uploadedImage = url.matches("^/uploads/courses/[A-Za-z0-9-]+\\.(?i:jpg|png|webp|gif)$");
+        boolean uploadedImage = url.matches("^/uploads/courses/[A-Za-z0-9-]+\\.(?i:jpg|jpeg|png)$");
         if (url.length() > 500 || (!publicUrl && !uploadedImage)) {
             throw new IllegalArgumentException("Đường dẫn ảnh phải là URL http/https hợp lệ hoặc ảnh đã tải lên, tối đa 500 ký tự.");
         }
@@ -415,6 +426,15 @@ public class ManagerCourseController {
     private String resolveThumbnailUrl(String value, MultipartFile imageFile) throws java.io.IOException {
         if (courseImageStorageService.hasFile(imageFile)) return courseImageStorageService.store(imageFile);
         return validThumbnailUrl(value);
+    }
+    /** Hiển thị giá dạng số nguyên ("500000" thay vì "500000.0") để form sửa gửi lại đúng định dạng. */
+    private Object formatPriceForForm(Object value) {
+        if (value instanceof Number number) {
+            double amount = number.doubleValue();
+            if (amount == Math.rint(amount) && !Double.isInfinite(amount)) return String.valueOf((long) amount);
+            return java.math.BigDecimal.valueOf(amount).toPlainString();
+        }
+        return value;
     }
     private Double validPrice(String price) {
         Double parsed = parseOptionalPrice(price);

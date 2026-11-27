@@ -12,6 +12,7 @@ import com.jeps.modules.course.repository.CourseRepository;
 import com.jeps.modules.course.repository.LessonRepository;
 import com.jeps.modules.learningpath.entity.LearningPath;
 import com.jeps.modules.learningpath.repository.LearningPathRepository;
+import com.jeps.modules.learningpath.service.LearnerVisibleLessons;
 import com.jeps.modules.learningpath.service.LessonProgressService;
 import com.jeps.modules.course.service.CourseRegistrationService;
 import lombok.RequiredArgsConstructor;
@@ -146,7 +147,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         LearningPathProgressDto progressDto = parseProgressDto(lp != null ? lp.getLessonProgress() : null);
 
         // 5. Freeze legacy progress count if not yet frozen
-        List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+        List<Lesson> courseLessons = LearnerVisibleLessons.filter(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId));
         int totalLessons = courseLessons.size();
 
         int currentPercent = reg.getProgressPercent() != null ? reg.getProgressPercent() : 0;
@@ -280,7 +281,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
                 }
             } else if (courseId != null && lessonId != null) {
                 // Support 0-based or non-contiguous order_index by checking the lesson's rank in sorted course lessons
-                List<Lesson> sorted = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+                List<Lesson> sorted = LearnerVisibleLessons.filter(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId));
                 for (int i = 0; i < Math.min(legacyCount, sorted.size()); i++) {
                     if (sorted.get(i).getId().equals(lessonId)) {
                         return true;
@@ -302,7 +303,7 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         if (!courseRegistrationService.isUserEnrolled(userId, courseId)) {
             return completedIds;
         }
-        List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId);
+        List<Lesson> courseLessons = LearnerVisibleLessons.filter(lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId));
         if (courseLessons.isEmpty()) {
             return completedIds;
         }

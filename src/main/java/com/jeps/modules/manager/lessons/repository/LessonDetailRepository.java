@@ -29,7 +29,9 @@ public class LessonDetailRepository {
         try {
             return jdbcTemplate.query(
                             """
-                            SELECT lesson_id, skill_type, source_entry_id, audio_url, body, payload::text AS payload
+                            SELECT lesson_id, skill_type,
+                                   COALESCE(kanji_entry_id, grammar_id, vocabulary_entry_id) AS source_entry_id,
+                                   audio_url, body, payload::text AS payload
                             FROM lesson_details
                             WHERE lesson_id = ?
                             """,
@@ -41,21 +43,31 @@ public class LessonDetailRepository {
         }
     }
 
+    /**
+     * Saves the detail row. {@code sourceEntryId} is stored in the FK column that matches the skill
+     * (kanji_entry_id / grammar_id / vocabulary_entry_id); other skills have no dictionary link.
+     */
     public void save(long lessonId, String skillValue, Long sourceEntryId,
                      String audioUrl, String body, String payloadJson) {
+        Long kanjiEntryId = "KANJI".equals(skillValue) ? sourceEntryId : null;
+        Long grammarId = "GRAMMAR".equals(skillValue) ? sourceEntryId : null;
+        Long vocabularyEntryId = "VOCABULARY".equals(skillValue) ? sourceEntryId : null;
         jdbcTemplate.update("""
                         INSERT INTO lesson_details
-                            (lesson_id, skill_type, source_entry_id, audio_url, body, payload, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?::jsonb, NOW())
+                            (lesson_id, skill_type, kanji_entry_id, grammar_id, vocabulary_entry_id,
+                             audio_url, body, payload, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, NOW())
                         ON CONFLICT (lesson_id) DO UPDATE
                         SET skill_type = EXCLUDED.skill_type,
-                            source_entry_id = EXCLUDED.source_entry_id,
+                            kanji_entry_id = EXCLUDED.kanji_entry_id,
+                            grammar_id = EXCLUDED.grammar_id,
+                            vocabulary_entry_id = EXCLUDED.vocabulary_entry_id,
                             audio_url = EXCLUDED.audio_url,
                             body = EXCLUDED.body,
                             payload = EXCLUDED.payload,
                             updated_at = NOW()
                         """,
-                lessonId, skillValue, sourceEntryId, audioUrl, body, payloadJson);
+                lessonId, skillValue, kanjiEntryId, grammarId, vocabularyEntryId, audioUrl, body, payloadJson);
     }
 
     public void delete(long lessonId) {

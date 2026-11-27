@@ -114,10 +114,10 @@ public class LessonService {
                 input.freePreview());
 
         int orderIndex = inactiveInput.orderIndex() == null || inactiveInput.orderIndex() < 1
-                ? lessonRepository.nextOrderIndex(courseId, inactiveInput.skill())
+                ? lessonRepository.nextOrderIndex(courseId)
                 : inactiveInput.orderIndex();
         long lessonId = lessonRepository.insert(courseId, inactiveInput, orderIndex);
-        normalizeOrders(courseId, inactiveInput.skill());
+        normalizeOrders(courseId);
         return lessonId;
     }
 
@@ -146,9 +146,9 @@ public class LessonService {
                 input.durationMinutes(),
                 input.freePreview());
 
-        int orderIndex = lessonRepository.nextOrderIndex(courseId, null);
+        int orderIndex = lessonRepository.nextOrderIndex(courseId);
         long lessonId = lessonRepository.insert(courseId, inactiveInput, orderIndex);
-        normalizeOrders(courseId, null);
+        normalizeOrders(courseId);
         return lessonId;
     }
 
@@ -170,12 +170,8 @@ public class LessonService {
         lessonRepository.update(lessonId, input, orderIndex);
 
         boolean orderChanged = orderIndex != existing.order();
-        boolean skillChanged = !Objects.equals(existing.skillValue(), input.skill());
-        if (orderChanged || skillChanged) {
-            normalizeOrders(existing.courseId(), input.skill());
-            if (skillChanged) {
-                normalizeOrders(existing.courseId(), existing.skillValue());
-            }
+        if (orderChanged) {
+            normalizeOrders(existing.courseId());
         }
     }
 
@@ -186,15 +182,29 @@ public class LessonService {
         if (SkillTypeEnum.fromParam(existing.skillValue()) != null) {
             throw new IllegalArgumentException("Bài học này không thuộc cột Khác.");
         }
-        LessonInput input = validate(rawInput, true);
+        LessonInput validated = validate(rawInput, true);
 
         boolean duplicate = lessonRepository.findByCourse(existing.courseId()).stream()
-                .anyMatch(r -> r.id() != lessonId && Objects.equals(r.sectionName(), input.sectionName()) && r.title().equalsIgnoreCase(input.title()));
+                .anyMatch(r -> r.id() != lessonId && Objects.equals(r.sectionName(), validated.sectionName()) && r.title().equalsIgnoreCase(validated.title()));
         if (duplicate) {
-            throw new IllegalArgumentException("Tên bài học “" + input.title() + "” đã tồn tại trong chương này.");
+            throw new IllegalArgumentException("Tên bài học “" + validated.title() + "” đã tồn tại trong chương này.");
         }
 
+        // Bài thi cột mốc (skill_type = EXAM/MILESTONE) cũng nằm ở cột Khác: giữ nguyên dấu hiệu đó khi sửa,
+        // nếu không bài thi sẽ bị biến thành bài học thường.
+        String rawSkillType = lessonRepository.findRawSkillType(lessonId).orElse(null);
+        LessonInput input = isMilestoneMarker(rawSkillType)
+                ? new LessonInput(validated.title(), validated.sectionName(), validated.description(), validated.content(),
+                        rawSkillType, validated.status(), validated.orderIndex(), validated.durationMinutes(),
+                        validated.freePreview())
+                : validated;
+
         lessonRepository.update(lessonId, input, existing.order());
+    }
+
+    private boolean isMilestoneMarker(String rawSkillType) {
+        return rawSkillType != null
+                && ("EXAM".equalsIgnoreCase(rawSkillType.trim()) || "MILESTONE".equalsIgnoreCase(rawSkillType.trim()));
     }
 
     @Transactional
@@ -205,7 +215,7 @@ public class LessonService {
             throw new IllegalArgumentException("Bài học này đã có học viên học, không thể xóa!");
         }
         lessonRepository.delete(lessonId);
-        normalizeOrders(existing.courseId(), existing.skillValue());
+        normalizeOrders(existing.courseId());
     }
 
     @Transactional
@@ -222,35 +232,6 @@ public class LessonService {
         courseService.findCourse(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Khóa học đã chọn không còn tồn tại."));
         lessonRepository.clearSection(courseId, sectionName);
-    }
-
-    /**
-     * Creates a hidden copy right after the source lesson. The copy is never published
-     * automatically, so a duplicate can be reviewed before it reaches learners.
-     */
-    @Transactional
-    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
-    public long duplicate(long lessonId) {
-        LessonRow source = requireLesson(lessonId);
-        String skill = resolveSkillValue(source.skillValue());
-
-        LessonInput copy = new LessonInput(
-                duplicateTitle(source.title()),
-                source.sectionName(),
-                source.description(),
-                source.content(),
-                skill,
-                LessonStatusEnum.INACTIVE.name(),
-                source.order(),
-                source.durationMinutes(),
-                source.freePreview());
-
-        List<Long> order = new ArrayList<>(lessonRepository.findIdsInOrder(source.courseId(), skill));
-        long copyId = lessonRepository.insert(source.courseId(), copy, source.order());
-        int sourceIndex = order.indexOf(source.id());
-        order.add(sourceIndex < 0 ? order.size() : sourceIndex + 1, copyId);
-        applyOrder(order);
-        return copyId;
     }
 
     @Transactional
@@ -306,6 +287,7 @@ public class LessonService {
      * Reorders lessons within a specific chapter and skill column based on submittedIds.
      */
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public void reorderInColumn(long courseId, String chapter, String columnSkillValues, List<Long> submittedIds) {
         List<LessonRow> allLessons = new ArrayList<>(lessonRepository.findByCourse(courseId));
 
@@ -378,6 +360,7 @@ public class LessonService {
 
     /** Moves a lesson one place up or down inside its skill or chapter column. Returns {@code false} when it cannot move. */
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public boolean move(long lessonId, int direction) {
         return moveInColumn(lessonId, direction, null, null);
     }
@@ -387,6 +370,7 @@ public class LessonService {
      * lessons of the skill exactly, otherwise the whole request is rejected.
      */
     @Transactional
+    @CacheEvict(value = {"lessons", "courseDetails"}, allEntries = true)
     public void saveOrder(long courseId, String skill, List<Long> submittedIds) {
         String skillValue = resolveSkillValue(skill);
         List<Long> currentIds = lessonRepository.findIdsInOrder(courseId, skillValue);
@@ -395,7 +379,8 @@ public class LessonService {
             throw new IllegalArgumentException(
                     "Danh sách bài học đã thay đổi trong lúc sắp xếp. Vui lòng tải lại trang rồi thử lại.");
         }
-        applyOrder(uniqueIds);
+        // Chỉ hoán đổi vị trí các bài của kỹ năng này, giữ nguyên chỗ của các bài khác trong khóa học.
+        applyColumnOrder(new ArrayList<>(lessonRepository.findByCourse(courseId)), uniqueIds);
     }
 
     private void applyOrder(List<Long> orderedIds) {
@@ -403,9 +388,12 @@ public class LessonService {
         lessonRepository.batchUpdateOrders(orderedIds);
     }
 
-    private void normalizeOrders(long courseId, String skill) {
-        String skillValue = skill == null ? null : resolveSkillValue(skill);
-        applyOrder(lessonRepository.findIdsInOrder(courseId, skillValue));
+    /**
+     * order_index được đánh liên tục 1..N trên toàn khóa học (không theo từng kỹ năng),
+     * vì cả màn hình quản lý lẫn lộ trình học viên đều sắp xếp bài theo thứ tự toàn khóa.
+     */
+    private void normalizeOrders(long courseId) {
+        applyOrder(lessonRepository.findByCourse(courseId).stream().map(LessonRow::id).toList());
     }
 
     private LessonRow requireLesson(long lessonId) {
@@ -416,16 +404,6 @@ public class LessonService {
     private String resolveSkillValue(String rawSkill) {
         SkillTypeEnum skill = SkillTypeEnum.fromParam(rawSkill);
         return skill == null ? SkillTypeEnum.VOCABULARY.getValue() : skill.getValue();
-    }
-
-    private String duplicateTitle(String title) {
-        String suffix = " (bản sao)";
-        String base = title == null || title.isBlank() ? "Bài học" : title.trim();
-        String candidate = base + suffix;
-        if (candidate.length() <= MAX_TITLE_LENGTH) {
-            return candidate;
-        }
-        return base.substring(0, MAX_TITLE_LENGTH - suffix.length()).trim() + suffix;
     }
 
     private LessonInput validate(LessonInput rawInput, boolean allowOtherSkill) {

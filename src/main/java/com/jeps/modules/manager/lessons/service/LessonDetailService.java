@@ -871,6 +871,7 @@ public class LessonDetailService {
         validateDetail(skill, params);
         Long entryId = sourceEntryId;
         if (saveToLibrary && supportsLibrary(skill)) entryId = createLibraryEntry(skill, params, level);
+        entryId = existingEntryOrNull(skill, entryId);
         Map<String, Object> payload = payload(params, skill);
         String json;
         try { json = objectMapper.writeValueAsString(payload); }
@@ -883,10 +884,19 @@ public class LessonDetailService {
         return entryId;
     }
 
-    public void copyDetail(long sourceLessonId, long targetLessonId) {
-        detailRepository.findByLessonId(sourceLessonId).ifPresent(detail -> detailRepository.save(
-                targetLessonId, detail.skillValue(), detail.sourceEntryId(), detail.audioUrl(),
-                detail.body(), detail.payload() == null ? "{}" : detail.payload()));
+    /**
+     * lesson_details has FKs to the dictionary tables, so only keep an entry id that really exists in
+     * the dictionary of this skill; anything else (other skill, deleted entry, 0) is stored as no link.
+     */
+    private Long existingEntryOrNull(SkillTypeEnum skill, Long entryId) {
+        if (entryId == null || entryId <= 0) return null;
+        boolean exists = switch (skill) {
+            case KANJI -> libraryRepository.findKanjiEntry(entryId).isPresent();
+            case GRAMMAR -> libraryRepository.findGrammarPoint(entryId).isPresent();
+            case VOCABULARY -> libraryRepository.findVocabularyEntry(entryId).isPresent();
+            default -> false;
+        };
+        return exists ? entryId : null;
     }
 
     private Map<String, Object> payload(MultiValueMap<String, String> params, SkillTypeEnum skill) {

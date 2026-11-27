@@ -1403,8 +1403,14 @@
                         </div>
                         <div class="modal-body px-4 py-4">
                             <!-- Form báo nghỉ mới -->
-                            <form th:action="@{/learning-path/leave}" method="post">
+                            <form th:action="@{/learning-path/leave}" method="post" id="leaveForm"
+                                  th:attr="data-study-days=${path.studyDays != null ? #strings.listJoin(path.studyDays, ',') : ''}">
                                 <input type="hidden" name="courseId" th:value="${path.courseId}">
+                                <div class="alert alert-warning small py-2 d-none" id="leaveStudyDayError" role="alert"></div>
+                                <p class="small text-secondary mb-3" th:if="${path.studyDaysText != null}">
+                                    <i class="bi bi-info-circle me-1"></i> Chỉ báo nghỉ vào ngày học
+                                    (<span th:text="${path.studyDaysText}">Thứ 2, Thứ 4</span>). Ngày không học không cần báo nghỉ.
+                                </p>
 
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
@@ -1442,6 +1448,46 @@
                                     </button>
                                 </div>
                             </form>
+                            <script>
+                                (function () {
+                                    var form = document.getElementById('leaveForm');
+                                    if (!form) return;
+                                    var studyDays = (form.getAttribute('data-study-days') || '').split(',').filter(Boolean);
+                                    if (studyDays.length === 0) return;
+                                    // JS getDay(): 0 = Chủ nhật ... 6 = Thứ 7
+                                    var dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+                                    var labels = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+                                    var errorBox = document.getElementById('leaveStudyDayError');
+
+                                    function parseDate(value) {
+                                        if (!value) return null;
+                                        var parts = value.split('-');
+                                        return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+                                    }
+                                    function describe(date) {
+                                        var dd = String(date.getDate()).padStart(2, '0');
+                                        var mm = String(date.getMonth() + 1).padStart(2, '0');
+                                        return labels[date.getDay()] + ', ' + dd + '/' + mm + '/' + date.getFullYear();
+                                    }
+
+                                    form.addEventListener('submit', function (event) {
+                                        var start = parseDate(form.elements['startDate'].value);
+                                        var end = parseDate(form.elements['endDate'].value);
+                                        var invalid = [];
+                                        if (start && studyDays.indexOf(dayNames[start.getDay()]) < 0) invalid.push(describe(start));
+                                        if (end && (!start || end.getTime() !== start.getTime())
+                                                && studyDays.indexOf(dayNames[end.getDay()]) < 0) invalid.push(describe(end));
+                                        if (invalid.length > 0) {
+                                            event.preventDefault();
+                                            errorBox.textContent = 'Chỉ có thể báo nghỉ vào ngày học. ' + invalid.join(' và ')
+                                                    + ' không phải ngày học của bạn, không cần báo nghỉ.';
+                                            errorBox.classList.remove('d-none');
+                                        } else {
+                                            errorBox.classList.add('d-none');
+                                        }
+                                    });
+                                })();
+                            </script>
 
                             <!-- Danh sách các đợt đã báo nghỉ -->
                             <div th:if="${path.leaveRecords != null and !path.leaveRecords.isEmpty()}" class="mt-4 pt-4 border-top">
@@ -1471,7 +1517,8 @@
                                                     <span th:if="${!r.activeNow and !r.upcoming}" class="badge bg-light text-secondary border rounded-pill">Đã qua</span>
                                                 </td>
                                                 <td class="text-end">
-                                                    <form th:action="@{/learning-path/leave/cancel}" method="post" class="d-inline">
+                                                    <form th:action="@{/learning-path/leave/cancel}" method="post" class="d-inline"
+                                                          th:if="${r.activeNow or r.upcoming}">
                                                         <input type="hidden" name="courseId" th:value="${path.courseId}">
                                                         <input type="hidden" name="leaveId" th:value="${r.id}">
                                                         <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2 py-0"
@@ -1525,13 +1572,22 @@
                         </h6>
                         <div class="d-flex flex-wrap gap-2">
                             <div class="p-3 rounded-3 text-center border flex-grow-1"
-                                 th:each="day : ${#strings.arraySplit('T2,T3,T4,T5,T6,T7,CN', ',')}"
-                                 th:with="isActive=${path.studyDaysText != null and #strings.contains(path.studyDaysText, day == 'T2' ? 'Thứ 2' : (day == 'T3' ? 'Thứ 3' : (day == 'T4' ? 'Thứ 4' : (day == 'T5' ? 'Thứ 5' : (day == 'T6' ? 'Thứ 6' : (day == 'T7' ? 'Thứ 7' : 'Chủ Nhật'))))))}"
-                                 th:style="${isActive ? 'background-color: #EFF6FF; border-color: #93C5FD !important;' : 'background-color: #F8FAFC; border-color: #E2E8F0 !important; opacity: 0.6;'}">
-                                <div class="fw-bold fs-6" th:classappend="${isActive ? 'text-primary' : 'text-muted'}" th:text="${day}">T2</div>
+                                 th:each="dayPair : ${#strings.arraySplit('T2:MONDAY,T3:TUESDAY,T4:WEDNESDAY,T5:THURSDAY,T6:FRIDAY,T7:SATURDAY,CN:SUNDAY', ',')}"
+                                 th:with="day=${#strings.substringBefore(dayPair, ':')},
+                                          dayCode=${#strings.substringAfter(dayPair, ':')},
+                                          isToday=${todayDayOfWeek != null and todayDayOfWeek == #strings.substringAfter(dayPair, ':')},
+                                          isLeave=${currentWeekLeaveDays != null and #sets.contains(currentWeekLeaveDays, #strings.substringAfter(dayPair, ':'))},
+                                          isStudyDay=${path.studyDays == null or path.studyDays.isEmpty() or #lists.contains(path.studyDays, #strings.substringAfter(dayPair, ':'))},
+                                          isActive=${isStudyDay and !isLeave}"
+                                 th:style="${isLeave ? 'background-color: #FFFBEB; border-color: #FCD34D !important;' : (isActive ? 'background-color: #EFF6FF; border-color: #93C5FD !important;' : 'background-color: #F8FAFC; border-color: #E2E8F0 !important; opacity: 0.6;')}"
+                                 th:classappend="${isToday ? 'border-2 border-primary' : ''}">
+                                <div class="fw-bold fs-6" th:classappend="${isLeave ? 'text-warning-emphasis' : (isActive ? 'text-primary' : 'text-muted')}" th:text="${day}">T2</div>
+                                <div class="small text-secondary" th:if="${currentWeekDates != null}"
+                                     th:text="${currentWeekDates.get(dayCode)}">23/11/2026</div>
+                                <div class="small fw-semibold text-primary" th:if="${isToday}">Hôm nay</div>
                                 <span class="badge rounded-pill mt-1"
-                                      th:classappend="${isActive ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary'}"
-                                      th:text="${isActive ? 'Ngày học' : 'Nghỉ'}">Ngày học</span>
+                                      th:classappend="${isLeave ? 'bg-warning text-dark' : (isActive ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary')}"
+                                      th:text="${isLeave ? 'Báo nghỉ' : (isActive ? 'Ngày học' : 'Nghỉ')}">Ngày học</span>
                             </div>
                         </div>
                     </div>

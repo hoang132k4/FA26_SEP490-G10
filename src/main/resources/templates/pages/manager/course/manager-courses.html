@@ -93,13 +93,13 @@
                             <div class="col-12 col-lg-8">
                                 <div class="row g-3">
                                     <div class="col-12 col-md-8">
-                                        <label class="form-label" for="courseName">Tên khóa học</label>
+                                        <label class="form-label" for="courseName">Tên khóa học <span class="text-danger">*</span></label>
                                         <input class="form-control" id="courseName" name="name" required maxlength="255" th:value="${courseForm['name']}"
                                                th:classappend="${courseErrors != null and courseErrors['name'] != null ? ' is-invalid' : ''}">
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['name'] != null}" th:text="${courseErrors['name']}"></div>
                                     </div>
                                     <div class="col-12 col-md-4">
-                                        <label class="form-label" for="courseLevel">Cấp độ JLPT</label>
+                                        <label class="form-label" for="courseLevel">Cấp độ JLPT <span class="text-danger">*</span></label>
                                         <select class="form-select" id="courseLevel" name="level" required
                                                 th:classappend="${courseErrors != null and courseErrors['level'] != null ? ' is-invalid' : ''}">
                                             <option th:each="level : ${ {'N5','N4','N3','N2','N1'} }" th:value="${level}" th:text="${level}" th:selected="${courseForm['level'] == level}">N5</option>
@@ -107,13 +107,13 @@
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['level'] != null}" th:text="${courseErrors['level']}"></div>
                                     </div>
                                     <div class="col-12 col-md-6">
-                                        <label class="form-label" for="courseCode">Mã khóa học</label>
+                                        <label class="form-label" for="courseCode">Mã khóa học <span class="text-danger">*</span></label>
                                         <input class="form-control" id="courseCode" name="code" required maxlength="50" th:value="${courseForm['code']}"
                                                th:classappend="${courseErrors != null and courseErrors['code'] != null ? ' is-invalid' : ''}">
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['code'] != null}" th:text="${courseErrors['code']}"></div>
                                     </div>
                                     <div class="col-12 col-md-6">
-                                        <label class="form-label" for="coursePrice">Giá khóa học (VND)</label>
+                                        <label class="form-label" for="coursePrice">Giá khóa học (VND) <span class="text-danger">*</span></label>
                                         <input class="form-control" id="coursePrice" name="price" type="number" min="0" step="1000" required th:value="${courseForm['price']}"
                                                th:classappend="${courseErrors != null and courseErrors['price'] != null ? ' is-invalid' : ''}">
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['price'] != null}" th:text="${courseErrors['price']}"></div>
@@ -125,7 +125,7 @@
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['discountPrice'] != null}" th:text="${courseErrors['discountPrice']}"></div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label" for="courseShortDescription">Mô tả ngắn</label>
+                                        <label class="form-label" for="courseShortDescription">Mô tả ngắn <span class="text-danger">*</span></label>
                                         <textarea class="form-control" id="courseShortDescription" name="shortDescription" rows="2" maxlength="500" th:text="${courseForm['shortDescription']}"
                                                   th:classappend="${courseErrors != null and courseErrors['shortDescription'] != null ? ' is-invalid' : ''}"></textarea>
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['shortDescription'] != null}" th:text="${courseErrors['shortDescription']}"></div>
@@ -137,7 +137,7 @@
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['description'] != null}" th:text="${courseErrors['description']}"></div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label" for="courseObjectives">Mục tiêu khóa học</label>
+                                        <label class="form-label" for="courseObjectives">Mục tiêu khóa học <span class="text-danger">*</span></label>
                                         <textarea class="form-control" id="courseObjectives" name="objectives" rows="3" maxlength="5000" th:text="${courseForm['objectives']}"
                                                   th:classappend="${courseErrors != null and courseErrors['objectives'] != null ? ' is-invalid' : ''}"></textarea>
                                         <div class="invalid-feedback" th:if="${courseErrors != null and courseErrors['objectives'] != null}" th:text="${courseErrors['objectives']}"></div>

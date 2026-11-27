@@ -1069,15 +1069,6 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
                     <li>
-                        <form th:action="@{/manager/lessons/{id}/duplicate(id=${lesson.id})}" method="post">
-                            <input type="hidden" name="courseId" th:value="${selectedCourseId}">
-                            <input type="hidden" name="skill" th:value="${selectedSkill}">
-                            <button type="submit" class="dropdown-item py-2">
-                                <i class="bi bi-copy me-2"></i>Nhân bản bài học
-                            </button>
-                        </form>
-                    </li>
-                    <li>
                         <form th:action="@{/manager/lessons/{id}/status(id=${lesson.id})}" method="post">
                             <input type="hidden" name="courseId" th:value="${selectedCourseId}">
                             <input type="hidden" name="skill" th:value="${selectedSkill}">

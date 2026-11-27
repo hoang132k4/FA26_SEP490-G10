@@ -322,6 +322,9 @@ public final class LearningPathDtos {
         @Max(value = 105, message = "Số giờ học tối đa mỗi tuần là 105 giờ để tránh quá tải")
         private Integer weeklyHours;
 
+        // Khớp giới hạn của ô nhập trên giao diện (min 0.5, max 12) để không gửi tay được giá trị vô lý.
+        @jakarta.validation.constraints.DecimalMin(value = "0.5", message = "Số giờ học mỗi ngày tối thiểu là 0.5 giờ")
+        @jakarta.validation.constraints.DecimalMax(value = "12.0", message = "Số giờ học mỗi ngày tối đa là 12 giờ")
         private BigDecimal dailyHours;
 
         private List<String> studyDays;

@@ -118,7 +118,18 @@ public class CourseRepository {
     /** Returns every persisted course column for the manager detail view. */
     public Optional<Map<String, Object>> findDetailsById(long courseId) {
         return jdbcTemplate.queryForList("SELECT * FROM courses WHERE course_id = ?", courseId)
-                .stream().findFirst();
+                .stream().findFirst()
+                .map(course -> {
+                    // Đếm trực tiếp số học viên có quyền học (ACTIVE/COMPLETED) thay vì tin cột đếm
+                    // courses.enrollment_count, vốn có thể lệch khi đăng ký đồng thời, bị hủy/xóa
+                    // hoặc khi dữ liệu được thêm thẳng vào DB.
+                    Long enrolled = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM course_registrations WHERE course_id = ? "
+                                    + "AND UPPER(status) IN ('ACTIVE', 'COMPLETED')",
+                            Long.class, courseId);
+                    course.put("enrollment_count", enrolled == null ? 0L : enrolled);
+                    return course;
+                });
     }
 
     public boolean existsByCode(String code, Long excludedCourseId) {

@@ -15,6 +15,7 @@ import com.jeps.modules.exam.service.ExamService;
 import com.jeps.modules.learningpath.entity.LearningPath;
 import com.jeps.modules.learningpath.repository.LearningPathRepository;
 import com.jeps.modules.learningpath.service.LearningPathService;
+import com.jeps.modules.learningpath.service.LearnerVisibleLessons;
 import com.jeps.modules.learningpath.service.LessonProgressService;
 import com.jeps.modules.learningpath.service.SkillAnalysisService;
 import com.jeps.modules.learningpath.service.SkillFocusRecommendationService;
@@ -31,6 +32,7 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -56,6 +58,8 @@ public class LearningPathServiceImpl implements LearningPathService {
     private final ObjectMapper objectMapper;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    /** Lựa chọn lớn nhất trên giao diện chế độ bù bài là +60 phút/ngày. */
+    private static final int MAX_CATCH_UP_EXTRA_MINUTES = 60;
 
     @Override
     @Transactional
@@ -138,10 +142,8 @@ public class LearningPathServiceImpl implements LearningPathService {
                 ? course.getTitle()
                 : "Khóa học #" + lp.getCourseId();
         String courseLevel = resolveLevelFromCourse(course);
-        if (!"Chưa xác định".equalsIgnoreCase(courseLevel) && !courseLevel.equalsIgnoreCase(lp.getTargetLevel())) {
-            lp.setTargetLevel(courseLevel);
-            learningPathRepository.save(lp);
-        }
+        // Chỉ dùng cấp độ khóa học để hiển thị, không ghi đè vào DB mỗi lần mở trang (GET không được có tác dụng phụ).
+        String effectiveTargetLevel = !"Chưa xác định".equalsIgnoreCase(courseLevel) ? courseLevel : lp.getTargetLevel();
 
         // Build enrolled course options for Course Switcher
         List<CourseOptionDto> enrolledCourses = publishedRegistrations.stream()
@@ -156,7 +158,7 @@ public class LearningPathServiceImpl implements LearningPathService {
 
         // 1. Retrieve Lessons - Canonical sequence strictly preserved by order_index
         // ASC
-        List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(lp.getCourseId());
+        List<Lesson> lessons = LearnerVisibleLessons.filter(lessonRepository.findByCourseIdOrderByOrderIndexAsc(lp.getCourseId()));
         Optional<CourseRegistration> regOpt = courseRegistrationRepository
                 .findByUserIdAndCourseId(user.getId(), lp.getCourseId());
 
@@ -180,22 +182,20 @@ public class LearningPathServiceImpl implements LearningPathService {
         int completedLessons = completedLessonIds.size();
         int remainingLessons = Math.max(0, totalLessons - completedLessons);
 
+        // Ngày bắt đầu hiệu lực chỉ được tính để hiển thị; chỉ lưu DB một lần khi lộ trình chưa có ngày bắt đầu.
         LocalDate pathScheduledDate = lp.getScheduledDate();
         if (pathScheduledDate == null) {
             pathScheduledDate = lp.getBaselineStartDate() != null
                     ? lp.getBaselineStartDate()
-                    : regOpt.map(r -> r.getRegisteredAt().toLocalDate()).orElse(LocalDate.now());
+                    : regOpt.map(CourseRegistration::getRegisteredAt).map(LocalDateTime::toLocalDate)
+                            .orElse(LocalDate.now());
             lp.setScheduledDate(pathScheduledDate);
             learningPathRepository.save(lp);
         } else if (completedLessons == 0 && pathScheduledDate.isBefore(LocalDate.now())) {
             pathScheduledDate = LocalDate.now();
-            lp.setScheduledDate(pathScheduledDate);
-            learningPathRepository.save(lp);
         } else if (completedLessons > 0 && pathScheduledDate.isAfter(LocalDate.now())) {
-            pathScheduledDate = regOpt.map(r -> r.getRegisteredAt().toLocalDate())
+            pathScheduledDate = regOpt.map(CourseRegistration::getRegisteredAt).map(LocalDateTime::toLocalDate)
                     .orElse(LocalDate.now());
-            lp.setScheduledDate(pathScheduledDate);
-            learningPathRepository.save(lp);
         }
 
         BigDecimal dailyHours = lp.getDailyHoursSetup() != null
@@ -226,6 +226,12 @@ public class LearningPathServiceImpl implements LearningPathService {
         }
 
         int extraDailyMinutes = catchUpMode ? catchUpExtraMinutes : 0;
+
+        // "Ngày bắt đầu" hiển thị là buổi học thực tế đầu tiên: bỏ qua ngày không học và ngày báo nghỉ.
+        // Lộ trình đã bắt đầu từ trước (ngày trong quá khứ) thì giữ nguyên ngày bắt đầu gốc.
+        LocalDate displayStartDate = (pathScheduledDate != null && !pathScheduledDate.isBefore(today))
+                ? findNextOrSameStudyDate(pathScheduledDate, studyDays, leaveDates)
+                : pathScheduledDate;
         int weeklyHours = Math.max(1, dailyHours.multiply(BigDecimal.valueOf(studyDays.size())).intValue());
 
         // Extract actual completion dates of completed lessons from lesson_progress
@@ -405,7 +411,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                 .courseId(lp.getCourseId())
                 .courseTitle(courseTitle)
                 .courseLevel(courseLevel)
-                .targetLevel(lp.getTargetLevel())
+                .targetLevel(effectiveTargetLevel)
                 .currentLevel(lp.getCurrentLevel() != null ? lp.getCurrentLevel() : "Chưa xác định")
                 .dailyHours(dailyHours)
                 .dailyHoursFormatted(
@@ -419,7 +425,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                 .daysUntilExam(daysUntilExam)
                 .examBufferDaysText(examBufferDaysText)
                 .scheduleMode(lp.getScheduleMode() != null ? lp.getScheduleMode() : "CUSTOM")
-                .startDateFormatted(pathScheduledDate != null ? pathScheduledDate.format(DATE_FORMATTER) : "--")
+                .startDateFormatted(displayStartDate != null ? displayStartDate.format(DATE_FORMATTER) : "--")
                 .projectedEndDateFormatted(projectedEndDate)
                 .baselineStartDate(baselineStart)
                 .baselineStartDateFormatted(baselineStart != null ? baselineStart.format(DATE_FORMATTER) : "--")
@@ -511,7 +517,7 @@ public class LearningPathServiceImpl implements LearningPathService {
                         .build())
                 .collect(Collectors.toList());
 
-        List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(lp.getCourseId());
+        List<Lesson> lessons = LearnerVisibleLessons.filter(lessonRepository.findByCourseIdOrderByOrderIndexAsc(lp.getCourseId()));
         Optional<CourseRegistration> regOpt = courseRegistrationRepository
                 .findByUserIdAndCourseId(user.getId(), lp.getCourseId());
 
@@ -538,7 +544,7 @@ public class LearningPathServiceImpl implements LearningPathService {
 
         LocalDate pathScheduledDate = lp.getScheduledDate();
         if (completedLessons > 0 && pathScheduledDate != null && pathScheduledDate.isAfter(LocalDate.now())) {
-            pathScheduledDate = regOpt.map(r -> r.getRegisteredAt().toLocalDate())
+            pathScheduledDate = regOpt.map(CourseRegistration::getRegisteredAt).map(LocalDateTime::toLocalDate)
                     .orElse(LocalDate.now().minusDays(1));
             lp.setScheduledDate(pathScheduledDate);
             learningPathRepository.save(lp);
@@ -1098,16 +1104,19 @@ public class LearningPathServiceImpl implements LearningPathService {
             List<LearningPathTimelineItemDto> originalItems, int completedCount,
             BigDecimal dailyHours, Set<DayOfWeek> studyDays, LocalDate newStartDate, Set<LocalDate> leaveDates) {
 
-        if (studyDays == null || studyDays.isEmpty()) {
-            studyDays = EnumSet.allOf(DayOfWeek.class);
-        }
+        // Sao chép để không sửa Set của người gọi (Set này còn được dùng để hiển thị ngày học trong preview).
+        Set<DayOfWeek> effectiveStudyDays = (studyDays == null || studyDays.isEmpty())
+                ? EnumSet.allOf(DayOfWeek.class)
+                : EnumSet.copyOf(studyDays);
 
         List<LearningPathTimelineItemDto> result = new ArrayList<>();
         LocalDate referenceDate = LocalDate.now();
-        LocalDate baseStartDate = (newStartDate != null && !newStartDate.isBefore(referenceDate))
+        LocalDate requestedStart = (newStartDate != null && !newStartDate.isBefore(referenceDate))
                 ? newStartDate
                 : referenceDate;
-        studyDays.add(baseStartDate.getDayOfWeek());
+        // Bắt đầu từ ngày học hợp lệ đầu tiên (không phải ngày nghỉ / ngày không chọn học),
+        // thay vì tự thêm thứ của ngày bắt đầu vào danh sách ngày học.
+        LocalDate baseStartDate = findNextOrSameStudyDate(requestedStart, effectiveStudyDays, leaveDates);
         LocalDate runningDate = baseStartDate;
 
         int dailyMinutesBudget = dailyHours != null ? dailyHours.multiply(BigDecimal.valueOf(60)).intValue() : 90;
@@ -1132,7 +1141,7 @@ public class LearningPathServiceImpl implements LearningPathService {
 
             accumulatedMinutesToday += duration;
             if (accumulatedMinutesToday > dailyMinutesBudget && accumulatedMinutesToday > duration) {
-                runningDate = findNextStudyDate(runningDate, studyDays, leaveDates);
+                runningDate = findNextStudyDate(runningDate, effectiveStudyDays, leaveDates);
                 accumulatedMinutesToday = duration;
             }
 
@@ -1267,7 +1276,7 @@ public class LearningPathServiceImpl implements LearningPathService {
 
         // Validate: Không cho phép thiết lập lại lịch học khi người dùng đã học xong
         // tất cả các bài học
-        List<Lesson> lessons = lessonRepository.findByCourseIdOrderByOrderIndexAsc(lp.getCourseId());
+        List<Lesson> lessons = LearnerVisibleLessons.filter(lessonRepository.findByCourseIdOrderByOrderIndexAsc(lp.getCourseId()));
         Optional<CourseRegistration> regOpt = courseRegistrationRepository
                 .findByUserIdAndCourseId(user.getId(), lp.getCourseId());
         int progressPercent = regOpt.map(CourseRegistration::getProgressPercent).orElse(0);
@@ -1287,6 +1296,10 @@ public class LearningPathServiceImpl implements LearningPathService {
                             : 7));
 
             if (request.getDailyHours() != null && request.getDailyHours().compareTo(BigDecimal.ZERO) > 0) {
+                if (request.getDailyHours().compareTo(BigDecimal.valueOf(0.5)) < 0
+                        || request.getDailyHours().compareTo(BigDecimal.valueOf(12)) > 0) {
+                    throw new IllegalArgumentException("Số giờ học mỗi ngày phải từ 0.5 đến 12 giờ.");
+                }
                 lp.setDailyHoursSetup(request.getDailyHours());
             } else if (request.getWeeklyHours() != null && request.getWeeklyHours() > 0) {
                 BigDecimal newDailyHours = BigDecimal.valueOf(request.getWeeklyHours())
@@ -1798,13 +1811,14 @@ public class LearningPathServiceImpl implements LearningPathService {
             return dates;
         }
 
-        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZoneId vnZone = ZoneId.systemDefault();
 
-        // 1. Gather active study dates across all registered learning paths of this user
+        // 1. Gather lesson completion dates of THIS course only: the streak is judged against this
+        //    course's study days and leave records, so lessons of other courses must not be mixed in.
         try {
             List<LearningPath> userPaths = learningPathRepository.findByUserIdOrderByScheduledDateDescIdDesc(userId);
             for (LearningPath p : userPaths) {
-                if (p.getCourseId() != null) {
+                if (p.getCourseId() != null && (courseId == null || courseId.equals(p.getCourseId()))) {
                     LearningPathProgressDto progressDto = lessonProgressService.getLessonProgress(userId,
                             p.getCourseId());
                     if (progressDto != null && progressDto.getLessons() != null) {
@@ -1887,6 +1901,40 @@ public class LearningPathServiceImpl implements LearningPathService {
         LearningPath lp = lpOpt.get();
         List<LeaveRecordDto> records = parseLeaveRecords(lp.getLeaveRecords());
 
+        // Chỉ báo nghỉ cho ngày học: ngày bắt đầu và ngày kết thúc đợt nghỉ phải là ngày học theo lịch
+        // (ngày không học vốn đã được nghỉ, không cần báo). Lịch học tính cả cuối tuần khi đang bật bù bài có cuối tuần.
+        Set<DayOfWeek> studyDays = parseStudyDays(lp.getStudyDays(), null);
+        if (Boolean.TRUE.equals(lp.getCatchUpMode()) && Boolean.TRUE.equals(lp.getCatchUpIncludeWeekends())) {
+            studyDays.add(DayOfWeek.SATURDAY);
+            studyDays.add(DayOfWeek.SUNDAY);
+        }
+        List<String> invalidDates = new ArrayList<>();
+        if (!studyDays.contains(request.getStartDate().getDayOfWeek())) {
+            invalidDates.add(formatDateWithDayOfWeek(request.getStartDate()));
+        }
+        if (!request.getEndDate().equals(request.getStartDate())
+                && !studyDays.contains(request.getEndDate().getDayOfWeek())) {
+            invalidDates.add(formatDateWithDayOfWeek(request.getEndDate()));
+        }
+        if (!invalidDates.isEmpty()) {
+            throw new IllegalArgumentException("Chỉ có thể báo nghỉ vào ngày học. "
+                    + String.join(" và ", invalidDates) + " không phải ngày học của bạn (lịch học: "
+                    + formatStudyDaysText(studyDays) + ").");
+        }
+
+        // Không cho tạo đợt nghỉ chồng lên đợt đã có (tránh trùng lặp và đếm ngày nghỉ hai lần).
+        LeaveRecordDto overlapping = records.stream()
+                .filter(r -> r.getStartDate() != null && r.getEndDate() != null
+                        && !request.getStartDate().isAfter(r.getEndDate())
+                        && !request.getEndDate().isBefore(r.getStartDate()))
+                .findFirst()
+                .orElse(null);
+        if (overlapping != null) {
+            throw new IllegalArgumentException("Khoảng nghỉ bị trùng với đợt báo nghỉ đã có ("
+                    + overlapping.getStartDate().format(DATE_FORMATTER) + " - "
+                    + overlapping.getEndDate().format(DATE_FORMATTER) + ").");
+        }
+
         String leaveId = UUID.randomUUID().toString();
         int totalDays = (int) ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
         LocalDate today = LocalDate.now();
@@ -1928,7 +1976,15 @@ public class LearningPathServiceImpl implements LearningPathService {
 
         LearningPath lp = lpOpt.get();
         List<LeaveRecordDto> records = parseLeaveRecords(lp.getLeaveRecords());
-        records.removeIf(r -> leaveId.equals(r.getId()));
+        LeaveRecordDto target = records.stream()
+                .filter(r -> leaveId.equals(r.getId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đợt báo nghỉ cần hủy."));
+        // Đợt nghỉ đã kết thúc là lịch sử: hủy nó sẽ làm đứt lại chuỗi ngày học đã được bảo lưu.
+        if (target.getEndDate() != null && target.getEndDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Không thể hủy đợt báo nghỉ đã kết thúc.");
+        }
+        records.remove(target);
 
         lp.setLeaveRecords(serializeLeaveRecords(records));
         learningPathRepository.save(lp);
@@ -1954,6 +2010,10 @@ public class LearningPathServiceImpl implements LearningPathService {
         if (enable) {
             int extra = (request.getExtraMinutes() != null && request.getExtraMinutes() > 0) ? request.getExtraMinutes()
                     : 30;
+            if (extra > MAX_CATCH_UP_EXTRA_MINUTES) {
+                throw new IllegalArgumentException("Thời gian học bù tối đa là "
+                        + MAX_CATCH_UP_EXTRA_MINUTES + " phút/ngày.");
+            }
             lp.setCatchUpExtraMinutes(extra);
             lp.setCatchUpIncludeWeekends(Boolean.TRUE.equals(request.getIncludeWeekends()));
         }
@@ -1998,8 +2058,9 @@ public class LearningPathServiceImpl implements LearningPathService {
         try {
             return objectMapper.writeValueAsString(records);
         } catch (Exception ex) {
+            // Không trả về "[]": làm vậy sẽ lặng lẽ xóa sạch các đợt báo nghỉ đã lưu. Ném lỗi để transaction rollback.
             log.error("Failed to serialize leave_records: {}", records, ex);
-            return "[]";
+            throw new IllegalStateException("Không thể lưu danh sách báo nghỉ. Vui lòng thử lại.", ex);
         }
     }
 

@@ -102,6 +102,23 @@ public class ManagerLessonController {
         this.managerQuizService = managerQuizService;
     }
 
+    private org.springframework.transaction.support.TransactionTemplate transactionTemplate;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setTransactionManager(org.springframework.transaction.PlatformTransactionManager transactionManager) {
+        this.transactionTemplate = transactionManager == null
+                ? null : new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+    }
+
+    /** Chạy các bước lưu bài học trong cùng một transaction để không bị lưu nửa chừng khi bước sau lỗi. */
+    private void inTransaction(Runnable work) {
+        if (transactionTemplate == null) {
+            work.run();
+            return;
+        }
+        transactionTemplate.executeWithoutResult(status -> work.run());
+    }
+
     @ModelAttribute("draftChapterNames")
     public Map<Long, List<String>> draftChapterNames() { return new java.util.LinkedHashMap<>(); }
 
@@ -491,11 +508,17 @@ public class ManagerLessonController {
                                 @ModelAttribute("draftChapterNames") Map<Long, List<String>> draftChapterNames,
                                 RedirectAttributes redirectAttributes) {
         String name = sectionName == null ? "" : sectionName.trim();
-        lessonService.deleteSection(courseId, name);
-        List<String> names = new ArrayList<>(draftChapterNames.getOrDefault(courseId, List.of()));
-        names.removeIf(name::equals);
-        draftChapterNames.put(courseId, names);
-        redirectAttributes.addFlashAttribute("lessonSuccess", "Đã xóa chương. Bài học trong chương được giữ lại và chuyển sang “Chưa phân chương”.");
+        try {
+            lessonService.deleteSection(courseId, name);
+            List<String> names = new ArrayList<>(draftChapterNames.getOrDefault(courseId, List.of()));
+            names.removeIf(name::equals);
+            draftChapterNames.put(courseId, names);
+            redirectAttributes.addFlashAttribute("lessonSuccess", "Đã xóa chương. Bài học trong chương được giữ lại và chuyển sang “Chưa phân chương”.");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
+        } catch (DataAccessException exception) {
+            redirectAttributes.addFlashAttribute("lessonError", "Không xóa được chương: " + describe(exception));
+        }
         redirectAttributes.addAttribute("courseId", courseId);
         return REDIRECT;
     }
@@ -652,9 +675,13 @@ public class ManagerLessonController {
                     integerValue(params, "durationMinutes"),
                     booleanValue(params, "freePreview"));
 
-            lessonService.update(lessonId, input);
-            lessonDetailService.save(lessonId, resolvedSkill, longValue(params, "entryId"), params,
-                    booleanValue(params, "saveToLibrary"), courseLevelOf(courseId));
+            SkillTypeEnum detailSkill = resolvedSkill;
+            String courseLevel = courseLevelOf(targetCourseId);
+            inTransaction(() -> {
+                lessonService.update(lessonId, input);
+                lessonDetailService.save(lessonId, detailSkill, longValue(params, "entryId"), params,
+                        booleanValue(params, "saveToLibrary"), courseLevel);
+            });
             redirectAttributes.addFlashAttribute("lessonSuccess", "Đã lưu bài học “" + trimmed(title) + "”.");
             return redirectToWorkspace(courseId, resolvedSkill.getValue(), redirectAttributes);
         } catch (IllegalArgumentException exception) {
@@ -688,27 +715,6 @@ public class ManagerLessonController {
             redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
         } catch (DataAccessException exception) {
             redirectAttributes.addFlashAttribute("lessonError", "Không xoá được bài học: " + describe(exception));
-        }
-        return redirectToWorkspace(courseId, skill, redirectAttributes);
-    }
-
-    @PostMapping("/{lessonId}/duplicate")
-    public String duplicate(@PathVariable(name = "lessonId") long lessonId,
-                            @RequestParam(name = "courseId", required = false) Long courseId,
-                            @RequestParam(name = "skill", required = false) String skill,
-                            RedirectAttributes redirectAttributes) {
-        try {
-            LessonRow source = lessonService.findLesson(lessonId).orElse(null);
-            long copyId = lessonService.duplicate(lessonId);
-            copyDetail(lessonId, copyId);
-            redirectAttributes.addFlashAttribute("lessonSuccess",
-                    "Đã nhân bản “" + (source == null ? "bài học" : source.title())
-                            + "”. Bản sao đang ẩn, sửa lại rồi hiển thị khi đã sẵn sàng.");
-        } catch (IllegalArgumentException exception) {
-            redirectAttributes.addFlashAttribute("lessonError", exception.getMessage());
-        } catch (DataAccessException exception) {
-            redirectAttributes.addFlashAttribute("lessonError",
-                    "Không nhân bản được bài học: " + describe(exception));
         }
         return redirectToWorkspace(courseId, skill, redirectAttributes);
     }
@@ -1040,14 +1046,6 @@ public class ManagerLessonController {
             parts.add(second.trim());
         }
         return parts.isEmpty() ? null : String.join(" — ", parts);
-    }
-
-    private void copyDetail(long sourceLessonId, long targetLessonId) {
-        try {
-            lessonDetailService.copyDetail(sourceLessonId, targetLessonId);
-        } catch (Exception exception) {
-            log.warn("Could not copy the skill detail of lesson {}", sourceLessonId, exception);
-        }
     }
 
     private void deleteQuietly(long lessonId) {
